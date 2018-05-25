@@ -40,7 +40,7 @@ void Kernel::execute() const
   };
 }
 
-static const std::map<std::string, DependenceType> &type_by_name()
+static const std::map<std::string, DependenceType> &dtype_by_name()
 {
   static std::map<std::string, DependenceType> types;
 
@@ -56,12 +56,12 @@ static const std::map<std::string, DependenceType> &type_by_name()
   return types;
 }
 
-static const std::map<DependenceType, std::string> &name_by_type()
+static const std::map<DependenceType, std::string> &name_by_dtype()
 {
   static std::map<DependenceType, std::string> names;
 
   if (names.empty()) {
-    auto types = type_by_name();
+    auto types = dtype_by_name();
     for (auto pair : types) {
       names[pair.second] = pair.first;
     }
@@ -183,7 +183,7 @@ App::App(int argc, char **argv)
     }
 
     if (!strcmp(argv[i], "-type")) {
-      auto types = type_by_name();
+      auto types = dtype_by_name();
       graph.dependence = types.at(argv[++i]);
     }
   }
@@ -199,7 +199,7 @@ void App::display() const
   for (auto g : graphs) {
     ++i;
 
-    auto names = name_by_type();
+    auto names = name_by_dtype();
 
     printf("    Task Graph %d:\n", i);
     printf("      Time Steps: %ld\n", g.timesteps);
