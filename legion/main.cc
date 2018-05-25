@@ -45,6 +45,10 @@ void kernel(const Task *task,
 {
   printf("Kernel at point %lld\n",
          task->index_point[0]);
+
+  assert(task->arglen == sizeof(Kernel));
+  Kernel kernel = *reinterpret_cast<Kernel *>(task->args);
+  kernel.execute();
 }
 
 struct LegionApp : public App {
