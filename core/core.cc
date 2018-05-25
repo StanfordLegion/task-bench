@@ -31,6 +31,8 @@ void execute_kernel_empty(const Kernel &kernel)
 
 void Kernel::execute() const
 {
+  assert(subgraphs.empty());
+
   switch(type) {
   case KernelType::EMPTY:
     execute_kernel_empty(*this);
@@ -170,8 +172,10 @@ App::App(int argc, char **argv)
   // Default values
   graph.timesteps = 4;
   graph.max_width = 4;
+  graph.region_size = 10;
   graph.dependence = DependenceType::TRIVIAL;
-  graph.kernel = {KernelType::EMPTY, 0};
+  graph.kernel.type = KernelType::EMPTY;
+  graph.kernel.iterations = 0;
 
   // Parse command line
   for (int i = 1; i < argc; i++) {
@@ -187,9 +191,30 @@ App::App(int argc, char **argv)
       auto types = type_by_name();
       graph.dependence = types.at(argv[++i]);
     }
+
+    if (!strcmp(argv[i], "-rec")) {
+      printf("Creating recursive layer\n");
+      TaskGraph parent;
+
+      // Default values
+      parent.timesteps = 4;
+      parent.max_width = 4;
+      parent.region_size = 10;
+      parent.dependence = DependenceType::TRIVIAL;
+      parent.kernel.type = KernelType::EMPTY;
+      parent.kernel.iterations = 0;
+      parent.kernel.subgraphs.push_back(graph);
+
+      graph = parent;
+    }
   }
 
   graphs.push_back(graph);
+}
+
+App::App(const Kernel &kernel)
+  : graphs(kernel.subgraphs)
+{
 }
 
 void App::display() const

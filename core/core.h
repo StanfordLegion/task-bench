@@ -19,6 +19,8 @@
 #include <string>
 #include <vector>
 
+#include "serialize_helper.h"
+
 enum class DependenceType {
   TRIVIAL,
   NO_COMM,
@@ -34,17 +36,28 @@ enum class KernelType {
   COMPUTE_BOUND,
 };
 
+struct TaskGraph;
+
 struct Kernel {
+  // IMPORTANT: Keep serializer up to date with struct definition
+  // See same comment in core.inl
   KernelType type;
   long iterations;
   // TODO: Add parameters for load imbalance, etc.
+
+  // If subgraphs is non-empty then the parameters above are ignored
+  // and the subgraphs are executed instead
+  std::vector<TaskGraph> subgraphs;
 
   void execute() const;
 };
 
 struct TaskGraph {
+  // IMPORTANT: Keep serializer up to date with struct definition
+  // See same comment in core.inl
   long timesteps;
   long max_width;
+  long region_size;
   DependenceType dependence;
   Kernel kernel;
 
@@ -60,7 +73,10 @@ struct App {
   std::vector<TaskGraph> graphs;
 
   App(int argc, char **argv);
+  App(const Kernel &kernel);
   void display() const;
 };
+
+#include "core.inl"
 
 #endif
