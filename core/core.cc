@@ -98,7 +98,7 @@ long TaskGraph::max_dependence_sets() const
   case DependenceType::DOM:
     return 1;
   case DependenceType::FFT:
-    return (long)floor(log2(max_width));
+    return (long)ceil(log2(max_width));
   case DependenceType::ALL_TO_ALL:
     return 1;
   default:
@@ -115,7 +115,7 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::DOM:
     return 0;
   case DependenceType::FFT:
-    return timestep % max_dependence_sets();
+    return (timestep+max_dependence_sets()-1) % max_dependence_sets();
   case DependenceType::ALL_TO_ALL:
     return 0;
   default:
@@ -143,7 +143,6 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
     {
       long d1 = point - (1 << dset);
       long d2 = point + (1 << dset);
-      printf("Dependence for dset %ld point %ld d1 %ld d2 %ld\n", dset, point, d1, d2);
       if (d1 >= 0) {
         deps.push_back(std::pair<long, long>(d1, d1));
       }

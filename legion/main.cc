@@ -26,9 +26,17 @@ enum TaskIDs {
   TID_KERNEL,
 };
 
+// In order to avoid spurious WAR dependencies, we round-robin the
+// task output across a set of fields. This is basically
+// double-buffering with an arbitrary factor N. This could technically
+// be done in the mapper, but it's easier to just do it here. The
+// tradeoff is that we're allocated a fixed amount of memory up front
+// for instances.
+constexpr long NUM_FIELDS = 10;
+
 enum FieldIDs {
-  FID_IN,
-  FID_OUT,
+  FID_FIRST,
+  FID_LAST=FID_FIRST+NUM_FIELDS,
 };
 
 void kernel(const Task *task,
@@ -66,8 +74,9 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     {
       FieldAllocator allocator =
         runtime->create_field_allocator(ctx, fs);
-      allocator.allocate_field(sizeof(double), FID_IN);
-      allocator.allocate_field(sizeof(double), FID_OUT);
+      for (long i = 0; i < NUM_FIELDS; ++i) {
+        allocator.allocate_field(sizeof(double), FID_FIRST+i);
+      }
     }
     LogicalRegionT<1> result_lr = runtime->create_logical_region(ctx, is, fs);
 
@@ -136,10 +145,7 @@ void LegionApp::execute_timestep(size_t idx, long t)
 
   Rect<1> bounds(0, width-1);
 
-  FieldID f1(FID_IN), f2(FID_OUT);
-  if (t % 2 == 1) {
-    std::swap(f1, f2);
-  }
+  FieldID fout(FID_FIRST + ((t+1) % NUM_FIELDS)), fin(FID_FIRST + (t % NUM_FIELDS));
 
   Kernel kernel = g.kernel;
   IndexLauncher launcher(TID_KERNEL, bounds,
@@ -152,12 +158,12 @@ void LegionApp::execute_timestep(size_t idx, long t)
   launcher.add_region_requirement(
     RegionRequirement(primary, 0 /* default projection */,
                       WRITE_DISCARD, EXCLUSIVE, region)
-    .add_field(f1));
+    .add_field(fout));
   if (dset < g.max_dependence_sets()) {
     launcher.add_region_requirement(
       RegionRequirement(secondary[dset], 0 /* default projection */,
                         READ_ONLY, EXCLUSIVE, region)
-      .add_field(f2));
+      .add_field(fin));
   }
   runtime->execute_index_space(ctx, launcher);
 }
