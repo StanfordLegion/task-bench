@@ -213,6 +213,15 @@ App::App(int argc, char **argv)
       auto types = dtype_by_name();
       graph.dependence = types.at(argv[++i]);
     }
+
+    if (!strcmp(argv[i], "-kernel")) {
+      auto types = ktype_by_name();
+      graph.kernel.type = types.at(argv[++i]);
+    }
+
+    if (!strcmp(argv[i], "-iter")) {
+      graph.kernel.iterations = atol(argv[++i]);
+    }
   }
 
   graphs.push_back(graph);
