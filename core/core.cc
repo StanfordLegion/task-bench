@@ -40,6 +40,33 @@ void Kernel::execute() const
   };
 }
 
+static const std::map<std::string, KernelType> &ktype_by_name()
+{
+  static std::map<std::string, KernelType> types;
+
+  if (types.empty()) {
+    types["empty"] = KernelType::EMPTY;
+    types["memory_bound"] = KernelType::MEMORY_BOUND;
+    types["compute_bound"] = KernelType::COMPUTE_BOUND;
+  }
+
+  return types;
+}
+
+static const std::map<KernelType, std::string> &name_by_ktype()
+{
+  static std::map<KernelType, std::string> names;
+
+  if (names.empty()) {
+    auto types = ktype_by_name();
+    for (auto pair : types) {
+      names[pair.second] = pair.first;
+    }
+  }
+
+  return names;
+}
+
 static const std::map<std::string, DependenceType> &dtype_by_name()
 {
   static std::map<std::string, DependenceType> types;
@@ -199,14 +226,15 @@ void App::display() const
   for (auto g : graphs) {
     ++i;
 
-    auto names = name_by_dtype();
+    auto knames = name_by_ktype();
+    auto dnames = name_by_dtype();
 
     printf("    Task Graph %d:\n", i);
     printf("      Time Steps: %ld\n", g.timesteps);
     printf("      Max Width: %ld\n", g.max_width);
-    printf("      Dependence: %s\n", names.at(g.dependence).c_str());
+    printf("      Dependence: %s\n", dnames.at(g.dependence).c_str());
     printf("      Kernel:\n");
-    printf("        Type: %ld\n", (long)g.kernel.type);
+    printf("        Type: %s\n", knames.at(g.kernel.type).c_str());
     printf("        Iterations: %ld\n", g.kernel.iterations);
   }
 }
