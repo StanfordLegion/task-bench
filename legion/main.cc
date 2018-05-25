@@ -23,7 +23,7 @@ using namespace Legion;
 
 enum TaskIDs {
   TID_TOP,
-  TID_KERNEL,
+  TID_LEAF,
 };
 
 // In order to avoid spurious WAR dependencies, we round-robin the
@@ -39,11 +39,11 @@ enum FieldIDs {
   FID_LAST=FID_FIRST+NUM_FIELDS,
 };
 
-void kernel(const Task *task,
+void leaf(const Task *task,
             const std::vector<PhysicalRegion> &regions,
             Context ctx, Runtime *runtime)
 {
-  printf("Kernel at point %lld\n",
+  printf("Leaf at point %lld\n",
          task->index_point[0]);
 
   assert(task->arglen == sizeof(Kernel));
@@ -152,7 +152,7 @@ void LegionApp::execute_timestep(size_t idx, long t)
   FieldID fout(FID_FIRST + ((t+1) % NUM_FIELDS)), fin(FID_FIRST + (t % NUM_FIELDS));
 
   Kernel kernel = g.kernel;
-  IndexLauncher launcher(TID_KERNEL, bounds,
+  IndexLauncher launcher(TID_LEAF, bounds,
                          TaskArgument(&kernel, sizeof(kernel)), ArgumentMap());
   // This needs to be write-discard so that we don't catch a
   // dependence on the same point in the previous timestep, unless
@@ -191,10 +191,10 @@ int main(int argc, char **argv)
   }
 
   {
-    TaskVariantRegistrar registrar(TID_KERNEL, "kernel");
+    TaskVariantRegistrar registrar(TID_LEAF, "leaf");
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     registrar.set_leaf();
-    Runtime::preregister_task_variant<kernel>(registrar, "kernel");
+    Runtime::preregister_task_variant<leaf>(registrar, "leaf");
   }
 
   return Runtime::start(argc, argv);
