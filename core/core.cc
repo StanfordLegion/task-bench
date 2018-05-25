@@ -188,16 +188,21 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
   return deps;
 }
 
-App::App(int argc, char **argv)
+static TaskGraph default_graph()
 {
-  // For now, just create one task graph
   TaskGraph graph;
 
-  // Default values
   graph.timesteps = 4;
   graph.max_width = 4;
   graph.dependence = DependenceType::TRIVIAL;
   graph.kernel = {KernelType::EMPTY, 0};
+
+  return graph;
+}
+
+App::App(int argc, char **argv)
+{
+  TaskGraph graph = default_graph();
 
   // Parse command line
   for (int i = 1; i < argc; i++) {
@@ -221,6 +226,11 @@ App::App(int argc, char **argv)
 
     if (!strcmp(argv[i], "-iter")) {
       graph.kernel.iterations = atol(argv[++i]);
+    }
+
+    if (!strcmp(argv[i], "-and")) {
+      graphs.push_back(graph);
+      graph = default_graph();
     }
   }
 
