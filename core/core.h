@@ -48,6 +48,7 @@ struct TaskGraph {
   DependenceType dependence;
   Kernel kernel;
 
+  long offset_at_timestep(long timestep) const;
   long width_at_timestep(long timestep) const;
 
   long max_dependence_sets() const;
@@ -58,8 +59,10 @@ struct TaskGraph {
 
 struct App {
   std::vector<TaskGraph> graphs;
+  bool verbose;
 
   App(int argc, char **argv);
+  void check() const;
   void display() const;
 };
 

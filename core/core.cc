@@ -97,6 +97,23 @@ static const std::map<DependenceType, std::string> &name_by_dtype()
   return names;
 }
 
+long TaskGraph::offset_at_timestep(long timestep) const
+{
+  switch (dependence) {
+  case DependenceType::TRIVIAL:
+  case DependenceType::NO_COMM:
+  case DependenceType::STENCIL_1D:
+    return 0;
+  case DependenceType::DOM:
+    return std::max(0L, timestep + max_width - timesteps);
+  case DependenceType::FFT:
+  case DependenceType::ALL_TO_ALL:
+    return 0;
+  default:
+    assert(false && "unexpected dependence type");
+  };
+}
+
 long TaskGraph::width_at_timestep(long timestep) const
 {
   switch (dependence) {
@@ -106,7 +123,7 @@ long TaskGraph::width_at_timestep(long timestep) const
     return max_width;
   case DependenceType::DOM:
     return std::min(max_width,
-                    std::min(timestep, timesteps - timestep));
+                    std::min(timestep + 1, timesteps - timestep));
   case DependenceType::FFT:
   case DependenceType::ALL_TO_ALL:
     return max_width;
@@ -201,11 +218,16 @@ static TaskGraph default_graph()
 }
 
 App::App(int argc, char **argv)
+  : verbose(false)
 {
   TaskGraph graph = default_graph();
 
   // Parse command line
   for (int i = 1; i < argc; i++) {
+    if (!strcmp(argv[i], "-v")) {
+      verbose = true;
+    }
+
     if (!strcmp(argv[i], "-steps")) {
       graph.timesteps = atol(argv[++i]);
     }
@@ -235,6 +257,25 @@ App::App(int argc, char **argv)
   }
 
   graphs.push_back(graph);
+
+  check();
+}
+
+void App::check() const
+{
+  // Validate task graph is well-formed
+  for (auto g : graphs) {
+    for (long t = 0; t < g.timesteps; ++t) {
+      long offset = g.offset_at_timestep(t);
+      long width = g.width_at_timestep(t);
+      assert(offset >= 0);
+      assert(width >= 0);
+      assert(offset + width <= g.max_width);
+
+      long dset = g.dependence_set_at_timestep(t);
+      assert(dset >= 0 && dset < g.max_dependence_sets());
+    }
+  }
 }
 
 void App::display() const
@@ -251,9 +292,29 @@ void App::display() const
     printf("    Task Graph %d:\n", i);
     printf("      Time Steps: %ld\n", g.timesteps);
     printf("      Max Width: %ld\n", g.max_width);
-    printf("      Dependence: %s\n", dnames.at(g.dependence).c_str());
+    printf("      Dependence Type: %s\n", dnames.at(g.dependence).c_str());
     printf("      Kernel:\n");
     printf("        Type: %s\n", knames.at(g.kernel.type).c_str());
     printf("        Iterations: %ld\n", g.kernel.iterations);
+
+    if (verbose) {
+      for (long t = 0; t < g.timesteps; ++t) {
+        long offset = g.offset_at_timestep(t);
+        long width = g.width_at_timestep(t);
+        long dset = g.dependence_set_at_timestep(t);
+        printf("      Dependencies (offset %ld, width %ld):\n",
+               g.offset_at_timestep(t), g.width_at_timestep(t));
+        for (long p = offset; p < offset + width; ++p) {
+          printf("        Point %ld:", p);
+          auto deps = g.dependencies(dset, p);
+          for (auto dep : deps) {
+            for (long dp = dep.first; dp <= dep.second; ++dp) {
+              printf(" %ld", dp);
+            }
+          }
+          printf("\n");
+        }
+      }
+    }
   }
 }

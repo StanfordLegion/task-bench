@@ -143,11 +143,12 @@ void LegionApp::execute_timestep(size_t idx, long t)
   const LogicalPartitionT<1> &primary = primary_partitions[idx];
   const std::vector<LogicalPartitionT<1> > &secondary = secondary_partitions[idx];
 
+  long offset = g.offset_at_timestep(t);
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
-  printf("Timestep %ld width %ld dset %ld\n", t, width, dset);
+  printf("Timestep %ld offset %ld width %ld dset %ld\n", t, offset, width, dset);
 
-  Rect<1> bounds(0, width-1);
+  Rect<1> bounds(offset, offset+width-1);
 
   FieldID fout(FID_FIRST + ((t+1) % NUM_FIELDS)), fin(FID_FIRST + (t % NUM_FIELDS));
 
