@@ -24,6 +24,7 @@
   * Build system
       * Is there a reasonable way to build without N build systems?
           * Maybe CMake?
+  * Test suite
   * Potential Implementations
       * MPI
           * Send/recv
