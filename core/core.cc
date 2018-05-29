@@ -77,6 +77,7 @@ static const std::map<std::string, DependenceType> &dtype_by_name()
     types["stencil_1d"] = DependenceType::STENCIL_1D;
     types["stencil_1d_periodic"] = DependenceType::STENCIL_1D_PERIODIC;
     types["dom"] = DependenceType::DOM;
+    types["tree"] = DependenceType::TREE;
     types["fft"] = DependenceType::FFT;
     types["all_to_all"] = DependenceType::ALL_TO_ALL;
   }
@@ -108,6 +109,7 @@ long TaskGraph::offset_at_timestep(long timestep) const
     return 0;
   case DependenceType::DOM:
     return std::max(0L, timestep + max_width - timesteps);
+  case DependenceType::TREE:
   case DependenceType::FFT:
   case DependenceType::ALL_TO_ALL:
     return 0;
@@ -127,6 +129,8 @@ long TaskGraph::width_at_timestep(long timestep) const
   case DependenceType::DOM:
     return std::min(max_width,
                     std::min(timestep + 1, timesteps - timestep));
+  case DependenceType::TREE:
+    return std::min(max_width, 1L << timestep);
   case DependenceType::FFT:
   case DependenceType::ALL_TO_ALL:
     return max_width;
@@ -144,6 +148,7 @@ long TaskGraph::max_dependence_sets() const
   case DependenceType::STENCIL_1D:
   case DependenceType::STENCIL_1D_PERIODIC:
   case DependenceType::DOM:
+  case DependenceType::TREE:
     return 1;
   case DependenceType::FFT:
     return (long)ceil(log2(max_width));
@@ -162,6 +167,7 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::STENCIL_1D:
   case DependenceType::STENCIL_1D_PERIODIC:
   case DependenceType::DOM:
+  case DependenceType::TREE:
     return 0;
   case DependenceType::FFT:
     return timestep % max_dependence_sets();
@@ -196,6 +202,12 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
     break;
   case DependenceType::DOM:
     deps.push_back(std::pair<long, long>(std::max(0L, point-1), point));
+    break;
+  case DependenceType::TREE:
+    {
+      long parent = point/2;
+      deps.push_back(std::pair<long, long>(parent, parent));
+    }
     break;
   case DependenceType::FFT:
     {

@@ -25,6 +25,7 @@ enum class DependenceType {
   STENCIL_1D,
   STENCIL_1D_PERIODIC,
   DOM,
+  TREE,
   FFT,
   ALL_TO_ALL,
 };
