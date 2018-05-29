@@ -11,6 +11,7 @@
           * Compute bound
           * Memory bound
           * I/O bound
+      * Recursive task graphs?
   * Legion Implementation
       * Tracing
       * Dynamic control replication
