@@ -75,6 +75,7 @@ static const std::map<std::string, DependenceType> &dtype_by_name()
     types["trivial"] = DependenceType::TRIVIAL;
     types["no_comm"] = DependenceType::NO_COMM;
     types["stencil_1d"] = DependenceType::STENCIL_1D;
+    types["stencil_1d_periodic"] = DependenceType::STENCIL_1D_PERIODIC;
     types["dom"] = DependenceType::DOM;
     types["fft"] = DependenceType::FFT;
     types["all_to_all"] = DependenceType::ALL_TO_ALL;
@@ -103,6 +104,7 @@ long TaskGraph::offset_at_timestep(long timestep) const
   case DependenceType::TRIVIAL:
   case DependenceType::NO_COMM:
   case DependenceType::STENCIL_1D:
+  case DependenceType::STENCIL_1D_PERIODIC:
     return 0;
   case DependenceType::DOM:
     return std::max(0L, timestep + max_width - timesteps);
@@ -120,6 +122,7 @@ long TaskGraph::width_at_timestep(long timestep) const
   case DependenceType::TRIVIAL:
   case DependenceType::NO_COMM:
   case DependenceType::STENCIL_1D:
+  case DependenceType::STENCIL_1D_PERIODIC:
     return max_width;
   case DependenceType::DOM:
     return std::min(max_width,
@@ -139,6 +142,7 @@ long TaskGraph::max_dependence_sets() const
     return 0;
   case DependenceType::NO_COMM:
   case DependenceType::STENCIL_1D:
+  case DependenceType::STENCIL_1D_PERIODIC:
   case DependenceType::DOM:
     return 1;
   case DependenceType::FFT:
@@ -156,6 +160,7 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::TRIVIAL:
   case DependenceType::NO_COMM:
   case DependenceType::STENCIL_1D:
+  case DependenceType::STENCIL_1D_PERIODIC:
   case DependenceType::DOM:
     return 0;
   case DependenceType::FFT:
@@ -179,6 +184,15 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
     break;
   case DependenceType::STENCIL_1D:
     deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+    break;
+  case DependenceType::STENCIL_1D_PERIODIC:
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+    if (point-1 < 0) { // Wrap around negative case
+      deps.push_back(std::pair<long, long>(max_width-1, max_width-1));
+    }
+    if (point+1 >= max_width) { // Wrap around positive case
+      deps.push_back(std::pair<long, long>(0, 0));
+    }
     break;
   case DependenceType::DOM:
     deps.push_back(std::pair<long, long>(std::max(0L, point-1), point));

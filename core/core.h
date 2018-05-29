@@ -23,6 +23,7 @@ enum class DependenceType {
   TRIVIAL,
   NO_COMM,
   STENCIL_1D,
+  STENCIL_1D_PERIODIC,
   DOM,
   FFT,
   ALL_TO_ALL,
