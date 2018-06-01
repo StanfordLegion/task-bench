@@ -12,6 +12,8 @@
           * Memory bound
           * I/O bound
       * Recursive task graphs?
+      * GPUs?
+      * Measure memory usage of runtimes
   * Legion Implementation
       * Tracing
       * Dynamic control replication
