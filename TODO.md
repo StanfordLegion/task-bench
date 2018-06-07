@@ -34,6 +34,7 @@
           * All-to-all
       * PaRSEC
       * StarPU
+      * OmpSs
       * DARMA
       * Realm
       * OCR
@@ -42,3 +43,5 @@
       * Chapel
       * Apache Spark
       * TensorFlow
+      * Dask
+      * Ray
