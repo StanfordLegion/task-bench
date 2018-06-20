@@ -7,10 +7,10 @@
  *
  */
 
-#include "/home/wwu12/parsec-master/dplasma/testing/common.h"
+#include <common.h>
 #include <dplasmatypes.h>
-#include "/home/wwu12/parsec-master/parsec/data_dist/matrix/two_dim_rectangle_cyclic.h"
-#include "/home/wwu12/parsec-master/parsec/interfaces/superscalar/insert_function.h"
+#include <data_dist/matrix/two_dim_rectangle_cyclic.h>
+#include <interfaces/superscalar/insert_function.h>
 
 enum regions {
                TILE_FULL,
