@@ -7,7 +7,7 @@
  *
  */
 
-#include <common.h>
+#include "common.h"
 #include <dplasmatypes.h>
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <interfaces/superscalar/insert_function.h>
