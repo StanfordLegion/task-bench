@@ -100,9 +100,12 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
 
         std::vector<IndexSpace> subspaces;
         for (auto dep : deps) {
+            printf("dep=%ld\n", dep);
           for (long i = dep.first; i <= dep.second; ++i) {
             subspaces.push_back(runtime->get_index_subspace(ctx, primary_ip, i));
+              printf("i=%ld ",i); 
           }
+          printf("\n");
         }
         runtime->create_index_space_union(ctx, secondary_ip, point, subspaces);
       }
@@ -178,7 +181,30 @@ void top(const Task *task,
          Context ctx, Runtime *runtime)
 {
   LegionApp app(runtime, ctx);
+
+  //warm up
   app.execute_main_loop();
+
+  printf("After warm up, Starting main simulation loop\n");
+  bool simulation_success = true;
+  Future f_start = runtime->get_current_time_in_microseconds(ctx);
+  double ts_start = f_start.get_result<long long>();
+
+  app.execute_main_loop();
+
+  // Execution fence to wait for all prior operations to be done before getting our timing result
+  runtime->issue_execution_fence(ctx);
+  Future f_end = runtime->get_current_time_in_microseconds(ctx);
+  double ts_end = f_end.get_result<long long>();
+  if (simulation_success)
+    printf("SUCCESS!\n");
+  else
+    printf("FAILURE!\n");
+  {
+    double sim_time = 1e-6 * (ts_end - ts_start);
+    printf("ELAPSED TIME = %7.3f s\n", sim_time);
+  }
+
 }
 
 int main(int argc, char **argv)
