@@ -12,6 +12,8 @@
           * Memory bound
           * I/O bound
       * Recursive task graphs?
+      * GPUs?
+      * Measure memory usage of runtimes
   * Legion Implementation
       * Tracing
       * Dynamic control replication
@@ -32,6 +34,7 @@
           * All-to-all
       * PaRSEC
       * StarPU
+      * OmpSs
       * DARMA
       * Realm
       * OCR
@@ -40,3 +43,5 @@
       * Chapel
       * Apache Spark
       * TensorFlow
+      * Dask
+      * Ray
