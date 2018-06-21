@@ -1,7 +1,7 @@
 CC         = g++
 
-CFLAGS     = -g -O0 -g3 -D_GNU_SOURCE -Wsubobject-linkage -Wwrite-strings
-LDFLAGS    = -m64 -std=c1x  -Wall  -g -O0 -g3 -D_GNU_SOURCE -Wsubobject-linkage -Wwrite-strings
+CFLAGS     = -g -O0 -g3 -std=c++11 -D_GNU_SOURCE -Wsubobject-linkage -Wwrite-strings
+LDFLAGS    = -m64 -std=c++11 -Wall  -g -O0 -g3 -D_GNU_SOURCE -Wsubobject-linkage -Wwrite-strings
 
 PARSEC_DIR = /home/wwu12/parsec-master/install
 DPLASMA_DIR = /home/wwu12/parsec-master/install
@@ -9,7 +9,7 @@ PLASMA_DIR = /sw/plasma/2.8.0g
 MPI_DIR    = /sw/openmpi/2.1.1-thread-multiple
 
 # Include directories
-INC        = -I$(PARSEC_DIR)/include -I$(PARSEC_DIR)/include/parsec -I$(DPLASMA_DIR)/include
+INC        = -I$(PARSEC_DIR)/include -I$(PARSEC_DIR)/include/parsec -I$(DPLASMA_DIR)/include -I../core
 INC_EXT    = -I$(MPI_DIR)/include -I$(PLASMA_DIR)/include
 
 # Location of the libraries.
@@ -21,17 +21,21 @@ LIB := $(LIB) $(LIB_EXT)
 
 CFLAGS += $(INC)
 
-TARGET = dom no_comm 1d_stencil
+TARGET = main
 all: $(TARGET)
 	
 .PRECIOUS: %.cc %.o
+	
+core.o: ../core/core.cc ../core/core.h
+	$(CC) -c $(CFLAGS) $<
 
-%: %.cc
+common.o: common.cc common.h common_timing.h flops.h
+	$(CC) -c $(CFLAGS) $<
 
-%.o: %.cc 
+main.o: main.cc 
 	$(CC) -c $(CFLAGS) $<
 	
-%: %.o common.o
+main: main.o common.o core.o
 	$(CC) $^ $(LIB) -o $@ 
 
 

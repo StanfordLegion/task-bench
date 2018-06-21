@@ -299,7 +299,7 @@ void App::check() const
       assert(offset + width <= g.max_width);
 
       long dset = g.dependence_set_at_timestep(t);
-      assert(dset >= 0 && dset < g.max_dependence_sets());
+      assert(dset >= 0 && dset <= g.max_dependence_sets());
     }
   }
 }

@@ -92,37 +92,37 @@ void iparam_default_gemm(int* iparam);
 void iparam_default_ibnbmb(int* iparam, int ib, int nb, int mb);
 
 #define PASTE_CODE_IPARAM_LOCALS(iparam)                                \
-    int rank  = iparam[IPARAM_RANK];                                    \
-    int nodes = iparam[IPARAM_NNODES];                                  \
-    int cores = iparam[IPARAM_NCORES];                                  \
-    int gpus  = iparam[IPARAM_NGPUS];                                   \
-    int P     = iparam[IPARAM_P];                                       \
-    int Q     = iparam[IPARAM_Q];                                       \
-    int M     = iparam[IPARAM_M];                                       \
-    int N     = iparam[IPARAM_N];                                       \
-    int K     = iparam[IPARAM_K];                                       \
-    int NRHS  = K;                                                      \
-    int LDA   = max(M, iparam[IPARAM_LDA]);                             \
-    int LDB   = max(N, iparam[IPARAM_LDB]);                             \
-    int LDC   = max(K, iparam[IPARAM_LDC]);                             \
-    int IB    = iparam[IPARAM_IB];                                      \
-    int MB    = iparam[IPARAM_MB];                                      \
-    int NB    = iparam[IPARAM_NB];                                      \
-    int SMB   = iparam[IPARAM_SMB];                                     \
-    int SNB   = iparam[IPARAM_SNB];                                     \
-    int HMB   = iparam[IPARAM_HMB];                                     \
-    int HNB   = iparam[IPARAM_HNB];                                     \
-    int MT    = (M%MB==0) ? (M/MB) : (M/MB+1);                          \
-    int NT    = (N%NB==0) ? (N/NB) : (N/NB+1);                          \
-    int KT    = (K%MB==0) ? (K/MB) : (K/MB+1);                          \
-    int check = iparam[IPARAM_CHECK];                                   \
-    int check_inv = iparam[IPARAM_CHECKINV];                            \
-    int loud  = iparam[IPARAM_VERBOSE];                                 \
-    int scheduler = iparam[IPARAM_SCHEDULER];                           \
-    int random_seed = iparam[IPARAM_RANDOM_SEED];                       \
-    int matrix_init = iparam[IPARAM_MATRIX_INIT];                       \
-    int butterfly_level = iparam[IPARAM_BUT_LEVEL];                     \
-    int async = iparam[IPARAM_ASYNC];                                   \
+    rank  = iparam[IPARAM_RANK];                                    \
+    nodes = iparam[IPARAM_NNODES];                                  \
+    cores = iparam[IPARAM_NCORES];                                  \
+    gpus  = iparam[IPARAM_NGPUS];                                   \
+    P     = iparam[IPARAM_P];                                       \
+    Q     = iparam[IPARAM_Q];                                       \
+    M     = iparam[IPARAM_M];                                       \
+    N     = iparam[IPARAM_N];                                       \
+    K     = iparam[IPARAM_K];                                       \
+    NRHS  = K;                                                      \
+    LDA   = max(M, iparam[IPARAM_LDA]);                             \
+    LDB   = max(N, iparam[IPARAM_LDB]);                             \
+    LDC   = max(K, iparam[IPARAM_LDC]);                             \
+    IB    = iparam[IPARAM_IB];                                      \
+    MB    = iparam[IPARAM_MB];                                      \
+    NB    = iparam[IPARAM_NB];                                      \
+    SMB   = iparam[IPARAM_SMB];                                     \
+    SNB   = iparam[IPARAM_SNB];                                     \
+    HMB   = iparam[IPARAM_HMB];                                     \
+    HNB   = iparam[IPARAM_HNB];                                     \
+    MT    = (M%MB==0) ? (M/MB) : (M/MB+1);                          \
+    NT    = (N%NB==0) ? (N/NB) : (N/NB+1);                          \
+    KT    = (K%MB==0) ? (K/MB) : (K/MB+1);                          \
+    check = iparam[IPARAM_CHECK];                                   \
+    check_inv = iparam[IPARAM_CHECKINV];                            \
+    loud  = iparam[IPARAM_VERBOSE];                                 \
+    scheduler = iparam[IPARAM_SCHEDULER];                           \
+    random_seed = iparam[IPARAM_RANDOM_SEED];                       \
+    matrix_init = iparam[IPARAM_MATRIX_INIT];                       \
+    butterfly_level = iparam[IPARAM_BUT_LEVEL];                     \
+    async = iparam[IPARAM_ASYNC];                                   \
     (void)rank;(void)nodes;(void)cores;(void)gpus;(void)P;(void)Q;(void)M;(void)N;(void)K;(void)NRHS; \
     (void)LDA;(void)LDB;(void)LDC;(void)IB;(void)MB;(void)NB;(void)MT;(void)NT;(void)KT; \
     (void)SMB;(void)SNB;(void)HMB;(void)HNB;(void)check;(void)loud;(void)async; \
@@ -177,9 +177,7 @@ static inline int min(int a, int b) { return a < b ? a : b; }
 
 /* Paste code to allocate a matrix in desc if cond_init is true */
 #define PASTE_CODE_ALLOCATE_MATRIX(DC, COND, TYPE, INIT_PARAMS)      \
-    TYPE##_t DC;                                                     \
     if(COND) {                                                          \
-        TYPE##_init INIT_PARAMS;                                        \
         DC.mat = parsec_data_allocate((size_t)DC.super.nb_local_tiles * \
                                         (size_t)DC.super.bsiz *      \
                                         (size_t)parsec_datadist_getsizeoftype(DC.super.mtype)); \
