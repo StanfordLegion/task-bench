@@ -10,6 +10,6 @@ install:
   - mkdir deps
   - export LEGION_DIR=$PWD/deps/legion
   - export LG_RT_DIR=$LEGION_DIR/runtime
-  - git clone https://gitlab.com/StanfordLegion/legion.git $LG_RT_DIR
+  - git clone https://gitlab.com/StanfordLegion/legion.git $LEGION_DIR
 script:
   - make -C legion
