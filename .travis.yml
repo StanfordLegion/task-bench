@@ -12,6 +12,7 @@ env:
     - WARN_AS_ERROR=1
     - REALM_SYNTHETIC_CORE_MAP=""
     - REALM_BACKTRACE=1
+    - CC_FLAGS="-Wno-unused-command-line-argument"
 before_install:
   # Setup ccache for GCC and Clang.
   - mkdir -p $HOME/bin
