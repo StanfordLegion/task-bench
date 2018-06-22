@@ -21,6 +21,8 @@ before_install:
   - ln -s /usr/bin/ccache "$HOME/bin/clang"
   - ln -s /usr/bin/ccache "$HOME/bin/clang++"
   - export PATH="$HOME/bin${PATH:+:}${PATH}"
+  - which g++
+  - which clang++
 install:
   - ./get_deps.sh
 script:
