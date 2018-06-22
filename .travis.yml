@@ -13,14 +13,9 @@ env:
     - REALM_SYNTHETIC_CORE_MAP=""
     - REALM_BACKTRACE=1
     - CC_FLAGS="-Wno-unused-command-line-argument"
-
-    # ccache flags
-    - CCACHE_NOHASHDIR=1
 install:
   - export CCACHE_BASEDIR=$PWD
   - ./get_deps.sh
 script:
   - ./build_all.sh
   - ./test_all.sh
-  - ccache -s
-cache: ccache
