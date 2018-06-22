@@ -12,8 +12,17 @@ env:
     - WARN_AS_ERROR=1
     - REALM_SYNTHETIC_CORE_MAP=""
     - REALM_BACKTRACE=1
+before_install:
+  # Setup ccache for GCC and Clang.
+  - mkdir $HOME/bin
+  - ln -s /usr/bin/ccache "$HOME/bin/gcc"
+  - ln -s /usr/bin/ccache "$HOME/bin/g++"
+  - ln -s /usr/bin/ccache "$HOME/bin/clang"
+  - ln -s /usr/bin/ccache "$HOME/bin/clang++"
+  - export PATH="$HOME/bin${PATH:+:}${PATH}"
 install:
   - ./get_deps.sh
 script:
   - ./build_all.sh
   - ./test_all.sh
+cache: ccache
