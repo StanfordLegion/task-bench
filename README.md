@@ -2,10 +2,10 @@
 
 ## Quickstart
 
-Download [Legion](legion.stanford.edu).
-
 ```
-cd task_bench/legion
-LG_RT_DIR=$HOME/legion/runtime make
-./task_bench -steps 9 -type dom
+git clone https://github.com/StanfordLegion/task-bench.git
+cd task-bench
+./get_deps.sh
+./build_all.sh
+./legion/task_bench -steps 9 -type dom
 ```
