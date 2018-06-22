@@ -13,6 +13,9 @@ env:
     - REALM_SYNTHETIC_CORE_MAP=""
     - REALM_BACKTRACE=1
     - CC_FLAGS="-Wno-unused-command-line-argument"
+
+    # ccache flags
+    - CCACHE_NOHASHDIR=1
 install:
   - ./get_deps.sh
 script:
