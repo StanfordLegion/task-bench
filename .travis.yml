@@ -6,10 +6,13 @@ os:
 compiler:
   - gcc
   - clang
+env:
+  global:
+    # Legion flags
+    - WARN_AS_ERROR=1
+    - REALM_SYNTHETIC_CORE_MAP=""
+    - REALM_BACKTRACE=1
 install:
-  - mkdir deps
-  - export LEGION_DIR=$PWD/deps/legion
-  - export LG_RT_DIR=$LEGION_DIR/runtime
-  - git clone https://gitlab.com/StanfordLegion/legion.git $LEGION_DIR
+  - ./get_deps.sh
 script:
-  - make -C legion
+  - ./build_all.sh
