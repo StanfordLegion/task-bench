@@ -14,7 +14,7 @@ env:
     - REALM_BACKTRACE=1
 before_install:
   # Setup ccache for GCC and Clang.
-  - mkdir $HOME/bin
+  - mkdir -p $HOME/bin
   - ln -s /usr/bin/ccache "$HOME/bin/gcc"
   - ln -s /usr/bin/ccache "$HOME/bin/g++"
   - ln -s /usr/bin/ccache "$HOME/bin/clang"
