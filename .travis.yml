@@ -9,7 +9,7 @@ compiler:
 env:
   global:
     # Legion flags
-    - WARN_AS_ERROR=1
+    # - WARN_AS_ERROR=1
     - REALM_SYNTHETIC_CORE_MAP=""
     - REALM_BACKTRACE=1
     - CC_FLAGS="-Wno-unused-command-line-argument"
