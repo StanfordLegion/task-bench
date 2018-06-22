@@ -16,3 +16,4 @@ install:
   - ./get_deps.sh
 script:
   - ./build_all.sh
+  - ./test_all.sh
