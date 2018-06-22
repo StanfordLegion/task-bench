@@ -17,6 +17,7 @@ env:
     # ccache flags
     - CCACHE_NOHASHDIR=1
 install:
+  - export CCACHE_BASEDIR=$PWD
   - ./get_deps.sh
 script:
   - ./build_all.sh
