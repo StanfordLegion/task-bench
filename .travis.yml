@@ -1,0 +1,14 @@
+language: cpp
+sudo: required
+dist: trusty
+os:
+  - linux
+compiler:
+  - gcc
+  - clang
+install:
+  - mkdir deps
+  - export LG_RT_DIR=$PWD/deps/legion
+  - git clone https://gitlab.com/StanfordLegion/legion.git $LG_RT_DIR
+script:
+  - make -C legion
