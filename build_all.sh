@@ -11,5 +11,6 @@ fi
 source deps/env.sh
 
 if [[ $USE_LEGION -eq 1 ]]; then
+    make -C legion clean
     make -C legion -j${THREADS:-4}
 fi
