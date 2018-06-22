@@ -18,4 +18,5 @@ install:
 script:
   - ./build_all.sh
   - ./test_all.sh
+  - ccache -s
 cache: ccache
