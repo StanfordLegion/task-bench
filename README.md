@@ -1,4 +1,4 @@
-# A Task Benchmark
+# A Task Benchmark [![Build Status](https://travis-ci.org/StanfordLegion/task-bench.svg?branch=master)](https://travis-ci.org/StanfordLegion/task-bench)
 
 ## Quickstart
 
