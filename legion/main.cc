@@ -19,6 +19,9 @@
 
 #include "core.h"
 
+//add by Yuankun
+#include <unistd.h> 
+
 using namespace Legion;
 
 enum TaskIDs {
@@ -45,6 +48,10 @@ void leaf(const Task *task,
 {
   printf("Leaf at point %lld\n",
          task->index_point[0]);
+
+  //add by Yuankun
+  // if(task->index_point[0]==1)
+  //   sleep(2);
 
   assert(task->arglen == sizeof(Kernel));
   Kernel kernel = *reinterpret_cast<Kernel *>(task->args);
@@ -92,18 +99,25 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     std::vector<LogicalPartitionT<1> >secondary_lps;
 
     long ndsets = g.max_dependence_sets();
+    printf("ndsets=%ld\n", ndsets);
+
     for (long dset = 0; dset < ndsets; ++dset) {
       IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, is);
 
       for (long point = 0; point < g.max_width; ++point) {
+        
+        printf("point=%ld\n", point);
+
         std::vector<std::pair<long, long> > deps = g.dependencies(dset, point);
 
         std::vector<IndexSpace> subspaces;
         for (auto dep : deps) {
-            printf("dep=%ld\n", dep);
+
+          printf("subspaces.push_back deps from %ld to %ld\n", dep.first, dep.second);
+
           for (long i = dep.first; i <= dep.second; ++i) {
             subspaces.push_back(runtime->get_index_subspace(ctx, primary_ip, i));
-              printf("i=%ld ",i); 
+            printf("i=%ld ", i); 
           }
           printf("\n");
         }
@@ -183,7 +197,9 @@ void top(const Task *task,
   LegionApp app(runtime, ctx);
 
   //warm up
-  app.execute_main_loop();
+  // app.execute_main_loop();
+  // Execution fence to wait for all prior operations to be done before getting our timing result
+  runtime->issue_execution_fence(ctx);
 
   printf("After warm up, Starting main simulation loop\n");
   bool simulation_success = true;
