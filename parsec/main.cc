@@ -175,13 +175,14 @@ ParsecApp::ParsecApp(int argc, char **argv)
   
   TaskGraph &graph = graphs[0];
   
-  N = graph.max_width;
-  M = N;
-  graph.timesteps = N;
+  iparam[IPARAM_N] = graph.max_width;
+  iparam[IPARAM_M] = graph.timesteps;
   
   /* Initialize PaRSEC */
   parsec = setup_parsec(argc, argv, iparam);
   PASTE_CODE_IPARAM_LOCALS(iparam);
+  
+  printf("N %d. M %d\n", N, M);
 
   LDA = max(LDA, max(M, K));
   LDB = max(LDB, max(K, N));
@@ -242,6 +243,9 @@ void ParsecApp::execute_main_loop()
 {
   
   display();
+  
+  printf("pid %d, M %d\n", getpid(), M);
+  //sleep(10);
   
   /* #### parsec context Starting #### */
   PASTE_CODE_FLOPS(FLOPS_DGEMM, ((DagDouble_t)M,(DagDouble_t)N,(DagDouble_t)K));
@@ -316,24 +320,33 @@ void ParsecApp::execute_timestep(long t)
   
   std::vector<parsec_dtd_tile_t*> args;
   
-  printf("ts %d, offset %d, width %d, offset+width-1 %d ", t, offset, width, offset+width-1);
+  printf("ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
-    std::pair<long, long> dep = deps[0];
-    assert(deps.size() == 1);
-    int num_args = dep.second - dep.first + 1;
-    printf("%d[%d, %d, %d] ", x, num_args, dep.first, dep.second);
+    int num_args;
     
-    if (t == 0) {
+    if (deps.size() == 0) {
       num_args = 1;
+      printf("%d[%d] ", x, num_args);
       args.clear();
       args.push_back(TILE_OF(C, t, x)); 
     } else {
-      num_args ++;
-      args.clear();
-      args.push_back(TILE_OF(C, t, x));
-      for (int i = dep.first; i <= dep.second; i++) {
-        args.push_back(TILE_OF(C, t-1, i));  
+      std::pair<long, long> dep = deps[0];
+      assert(deps.size() == 1);
+      num_args = dep.second - dep.first + 1;
+      printf("%d[%d, %d, %d] ", x, num_args, dep.first, dep.second);
+      
+      if (t == 0) {
+        num_args = 1;
+        args.clear();
+        args.push_back(TILE_OF(C, t, x)); 
+      } else {
+        num_args ++;
+        args.clear();
+        args.push_back(TILE_OF(C, t, x));
+        for (int i = dep.first; i <= dep.second; i++) {
+          args.push_back(TILE_OF(C, t-1, i));  
+        }
       }
     }
     insert_task(num_args, t, x, args); 
@@ -343,9 +356,10 @@ void ParsecApp::execute_timestep(long t)
 
 int main(int argc, char ** argv)
 {
-    
-    ParsecApp app(argc, argv);
-    app.execute_main_loop();
+  printf("pid %d\n", getpid());
+ // sleep(10);
+  ParsecApp app(argc, argv);
+  app.execute_main_loop();
 
-    return 0;
+  return 0;
 }
