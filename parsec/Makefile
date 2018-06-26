@@ -1,6 +1,6 @@
 CC         = g++
 
-CFLAGS     = -g -O0 -g3 -std=c++11 -D_GNU_SOURCE -Wsubobject-linkage -Wwrite-strings
+CFLAGS     = -g -O0 -g3 -std=c++11 -D_GNU_SOURCE -Wsubobject-linkage
 LDFLAGS    = -m64 -std=c++11 -Wall  -g -O0 -g3 -D_GNU_SOURCE -Wsubobject-linkage -Wwrite-strings
 
 PARSEC_DIR = /home/wwu12/parsec-master/install

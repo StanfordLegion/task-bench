@@ -32,7 +32,7 @@
 extern "C" {
 #endif
 
-char *PARSEC_SCHED_NAME[] = {
+const char *PARSEC_SCHED_NAME[] = {
     "", /* default */
     "lfq",
     "ltq",
@@ -298,7 +298,7 @@ static void parse_arguments(int *_argc, char*** _argv, int* iparam)
                             optarg);
                     iparam[IPARAM_SCHEDULER] = PARSEC_SCHEDULER_LFQ;
                 }
-                parsec_setenv_mca_param( "mca_sched", PARSEC_SCHED_NAME[iparam[IPARAM_SCHEDULER]], &environ );
+                parsec_setenv_mca_param( (char *)"mca_sched", (char *)PARSEC_SCHED_NAME[iparam[IPARAM_SCHEDULER]], &environ );
                 break;
 
             case 'g':
@@ -310,7 +310,7 @@ static void parse_arguments(int *_argc, char*** _argv, int* iparam)
                 else        iparam[IPARAM_NGPUS] = INT_MAX;
 
                 rc = asprintf(&value, "%d", iparam[IPARAM_NGPUS]);
-                parsec_setenv_mca_param( "device_cuda_enabled", value, &environ );
+                parsec_setenv_mca_param( (char *)"device_cuda_enabled", value, &environ );
                 free(value);
                 break;
 
@@ -426,10 +426,10 @@ static void parse_arguments(int *_argc, char*** _argv, int* iparam)
     if(iparam[IPARAM_NGPUS] < 0) iparam[IPARAM_NGPUS] = 0;
     if(iparam[IPARAM_NGPUS] > 0) {
         if (iparam[IPARAM_VERBOSE] > 3) {
-            parsec_setenv_mca_param( "device_show_capabilities", "1", &environ );
+            parsec_setenv_mca_param( (char *)"device_show_capabilities", (char *)"1", &environ );
         }
         if (iparam[IPARAM_VERBOSE] > 2) {
-            parsec_setenv_mca_param( "device_show_statistics", "1", &environ );
+            parsec_setenv_mca_param( (char *)"device_show_statistics", (char *)"1", &environ );
         }
     }
 

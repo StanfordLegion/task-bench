@@ -31,10 +31,8 @@ extern "C" {
 /* timings */
 #include "common_timing.h"
 
-#include "flops.h"
-
 /* these are globals in common.c */
-extern char *PARSEC_SCHED_NAME[];
+extern const char *PARSEC_SCHED_NAME[];
 extern int unix_timestamp;
 extern char cwd[];
 

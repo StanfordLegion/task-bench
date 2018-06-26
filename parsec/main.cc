@@ -244,7 +244,6 @@ void ParsecApp::execute_main_loop()
   //sleep(10);
   
   /* #### parsec context Starting #### */
-  PASTE_CODE_FLOPS(FLOPS_DGEMM, ((DagDouble_t)M,(DagDouble_t)N,(DagDouble_t)K));
   SYNC_TIME_START();
   /* start parsec context */
   parsec_context_start(parsec);
@@ -301,9 +300,8 @@ void ParsecApp::execute_main_loop()
 
   /* #### PaRSEC context is done #### */
 
-  SYNC_TIME_PRINT(rank, ("\tPxQ= %3d %-3d NB= %4d N= %7d : %14f gflops\n",
-                         P, Q, NB, N,
-                         gflops=(flops/1e9)/sync_time_elapsed));
+  SYNC_TIME_PRINT(rank, ("\tPxQ= %3d %-3d NB= %4d N= %7d M= %7d\n",
+                         P, Q, NB, N, M));
 
 }
 
