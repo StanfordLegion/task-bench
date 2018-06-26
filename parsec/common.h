@@ -86,8 +86,6 @@ enum iparam_t {
 #define PARSEC_SCHEDULER_IP  7
 #define PARSEC_SCHEDULER_RND 8
 
-void iparam_default_facto(int* iparam);
-void iparam_default_solve(int* iparam);
 void iparam_default_gemm(int* iparam);
 void iparam_default_ibnbmb(int* iparam, int ib, int nb, int mb);
 

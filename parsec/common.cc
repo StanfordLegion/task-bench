@@ -578,26 +578,6 @@ void iparam_default_ibnbmb(int* iparam, int ib, int nb, int mb)
     iparam[IPARAM_MB] = -mb;
 }
 
-
-void iparam_default_facto(int* iparam)
-{
-    iparam_default(iparam);
-    iparam[IPARAM_K] = 1;
-    iparam[IPARAM_LDA] = -'m';
-    iparam[IPARAM_LDB] = 0;
-    iparam[IPARAM_LDC] = 0;
-}
-
-void iparam_default_solve(int* iparam)
-{
-    iparam_default(iparam);
-    iparam[IPARAM_K] = 1;
-    iparam[IPARAM_LDA] = -'m';
-    iparam[IPARAM_LDB] = -'n';
-    iparam[IPARAM_LDC] = 0;
-    iparam[IPARAM_M] = -'n';
-}
-
 void iparam_default_gemm(int* iparam)
 {
     iparam_default(iparam);

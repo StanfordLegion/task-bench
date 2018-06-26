@@ -11,8 +11,7 @@ enum regions {
   TILE_FULL,
 };
 
-static int
-test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
     int i, j;
@@ -26,8 +25,7 @@ test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
     return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int
-test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static int test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
     int i, j;
@@ -41,8 +39,7 @@ test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
     return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int
-test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
     int i, j;
@@ -56,8 +53,7 @@ test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
     return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int
-test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static int test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
     int i, j;
@@ -75,7 +71,7 @@ struct ParsecApp : public App {
   ParsecApp(int argc, char **argv);
   ~ParsecApp();
   void execute_main_loop();
-  void execute_timestep(long t);
+  void execute_timestep(size_t idx, long t);
 private:
   void insert_task(int num_args, int i, int j, std::vector<parsec_dtd_tile_t*> &args);
 private:
@@ -257,7 +253,7 @@ void ParsecApp::execute_main_loop()
   int x, y;
   
   for (y = 0; y < M; y++) {
-    execute_timestep(y);
+    execute_timestep(0, y);
   }
   /*
   printf("start insert task\n");
@@ -311,9 +307,9 @@ void ParsecApp::execute_main_loop()
 
 }
 
-void ParsecApp::execute_timestep(long t)
+void ParsecApp::execute_timestep(size_t idx, long t)
 {
-  const TaskGraph &g = graphs[0];
+  const TaskGraph &g = graphs[idx];
   long offset = g.offset_at_timestep(t);
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
@@ -323,33 +319,30 @@ void ParsecApp::execute_timestep(long t)
   printf("ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
-    int num_args;
+    int num_args;    
     
     if (deps.size() == 0) {
       num_args = 1;
       printf("%d[%d] ", x, num_args);
-      args.clear();
       args.push_back(TILE_OF(C, t, x)); 
     } else {
-      std::pair<long, long> dep = deps[0];
-      assert(deps.size() == 1);
-      num_args = dep.second - dep.first + 1;
-      printf("%d[%d, %d, %d] ", x, num_args, dep.first, dep.second);
-      
       if (t == 0) {
         num_args = 1;
-        args.clear();
         args.push_back(TILE_OF(C, t, x)); 
       } else {
-        num_args ++;
-        args.clear();
-        args.push_back(TILE_OF(C, t, x));
-        for (int i = dep.first; i <= dep.second; i++) {
-          args.push_back(TILE_OF(C, t-1, i));  
+        num_args = 1;
+        for (std::pair<long, long> dep : deps) {
+          num_args += dep.second - dep.first + 1;
+          printf("%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          args.push_back(TILE_OF(C, t, x));
+          for (int i = dep.first; i <= dep.second; i++) {
+            args.push_back(TILE_OF(C, t-1, i));  
+          }
         }
       }
     }
     insert_task(num_args, t, x, args); 
+    args.clear();
   }
   printf("\n");
 }
