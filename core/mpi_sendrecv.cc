@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include "core.h"
 #define  MASTER 0
-#define NUM_IN_TREE 10
 #define NUM_ITERATIONS 3
 
 int main (int argc, char *argv[])
