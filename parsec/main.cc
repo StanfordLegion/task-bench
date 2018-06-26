@@ -72,6 +72,7 @@ struct ParsecApp : public App {
   ~ParsecApp();
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
+  void debug_printf(int verbose_level, const char *format, ...);
 private:
   void insert_task(int num_args, int i, int j, std::vector<parsec_dtd_tile_t*> &args);
 private:
@@ -157,9 +158,7 @@ void ParsecApp::insert_task(int num_args, int i, int j, std::vector<parsec_dtd_t
 
 ParsecApp::ParsecApp(int argc, char **argv)
   : App(argc, argv)
-{
-  printf("init parsec\n");
-  
+{ 
   int Cseed = 0;
 
   /* Set defaults for non argv iparams */
@@ -177,8 +176,8 @@ ParsecApp::ParsecApp(int argc, char **argv)
   /* Initialize PaRSEC */
   parsec = setup_parsec(argc, argv, iparam);
   PASTE_CODE_IPARAM_LOCALS(iparam);
-  
-  printf("N %d. M %d\n", N, M);
+
+  debug_printf(0, "init parsec\n");
 
   LDA = max(LDA, max(M, K));
   LDB = max(LDB, max(K, N));
@@ -218,7 +217,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
 
 ParsecApp::~ParsecApp()
 {
-  printf("clean up parsec\n");
+  debug_printf(0, "clean up parsec\n");
   /* Cleaning up the parsec handle */
   parsec_taskpool_free( dtd_tp );
 
@@ -240,7 +239,7 @@ void ParsecApp::execute_main_loop()
   
   display();
   
-  printf("pid %d, M %d\n", getpid(), M);
+  debug_printf(0, "rank %d, pid %d, M %d, N %d\n", rank, getpid(), M, N);
   //sleep(10);
   
   /* #### parsec context Starting #### */
@@ -254,41 +253,6 @@ void ParsecApp::execute_main_loop()
   for (y = 0; y < M; y++) {
     execute_timestep(0, y);
   }
-  /*
-  printf("start insert task\n");
-  std::vector<parsec_dtd_tile_t*> args;
-  int num_args = 0;
-  for (i = 0; i < M; i++) {
-      for (j = 0; j < N; j++ ) {
-          if (i == 0) {
-            args.clear();
-            num_args = 1;
-            args.push_back(TILE_OF(C, 0, j));
-          } else if (i != 0 && j == 0) {
-            num_args = 3;
-            args.clear();
-            args.push_back(TILE_OF(C, i, j));
-            args.push_back(TILE_OF(C, i-1, 0));
-            args.push_back(TILE_OF(C, i-1, 1));
-          } else if (i != 0 && j == (N-1)) {
-            num_args = 3;
-            args.clear();
-            args.push_back(TILE_OF(C, i, j));
-            args.push_back(TILE_OF(C, i-1, N-2));
-            args.push_back(TILE_OF(C, i-1, N-1));
-          } else {
-            num_args = 4;
-            args.clear();
-            args.push_back(TILE_OF(C, i, j));
-            args.push_back(TILE_OF(C, i-1, j-1));
-            args.push_back(TILE_OF(C, i-1, j));
-            args.push_back(TILE_OF(C, i-1, j+1));
-          }
-          insert_task(num_args, i, j, args);
-          
-      }
-  }*/
-  
 
   parsec_dtd_data_flush_all( dtd_tp, (parsec_data_collection_t *)&dcC );
 
@@ -314,14 +278,14 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   
   std::vector<parsec_dtd_tile_t*> args;
   
-  printf("ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
+  debug_printf(0, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args;    
     
     if (deps.size() == 0) {
       num_args = 1;
-      printf("%d[%d] ", x, num_args);
+      debug_printf(0, "%d[%d] ", x, num_args);
       args.push_back(TILE_OF(C, t, x)); 
     } else {
       if (t == 0) {
@@ -331,7 +295,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
         num_args = 1;
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
-          printf("%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          debug_printf(0, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
           args.push_back(TILE_OF(C, t, x));
           for (int i = dep.first; i <= dep.second; i++) {
             args.push_back(TILE_OF(C, t-1, i));  
@@ -342,7 +306,17 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     insert_task(num_args, t, x, args); 
     args.clear();
   }
-  printf("\n");
+  debug_printf(0, "\n");
+}
+
+void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
+{
+  if (rank == 0) {
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+  }
 }
 
 int main(int argc, char ** argv)
