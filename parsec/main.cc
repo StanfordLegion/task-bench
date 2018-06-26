@@ -1,5 +1,7 @@
 #include "core.h"
+#include "timer.h"
 #include "common.h"
+#include <stdarg.h>
 #include <dplasmatypes.h>
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <interfaces/superscalar/insert_function.h>
@@ -244,6 +246,7 @@ void ParsecApp::execute_main_loop()
   
   /* #### parsec context Starting #### */
   SYNC_TIME_START();
+  double t_s = Timer::time_start();
   /* start parsec context */
   parsec_context_start(parsec);
   int i, j;
@@ -264,6 +267,8 @@ void ParsecApp::execute_main_loop()
 
   /* #### PaRSEC context is done #### */
 
+  double t_e = Timer::time_end();
+  debug_printf(0, "time %f\n", t_e);
   SYNC_TIME_PRINT(rank, ("\tPxQ= %3d %-3d NB= %4d N= %7d M= %7d\n",
                          P, Q, NB, N, M));
 
