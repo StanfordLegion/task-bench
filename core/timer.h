@@ -67,6 +67,27 @@ public:
 
 using RUNTIME_TIMER_POLICY = MPITimer;
 
+#elif defined(LEGION_TIMING)
+
+#include "legion.h"
+
+struct LegionTimer {
+public:  
+  static inline double get_cur_time()
+  {
+    printf("legion time\n");
+    Future f = runtime->get_current_time_in_microseconds(ctx);
+    return f.get_result<long long>();
+  }
+  
+  static inline void fence() 
+  {
+    runtime->issue_execution_fence(ctx);
+  }
+};
+
+using RUNTIME_TIMER_POLICY = LegionTimer;
+
 #else
 
 #include <sys/time.h>
