@@ -1,0 +1,21 @@
+language: cpp
+sudo: required
+dist: trusty
+os:
+  - linux
+compiler:
+  - gcc
+  - clang
+env:
+  global:
+    # Legion flags
+    # - WARN_AS_ERROR=1
+    - REALM_SYNTHETIC_CORE_MAP=""
+    - REALM_BACKTRACE=1
+    - CC_FLAGS="-Wno-unused-command-line-argument"
+install:
+  - export CCACHE_BASEDIR=$PWD
+  - ./get_deps.sh
+script:
+  - ./build_all.sh
+  - ./test_all.sh
