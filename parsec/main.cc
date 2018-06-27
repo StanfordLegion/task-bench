@@ -1,11 +1,17 @@
-#include "core.h"
-#include "timer.h"
-#include "common.h"
 #include <stdarg.h>
+
+#include "core.h"
+#include "common.h"
+#include <parsec/execution_stream.h>
 #include <dplasmatypes.h>
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <interfaces/superscalar/insert_function.h>
 
+/* timings */
+#if defined( PARSEC_HAVE_MPI)
+#define MPI_TIMING
+#endif
+#include "timer.h"
 
 #define MAX_ARGS  4
 
@@ -22,7 +28,7 @@ static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
     parsec_dtd_unpack_args(this_task, &i, &j, &data1);
     
     *data1 = 0.0;
-    printf("i %d, j %d, data1 %f\n", i, j, *data1);
+    printf("\nRank %d, core %d, i %d, j %d, data1 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data1);
 
     return PARSEC_HOOK_RETURN_DONE;
 }
@@ -34,9 +40,9 @@ static int test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
     double *data1, *data2;
 
     parsec_dtd_unpack_args(this_task, &i, &j, &data1, &data2);
-    
+    //sleep(5);
     *data2 = *data1 + 1.0;
-    printf("i %d, j %d, data2 %f\n", i, j, *data2);
+    printf("\nRank %d, core %d, i %d, j %d, data2 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data2);
 
     return PARSEC_HOOK_RETURN_DONE;
 }
@@ -50,7 +56,7 @@ static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
     parsec_dtd_unpack_args(this_task, &i, &j, &data1, &data2, &data3);
     
     *data3 = *data1 + *data2 + 1.0;
-    printf("i %d, j %d, data3 %f\n", i, j, *data3);
+    printf("\nRank %d, core %d, i %d, j %d, data3 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data3);
 
     return PARSEC_HOOK_RETURN_DONE;
 }
@@ -64,7 +70,7 @@ static int test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
     parsec_dtd_unpack_args(this_task, &i, &j, &data1, &data2, &data3, &data4);
     
     *data4 = *data1 + *data2 + *data3 + 1.0;
-    printf("i %d, j %d, data4 %f\n", i, j, *data4);
+    printf("\nRank %d, core %d, i %d, j %d, data4 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data4);
 
     return PARSEC_HOOK_RETURN_DONE;
 }
@@ -106,13 +112,8 @@ private:
   int NT;
   int KT;
   int check;
-  int check_inv;
   int loud;
   int scheduler;
-  int random_seed;
-  int matrix_init;
-  int butterfly_level;
-  int async;
   int iparam[IPARAM_SIZEOF];
 };
 
@@ -171,12 +172,16 @@ ParsecApp::ParsecApp(int argc, char **argv)
 #endif
   
   TaskGraph &graph = graphs[0];
-  
   iparam[IPARAM_N] = graph.max_width;
   iparam[IPARAM_M] = graph.timesteps;
   
   /* Initialize PaRSEC */
   parsec = setup_parsec(argc, argv, iparam);
+  
+  iparam[IPARAM_N] = graph.max_width * iparam[IPARAM_MB];
+  iparam[IPARAM_M] = graph.timesteps * iparam[IPARAM_MB];
+  
+  
   PASTE_CODE_IPARAM_LOCALS(iparam);
 
   debug_printf(0, "init parsec\n");
@@ -211,7 +216,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
                           parsec_datatype_double_t, dcC.super.mb );
 
   /* matrix generation */
-  dplasma_dplrnt( parsec, 0, (parsec_tiled_matrix_dc_t *)&dcC, Cseed);
+ // dplasma_dplrnt( parsec, 0, (parsec_tiled_matrix_dc_t *)&dcC, Cseed);
 
 
   parsec_context_add_taskpool( parsec, dtd_tp );
@@ -220,6 +225,9 @@ ParsecApp::ParsecApp(int argc, char **argv)
 ParsecApp::~ParsecApp()
 {
   debug_printf(0, "clean up parsec\n");
+  
+  /* #### PaRSEC context is done #### */
+  
   /* Cleaning up the parsec handle */
   parsec_taskpool_free( dtd_tp );
 
@@ -245,15 +253,16 @@ void ParsecApp::execute_main_loop()
   //sleep(10);
   
   /* #### parsec context Starting #### */
-  SYNC_TIME_START();
-  double t_s = Timer::time_start();
+  Timer::sync_time_start();
   /* start parsec context */
   parsec_context_start(parsec);
   int i, j;
   
   int x, y;
   
-  for (y = 0; y < M; y++) {
+  const TaskGraph &g = graphs[0];
+  
+  for (y = 0; y < g.timesteps; y++) {
     execute_timestep(0, y);
   }
 
@@ -264,14 +273,9 @@ void ParsecApp::execute_main_loop()
 
   /* Waiting on all handle and turning everything off for this context */
   parsec_context_wait( parsec );
-
-  /* #### PaRSEC context is done #### */
-
-  double t_e = Timer::time_end();
-  debug_printf(0, "time %f\n", t_e);
-  SYNC_TIME_PRINT(rank, ("\tPxQ= %3d %-3d NB= %4d N= %7d M= %7d\n",
-                         P, Q, NB, N, M));
-
+  
+  double t_elapsed = Timer::sync_time_end();
+  debug_printf(0, "[****] TIME(s) %12.5f : \tPxQ= %3d %-3d NB= %4d N= %7d M= %7d\n", t_elapsed, P, Q, NB, N, M);
 }
 
 void ParsecApp::execute_timestep(size_t idx, long t)
