@@ -28,10 +28,6 @@
 #include "parsec/devices/cuda/dev_cuda.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 const char *PARSEC_SCHED_NAME[] = {
     "", /* default */
     "lfq",
@@ -50,22 +46,6 @@ const char *PARSEC_SCHED_NAME[] = {
 #if defined(PARSEC_HAVE_MPI)
 MPI_Datatype SYNCHRO = MPI_BYTE;
 #endif  /* PARSEC_HAVE_MPI */
-
-const int   side[2]  = { PlasmaLeft,    PlasmaRight };
-const int   uplo[2]  = { PlasmaUpper,   PlasmaLower };
-const int   diag[2]  = { PlasmaNonUnit, PlasmaUnit  };
-const int   trans[3] = { PlasmaNoTrans, PlasmaTrans, PlasmaConjTrans };
-const int   norms[4] = { PlasmaMaxNorm, PlasmaOneNorm, PlasmaInfNorm, PlasmaFrobeniusNorm };
-
-const char *sidestr[2]  = { "Left ", "Right" };
-const char *uplostr[2]  = { "Upper", "Lower" };
-const char *diagstr[2]  = { "NonUnit", "Unit   " };
-const char *transstr[3] = { "N", "T", "H" };
-const char *normsstr[4] = { "Max", "One", "Inf", "Fro" };
-
-double time_elapsed = 0.0;
-double sync_time_elapsed = 0.0;
-double alpha = 1.;
 
 /**********************************
  * Command line arguments
@@ -93,24 +73,6 @@ void print_usage(void)
             " -S --SNB          : columns of tiles in a supertile (default: 1)\n"
             " -z --HNB --HMB    : Inner NB/MB used for recursive algorithms (default: MB)\n"
             " -x --check        : verify the results\n"
-            " -X --check_inv    : verify the results against the inverse\n"
-            " -b --sync         : call the step by step version of the algorithm if exists\n"
-            "\n"
-            "    --qr_a         : Size of TS domain. (specific to xgeqrf_param)\n"
-            "    --qr_p         : Size of the high level tree. (specific to xgeqrf_param)\n"
-            " -d --domino       : Enable/Disable the domino between upper and lower trees. (specific to xgeqrf_param) (default: 1)\n"
-            " -r --tsrr         : Enable/Disable the round-robin on TS domain. (specific to xgeqrf_param) (default: Disabled)\n"
-            "    --treel        : Tree used for low level reduction inside nodes. (specific to xgeqrf_param)\n"
-            "    --treeh        : Tree used for high level reduction between nodes, only if qr_p > 1. (specific to xgeqrf_param)\n"
-            "                      (0: Flat, 1: Greedy, 2: Fibonacci, 3: Binary)\n"
-            "\n"
-            "    --criteria     : Choice of the criteria to switch between LU and QR\n"
-            "                      (0: Alternate, 1: Higham, 2: MUMPS (specific to xgetrf_qrf)\n"
-            " -a --alpha        : Threshold to swith back to QR. (specific to xgetrf_qrf)\n"
-            "    --seed         : Set the seed for pseudo-random generator\n"
-            " -m --mtx          : Set the matrix generator (Default: 0, random)\n"
-            "\n"
-            " -y --butlvl       : Level of the Butterfly (starting from 0).\n"
             "\n"
             " -v --verbose      : extra verbose output\n"
             " -h --help         : this message\n"
@@ -162,7 +124,7 @@ void print_usage(void)
             parsec_usage();
 }
 
-#define GETOPT_STRING "bc:o:g::p:P:q:Q:N:M:K:A:B:C:i:t:T:s:S:xXv::hd:ry:V:a:R:m:"
+#define GETOPT_STRING "bc:o:g::p:P:q:Q:N:M:K:A:B:C:i:t:T:s:S:xv::hd:V:"
 
 #if defined(PARSEC_HAVE_GETOPT_LONG)
 static struct option long_options[] =
@@ -209,36 +171,11 @@ static struct option long_options[] =
     {"S",           required_argument,  0, 'S'},
     {"check",       no_argument,        0, 'x'},
     {"x",           no_argument,        0, 'x'},
-    {"check_inv",   no_argument,        0, 'X'},
-    {"X",           no_argument,        0, 'X'},
-
-    {"sync",        no_argument,        0, 'b'},
-    {"b",           no_argument,        0, 'b'},
-
-    /* HQR options */
-    {"qr_a",        required_argument,  0, '0'},
-    {"qr_p",        required_argument,  0, '1'},
-    {"d",           required_argument,  0, 'd'},
-    {"domino",      required_argument,  0, 'd'},
-    {"r",           no_argument,        0, 'r'},
-    {"tsrr",        no_argument,        0, 'r'},
-    {"treel",       required_argument,  0, 'l'},
-    {"treeh",       required_argument,  0, 'L'},
-
-    /* LU-QR options */
-    {"criteria",    required_argument,  0, '1'},
-    {"alpha",       required_argument,  0, 'a'},
-    {"seed",        required_argument,  0, 'R'},
-    {"mtx",         required_argument,  0, 'm'},
 
     /* Recursive options */
     {"z",           required_argument,  0, 'z'},
     {"HNB",         required_argument,  0, 'z'},
     {"HMB",         required_argument,  0, 'z'},
-
-    /* HERBT options */
-    {"butlvl",      required_argument,  0, 'y'},
-    {"y",           required_argument,  0, 'y'},
 
     /* Auxiliary options */
     {"verbose",     optional_argument,  0, 'v'},
@@ -258,10 +195,6 @@ static void parse_arguments(int *_argc, char*** _argv, int* iparam)
     char **argv = *_argv;
     char *add_dot = NULL;
     char *value;
-
-    /* Default seed */
-    iparam[IPARAM_RANDOM_SEED] = 3872;
-    iparam[IPARAM_MATRIX_INIT] = PlasmaMatrixRandom;
 
     do {
 #if defined(PARSEC_HAVE_GETOPT_LONG)
@@ -329,30 +262,7 @@ static void parse_arguments(int *_argc, char*** _argv, int* iparam)
             case 's': iparam[IPARAM_SMB] = atoi(optarg); break;
             case 'S': iparam[IPARAM_SNB] = atoi(optarg); break;
 
-            case 'X': iparam[IPARAM_CHECKINV] = 1;
-                      /* Fall through */
             case 'x': iparam[IPARAM_CHECK] = 1; iparam[IPARAM_VERBOSE] = max(2, iparam[IPARAM_VERBOSE]); break;
-
-            case 'b': iparam[IPARAM_ASYNC] = 0; break;
-
-                /* HQR parameters */
-            case '0': iparam[IPARAM_QR_TS_SZE]    = atoi(optarg); break;
-            case '1': iparam[IPARAM_QR_HLVL_SZE]  = atoi(optarg); break;
-
-            case 'R': iparam[IPARAM_RANDOM_SEED]  = atoi(optarg); break;
-            case 'm': iparam[IPARAM_MATRIX_INIT]  = atoi(optarg); break;
-
-            case 'd': iparam[IPARAM_QR_DOMINO]    = atoi(optarg) ? 1 : 0; break;
-            case 'r': iparam[IPARAM_QR_TSRR]      = 1; break;
-
-            case 'l': iparam[IPARAM_LOWLVL_TREE]  = atoi(optarg); break;
-            case 'L': iparam[IPARAM_HIGHLVL_TREE] = atoi(optarg); break;
-
-                /* GETRF/QRF parameters */
-            case 'a': alpha = atof(optarg); break;
-
-                /* Butterfly parameters */
-            case 'y': iparam[IPARAM_BUT_LEVEL] = atoi(optarg); break;
 
                 /* Recursive parameters */
             case 'z': iparam[IPARAM_HNB] = iparam[IPARAM_HMB] = atoi(optarg); break;
@@ -455,18 +365,7 @@ static void parse_arguments(int *_argc, char*** _argv, int* iparam)
         fprintf(stderr, "#!!!!! the process grid PxQ (%dx%d) is smaller than the number of nodes (%d). Some nodes are idling!\n", iparam[IPARAM_P], iparam[IPARAM_Q], iparam[IPARAM_NNODES]);
     }
 
-    /* Set matrices dimensions to default values if not provided */
-    /* Search for N as a bare number if not provided by -N */
-    while(0 == iparam[IPARAM_N])
-    {
-        if(optind < argc)
-        {
-            iparam[IPARAM_N] = atoi(argv[optind++]);
-            continue;
-        }
-        fprintf(stderr, "#XXXXX the matrix size (N) is not set!\n");
-        exit(2);
-    }
+    assert(iparam[IPARAM_N] != 0);
     if(0 == iparam[IPARAM_M]) iparam[IPARAM_M] = iparam[IPARAM_N];
     if(0 == iparam[IPARAM_K]) iparam[IPARAM_K] = iparam[IPARAM_N];
 
@@ -497,10 +396,6 @@ static void parse_arguments(int *_argc, char*** _argv, int* iparam)
     if(0 == iparam[IPARAM_SNB]) iparam[IPARAM_SNB] = 1;
     if(0 == iparam[IPARAM_HMB]) iparam[IPARAM_HMB] = iparam[IPARAM_MB];
     if(0 == iparam[IPARAM_HNB]) iparam[IPARAM_HNB] = iparam[IPARAM_NB];
-
-    /* HQR */
-    if(-'P' == iparam[IPARAM_QR_HLVL_SZE]) iparam[IPARAM_QR_HLVL_SZE] = iparam[IPARAM_P];
-    if(-'Q' == iparam[IPARAM_QR_HLVL_SZE]) iparam[IPARAM_QR_HLVL_SZE] = iparam[IPARAM_Q];
 
     (void)rc;
 }
@@ -562,13 +457,6 @@ static void iparam_default(int* iparam)
     memset(iparam, 0, IPARAM_SIZEOF * sizeof(int));
     iparam[IPARAM_NNODES] = 1;
     iparam[IPARAM_NGPUS]  = -1;
-    iparam[IPARAM_ASYNC]  = 1;
-    iparam[IPARAM_QR_DOMINO]    = -1;
-    iparam[IPARAM_QR_TSRR]      = 0;
-    iparam[IPARAM_LOWLVL_TREE]  = DPLASMA_GREEDY_TREE;
-    iparam[IPARAM_HIGHLVL_TREE] = -1;
-    iparam[IPARAM_QR_TS_SZE]    = -1;
-    iparam[IPARAM_QR_HLVL_SZE]  = -'P';
 }
 
 void iparam_default_ibnbmb(int* iparam, int ib, int nb, int mb)
@@ -616,8 +504,6 @@ parsec_context_t* setup_parsec(int argc, char **argv, int *iparam)
     int verbose = iparam[IPARAM_VERBOSE];
     if(iparam[IPARAM_RANK] > 0 && verbose < 4) verbose = 0;
 
-    TIME_START();
-
     /* Once we got out arguments, we should pass whatever is left down */
     int parsec_argc, idx;
     char** parsec_argv = (char**)calloc(argc, sizeof(char*));
@@ -650,7 +536,6 @@ parsec_context_t* setup_parsec(int argc, char **argv, int *iparam)
     }
     print_arguments(iparam);
 
-    if(verbose > 2) TIME_PRINT(iparam[IPARAM_RANK], ("PaRSEC initialized\n"));
     return ctx;
 }
 
@@ -663,7 +548,3 @@ void cleanup_parsec(parsec_context_t* parsec, int *iparam)
 #endif
     (void)iparam;
 }
-
-#ifdef __cplusplus
-}
-#endif

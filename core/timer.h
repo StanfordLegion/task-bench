@@ -14,35 +14,27 @@ public:
   
   static inline double time_start()
   {
-    do {
-      time_elapsed = get_cur_time();
-    } while(0);
+    time_elapsed = get_cur_time();
     return time_elapsed;
   }
   
   static inline double time_end()
   {
-    do {
-      time_elapsed = get_cur_time() - time_elapsed;
-    } while(0);
+    time_elapsed = get_cur_time() - time_elapsed;
     return time_elapsed;
   }
   
   static inline double sync_time_start()
   {
-    do {
-      TIMER_POLICY::fence();
-      sync_time_elapsed = get_cur_time();
-    } while(0);
+    TIMER_POLICY::fence();
+    sync_time_elapsed = get_cur_time();
     return sync_time_elapsed;
   }
   
   static inline double sync_time_end()
   {
-    do {
-      TIMER_POLICY::fence();
-      sync_time_elapsed = get_cur_time() - time_elapsed;
-    } while(0);
+    TIMER_POLICY::fence();
+    sync_time_elapsed = get_cur_time() - sync_time_elapsed;
     return sync_time_elapsed;
   }
 };

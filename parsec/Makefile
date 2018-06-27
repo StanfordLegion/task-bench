@@ -1,6 +1,6 @@
 CC         = g++
 
-CFLAGS     = -g -O0 -g3 -std=c++11 -D_GNU_SOURCE -Wsubobject-linkage -DMPI_TIMING
+CFLAGS     = -g -O0 -g3 -std=c++11 -D_GNU_SOURCE -Wsubobject-linkage
 LDFLAGS    = -m64 -std=c++11 -Wall  -g -O0 -g3 -D_GNU_SOURCE -Wsubobject-linkage -Wwrite-strings
 
 PARSEC_DIR = /home/wwu12/parsec-master/install
@@ -29,7 +29,7 @@ all: $(TARGET)
 core.o: ../core/core.cc ../core/core.h
 	$(CC) -c $(CFLAGS) $<
 
-common.o: common.cc common.h common_timing.h flops.h
+common.o: common.cc common.h
 	$(CC) -c $(CFLAGS) $<
 
 main.o: main.cc ../core/timer.h
