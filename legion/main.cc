@@ -99,14 +99,16 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     std::vector<LogicalPartitionT<1> >secondary_lps;
 
     long ndsets = g.max_dependence_sets();
-    printf("ndsets=%ld\n", ndsets);
+    printf("max_dependence_sets ndsets=%ld\n", ndsets);
 
     for (long dset = 0; dset < ndsets; ++dset) {
       IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, is);
 
+      printf("\n1st-For: dest=%ld, ndsets=%ld\n", dset, ndsets);
+
       for (long point = 0; point < g.max_width; ++point) {
         
-        printf("point=%ld\n", point);
+        printf("\n2nd-For: point=%ld，max_width=%ld\n", point，g.max_width);
 
         std::vector<std::pair<long, long> > deps = g.dependencies(dset, point);
 
@@ -201,7 +203,7 @@ void top(const Task *task,
   // Execution fence to wait for all prior operations to be done before getting our timing result
   runtime->issue_execution_fence(ctx);
 
-  printf("After warm up, Starting main simulation loop\n");
+  printf("\nAfter warm up, Starting main simulation loop\n");
   bool simulation_success = true;
   Future f_start = runtime->get_current_time_in_microseconds(ctx);
   double ts_start = f_start.get_result<long long>();
