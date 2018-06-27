@@ -21,6 +21,7 @@
 
 //add by Yuankun
 #include <unistd.h> 
+#include "timer.h"
 
 using namespace Legion;
 
@@ -208,8 +209,7 @@ void top(const Task *task,
   // Future f_start = runtime->get_current_time_in_microseconds(ctx);
   // double ts_start = f_start.get_result<long long>();
 
-  SYNC_TIME_START();
-  double t_s = Timer::time_start();
+  Timer::sync_time_start();
 
   app.execute_main_loop();
 
@@ -226,7 +226,8 @@ void top(const Task *task,
   //   printf("ELAPSED TIME = %7.3f s\n", sim_time);
   // }
 
-  double t_e = Timer::time_end();
+  double t_elapsed = Timer::sync_time_end();
+  printf("[****] TIME(s) %12.5f\n", t_elapsed/1e6);
 
 }
 
