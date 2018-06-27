@@ -205,15 +205,12 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
     break;
   case DependenceType::TREE:
     {
-      int numUsed = 1 << dset;
-      if (point < numUsed){
-        long child1 = point*2;
-        long child2 = point*2 + 1;
-        if (child1 < max_width && child2 < max_width)
-          deps.push_back(std::pair<long, long>(child1, child2));
-        else if (child1 < max_width)
-          deps.push_back(std::pair<long, long>(child1, child1));
-      }
+      long child1 = point*2;
+      long child2 = point*2 + 1;
+      if (child1 < max_width && child2 < max_width)
+        deps.push_back(std::pair<long, long>(child1, child2));
+      else if (child1 < max_width)
+        deps.push_back(std::pair<long, long>(child1, child1));
     }
     break;
   case DependenceType::FFT:                                                                                                                                           
@@ -266,13 +263,8 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
     break;
   case DependenceType::TREE:
     {
-      int numUsed = 1 << (dset + 1); //set a cap on dset?                                                                                                                    
-      if (point < numUsed){
-        long parent = point/2;
-        deps.push_back(std::pair<long, long>(parent, parent));
-      }
-      //long parent = point/2;
-      //deps.push_back(std::pair<long, long>(parent, parent));
+      long parent = point/2;
+      deps.push_back(std::pair<long, long>(parent, parent));
     }
     break;
   case DependenceType::FFT:
