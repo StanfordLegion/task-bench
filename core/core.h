@@ -35,6 +35,7 @@ struct Kernel : public kernel_t {
 };
 
 struct TaskGraph : public task_graph_t {
+  TaskGraph() {}
   TaskGraph(task_graph_t t) {
     timesteps = t.timesteps;
     max_width = t.max_width;
