@@ -125,6 +125,7 @@ extern MPI_Datatype SYNCHRO;
 #endif  /* PARSEC_HAVE_MPI */
 
 void print_usage(void);
+void print_arguments(int* iparam);
 
 parsec_context_t *setup_parsec(int argc, char* argv[], int *iparam);
 void cleanup_parsec(parsec_context_t* parsec, int *iparam);

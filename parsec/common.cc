@@ -410,7 +410,7 @@ static void parse_arguments(int *_argc, char*** _argv, int* iparam)
     (void)rc;
 }
 
-static void print_arguments(int* iparam)
+void print_arguments(int* iparam)
 {
     int verbose = iparam[IPARAM_RANK] ? 0 : iparam[IPARAM_VERBOSE];
 
@@ -544,7 +544,6 @@ parsec_context_t* setup_parsec(int argc, char **argv, int *iparam)
         }
         iparam[IPARAM_NCORES] = nb_total_comp_threads;
     }
-    print_arguments(iparam);
 
     return ctx;
 }

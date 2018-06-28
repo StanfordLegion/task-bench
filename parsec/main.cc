@@ -196,6 +196,8 @@ ParsecApp::ParsecApp(int argc, char **argv)
   iparam[IPARAM_N] = graph.max_width * iparam[IPARAM_MB];
   iparam[IPARAM_M] = graph.timesteps * iparam[IPARAM_MB];
   
+  print_arguments(iparam);
+  
   
   PASTE_CODE_IPARAM_LOCALS(iparam);
 
