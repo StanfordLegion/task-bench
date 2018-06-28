@@ -16,20 +16,16 @@
 #include "core.h"
 #include "core_c.h"
 
-dependencies_t wrap_consume(std::vector<std::pair<long, long> > &&d) {
+interval_list_t wrap_consume(std::vector<std::pair<long, long> > &&d) {
   std::vector<std::pair<long, long> > *d_ptr = new std::vector<std::pair<long, long> >;
   d_ptr->swap(d);
-  dependencies_t result;
+  interval_list_t result;
   result.impl = reinterpret_cast<void *>(d_ptr);
   return result;
 }
 
-std::vector<std::pair<long, long> > * unwrap(dependencies_t d) {
+std::vector<std::pair<long, long> > * unwrap(interval_list_t d) {
   return reinterpret_cast<std::vector<std::pair<long, long> > *>(d.impl);
-}
-
-App * unwrap(app_t a) {
-  return reinterpret_cast<App *>(a.impl);
 }
 
 interval_t wrap(const std::pair<long, long> &p) {
@@ -39,11 +35,25 @@ interval_t wrap(const std::pair<long, long> &p) {
   return result;
 }
 
-task_graphs_t wrap(const std::vector<TaskGraph> &g) {
+task_graph_list_t wrap(const std::vector<TaskGraph> &g) {
   std::vector<TaskGraph> *g_ptr = new std::vector<TaskGraph>(g);
-  task_graphs_t result;
+  task_graph_list_t result;
   result.impl = reinterpret_cast<void *>(g_ptr);
   return result;
+}
+
+std::vector<TaskGraph> * unwrap(task_graph_list_t a) {
+  return reinterpret_cast<std::vector<TaskGraph> *>(a.impl);
+}
+
+app_t wrap(App *a_ptr) {
+  app_t result;
+  result.impl = reinterpret_cast<void *>(a_ptr);
+  return result;
+}
+
+App * unwrap(app_t a) {
+  return reinterpret_cast<App *>(a.impl);
 }
 
 void kernel_execute(kernel_t kernel)
@@ -76,25 +86,61 @@ long task_graph_dependence_set_at_timestep(task_graph_t graph, long timestep)
   return t.dependence_set_at_timestep(timestep);
 }
 
-dependencies_t task_graph_dependencies(task_graph_t graph, long dset, long point)
+interval_list_t task_graph_dependencies(task_graph_t graph, long dset, long point)
 {
   TaskGraph t(graph);
   return wrap_consume(t.dependencies(dset, point));
 }
 
-long dependencies_get_num_intervals(dependencies_t dependencies)
+void interval_list_destroy(interval_list_t intervals)
 {
-  std::vector<std::pair<long, long> > *d = unwrap(dependencies);
-  return d->size();
+  std::vector<std::pair<long, long> > *i = unwrap(intervals);
+  delete i;
 }
 
-interval_t dependencies_get_interval(dependencies_t dependencies, long index)
+long interval_list_num_intervals(interval_list_t intervals)
 {
-  std::vector<std::pair<long, long> > *d = unwrap(dependencies);
-  return wrap((*d)[index]);
+  std::vector<std::pair<long, long> > *i = unwrap(intervals);
+  return i->size();
 }
 
-task_graphs_t app_task_graphs(app_t app)
+interval_t interval_list_interval(interval_list_t intervals, long index)
+{
+  std::vector<std::pair<long, long> > *i = unwrap(intervals);
+  return wrap((*i)[index]);
+}
+
+void task_graph_list_destroy(task_graph_list_t graphs)
+{
+  std::vector<TaskGraph> *g = unwrap(graphs);
+  delete g;
+}
+
+long task_graph_list_num_task_graphs(task_graph_list_t graphs)
+{
+  std::vector<TaskGraph> *g = unwrap(graphs);
+  return g->size();
+}
+
+task_graph_t task_graph_list_task_graph(task_graph_list_t graphs, long index)
+{
+  std::vector<TaskGraph> *g = unwrap(graphs);
+  return (*g)[index];
+}
+
+app_t app_create(int argc, char **argv)
+{
+  App *app = new App(argc, argv);
+  return wrap(app);
+}
+
+void app_destroy(app_t app)
+{
+  App *a = unwrap(app);
+  delete a;
+}
+
+task_graph_list_t app_task_graphs(app_t app)
 {
   App *a = unwrap(app);
   return wrap(a->graphs);

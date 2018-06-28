@@ -47,6 +47,20 @@ typedef struct kernel_t {
 
 void kernel_execute(kernel_t kernel);
 
+typedef struct interval_t {
+  // represents the INCLUSIVE interval from begin to end
+  long begin;
+  long end;
+} interval_t;
+
+typedef struct interval_list_t {
+  void *impl;
+} interval_list_t;
+
+void interval_list_destroy(interval_list_t intervals);
+long interval_list_num_intervals(interval_list_t intervals);
+interval_t interval_list_interval(interval_list_t intervals, long index);
+
 typedef struct task_graph_t {
   long timesteps;
   long max_width;
@@ -54,34 +68,27 @@ typedef struct task_graph_t {
   kernel_t kernel;
 } task_graph_t;
 
-typedef struct dependencies_t {
-  void *impl;
-} dependencies_t;
-
 long task_graph_offset_at_timestep(task_graph_t graph, long timestep);
 long task_graph_width_at_timestep(task_graph_t graph, long timestep);
 long task_graph_max_dependence_sets(task_graph_t graph);
 long task_graph_dependence_set_at_timestep(task_graph_t graph, long timestep);
-dependencies_t task_graph_dependencies(task_graph_t graph, long dset, long point);
+interval_list_t task_graph_dependencies(task_graph_t graph, long dset, long point);
 
-typedef struct interval_t {
-  // represents the INCLUSIVE interval from begin to end
-  long begin;
-  long end;
-} interval_t;
+typedef struct task_graph_list_t {
+  void *impl;
+} task_graph_list_t;
 
-long dependencies_get_num_intervals(dependencies_t dependencies);
-interval_t dependencies_get_interval(dependencies_t dependencies, long index);
+void task_graph_list_destroy(task_graph_list_t graphs);
+long task_graph_list_num_task_graphs(task_graph_list_t graphs);
+task_graph_t task_graph_list_task_graph(task_graph_list_t graphs, long index);
 
 typedef struct app_t {
   void *impl;
 } app_t;
 
-typedef struct task_graphs_t {
-  void *impl;
-} task_graphs_t;
-
-task_graphs_t app_task_graphs(app_t app);
+app_t app_create(int argc, char **argv);
+void app_destroy(app_t app);
+task_graph_list_t app_task_graphs(app_t app);
 bool app_verbose(app_t app);
 void app_check(app_t app);
 void app_display(app_t app);
