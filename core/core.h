@@ -35,6 +35,13 @@ struct Kernel : public kernel_t {
 };
 
 struct TaskGraph : public task_graph_t {
+  TaskGraph(task_graph_t t) {
+    timesteps = t.timesteps;
+    max_width = t.max_width;
+    dependence = t.dependence;
+    kernel = t.kernel;
+  }
+
   long offset_at_timestep(long timestep) const;
   long width_at_timestep(long timestep) const;
 
