@@ -170,11 +170,8 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::TREE:
     return 0;
   case DependenceType::FFT:
-    // return timestep % max_dependence_sets();
-    if (timestep==0)
-      return 0;
-    else
-      return (timestep-1) % max_dependence_sets();
+      // return timestep == 0 ? 0 : (timestep-1) % max_dependence_sets();
+    return abs(timestep-1) % max_dependence_sets();
   case DependenceType::ALL_TO_ALL:
     return 0;
   default:
