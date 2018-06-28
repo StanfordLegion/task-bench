@@ -39,7 +39,7 @@ NVCC_FLAGS	?=
 GASNET_FLAGS	?=
 LD_FLAGS	?=
 
-CC_FLAGS += -std=c++11 -I../core
+CC_FLAGS += -std=c++11 -I../core -DLEGION_TIMING
 
 ###########################################################################
 #
