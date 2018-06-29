@@ -37,6 +37,8 @@ typedef enum kernel_type_t {
   EMPTY,
   MEMORY_BOUND,
   COMPUTE_BOUND,
+  IO_BOUND,
+  LOAD_IMBALANCE
 } kernel_type_t;
 
 typedef struct kernel_t {
