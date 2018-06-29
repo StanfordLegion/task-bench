@@ -71,7 +71,9 @@ static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
     parsec_dtd_unpack_args(this_task, &i, &j, &data1, &data2, &data3);
     
     *data3 = *data1 + *data2 + 1.0;
-    printf("\nRank %d, core %d, i %d, j %d, data3 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data3);
+   // printf("\nRank %d, core %d, i %d, j %d, data3 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data3);
+    printf("\nTask 3, rank %d, core %d, i %d, j %d, data1 %.2f, data2 %.2f, data3 %.2f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data1, *data2, *data3);
+   // printf("\nTask 3, rank %d, core %d, i %d, j %d, data1 %p, data2 %p, data3 %p\n", this_task->taskpool->context->my_rank, es->core_id, i, j, data1, data2, data3);
 
     return PARSEC_HOOK_RETURN_DONE;
 }
@@ -233,7 +235,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
                           parsec_datatype_double_t, dcC.super.mb );
 
   /* matrix generation */
- // dplasma_dplrnt( parsec, 0, (parsec_tiled_matrix_dc_t *)&dcC, Cseed);
+  //dplasma_dplrnt( parsec, 0, (parsec_tiled_matrix_dc_t *)&dcC, Cseed);
 
 
   parsec_context_add_taskpool( parsec, dtd_tp );
@@ -316,13 +318,14 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     } else {
       if (t == 0) {
         num_args = 1;
+        debug_printf(0, "%d[%d] ", x, num_args);
         args.push_back(TILE_OF(C, t, x)); 
       } else {
         num_args = 1;
+        args.push_back(TILE_OF(C, t, x));
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
           debug_printf(0, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
-          args.push_back(TILE_OF(C, t, x));
           for (int i = dep.first; i <= dep.second; i++) {
             args.push_back(TILE_OF(C, t-1, i));  
           }
