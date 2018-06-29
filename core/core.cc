@@ -31,27 +31,29 @@ void execute_kernel_empty(const Kernel &kernel)
 
 void execute_kernel_memory(const Kernel &kernel)
 {
-  double* data;
-  int N = 1024*1024*1024;
-  data = (double *) malloc(sizeof(double)* N);
+  // double* data;
+  // double temp;
+  // int N = 1024*1024*1024;
+  // data = (double *) malloc(sizeof(double)* N);
 
-  for(int i=0; i < N; i++){
-    data[i] = random(i);
-    sqrt(data[i]);
-  }
+  // for(int i=0; i < N; i++){
+  //   data[i] = random(i);
+  //   temp = sqrt(data[i]);
+  // }
   
 }
 
 void execute_kernel_compute(const Kernel &kernel)
 {
-  double* data;
-  int N = 1024;
-  data = (double *) malloc(sizeof(double)* N);
+  // double* data;
+  // double temp;
+  // int N = 1024;
+  // data = (double *) malloc(sizeof(double)* N);
 
-  for(int i=0; i < N; i++){
-    data[i] = random(i);
-    sqrt(data[i]);
-  }
+  // for(int i=0; i < N; i++){
+  //   data[i] = random(i);
+  //   temp = sqrt(data[i]);
+  // }
 
 }
 
