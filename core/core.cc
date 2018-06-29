@@ -29,12 +29,60 @@ void execute_kernel_empty(const Kernel &kernel)
   // Do nothing...
 }
 
+void execute_kernel_memory(const Kernel &kernel)
+{
+  double* data;
+  int N = 1024*1024*1024;
+  data = (double *) malloc(sizeof(double)* N);
+
+  for(int i=0; i < N; i++){
+    data[i] = random(i);
+    sqrt(data[i]);
+  }
+  
+}
+
+void execute_kernel_compute(const Kernel &kernel)
+{
+  double* data;
+  int N = 1024;
+  data = (double *) malloc(sizeof(double)* N);
+
+  for(int i=0; i < N; i++){
+    data[i] = random(i);
+    sqrt(data[i]);
+  }
+
+}
+
+void execute_kernel_io(const Kernel &kernel)
+{
+  
+}
+
+void execute_kernel_imbalance(const Kernel &kernel)
+{
+  //random pick one task to be compute bound
+}
+
 void Kernel::execute() const
 {
   switch(type) {
   case KernelType::EMPTY:
     execute_kernel_empty(*this);
     break;
+  case KernelType::MEMORY_BOUND:
+    execute_kernel_memory(*this);
+    break;
+  case KernelType::COMPUTE_BOUND:
+    execute_kernel_compute(*this);
+    break;
+  case KernelType::IO_BOUND:
+    execute_kernel_io(*this);
+    break;
+  case KernelType::LOAD_IMBALANCE:
+    execute_kernel_imbalance(*this);
+    break;        
   default:
     assert(false && "unimplemented kernel type");
   };
@@ -48,6 +96,8 @@ static const std::map<std::string, KernelType> &ktype_by_name()
     types["empty"] = KernelType::EMPTY;
     types["memory_bound"] = KernelType::MEMORY_BOUND;
     types["compute_bound"] = KernelType::COMPUTE_BOUND;
+    types["io_bound"] = KernelType::IO_BOUND;
+    types["load_imbalance"] = KernelType::LOAD_IMBALANCE;
   }
 
   return types;
