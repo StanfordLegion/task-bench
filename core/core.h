@@ -16,39 +16,32 @@
 #ifndef CORE_H
 #define CORE_H
 
+#include "core_c.h"
+
 #include <string>
 #include <vector>
 
-enum class DependenceType {
-  TRIVIAL,
-  NO_COMM,
-  STENCIL_1D,
-  STENCIL_1D_PERIODIC,
-  DOM,
-  TREE,
-  FFT,
-  ALL_TO_ALL,
-};
+typedef dependence_type_t DependenceType;
 
-enum class KernelType {
-  EMPTY,
-  MEMORY_BOUND,
-  COMPUTE_BOUND,
-};
+typedef kernel_type_t KernelType;
 
-struct Kernel {
-  KernelType type;
-  long iterations;
-  // TODO: Add parameters for load imbalance, etc.
+struct Kernel : public kernel_t {
+  Kernel(kernel_t k) {
+    type = k.type;
+    iterations = k.iterations;
+  }
 
   void execute() const;
 };
 
-struct TaskGraph {
-  long timesteps;
-  long max_width;
-  DependenceType dependence;
-  Kernel kernel;
+struct TaskGraph : public task_graph_t {
+  TaskGraph() {}
+  TaskGraph(task_graph_t t) {
+    timesteps = t.timesteps;
+    max_width = t.max_width;
+    dependence = t.dependence;
+    kernel = t.kernel;
+  }
 
   long offset_at_timestep(long timestep) const;
   long width_at_timestep(long timestep) const;

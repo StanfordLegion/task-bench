@@ -19,6 +19,10 @@
 
 #include "core.h"
 
+//add by Yuankun
+#include <unistd.h> 
+#include "timer.h"
+
 using namespace Legion;
 
 enum TaskIDs {
@@ -45,6 +49,10 @@ void leaf(const Task *task,
 {
   printf("Leaf at point %lld\n",
          task->index_point[0]);
+
+  //add by Yuankun
+  // if(task->index_point[0]==1)
+  //   sleep(2);
 
   assert(task->arglen == sizeof(Kernel));
   Kernel kernel = *reinterpret_cast<Kernel *>(task->args);
@@ -92,17 +100,29 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     std::vector<LogicalPartitionT<1> >secondary_lps;
 
     long ndsets = g.max_dependence_sets();
+    printf("max_dependence_sets ndsets=%ld\n", ndsets);
+
     for (long dset = 0; dset < ndsets; ++dset) {
       IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, is);
 
+      printf("\n1st-For: dest=%ld, ndsets=%ld\n", dset, ndsets);
+
       for (long point = 0; point < g.max_width; ++point) {
+        
+        printf("\n2nd-For: point=%ld，max_width=%ld\n", point, g.max_width);
+
         std::vector<std::pair<long, long> > deps = g.dependencies(dset, point);
 
         std::vector<IndexSpace> subspaces;
         for (auto dep : deps) {
+
+          printf("subspaces.push_back deps from %ld to %ld\n", dep.first, dep.second);
+
           for (long i = dep.first; i <= dep.second; ++i) {
             subspaces.push_back(runtime->get_index_subspace(ctx, primary_ip, i));
+            printf("i=%ld ", i); 
           }
+          printf("\n");
         }
         runtime->create_index_space_union(ctx, secondary_ip, point, subspaces);
       }
@@ -178,7 +198,20 @@ void top(const Task *task,
          Context ctx, Runtime *runtime)
 {
   LegionApp app(runtime, ctx);
+
+  //warm up
+  // app.execute_main_loop();
+
+  printf("\nAfter warm up, Starting main simulation loop\n");
+  // Execution fence to wait for all prior operations to be done before getting our timing result
+  Timer::sync_time_start();
+
   app.execute_main_loop();
+
+  // Execution fence timer
+  double t_elapsed = Timer::sync_time_end();
+  printf("[****] TIME(s) %12.5f\n", t_elapsed * 1e-6);
+
 }
 
 int main(int argc, char **argv)

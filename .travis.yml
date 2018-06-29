@@ -13,6 +13,11 @@ env:
     - REALM_SYNTHETIC_CORE_MAP=""
     - REALM_BACKTRACE=1
     - CC_FLAGS="-Wno-unused-command-line-argument"
+before_install:
+  - |
+    if [[ "$(uname)" = "Linux" ]]; then
+      sudo apt-get install -qq mpich2 libmpich-dev
+    fi
 install:
   - export CCACHE_BASEDIR=$PWD
   - ./get_deps.sh
