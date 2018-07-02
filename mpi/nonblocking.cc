@@ -20,7 +20,7 @@
 #define  MASTER 0
 
 /* Precompute number of dependencies for specific dset */
-int count_dependencies(std::vector< std::pair<long, long> > dep)
+int count_dependencies(std::vector< std::pair<long, long> > &dep)
 {
   int total_dependencies = 0;
   for (std::pair<int, int> interval: dep)
