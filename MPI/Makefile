@@ -1,6 +1,6 @@
 CC         = mpiCC
 
-CFLAGS     = -g -O0 -g3 -std=c++11 -D_GNU_SOURCE -Wsubobject-linkage
+CFLAGS     = -g -O0 -g3 -std=c++11
 
 CORE       = ../core/core.cc
 
