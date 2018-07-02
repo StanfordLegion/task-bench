@@ -15,6 +15,6 @@ if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j${THREADS:-4}
 fi
 if [[ $USE_MPI -eq 1 ]]; then
-    make -C core clean
-    make -C core all
+    make -C MPI clean
+    make -C MPI all
 fi
