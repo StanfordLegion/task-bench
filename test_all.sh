@@ -13,3 +13,6 @@ source deps/env.sh
 if [[ $USE_LEGION -eq 1 ]]; then
     ./legion/task_bench -steps 9 -type dom
 fi
+if [[ $USE_MPI -eq 1 ]]; then
+    ./mpi/basic -steps 8 -type stencil_1d
+fi
