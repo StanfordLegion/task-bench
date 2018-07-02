@@ -17,7 +17,7 @@
 #include <map>
 #include <stdio.h>
 #include <stdlib.h>
-#include "core.h"
+#include "../core/core.h"
 #define  MASTER 0
 
 int main (int argc, char *argv[])
