@@ -25,6 +25,7 @@ int main (int argc, char *argv[])
   int numtasks, taskid;
   MPI_Status status;
 
+  /* Initialize MPI */
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
   MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
@@ -32,6 +33,8 @@ int main (int argc, char *argv[])
   App new_app(argc, argv);
   new_app.display();
   std::vector<TaskGraph> graphs = new_app.graphs;
+  
+  /* Preallocate all dependencies before timing starts */
   std::vector<std::vector<std::vector< std::pair<long, long> > > > graph_dependencies;
   std::vector<std::vector<std::vector< std::pair<long, long> > > > graph_rev_deps;
    for (size_t i = 0; i < graphs.size(); i++)
@@ -52,10 +55,11 @@ int main (int argc, char *argv[])
 
   for (size_t i = 0; i < graphs.size(); i++)
     {
-      TaskGraph graph = graphs[i]; //slow?                                                                                                                                       
+      TaskGraph graph = graphs[i];                                                                                                                                      
 
       for (long timestep = 0L; timestep < graph.timesteps; timestep += 1)
         {
+          /* Continue if taskid should not yet be included in the graph */
           if (taskid >= graph.width_at_timestep(timestep) + graph.offset_at_timestep(timestep)) continue;
           if (taskid < graph.offset_at_timestep(timestep)) continue;
 
@@ -67,9 +71,9 @@ int main (int argc, char *argv[])
             {
               for (long i = interval.first; i <= interval.second; i++)
                 {
-                  if (i >= graph.width_at_timestep(timestep + 1) + graph.offset_at_timestep(timestep + 1) || i < graph.offset_at_timestep(timestep + 1)) continue;
+                  if (i >= graph.width_at_timestep(timestep + 1) + graph.offset_at_timestep(timestep + 1) 
+                      || i < graph.offset_at_timestep(timestep + 1)) continue;
                   MPI_Send(&taskid, 1, MPI_INT, (int)i, 0, MPI_COMM_WORLD);
-                  printf("task: %d, time: %d, send: %d\n", taskid, timestep, i);
                 }
             }
 
@@ -78,10 +82,10 @@ int main (int argc, char *argv[])
             {
               for (long i = interval.first; i <= interval.second; i++)
                 {
-                  if (i >= graph.width_at_timestep(timestep - 1) + graph.offset_at_timestep(timestep - 1) || i < graph.offset_at_timestep(timestep - 1)) continue;
+                  if (i >= graph.width_at_timestep(timestep - 1) + graph.offset_at_timestep(timestep - 1) 
+                      || i < graph.offset_at_timestep(timestep - 1)) continue;
                   int data;
                   MPI_Recv(&data, 1, MPI_INT, (int)i, 0, MPI_COMM_WORLD, &status);
-                  printf("task: %d, time: %d, receive: %d\n", taskid, timestep, i);
                 }
             }
         }
