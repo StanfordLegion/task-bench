@@ -1,6 +1,6 @@
 Cxx         = mpicxx
 
-CxxFLAGS     = -g -O0 -g3 -std=c++11
+CxxFLAGS     = -g -O0 -g3 -std=c++11 -DMPI_TIMING
 
 CORE       = ../core/core.cc
 
