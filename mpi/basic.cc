@@ -55,8 +55,7 @@ int main (int argc, char *argv[])
 
   for (size_t i = 0; i < graphs.size(); i++)
     {
-      TaskGraph graph = graphs[i];                                                                                                                                      
-
+      TaskGraph graph = graphs[i];
       for (long timestep = 0L; timestep < graph.timesteps; timestep += 1)
         {
           /* Continue if taskid should not yet be included in the graph */
