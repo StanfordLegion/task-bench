@@ -16,7 +16,7 @@
 #include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "core.h"
+#include "../core/core.h"
 #define  MASTER 0
 
 /* Precompute number of dependencies for specific dset */
