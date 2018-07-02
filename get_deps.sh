@@ -22,6 +22,6 @@ EOF
     source deps/env.sh
     git clone https://gitlab.com/StanfordLegion/legion.git $LEGION_DIR
 fi
-if [[ $USE_MPI -eq 1]]; then
-    export USE_MPI=$USE_MPI
-fi
+#if [[ $USE_MPI -eq 1]]; then
+#    export USE_MPI=$USE_MPI
+#fi
