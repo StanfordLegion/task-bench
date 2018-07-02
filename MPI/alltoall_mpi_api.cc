@@ -58,6 +58,9 @@ int main (int argc, char *argv[])
     {
       for (long timesteps = 0L; timesteps < graph.timesteps; timesteps++)
         {
+          /* Kernel Execute Call */
+          graph.kernel.execute();
+          /* Create alltoall dependencies */
           MPI_Alltoall(send, 1, MPI_INT, recv, 1, MPI_INT, MPI_COMM_WORLD);
           /* Testing: 
           printf("For %d: ", taskid);
