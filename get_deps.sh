@@ -3,7 +3,7 @@
 set -e
 
 USE_LEGION=${USE_LEGION:-1}
-#USE_MPI=${USE_MPI:-1}
+USE_MPI=${USE_MPI:-1}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -22,7 +22,7 @@ EOF
     source deps/env.sh
     git clone https://gitlab.com/StanfordLegion/legion.git $LEGION_DIR
 fi
-#if [[ $USE_MPI -eq 1]]; then
-#    export USE_MPI=$USE_MPI
-#    module load openmpi/3.0.1
-#fi
+if [[ $USE_MPI -eq 1]]; then
+    export USE_MPI=$USE_MPI
+    module load openmpi/3.0.1
+fi
