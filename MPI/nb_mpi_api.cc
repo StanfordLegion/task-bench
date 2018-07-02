@@ -19,6 +19,7 @@
 #include "core.h"
 #define  MASTER 0
 
+/* Precompute number of dependencies for specific dset */
 int count_dependencies(std::vector< std::pair<long, long> > dep)
 {
   int total_dependencies = 0;
@@ -35,6 +36,7 @@ int main (int argc, char *argv[])
   int   numtasks, taskid, len;
   char hostname[MPI_MAX_PROCESSOR_NAME];
 
+  /* Initialize MPI */
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
@@ -46,6 +48,7 @@ int main (int argc, char *argv[])
   std::vector<std::vector<int *> > graph_all_datas;
   std::vector<std::vector< std::vector< std::pair<long, long> > > > graph_all_rev_deps;
 
+  /* Preallocate dependencies, data, and request arrays */
   for (size_t i = 0; i < graphs.size(); i++)
     {
       TaskGraph graph = graphs[i];
@@ -59,6 +62,7 @@ int main (int argc, char *argv[])
         {
           int num_dependencies = count_dependencies(graph.dependencies(dset, taskid));
           int num_rev_dependencies = count_dependencies(graph.reverse_dependencies(dset, taskid));
+
           MPI_Request *request_vector = (MPI_Request *)malloc((num_dependencies + num_rev_dependencies) * sizeof(MPI_Request));
           int *data_vector = (int *)malloc(num_dependencies * sizeof(int));
 
@@ -74,6 +78,7 @@ int main (int argc, char *argv[])
       graph_all_datas.push_back(all_data_vectors);
       graph_all_rev_deps.push_back(all_rev_dependencies);
     }
+  
     //start timer
   for (size_t i = 0; i < graphs.size(); i++)
     {
