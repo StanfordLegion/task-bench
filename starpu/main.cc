@@ -92,7 +92,7 @@ Codelet::Codelet(int nbuffers, starpu_cpu_func_t cpu_func, uint32_t original_loc
   codelet.name = name;
   codelet.model = NULL;
   
-  set_performance_model(STARPU_HISTORY_BASED);
+//  set_performance_model(STARPU_HISTORY_BASED);
 }
 
 Codelet::~Codelet()
@@ -144,7 +144,6 @@ void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args
         MPI_COMM_WORLD, &(codelet_task1.codelet),
         STARPU_VALUE,    &i,  sizeof(int),
         STARPU_VALUE,    &j,  sizeof(int),
-        STARPU_R, args[1],
         STARPU_RW, args[0],
         STARPU_CALLBACK,  callback,
         STARPU_PRIORITY,  0,
@@ -205,7 +204,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   conf =  (struct starpu_conf *)malloc (sizeof(struct starpu_conf));
   starpu_conf_init( conf );
 
-  conf->ncpus = 8;
+  conf->ncpus = 1;
   conf->ncuda = 0;
   conf->nopencl = 0;
   conf->sched_policy_name = "lws";
@@ -220,8 +219,8 @@ StarPUApp::StarPUApp(int argc, char **argv)
   
   int p, q;
   
-  p = 2;
-  q = 2;
+  p = 1;
+  q = 1;
   
   
   int size_of_data = 10;
@@ -229,6 +228,8 @@ StarPUApp::StarPUApp(int argc, char **argv)
   TaskGraph &graph = graphs[0];
   mt = graph.max_width;
   nt = graph.timesteps;
+  
+  printf("mt %d, nt %d\n", mt, nt);
 
   ddescA = create_and_distribute_data(rank, world, size_of_data, size_of_data, mt, nt, p, q);
 }
@@ -254,12 +255,13 @@ void StarPUApp::execute_main_loop()
   starpu_mpi_barrier(MPI_COMM_WORLD);
   
   const TaskGraph &g = graphs[0];
-#if 0
+#if 1
   for (y = 0; y < g.timesteps; y++) {
     execute_timestep(0, y);
   }
 #endif
 
+#if 0
   for( y = 0; y < mt; y++ ) {
       for (x = 0; x < nt; x++) {
           if (y == 0) {
@@ -288,6 +290,38 @@ void StarPUApp::execute_main_loop()
           }
       }
   }
+#endif
+  
+#if 0
+  std::vector<void*> args;
+  for( y = 0; y < mt; y++ ) {
+      for (x = 0; x < nt; x++) {
+          if (y == 0) {
+             // printf("insert x %d, y %d\n");
+            args.clear();
+            args.push_back(starpu_desc_getaddr( ddescA, y, x ));
+            insert_task(1, y, x, args);
+          } else {
+             // printf("insert x %d, y %d\n");
+            args.clear();
+            args.push_back(starpu_desc_getaddr( ddescA, y, x ));
+            args.push_back(starpu_desc_getaddr( ddescA, y-1, x ));
+            insert_task(2, y, x, args);
+          }
+      }
+  }
+#endif
+  
+#if 0
+  std::vector<void*> args;
+  for( y = 0; y < mt; y++ ) {
+    for (x = 0; x < nt; x++) {
+      args.clear();
+      args.push_back(starpu_desc_getaddr( ddescA, y, x ));
+      insert_task(1, y, x, args);
+    }
+  }
+#endif
 
 
   starpu_task_wait_for_all();
@@ -296,13 +330,49 @@ void StarPUApp::execute_main_loop()
 
 void StarPUApp::execute_timestep(size_t idx, long t)
 {
+  const TaskGraph &g = graphs[idx];
+  long offset = g.offset_at_timestep(t);
+  long width = g.width_at_timestep(t);
+  long dset = g.dependence_set_at_timestep(t);
   
+  std::vector<void*> args;
+  
+  printf("ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
+  for (int x = offset; x <= offset+width-1; x++) {
+    std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
+    int num_args;    
+    
+    if (deps.size() == 0) {
+      num_args = 1;
+      printf("%d[%d] ", x, num_args);
+      args.push_back(starpu_desc_getaddr( ddescA, t, x ));
+    } else {
+      if (t == 0) {
+        num_args = 1;
+        printf("%d[%d] ", x, num_args);
+        args.push_back(starpu_desc_getaddr( ddescA, t, x ));
+      } else {
+        num_args = 1;
+        args.push_back(starpu_desc_getaddr( ddescA, t, x ));
+        for (std::pair<long, long> dep : deps) {
+          num_args += dep.second - dep.first + 1;
+          printf("%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          for (int i = dep.first; i <= dep.second; i++) {
+            args.push_back(starpu_desc_getaddr( ddescA, t-1, i ));
+          }
+        }
+      }
+    }
+    insert_task(num_args, t, x, args); 
+    args.clear();
+  }
+  printf("\n");
 }
 
 int main(int argc, char **argv)
 {
   printf("pid %d\n", getpid());
-  //sleep(0); 
+  //sleep(10); 
   StarPUApp app(argc, argv);
   app.execute_main_loop();
 
