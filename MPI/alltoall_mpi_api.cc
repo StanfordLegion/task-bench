@@ -19,12 +19,14 @@
 #include "core.h"
 #define  MASTER 0
 
+/* Create the array with recognizable data */
 void initialize_array(int *arr, int size)
 {
   for(int i = 0; i < size; i++)
     arr[i] = size - i;
 }
 
+/* Print the array for testing */
 void print_array(int *arr, int size)
 {
   for(int i = 0; i < size - 1; i++)
@@ -38,7 +40,8 @@ int main (int argc, char *argv[])
 {
   int numtasks, taskid;
   MPI_Status status;
-
+  
+  /* Initialize MPI */
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
   MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
@@ -56,8 +59,9 @@ int main (int argc, char *argv[])
       for (long timesteps = 0L; timesteps < graph.timesteps; timesteps++)
         {
           MPI_Alltoall(send, 1, MPI_INT, recv, 1, MPI_INT, MPI_COMM_WORLD);
+          /* Testing: 
           printf("For %d: ", taskid);
-          print_array(recv, numtasks);
+          print_array(recv, numtasks); */
         }
     }
   //time stop                                                                                                                                                                    
