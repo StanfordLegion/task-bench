@@ -6,7 +6,7 @@ CORE       = ../core/core.cc
 
 all: nonblock basic bcast alltoall
 
-nonblock: nonblock.cc ../core/core.cc ../core/core.h
+nonblock: nonblocking.cc ../core/core.cc ../core/core.h
 	$(Cxx) $(CxxFLAGS) $< $(CORE) -o $@
 
 basic: basic.cc ../core/core.cc ../core/core.h
