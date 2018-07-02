@@ -3,7 +3,7 @@
 set -e
 
 USE_LEGION=${USE_LEGION:-1}
-USE_MPI=${USE_MPI:-1}
+TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-1}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -23,9 +23,9 @@ EOF
     git clone https://gitlab.com/StanfordLegion/legion.git $LEGION_DIR
 fi
 
-if [[ $USE_MPI -eq 1 ]]; then
+if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
-export USE_MPI=$USE_MPI
+export TASKBENCH_USE_MPI=$TASKBENCH_USE_MPI
 EOF
     source deps/env.sh
 fi
