@@ -24,4 +24,5 @@ EOF
 fi
 #if [[ $USE_MPI -eq 1]]; then
 #    export USE_MPI=$USE_MPI
+#    module load openmpi/3.0.1
 #fi
