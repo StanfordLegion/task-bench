@@ -3,7 +3,7 @@
 set -e
 
 USE_LEGION=${USE_LEGION:-1}
-USE_MPI=${USE_MPI:-1}
+#USE_MPI=${USE_MPI:-1}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
