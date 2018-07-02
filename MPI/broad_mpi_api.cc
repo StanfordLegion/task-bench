@@ -19,11 +19,13 @@
 #include "core.h"
 #define  MASTER 0
 
+/* This program uses broadcast to simulate a stencil_1d dependency graph */
 int main (int argc, char *argv[])
 {
   int numtasks, taskid;
   MPI_Status status;
 
+  /* Initialize MPI */
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
   MPI_Comm_rank(MPI_COMM_WORLD,&taskid);
@@ -42,6 +44,7 @@ int main (int argc, char *argv[])
   int data_to_receive1 = -1;
   int data_to_receive2 = -1;
   int data_to_receive3 = taskid;
+  
   /* Receive Scatter Comm */
   int *first_ranks = NULL;
   MPI_Group first_group;
@@ -96,7 +99,6 @@ int main (int argc, char *argv[])
 
 
   /* Second Receive Scatter Comm */
-  /* TODO: Consider decomposing */
   int *third_ranks;
   int third_rank;
   MPI_Group third_group;
@@ -120,6 +122,7 @@ int main (int argc, char *argv[])
     {                                                                                                                                                        
       for (long timestep = 0L; timestep < graph.timesteps; timestep++)
         {
+          /* Kernel Execute Call */
           graph.kernel.execute();
 
           MPI_Bcast(&data_to_send, 1, MPI_INT, second_rank, second_comm); /* Send to comm */
