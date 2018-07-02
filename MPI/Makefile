@@ -4,7 +4,7 @@ CFLAGS     = -g -O0 -g3 -std=c++11
 
 CORE       = ../core/core.cc
 
-all: nonblock basic broadcast alltoall
+all: nonblock basic broad alltoall
 
 nonblock: nb_mpi_api.cc ../core/core.cc ../core/core.h
         $(CC) $(CFLAGS) $< $(CORE) -o $@
