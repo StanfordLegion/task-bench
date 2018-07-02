@@ -20,8 +20,7 @@ alltoall: alltoall.cc ../core/core.cc ../core/core.h
 
 clean:
 	rm -f *.o
-	rm *~
-	rm nonblock
-	rm basic
-	rm bcast
-	rm alltoall
+	rm -f nonblock
+	rm -f basic
+	rm -f bcast
+	rm -f alltoall
