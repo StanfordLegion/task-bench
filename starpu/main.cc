@@ -75,44 +75,10 @@ static void task4(void *descr[], void *cl_arg)
     printf("Task4 i %d, j %d, rank %d, value %f\n", i, j, rank, d[0]);
 }
 
-class Codelet {
-public:
-  Codelet(int nbuffers, starpu_cpu_func_t cpu_func, uint32_t original_location, const char* name);
-  ~Codelet();
-  void set_performance_model(enum starpu_perfmodel_type type);
-public:
-  struct starpu_codelet codelet;
-};
-
-Codelet::Codelet(int nbuffers, starpu_cpu_func_t cpu_func, uint32_t original_location, const char* name)
-{
-  codelet.where = original_location;
-  codelet.cpu_funcs[0] = cpu_func;
-  codelet.nbuffers = nbuffers;
-  codelet.name = name;
-  codelet.model = NULL;
-  
-//  set_performance_model(STARPU_HISTORY_BASED);
-}
-
-Codelet::~Codelet()
-{
-  if (codelet.model != NULL) {
-    free(codelet.model);
-  }
-}
-
-void Codelet::set_performance_model(enum starpu_perfmodel_type type)
-{
-  if (codelet.model != NULL) {
-      free(codelet.model);
-      codelet.model = NULL;
-  }
-  struct starpu_perfmodel *model = (struct starpu_perfmodel *)malloc(sizeof(struct starpu_perfmodel));
-  model->type = type;
-  model->symbol = codelet.name;
-  codelet.model = model;
-}
+struct starpu_codelet cl_task1; 
+struct starpu_codelet cl_task2;
+struct starpu_codelet cl_task3;
+struct starpu_codelet cl_task4;
 
 struct StarPUApp : public App {
 public:
@@ -123,10 +89,6 @@ public:
 private:
   void insert_task(int num_args, int i, int j, std::vector<void*> &args);
 private:
-  Codelet codelet_task1;
-  Codelet codelet_task2;
-  Codelet codelet_task3;
-  Codelet codelet_task4;
   struct starpu_conf *conf;
   starpu_ddesc_t *ddescA;
   int rank;
@@ -141,7 +103,7 @@ void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args
   switch(num_args) {
   case 1:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(codelet_task1.codelet),
+        MPI_COMM_WORLD, &(cl_task1),
         STARPU_VALUE,    &i,  sizeof(int),
         STARPU_VALUE,    &j,  sizeof(int),
         STARPU_RW, args[0],
@@ -152,7 +114,7 @@ void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args
     break;
   case 2:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(codelet_task2.codelet),
+        MPI_COMM_WORLD, &(cl_task2),
         STARPU_VALUE,    &i,  sizeof(int),
         STARPU_VALUE,    &j,  sizeof(int),
         STARPU_R, args[1],
@@ -164,7 +126,7 @@ void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args
     break;
   case 3:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(codelet_task3.codelet),
+        MPI_COMM_WORLD, &(cl_task3),
         STARPU_VALUE,    &i,  sizeof(int),
         STARPU_VALUE,    &j,  sizeof(int),
         STARPU_R, args[1],
@@ -177,7 +139,7 @@ void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args
     break;
   case 4:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(codelet_task4.codelet),
+        MPI_COMM_WORLD, &(cl_task4),
         STARPU_VALUE,    &i,  sizeof(int),
         STARPU_VALUE,    &j,  sizeof(int),
         STARPU_R, args[1],
@@ -195,12 +157,28 @@ void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args
 }
 
 StarPUApp::StarPUApp(int argc, char **argv)
-  : App(argc, argv), 
-  codelet_task1(1, task1, STARPU_CPU, "task1"),
-  codelet_task2(2, task2, STARPU_CPU, "task2"),
-  codelet_task3(3, task3, STARPU_CPU, "task3"),
-  codelet_task4(4, task4, STARPU_CPU, "task4")
+  : App(argc, argv)
 {
+  cl_task1.where     = STARPU_CPU;                                   
+  cl_task1.cpu_funcs[0]  = task1;                                       
+  cl_task1.nbuffers  = 1;                                           
+  cl_task1.name      = "task1";
+  
+  cl_task2.where     = STARPU_CPU;                                   
+  cl_task2.cpu_funcs[0]  = task2;                                       
+  cl_task2.nbuffers  = 2;                                           
+  cl_task2.name      = "task2";
+  
+  cl_task3.where     = STARPU_CPU;                                   
+  cl_task3.cpu_funcs[0]  = task3;                                       
+  cl_task3.nbuffers  = 3;                                           
+  cl_task3.name      = "task3";
+  
+  cl_task4.where     = STARPU_CPU;                                   
+  cl_task4.cpu_funcs[0]  = task4;                                       
+  cl_task4.nbuffers  = 4;                                           
+  cl_task4.name      = "task4";
+  
   conf =  (struct starpu_conf *)malloc (sizeof(struct starpu_conf));
   starpu_conf_init( conf );
 
@@ -226,8 +204,8 @@ StarPUApp::StarPUApp(int argc, char **argv)
   int size_of_data = 10;
   
   TaskGraph &graph = graphs[0];
-  mt = graph.max_width;
-  nt = graph.timesteps;
+  nt = graph.max_width;
+  mt = graph.timesteps;
   
   printf("mt %d, nt %d\n", mt, nt);
 
@@ -287,6 +265,64 @@ void StarPUApp::execute_main_loop()
                   STARPU_PRIORITY,  0,
                   STARPU_NAME, "chain2",
                   0);
+          }
+      }
+  }
+#endif
+  
+#if 0
+  for( y = 0; y < mt; y++ ) {
+      for (x = 0; x < nt; x++) {
+          if (y == 0) {
+             // printf("insert x %d, y %d\n");
+              starpu_mpi_insert_task(
+                  MPI_COMM_WORLD, &(cl_task1),
+                  STARPU_VALUE,    &y,  sizeof(int),
+                  STARPU_VALUE,    &x,  sizeof(int),
+                  STARPU_RW, starpu_desc_getaddr( ddescA, y, x ),
+                  STARPU_CALLBACK,  callback,
+                  STARPU_PRIORITY,  0,
+                  STARPU_NAME, "chain1",
+                  0);
+          } else if (x == 0 && y != 0) {
+             // printf("insert x %d, y %d\n");
+              starpu_mpi_insert_task(
+                  MPI_COMM_WORLD, &(cl_task3),
+                  STARPU_VALUE,    &y,  sizeof(int),
+                  STARPU_VALUE,    &x,  sizeof(int),
+                  STARPU_R, starpu_desc_getaddr( ddescA, y-1, x ),
+                  STARPU_R, starpu_desc_getaddr( ddescA, y-1, x+1 ),
+                  STARPU_RW, starpu_desc_getaddr( ddescA, y, x ),
+                  STARPU_CALLBACK,  callback,
+                  STARPU_PRIORITY,  0,
+                  STARPU_NAME, "chain3",
+                  0);
+          } else if (x == (nt-1) && y != 0) {
+             // printf("insert x %d, y %d\n");
+              starpu_mpi_insert_task(
+                  MPI_COMM_WORLD, &(cl_task3),
+                  STARPU_VALUE,    &y,  sizeof(int),
+                  STARPU_VALUE,    &x,  sizeof(int),
+                  STARPU_R, starpu_desc_getaddr( ddescA, y-1, x-1 ),
+                  STARPU_R, starpu_desc_getaddr( ddescA, y-1, x ),
+                  STARPU_RW, starpu_desc_getaddr( ddescA, y, x ),
+                  STARPU_CALLBACK,  callback,
+                  STARPU_PRIORITY,  0,
+                  STARPU_NAME, "chain3",
+                  0);
+          } else {
+            starpu_mpi_insert_task(
+                MPI_COMM_WORLD, &(cl_task4),
+                STARPU_VALUE,    &y,  sizeof(int),
+                STARPU_VALUE,    &x,  sizeof(int),
+                STARPU_R, starpu_desc_getaddr( ddescA, y-1, x-1 ),
+                STARPU_R, starpu_desc_getaddr( ddescA, y-1, x ),
+                STARPU_R, starpu_desc_getaddr( ddescA, y-1, x+1 ),
+                STARPU_RW, starpu_desc_getaddr( ddescA, y, x ),
+                STARPU_CALLBACK,  callback,
+                STARPU_PRIORITY,  0,
+                STARPU_NAME, "chain4",
+                0);
           }
       }
   }
@@ -371,8 +407,10 @@ void StarPUApp::execute_timestep(size_t idx, long t)
 
 int main(int argc, char **argv)
 {
-  printf("pid %d\n", getpid());
+  printf("pid %d, %d\n", getpid(), STARPU_NMAXBUFS);
   //sleep(10); 
+
+  
   StarPUApp app(argc, argv);
   app.execute_main_loop();
 

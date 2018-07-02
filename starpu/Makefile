@@ -3,8 +3,8 @@ CC         = g++
 CFLAGS     = -g -O0  -DADD_ -fPIC
 LDFLAGS    = -Wall -g -O0
 
-STARPU_DIR = /home/wwu12/starpu/install
-MPI_DIR    = /sw/openmpi/2.1.1-thread-multiple
+STARPU_DIR = /home/wwu/starpu/build
+MPI_DIR    = /projects/opt/centos7/mpich/3.2-gcc_6.2.0
 
 # Include directories
 INC        = -I$(STARPU_DIR)/include/starpu/1.2 -I../core
@@ -22,7 +22,7 @@ CFLAGS += $(INC)
 TARGET = main
 all: $(TARGET)
 	
-.PRECIOUS: %.cc %.o
+.PRECIOUS: %.c %.o
 
 core.o: ../core/core.cc ../core/core.h
 	$(CC) -c $(CFLAGS) $<
