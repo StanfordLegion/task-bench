@@ -178,6 +178,64 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   };
 }
 
+std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, long point) const
+{
+  std::vector<std::pair<long, long> > deps;
+
+  switch (dependence) {
+  case DependenceType::TRIVIAL:                                                                                                                                           
+    break;
+  case DependenceType::NO_COMM:                                                                                                                                           
+    deps.push_back(std::pair<long, long>(point, point));
+    break;
+  case DependenceType::STENCIL_1D:                                                                                                                                        
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+    break;
+  case DependenceType::STENCIL_1D_PERIODIC:                                                                                                                              
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+    if (point-1 < 0) { // Wrap around negative case                                                                                                                              
+      deps.push_back(std::pair<long, long>(max_width-1, max_width-1));
+    }
+    if (point+1 >= max_width) { // Wrap around positive case                                                                                                                     
+      deps.push_back(std::pair<long, long>(0, 0));
+    }
+    break;
+  case DependenceType::DOM:
+    deps.push_back(std::pair<long, long>(point, std::min(max_width-1, point+1)));
+    break;
+  case DependenceType::TREE:
+    {
+      long child1 = point*2;
+      long child2 = point*2 + 1;
+      if (child1 < max_width && child2 < max_width)
+        deps.push_back(std::pair<long, long>(child1, child2));
+      else if (child1 < max_width)
+        deps.push_back(std::pair<long, long>(child1, child1));
+
+    }
+    break;
+    case DependenceType::FFT:                                                                                                                                               
+    {
+      long d1 = point - (1 << dset);
+      long d2 = point + (1 << dset);
+      if (d1 >= 0) {
+        deps.push_back(std::pair<long, long>(d1, d1));
+      }
+      if (d2 < max_width) {
+        deps.push_back(std::pair<long, long>(d2, d2));
+      }
+    }
+    break;
+  case DependenceType::ALL_TO_ALL:                                                                                                                                        
+    deps.push_back(std::pair<long, long>(0, max_width-1));
+    break;
+  default:
+    assert(false && "unexpected dependence type");
+  };
+
+  return deps;
+}
+
 std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long point) const
 {
   std::vector<std::pair<long, long> > deps;

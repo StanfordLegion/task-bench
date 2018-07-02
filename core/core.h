@@ -49,6 +49,7 @@ struct TaskGraph : public task_graph_t {
   long max_dependence_sets() const;
   long dependence_set_at_timestep(long timestep) const;
   // std::pair(a, b) represents the INCLUSIVE interval from a to b
+  std::vector<std::pair<long, long> > reverse_dependencies(long dset, long point) const;
   std::vector<std::pair<long, long> > dependencies(long dset, long point) const;
 };
 
