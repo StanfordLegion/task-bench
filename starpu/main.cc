@@ -88,13 +88,18 @@ public:
   void execute_timestep(size_t idx, long t);
 private:
   void insert_task(int num_args, int i, int j, std::vector<void*> &args);
+  void parse_argument(int argc, char **argv);
 private:
   struct starpu_conf *conf;
   starpu_ddesc_t *ddescA;
   int rank;
   int world;
-  int mt;
-  int nt;
+  int nb_cores;
+  int MT;
+  int NT;
+  int P;
+  int Q;
+  int MB;
 };
 
 void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args)
@@ -156,6 +161,21 @@ void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args
   };
 }
 
+void StarPUApp::parse_argument(int argc, char **argv)
+{
+  for (int i = 1; i < argc; i++) {
+    if (!strcmp(argv[i], "-mb")) {
+      MB = atol(argv[++i]);
+    }
+    if (!strcmp(argv[i], "-core")) {
+      nb_cores = atol(argv[++i]);
+    }
+    if (!strcmp(argv[i], "-p")) {
+      P = atol(argv[++i]);
+    }
+  }
+}
+
 StarPUApp::StarPUApp(int argc, char **argv)
   : App(argc, argv)
 {
@@ -179,10 +199,16 @@ StarPUApp::StarPUApp(int argc, char **argv)
   cl_task4.nbuffers  = 4;                                           
   cl_task4.name      = "task4";
   
+  P = 1;
+  MB = 10;
+  nb_cores = 1;
+  
+  parse_argument(argc, argv);
+  
   conf =  (struct starpu_conf *)malloc (sizeof(struct starpu_conf));
   starpu_conf_init( conf );
 
-  conf->ncpus = 1;
+  conf->ncpus = nb_cores;
   conf->ncuda = 0;
   conf->nopencl = 0;
   conf->sched_policy_name = "lws";
@@ -195,21 +221,16 @@ StarPUApp::StarPUApp(int argc, char **argv)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
   starpu_mpi_comm_size(MPI_COMM_WORLD, &world);
   
-  int p, q;
-  
-  p = 1;
-  q = 1;
-  
-  
-  int size_of_data = 10;
+  Q = world/P;
+  assert(P*Q == world);  
   
   TaskGraph &graph = graphs[0];
-  nt = graph.max_width;
-  mt = graph.timesteps;
+  NT = graph.max_width;
+  MT = graph.timesteps;
   
-  printf("mt %d, nt %d\n", mt, nt);
+  printf("mt %d, nt %d\n", MT, NT);
 
-  ddescA = create_and_distribute_data(rank, world, size_of_data, size_of_data, mt, nt, p, q);
+  ddescA = create_and_distribute_data(rank, world, MB, MB, MT, NT, P, Q);
 }
 
 StarPUApp::~StarPUApp()
