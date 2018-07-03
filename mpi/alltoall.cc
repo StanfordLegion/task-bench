@@ -56,10 +56,11 @@ int main (int argc, char *argv[])
   //time start                                                                                                                                                                   
   for (TaskGraph graph: graphs)
     {
+      Kernel k(graph.kernel);
       for (long timesteps = 0L; timesteps < graph.timesteps; timesteps++)
         {
           /* Kernel Execute Call */
-          graph.kernel.execute();
+          k.execute();
           /* Create alltoall dependencies */
           MPI_Alltoall(send, 1, MPI_INT, recv, 1, MPI_INT, MPI_COMM_WORLD);
           /* Testing: 
