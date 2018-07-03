@@ -10,6 +10,10 @@ fi
 
 source deps/env.sh
 
+if [[ $USE_GASNET -eq 1 ]]; then
+    make -C gasnet
+fi
+
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion clean
     make -C legion -j${THREADS:-4}
