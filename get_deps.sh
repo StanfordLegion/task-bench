@@ -25,7 +25,7 @@ export USE_GASNET=$USE_GASNET
 export GASNET=$GASNET_DIR/release
 export CONDUIT=$CONDUIT
 EOF
-    git clone https://gitlab.com/StanfordLegion/gasnet.git $GASNET_DIR
+    git clone https://github.com/StanfordLegion/gasnet.git $GASNET_DIR
 fi
 
 if [[ $USE_LEGION -eq 1 ]]; then
