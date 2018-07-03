@@ -92,6 +92,7 @@ task_graph_list_t app_task_graphs(app_t app);
 bool app_verbose(app_t app);
 void app_check(app_t app);
 void app_display(app_t app);
+void app_report_timing(app_t app, double elapsed_seconds);
 
 #ifdef __cplusplus
 }

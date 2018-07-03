@@ -344,3 +344,31 @@ void App::display() const
     }
   }
 }
+
+void App::report_timing(double elapsed_seconds) const
+{
+  long long num_tasks = 0;
+  long long num_deps = 0;
+  for (auto g : graphs) {
+    for (long t = 0; t < g.timesteps; ++t) {
+      long offset = g.offset_at_timestep(t);
+      long width = g.width_at_timestep(t);
+      long dset = g.dependence_set_at_timestep(t);
+
+      num_tasks += width;
+
+      for (long p = offset; p < offset + width; ++p) {
+        auto deps = g.dependencies(dset, p);
+        for (auto dep : deps) {
+          num_deps += dep.second - dep.first + 1;
+        }
+      }
+    }
+  }
+
+  printf("Total Tasks %lld\n", num_tasks);
+  printf("Total Dependencies %lld\n", num_deps);
+  printf("Elapsed Time %e seconds\n", elapsed_seconds);
+  printf("Time per Task %e seconds\n", elapsed_seconds/num_tasks);
+  printf("Time per Dependency %e seconds\n", elapsed_seconds/num_deps);
+}
