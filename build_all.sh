@@ -11,7 +11,7 @@ fi
 source deps/env.sh
 
 if [[ $USE_GASNET -eq 1 ]]; then
-    make -C gasnet
+    make -C "$GASNET_DIR"
 fi
 
 if [[ $USE_LEGION -eq 1 ]]; then

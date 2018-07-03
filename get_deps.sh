@@ -19,20 +19,21 @@ if [[ $USE_GASNET -eq 1 ]]; then
         echo "Please set CONDUIT and run again."
         false
     fi
-    export GASNET_DIR=$PWD/deps/gasnet
+    export GASNET_DIR="$PWD"/deps/gasnet
     cat >>deps/env.sh <<EOF
 export USE_GASNET=$USE_GASNET
-export GASNET=$GASNET_DIR/release
+export GASNET_DIR="$GASNET_DIR"
+export GASNET="$GASNET_DIR"/release
 export CONDUIT=$CONDUIT
 EOF
-    git clone https://github.com/StanfordLegion/gasnet.git $GASNET_DIR
+    git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
 fi
 
 if [[ $USE_LEGION -eq 1 ]]; then
-    export LEGION_DIR=$PWD/deps/legion
+    export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
 export USE_LEGION=$USE_LEGION
-export LG_RT_DIR=$LEGION_DIR/runtime
+export LG_RT_DIR="$LEGION_DIR"/runtime
 EOF
-    git clone https://gitlab.com/StanfordLegion/legion.git $LEGION_DIR
+    git clone https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
