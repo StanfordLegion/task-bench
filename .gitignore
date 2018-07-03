@@ -5,6 +5,7 @@
 *.swp
 *.a
 *.o
+*.so
 
 *.pdf
 *.log
