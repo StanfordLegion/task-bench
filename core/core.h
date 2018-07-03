@@ -27,22 +27,14 @@ typedef kernel_type_t KernelType;
 
 struct Kernel : public kernel_t {
   Kernel() = default;
-  Kernel(kernel_t k) {
-    type = k.type;
-    iterations = k.iterations;
-  }
+  Kernel(kernel_t k) : kernel_t(k) {}
 
   void execute() const;
 };
 
 struct TaskGraph : public task_graph_t {
   TaskGraph() = default;
-  TaskGraph(task_graph_t t) {
-    timesteps = t.timesteps;
-    max_width = t.max_width;
-    dependence = t.dependence;
-    kernel = t.kernel;
-  }
+  TaskGraph(task_graph_t t) : task_graph_t(t) {}
 
   long offset_at_timestep(long timestep) const;
   long width_at_timestep(long timestep) const;
