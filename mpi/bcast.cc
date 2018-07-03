@@ -119,11 +119,12 @@ int main (int argc, char *argv[])
 
   //TIMER START
   for (TaskGraph graph: graphs)
-    {                                                                                                                                                        
+    {
+      Kernel k(graph.kernel);
       for (long timestep = 0L; timestep < graph.timesteps; timestep++)
         {
           /* Kernel Execute Call */
-          graph.kernel.execute();
+          k.execute();
 
           MPI_Bcast(&data_to_send, 1, MPI_INT, second_rank, second_comm); /* Send to comm */
           if (taskid != MASTER) MPI_Bcast(&data_to_receive1, 1, MPI_INT, first_rank - 1, first_comm); /* Receive from left neighbor */
