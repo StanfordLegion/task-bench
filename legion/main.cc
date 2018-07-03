@@ -145,7 +145,7 @@ void LegionApp::run()
   unsigned long long stop = Realm::Clock::current_time_in_nanoseconds();
 
   double elapsed = (stop - start) / 1e9;
-  printf("Elapsed Time %e seconds\n", elapsed);
+  report_timing(elapsed);
 }
 
 void LegionApp::execute_main_loop()
