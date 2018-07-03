@@ -26,6 +26,7 @@ typedef dependence_type_t DependenceType;
 typedef kernel_type_t KernelType;
 
 struct Kernel : public kernel_t {
+  Kernel() = default;
   Kernel(kernel_t k) {
     type = k.type;
     iterations = k.iterations;
@@ -35,7 +36,7 @@ struct Kernel : public kernel_t {
 };
 
 struct TaskGraph : public task_graph_t {
-  TaskGraph() {}
+  TaskGraph() = default;
   TaskGraph(task_graph_t t) {
     timesteps = t.timesteps;
     max_width = t.max_width;
@@ -61,5 +62,9 @@ struct App {
   void display() const;
   void report_timing(double elapsed_seconds) const;
 };
+
+// Make sure core types are POD
+static_assert(std::is_pod<Kernel>::value, "Kernel must be POD");
+static_assert(std::is_pod<TaskGraph>::value, "TaskGraph must be POD");
 
 #endif
