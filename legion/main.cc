@@ -18,9 +18,6 @@
 #include "legion.h"
 
 #include "core.h"
-
-//add by Yuankun
-#include <unistd.h> 
 #include "timer.h"
 
 using namespace Legion;
@@ -28,6 +25,7 @@ using namespace Legion;
 enum TaskIDs {
   TID_TOP,
   TID_LEAF,
+  TID_DUMMY,
 };
 
 // In order to avoid spurious WAR dependencies, we round-robin the
@@ -43,28 +41,35 @@ enum FieldIDs {
   FID_LAST=FID_FIRST+NUM_FIELDS,
 };
 
+static Logger log_taskbench("taskbench");
+
 void leaf(const Task *task,
             const std::vector<PhysicalRegion> &regions,
             Context ctx, Runtime *runtime)
 {
-  printf("Leaf at point %lld\n",
-         task->index_point[0]);
-
-  //add by Yuankun
-  // if(task->index_point[0]==1)
-  //   sleep(2);
+  log_taskbench.info("Leaf at point %lld", task->index_point[0]);
 
   assert(task->arglen == sizeof(Kernel));
   Kernel kernel = *reinterpret_cast<Kernel *>(task->args);
   kernel.execute();
 }
 
+void dummy(const Task *task,
+           const std::vector<PhysicalRegion> &regions,
+           Context ctx, Runtime *runtime)
+{
+}
+
 struct LegionApp : public App {
   LegionApp(Runtime *runtime, Context ctx);
+
+  void run();
+private:
   void execute_main_loop();
 
-private:
   void execute_timestep(size_t i, long t);
+
+  void issue_execution_fence_and_block();
 
 private:
   Runtime *runtime;
@@ -100,29 +105,17 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     std::vector<LogicalPartitionT<1> >secondary_lps;
 
     long ndsets = g.max_dependence_sets();
-    printf("max_dependence_sets ndsets=%ld\n", ndsets);
-
     for (long dset = 0; dset < ndsets; ++dset) {
       IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, is);
 
-      printf("\n1st-For: dest=%ld, ndsets=%ld\n", dset, ndsets);
-
       for (long point = 0; point < g.max_width; ++point) {
-        
-        printf("\n2nd-For: point=%ld，max_width=%ld\n", point, g.max_width);
-
         std::vector<std::pair<long, long> > deps = g.dependencies(dset, point);
 
         std::vector<IndexSpace> subspaces;
         for (auto dep : deps) {
-
-          printf("subspaces.push_back deps from %ld to %ld\n", dep.first, dep.second);
-
           for (long i = dep.first; i <= dep.second; ++i) {
             subspaces.push_back(runtime->get_index_subspace(ctx, primary_ip, i));
-            printf("i=%ld ", i); 
           }
-          printf("\n");
         }
         runtime->create_index_space_union(ctx, secondary_ip, point, subspaces);
       }
@@ -137,10 +130,26 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
   }
 }
 
-void LegionApp::execute_main_loop()
+void LegionApp::run()
 {
   display();
 
+  execute_main_loop(); // warm-up
+
+  issue_execution_fence_and_block();
+  unsigned long long start = Realm::Clock::current_time_in_nanoseconds();
+
+  execute_main_loop(); // timed
+
+  issue_execution_fence_and_block();
+  unsigned long long stop = Realm::Clock::current_time_in_nanoseconds();
+
+  double elapsed = (stop - start) / 1e9;
+  printf("Elapsed Time %e seconds\n", elapsed);
+}
+
+void LegionApp::execute_main_loop()
+{
   for (long t = 0; ; ++t) {
     bool still_executing = false;
     for (size_t idx = 0; idx < graphs.size(); ++idx) {
@@ -166,7 +175,7 @@ void LegionApp::execute_timestep(size_t idx, long t)
   long offset = g.offset_at_timestep(t);
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
-  printf("Timestep %ld offset %ld width %ld dset %ld\n", t, offset, width, dset);
+  log_taskbench.info("Timestep %ld offset %ld width %ld dset %ld", t, offset, width, dset);
 
   Rect<1> bounds(offset, offset+width-1);
 
@@ -193,25 +202,21 @@ void LegionApp::execute_timestep(size_t idx, long t)
   runtime->execute_index_space(ctx, launcher);
 }
 
+void LegionApp::issue_execution_fence_and_block()
+{
+  runtime->issue_execution_fence(ctx);
+
+  TaskLauncher launcher(TID_DUMMY, TaskArgument());
+  Future f = runtime->execute_task(ctx, launcher);
+  f.get_void_result();
+}
+
 void top(const Task *task,
          const std::vector<PhysicalRegion> &regions,
          Context ctx, Runtime *runtime)
 {
   LegionApp app(runtime, ctx);
-
-  //warm up
-  // app.execute_main_loop();
-
-  printf("\nAfter warm up, Starting main simulation loop\n");
-  // Execution fence to wait for all prior operations to be done before getting our timing result
-  Timer::sync_time_start();
-
-  app.execute_main_loop();
-
-  // Execution fence timer
-  double t_elapsed = Timer::sync_time_end();
-  printf("[****] TIME(s) %12.5f\n", t_elapsed * 1e-6);
-
+  app.run();
 }
 
 int main(int argc, char **argv)
@@ -229,6 +234,13 @@ int main(int argc, char **argv)
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     registrar.set_leaf();
     Runtime::preregister_task_variant<leaf>(registrar, "leaf");
+  }
+
+  {
+    TaskVariantRegistrar registrar(TID_DUMMY, "dummy");
+    registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
+    registrar.set_leaf();
+    Runtime::preregister_task_variant<dummy>(registrar, "dummy");
   }
 
   return Runtime::start(argc, argv);
