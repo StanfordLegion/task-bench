@@ -56,6 +56,7 @@ int main (int argc, char *argv[])
   for (size_t i = 0; i < graphs.size(); i++)
     {
       TaskGraph graph = graphs[i];
+      Kernel k(graph.kernel);
       for (long timestep = 0L; timestep < graph.timesteps; timestep += 1)
         {
           /* Continue if taskid should not yet be included in the graph */
@@ -63,7 +64,7 @@ int main (int argc, char *argv[])
           if (taskid < graph.offset_at_timestep(timestep)) continue;
 
           /* Kernel Execute Call */
-          graph.kernel.execute();
+          k.execute();
 
           /* Sends */
           for (std::pair<long, long> interval: graph_rev_deps[i][graph.dependence_set_at_timestep(timestep)])
