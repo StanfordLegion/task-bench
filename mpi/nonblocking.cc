@@ -82,14 +82,15 @@ int main (int argc, char *argv[])
     //start timer
   for (size_t i = 0; i < graphs.size(); i++)
     {
-      TaskGraph graph = graphs[i];                                                                                                                                                                
+      TaskGraph graph = graphs[i]; 
+      Kernel k(graph.kernel);
       for (long timestep = 0L; timestep < graph.timesteps; timestep += 1)
         {
           long dset = graph.dependence_set_at_timestep(timestep);
           if (taskid >= graph.width_at_timestep(timestep) + graph.offset_at_timestep(timestep)) continue;
           if (taskid < graph.offset_at_timestep(timestep)) continue;
           /* Kernel Execute Call */
-          graph.kernel.execute();
+          k.execute();
 
           int idx = 0;
           int count = 0;
