@@ -1,9 +1,32 @@
+/* Copyright 2018 Los Alamos National Laboratory
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <stdarg.h>
+
 #include "core.h"
 #include "common.h"
+#include <parsec/execution_stream.h>
 #include <dplasmatypes.h>
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <interfaces/superscalar/insert_function.h>
 
+/* timings */
+#if defined( PARSEC_HAVE_MPI)
+#define MPI_TIMING
+#endif
+#include "timer.h"
 
 #define MAX_ARGS  4
 
@@ -11,8 +34,7 @@ enum regions {
   TILE_FULL,
 };
 
-static int
-test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
     int i, j;
@@ -21,28 +43,26 @@ test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
     parsec_dtd_unpack_args(this_task, &i, &j, &data1);
     
     *data1 = 0.0;
-    printf("i %d, j %d, data1 %f\n", i, j, *data1);
+    printf("\nRank %d, core %d, i %d, j %d, data1 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data1);
 
     return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int
-test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static int test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
     int i, j;
     double *data1, *data2;
 
     parsec_dtd_unpack_args(this_task, &i, &j, &data1, &data2);
-    
+    //sleep(5);
     *data2 = *data1 + 1.0;
-    printf("i %d, j %d, data2 %f\n", i, j, *data2);
+    printf("\nRank %d, core %d, i %d, j %d, data2 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data2);
 
     return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int
-test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
     int i, j;
@@ -51,13 +71,14 @@ test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
     parsec_dtd_unpack_args(this_task, &i, &j, &data1, &data2, &data3);
     
     *data3 = *data1 + *data2 + 1.0;
-    printf("i %d, j %d, data3 %f\n", i, j, *data3);
+   // printf("\nRank %d, core %d, i %d, j %d, data3 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data3);
+    printf("\nTask 3, rank %d, core %d, i %d, j %d, data1 %.2f, data2 %.2f, data3 %.2f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data1, *data2, *data3);
+   // printf("\nTask 3, rank %d, core %d, i %d, j %d, data1 %p, data2 %p, data3 %p\n", this_task->taskpool->context->my_rank, es->core_id, i, j, data1, data2, data3);
 
     return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int
-test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static int test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
     int i, j;
@@ -66,7 +87,7 @@ test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
     parsec_dtd_unpack_args(this_task, &i, &j, &data1, &data2, &data3, &data4);
     
     *data4 = *data1 + *data2 + *data3 + 1.0;
-    printf("i %d, j %d, data4 %f\n", i, j, *data4);
+    printf("\nRank %d, core %d, i %d, j %d, data4 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data4);
 
     return PARSEC_HOOK_RETURN_DONE;
 }
@@ -75,7 +96,8 @@ struct ParsecApp : public App {
   ParsecApp(int argc, char **argv);
   ~ParsecApp();
   void execute_main_loop();
-  void execute_timestep(long t);
+  void execute_timestep(size_t idx, long t);
+  void debug_printf(int verbose_level, const char *format, ...);
 private:
   void insert_task(int num_args, int i, int j, std::vector<parsec_dtd_tile_t*> &args);
 private:
@@ -107,13 +129,8 @@ private:
   int NT;
   int KT;
   int check;
-  int check_inv;
   int loud;
   int scheduler;
-  int random_seed;
-  int matrix_init;
-  int butterfly_level;
-  int async;
   int iparam[IPARAM_SIZEOF];
 };
 
@@ -161,9 +178,7 @@ void ParsecApp::insert_task(int num_args, int i, int j, std::vector<parsec_dtd_t
 
 ParsecApp::ParsecApp(int argc, char **argv)
   : App(argc, argv)
-{
-  printf("init parsec\n");
-  
+{ 
   int Cseed = 0;
 
   /* Set defaults for non argv iparams */
@@ -174,15 +189,21 @@ ParsecApp::ParsecApp(int argc, char **argv)
 #endif
   
   TaskGraph &graph = graphs[0];
-  
   iparam[IPARAM_N] = graph.max_width;
   iparam[IPARAM_M] = graph.timesteps;
   
   /* Initialize PaRSEC */
   parsec = setup_parsec(argc, argv, iparam);
-  PASTE_CODE_IPARAM_LOCALS(iparam);
   
-  printf("N %d. M %d\n", N, M);
+  iparam[IPARAM_N] = graph.max_width * iparam[IPARAM_MB];
+  iparam[IPARAM_M] = graph.timesteps * iparam[IPARAM_MB];
+  
+  print_arguments(iparam);
+  
+  
+  PASTE_CODE_IPARAM_LOCALS(iparam);
+
+  debug_printf(0, "init parsec\n");
 
   LDA = max(LDA, max(M, K));
   LDB = max(LDB, max(K, N));
@@ -214,7 +235,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
                           parsec_datatype_double_t, dcC.super.mb );
 
   /* matrix generation */
-  dplasma_dplrnt( parsec, 0, (parsec_tiled_matrix_dc_t *)&dcC, Cseed);
+  //dplasma_dplrnt( parsec, 0, (parsec_tiled_matrix_dc_t *)&dcC, Cseed);
 
 
   parsec_context_add_taskpool( parsec, dtd_tp );
@@ -222,7 +243,10 @@ ParsecApp::ParsecApp(int argc, char **argv)
 
 ParsecApp::~ParsecApp()
 {
-  printf("clean up parsec\n");
+  debug_printf(0, "clean up parsec\n");
+  
+  /* #### PaRSEC context is done #### */
+  
   /* Cleaning up the parsec handle */
   parsec_taskpool_free( dtd_tp );
 
@@ -244,56 +268,22 @@ void ParsecApp::execute_main_loop()
   
   display();
   
-  printf("pid %d, M %d\n", getpid(), M);
+  debug_printf(0, "rank %d, pid %d, M %d, N %d\n", rank, getpid(), M, N);
   //sleep(10);
   
   /* #### parsec context Starting #### */
-  PASTE_CODE_FLOPS(FLOPS_DGEMM, ((DagDouble_t)M,(DagDouble_t)N,(DagDouble_t)K));
-  SYNC_TIME_START();
+  Timer::sync_time_start();
   /* start parsec context */
   parsec_context_start(parsec);
   int i, j;
   
   int x, y;
   
-  for (y = 0; y < M; y++) {
-    execute_timestep(y);
-  }
-  /*
-  printf("start insert task\n");
-  std::vector<parsec_dtd_tile_t*> args;
-  int num_args = 0;
-  for (i = 0; i < M; i++) {
-      for (j = 0; j < N; j++ ) {
-          if (i == 0) {
-            args.clear();
-            num_args = 1;
-            args.push_back(TILE_OF(C, 0, j));
-          } else if (i != 0 && j == 0) {
-            num_args = 3;
-            args.clear();
-            args.push_back(TILE_OF(C, i, j));
-            args.push_back(TILE_OF(C, i-1, 0));
-            args.push_back(TILE_OF(C, i-1, 1));
-          } else if (i != 0 && j == (N-1)) {
-            num_args = 3;
-            args.clear();
-            args.push_back(TILE_OF(C, i, j));
-            args.push_back(TILE_OF(C, i-1, N-2));
-            args.push_back(TILE_OF(C, i-1, N-1));
-          } else {
-            num_args = 4;
-            args.clear();
-            args.push_back(TILE_OF(C, i, j));
-            args.push_back(TILE_OF(C, i-1, j-1));
-            args.push_back(TILE_OF(C, i-1, j));
-            args.push_back(TILE_OF(C, i-1, j+1));
-          }
-          insert_task(num_args, i, j, args);
-          
-      }
-  }*/
+  const TaskGraph &g = graphs[0];
   
+  for (y = 0; y < g.timesteps; y++) {
+    execute_timestep(0, y);
+  }
 
   parsec_dtd_data_flush_all( dtd_tp, (parsec_data_collection_t *)&dcC );
 
@@ -302,56 +292,60 @@ void ParsecApp::execute_main_loop()
 
   /* Waiting on all handle and turning everything off for this context */
   parsec_context_wait( parsec );
-
-  /* #### PaRSEC context is done #### */
-
-  SYNC_TIME_PRINT(rank, ("\tPxQ= %3d %-3d NB= %4d N= %7d : %14f gflops\n",
-                         P, Q, NB, N,
-                         gflops=(flops/1e9)/sync_time_elapsed));
-
+  
+  double t_elapsed = Timer::sync_time_end();
+  debug_printf(0, "[****] TIME(s) %12.5f : \tPxQ= %3d %-3d NB= %4d N= %7d M= %7d\n", t_elapsed, P, Q, NB, N, M);
 }
 
-void ParsecApp::execute_timestep(long t)
+void ParsecApp::execute_timestep(size_t idx, long t)
 {
-  const TaskGraph &g = graphs[0];
+  const TaskGraph &g = graphs[idx];
   long offset = g.offset_at_timestep(t);
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
   
   std::vector<parsec_dtd_tile_t*> args;
   
-  printf("ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
+  debug_printf(0, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
-    int num_args;
+    int num_args;    
     
     if (deps.size() == 0) {
       num_args = 1;
-      printf("%d[%d] ", x, num_args);
-      args.clear();
+      debug_printf(0, "%d[%d] ", x, num_args);
       args.push_back(TILE_OF(C, t, x)); 
     } else {
-      std::pair<long, long> dep = deps[0];
-      assert(deps.size() == 1);
-      num_args = dep.second - dep.first + 1;
-      printf("%d[%d, %d, %d] ", x, num_args, dep.first, dep.second);
-      
       if (t == 0) {
         num_args = 1;
-        args.clear();
+        debug_printf(0, "%d[%d] ", x, num_args);
         args.push_back(TILE_OF(C, t, x)); 
       } else {
-        num_args ++;
-        args.clear();
+        num_args = 1;
         args.push_back(TILE_OF(C, t, x));
-        for (int i = dep.first; i <= dep.second; i++) {
-          args.push_back(TILE_OF(C, t-1, i));  
+        for (std::pair<long, long> dep : deps) {
+          num_args += dep.second - dep.first + 1;
+          debug_printf(0, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          for (int i = dep.first; i <= dep.second; i++) {
+            args.push_back(TILE_OF(C, t-1, i));  
+          }
         }
       }
     }
     insert_task(num_args, t, x, args); 
+    args.clear();
   }
-  printf("\n");
+  debug_printf(0, "\n");
+}
+
+void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
+{
+  if (rank == 0) {
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+  }
 }
 
 int main(int argc, char ** argv)

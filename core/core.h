@@ -16,39 +16,25 @@
 #ifndef CORE_H
 #define CORE_H
 
+#include "core_c.h"
+
 #include <string>
 #include <vector>
 
-enum class DependenceType {
-  TRIVIAL,
-  NO_COMM,
-  STENCIL_1D,
-  STENCIL_1D_PERIODIC,
-  DOM,
-  TREE,
-  FFT,
-  ALL_TO_ALL,
-};
+typedef dependence_type_t DependenceType;
 
-enum class KernelType {
-  EMPTY,
-  MEMORY_BOUND,
-  COMPUTE_BOUND,
-};
+typedef kernel_type_t KernelType;
 
-struct Kernel {
-  KernelType type;
-  long iterations;
-  // TODO: Add parameters for load imbalance, etc.
+struct Kernel : public kernel_t {
+  Kernel() = default;
+  Kernel(kernel_t k) : kernel_t(k) {}
 
   void execute() const;
 };
 
-struct TaskGraph {
-  long timesteps;
-  long max_width;
-  DependenceType dependence;
-  Kernel kernel;
+struct TaskGraph : public task_graph_t {
+  TaskGraph() = default;
+  TaskGraph(task_graph_t t) : task_graph_t(t) {}
 
   long offset_at_timestep(long timestep) const;
   long width_at_timestep(long timestep) const;
@@ -67,6 +53,11 @@ struct App {
   App(int argc, char **argv);
   void check() const;
   void display() const;
+  void report_timing(double elapsed_seconds) const;
 };
+
+// Make sure core types are POD
+static_assert(std::is_pod<Kernel>::value, "Kernel must be POD");
+static_assert(std::is_pod<TaskGraph>::value, "TaskGraph must be POD");
 
 #endif
