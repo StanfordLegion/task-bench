@@ -16,7 +16,7 @@ INC        = -I$(STARPU_DIR)/include/starpu/1.2 -I../core
 INC_EXT    = 
 
 # Location of the libraries.
-LIB        = -Wl,-rpath,$(STARPU_DIR)/lib:$(MPI_DIR)/lib $(STARPU_DIR)/lib/libstarpu-1.2.so $(STARPU_DIR)/lib/libstarpumpi-1.2.so
+LIB        = -Wl,-rpath,$(STARPU_DIR)/lib: $(STARPU_DIR)/lib/libstarpu-1.2.so $(STARPU_DIR)/lib/libstarpumpi-1.2.so
 LIB_EXT    = 
 
 INC := $(INC) $(INC_EXT)
