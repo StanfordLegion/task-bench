@@ -35,7 +35,7 @@ main.o: main.cc ../core/timer.h
 	$(CC) -c $(CFLAGS) $<
 	
 main: main.o common.o core.o
-	$(CC) $^ $(LIB) -o $@ 
+	$(CC) $^ $(LIB) $(LDFLAGS)-o $@ 
 
 
 clean:
