@@ -21,7 +21,7 @@ fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
     cd "$STARPU_SRC_DIR"
-    ./configure --prefix=$STARPU_DIR --disable-cuda
+    ./configure --prefix=$STARPU_DIR --disable-cuda --without-hwloc
     make -j${THREADS:-4}
     make install
     cd ../../../
