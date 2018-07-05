@@ -4,8 +4,8 @@ endif
 
 CC         = mpic++
 
-CFLAGS     = -g -O0  -DADD_ -fPIC
-LDFLAGS    = -Wall -g -O0
+CFLAGS     = -g -O0  -DADD_ -fPIC -std=c++11
+LDFLAGS    = -Wall -g -O0 -std=c++11
 
 #STARPU_DIR = /home/wwu12/starpu/install
 #MPI_DIR    = /sw/openmpi/2.1.1
@@ -39,7 +39,7 @@ main.o: main.cc
 	$(CC) -c $(CFLAGS) $<
 	
 main: main.o data.o core.o
-	$(CC) $^ $(LIB) -o $@ 
+	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 
 
 clean:
