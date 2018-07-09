@@ -17,3 +17,7 @@ fi
 if [[ $USE_STARPU -eq 1 ]]; then
     mpirun -np 1 ./starpu/main -steps 7 -width 4 -type dom
 fi
+
+if [[ $USE_PARSEC -eq 1 ]]; then
+    mpirun -np 1 ./parsec/main -steps 7 -width 4 -type dom
+fi
