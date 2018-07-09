@@ -112,7 +112,7 @@ int main (int argc, char *argv[])
 			  		std::vector< std::pair<long, long> > rev_dependencies = graph.reverse_dependencies(dset, i);
 			  		int num_rev_dependencies = count_dependencies(rev_dependencies);
 			  
-			  		int *recv_ranks = num_rev_dependencies != 0 ? (int *)malloc(sizeof(int) * num_rev_dependencies) : NULL;
+			  		int *recv_ranks = num_rev_dependencies != 0 ? (int *)malloc(sizeof(int) * (num_rev_dependencies + 1)) : NULL;
 			  		
 			  		bool inner_seen = false;
 			  		int index = 0;
