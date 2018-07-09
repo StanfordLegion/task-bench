@@ -1,17 +1,22 @@
-CC         = g++
+ifndef STARPU_DIR
+$(error STARPU_DIR variable is not defined, aborting build)
+endif
 
-CFLAGS     = -g -O0  -DADD_ -fPIC
-LDFLAGS    = -Wall -g -O0
+CC         = mpic++
 
-STARPU_DIR = /home/wwu/starpu/build
-MPI_DIR    = /projects/opt/centos7/mpich/3.2-gcc_6.2.0
+CFLAGS     = -g -O0  -DADD_ -fPIC -std=c++11
+LDFLAGS    = -Wall -g -O0 -std=c++11
+
+#STARPU_DIR = /home/wwu12/starpu/install
+#MPI_DIR    = /sw/openmpi/2.1.1
+
 
 # Include directories
 INC        = -I$(STARPU_DIR)/include/starpu/1.2 -I../core
-INC_EXT    = -I$(MPI_DIR)/include
+INC_EXT    = 
 
 # Location of the libraries.
-LIB        = -Wl,-rpath,$(STARPU_DIR)/lib:$(MPI_DIR)/lib $(STARPU_DIR)/lib/libstarpu-1.2.so.4.0.0 $(STARPU_DIR)/lib/libstarpumpi-1.2.so.3.0.0 $(MPI_DIR)/lib/libmpi.so 
+LIB        = -Wl,-rpath,$(STARPU_DIR)/lib: $(STARPU_DIR)/lib/libstarpu-1.2.so $(STARPU_DIR)/lib/libstarpumpi-1.2.so
 LIB_EXT    = 
 
 INC := $(INC) $(INC_EXT)
@@ -34,7 +39,7 @@ main.o: main.cc
 	$(CC) -c $(CFLAGS) $<
 	
 main: main.o data.o core.o
-	$(CC) $^ $(LIB) -o $@ 
+	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 
 
 clean:

@@ -18,9 +18,10 @@
 #include "core.h"
 #include "common.h"
 #include <parsec/execution_stream.h>
-#include <dplasmatypes.h>
+//#include <dplasmatypes.h>
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <interfaces/superscalar/insert_function.h>
+#include <parsec/arena.h>
 
 /* timings */
 #if defined( PARSEC_HAVE_MPI)
@@ -33,6 +34,16 @@
 enum regions {
   TILE_FULL,
 };
+
+static inline int
+dplasma_add2arena_tile( parsec_arena_t *arena, size_t elem_size, size_t alignment,
+                        parsec_datatype_t oldtype, unsigned int tile_mb )
+{
+    (void)elem_size;
+    return parsec_matrix_add2arena( arena, oldtype,
+                                   matrix_UpperLower, 1, tile_mb, tile_mb, tile_mb,
+                                   alignment, -1 );
+}
 
 static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
