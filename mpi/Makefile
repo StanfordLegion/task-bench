@@ -15,7 +15,7 @@ basic: basic.cc ../core/core.cc ../core/core.h
 bcast: bcast.cc ../core/core.cc ../core/core.h
 	$(Cxx) $(CxxFLAGS) $< $(CORE) -o $@
 
-alltoall: alltoall.cc ../core/core.cc ../core/core.h
+alltoall: alltoallv.cc ../core/core.cc ../core/core.h
 	$(Cxx) $(CxxFLAGS) $< $(CORE) -o $@
 
 clean:
