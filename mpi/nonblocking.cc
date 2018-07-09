@@ -16,8 +16,8 @@
 #include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "core.h"
-#include "timer.h"
+#include "../core/core.h"
+#include "../core/timer.h"
 #define  MASTER 0
 
 int count_dependencies(std::vector< std::pair<long, long> > dep)
