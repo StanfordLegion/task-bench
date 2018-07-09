@@ -8,7 +8,6 @@ USE_GASNET=${USE_GASNET:-0}
 USE_STARPU=${USE_STARPU:-1}
 USE_PARSEC=${USE_PARSEC:-1}
 
-
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
     echo "Delete deps and run again if you want to re-download dependencies."
