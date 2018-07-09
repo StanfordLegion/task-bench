@@ -6,6 +6,7 @@ USE_LEGION=${USE_LEGION:-1}
 TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-1}
 USE_GASNET=${USE_GASNET:-0}
 USE_STARPU=${USE_STARPU:-1}
+USE_PARSEC=${USE_PARSEC:-1}
 
 
 if [[ -e deps ]]; then
@@ -60,4 +61,14 @@ EOF
     mkdir -p "$STARPU_DL_DIR"
     tar -zxf starpu-1.2.4.tar.gz -C "$STARPU_DL_DIR"
     rm -rf starpu-1.2.4.tar.gz
+fi
+
+if [[ $USE_PARSEC -eq 1 ]]; then
+    export PARSEC_DL_DIR="$PWD"/deps/parsec
+    cat >>deps/env.sh <<EOF
+export USE_PARSEC=$USE_PARSEC
+export PARSEC_DIR=$PARSEC_DL_DIR/build
+EOF
+    mkdir -p "$PARSEC_DL_DIR"
+    git clone https://wwu12@bitbucket.org/wwu12/parsec.git "$PARSEC_DL_DIR" 
 fi
