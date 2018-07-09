@@ -88,7 +88,7 @@ int main (int argc, char *argv[])
 		  //small bit of extra time here
 		  long dset = graph.dependence_set_at_timestep(timestep);
 		  if (taskid >= graph.width_at_timestep(timestep) + graph.offset_at_timestep(timestep)) continue;
-    	      if (taskid < graph.offset_at_timestep(timestep)) continue;
+    	      	  if (taskid < graph.offset_at_timestep(timestep)) continue;
 		  
 		  /* Kernel Execute Call */
 		  k.execute();
