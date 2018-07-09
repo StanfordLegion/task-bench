@@ -4,6 +4,7 @@ set -e
 
 USE_LEGION=${USE_LEGION:-1}
 USE_GASNET=${USE_GASNET:-0}
+USE_STARPU=${USE_STARPU:-1}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -36,4 +37,17 @@ export USE_LEGION=$USE_LEGION
 export LG_RT_DIR="$LEGION_DIR"/runtime
 EOF
     git clone https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+fi
+
+if [[ $USE_STARPU -eq 1 ]]; then
+    export STARPU_DL_DIR="$PWD"/deps/starpu
+    cat >>deps/env.sh <<EOF
+export USE_STARPU=$USE_STARPU
+export STARPU_SRC_DIR=$STARPU_DL_DIR/starpu-1.2.4
+export STARPU_DIR=$STARPU_DL_DIR
+EOF
+    wget http://starpu.gforge.inria.fr/files/starpu-1.2.4/starpu-1.2.4.tar.gz
+    mkdir -p "$STARPU_DL_DIR"
+    tar -zxf starpu-1.2.4.tar.gz -C "$STARPU_DL_DIR"
+    rm -rf starpu-1.2.4.tar.gz
 fi

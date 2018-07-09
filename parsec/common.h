@@ -26,14 +26,14 @@
 #include <string.h>
 /* Plasma and math libs */
 #include <math.h>
-#include <cblas.h>
-#include <lapacke.h>
-#include <core_blas.h>
+//#include <cblas.h>
+//#include <lapacke.h>
+//#include <core_blas.h>
 
 #include "parsec/profiling.h"
 #include "parsec/parsec_internal.h"
 #include "parsec/utils/debug.h"
-#include "dplasma.h"
+//#include "dplasma.h"
 
 #ifdef __cplusplus
 extern "C" {

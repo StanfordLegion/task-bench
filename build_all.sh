@@ -18,3 +18,13 @@ if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion clean
     make -C legion -j${THREADS:-4}
 fi
+
+if [[ $USE_STARPU -eq 1 ]]; then
+    cd "$STARPU_SRC_DIR"
+    ./configure --prefix=$STARPU_DIR --disable-cuda --without-hwloc
+    make -j${THREADS:-4}
+    make install
+    cd ../../../
+    make -C starpu clean
+    make -C starpu
+fi
