@@ -19,6 +19,11 @@ if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j${THREADS:-4}
 fi
 
+if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
+    make -C mpi clean
+    make -C mpi all
+fi
+
 if [[ $USE_STARPU -eq 1 ]]; then
     cd "$STARPU_SRC_DIR"
     ./configure --prefix=$STARPU_DIR --disable-cuda --without-hwloc

@@ -3,6 +3,7 @@
 set -e
 
 USE_LEGION=${USE_LEGION:-1}
+TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-1}
 USE_GASNET=${USE_GASNET:-0}
 USE_STARPU=${USE_STARPU:-1}
 USE_PARSEC=${USE_PARSEC:-1}
@@ -38,6 +39,14 @@ export USE_LEGION=$USE_LEGION
 export LG_RT_DIR="$LEGION_DIR"/runtime
 EOF
     git clone https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+fi
+
+
+if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
+    cat >>deps/env.sh <<EOF
+export TASKBENCH_USE_MPI=$TASKBENCH_USE_MPI
+EOF
+    source deps/env.sh
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
