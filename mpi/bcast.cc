@@ -75,14 +75,22 @@ int main (int argc, char *argv[])
   for (size_t graph_num = 0; graph_num < graphs.size(); graph_num++)
     {
       TaskGraph graph = graphs[graph_num];
+      bool is_fft = false;
+      int total_dsets = graph.max_dependence_sets();
+      if (graph.dependence == DependenceType::FFT)
+        {
+          is_fft = true;
+          graph.dependence = DependenceType::STENCIL_1D;
+        }
       
       /* Preallocated storage needed for all dsets in each graph */
       std::vector<int *> dset_data_to_receive;
       std::vector<std::vector <std::pair<int, MPI_Comm> > > dset_all_comms;
       
       /* Loop through all dsets for each graph */
-      for (long dset = 0L; dset < graph.max_dependence_sets(); dset++)
+      for (long dset = 0L; dset < total_dsets; dset++)
 		{
+	          long multiplier = 1L << dset;
 		  bool loop = false;
 		  bool inner_loop = false;
 		  bool seen_self = false;
@@ -106,10 +114,14 @@ int main (int argc, char *argv[])
 				}
 		      
 		      for (int i = interval.first; i <= interval.second; i++)
-				{
+			{
+			      	int actual_i = is_fft ? (i - taskid) * multiplier + taskid : i;
+                 		if (actual_i < 0 || actual_i >= graph.max_width) {
+                   			 continue;
+                 		}
 			 	 if (i == taskid) seen_self = true;
 			  
-			  		std::vector< std::pair<long, long> > rev_dependencies = graph.reverse_dependencies(dset, i);
+			  		std::vector< std::pair<long, long> > rev_dependencies = graph.reverse_dependencies(dset, actual_i);
 			  		int num_rev_dependencies = count_dependencies(rev_dependencies);
 			  
 			  		int *recv_ranks = num_rev_dependencies != 0 ? (int *)malloc(sizeof(int) * (num_rev_dependencies + 1)) : NULL;
@@ -133,19 +145,24 @@ int main (int argc, char *argv[])
 						}
 			    	  for (int inter = inner_interval.first; inter <= inner_interval.second; inter++)
 						{
-				 		 if (inter == i) 
-				   			 {
-				    		  inner_seen = true;
-				    		  root_of_recv = index;
-				   			 }
-				 		 recv_ranks[index] = inter;
+				 		int actual_inter = is_fft ? (inter - actual_i) * multiplier + actual_i: inter;
+                          			if (actual_inter < 0 || actual_inter >= graph.max_width) {
+                           				 num_rev_dependencies--;
+                            				 continue;
+                         			} 
+					  	if (actual_inter == actual_i) 
+					 	  {
+				    			inner_seen = true;
+				    		  	root_of_recv = index;
+				   		  }
+				 		 recv_ranks[index] = actual_inter;
 				 		 index++;
 						}
 			   		  }
 			  /* Forces a task to be in the communicator of its reverse dependencies */
 			  		if (!inner_seen)
 			   		 {
-			      		recv_ranks[index] = i;
+			      		recv_ranks[index] = actual_i;
 			      		root_of_recv = index;
 			     		 num_rev_dependencies++;
 			    	 }
