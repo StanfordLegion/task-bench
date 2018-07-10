@@ -10,6 +10,11 @@ fi
 
 source deps/env.sh
 
+if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
+    make -C mpi clean
+    make -C mpi all
+fi
+
 if [[ $USE_GASNET -eq 1 ]]; then
     make -C "$GASNET_DIR"
 fi
@@ -17,11 +22,6 @@ fi
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion clean
     make -C legion -j${THREADS:-4}
-fi
-
-if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
-    make -C mpi clean
-    make -C mpi all
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
