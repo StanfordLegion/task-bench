@@ -48,7 +48,7 @@ void free_all_data (std::vector<std::vector<int *> > all_data)
   for (std::vector<int *> dset_data: all_data)
     {
       for (int *data: dset_data)
-		if (data != NULL) free(data);
+	if (data != NULL) free(data);
     }
 }
 
@@ -152,7 +152,7 @@ int main (int argc, char *argv[])
 		      
 			  		MPI_Group recv_group;
 			  		MPI_Group_incl(world_group, num_rev_dependencies, recv_ranks, &recv_group);
-			  		free(recv_ranks); //tentatively
+			  		if (recv_ranks != NULL) free(recv_ranks); //tentatively
 		  	  		
 			  		MPI_Comm recv_comm;
 			  		MPI_Comm_create_group(MPI_COMM_WORLD, recv_group, 0, &recv_comm);
@@ -187,7 +187,7 @@ int main (int argc, char *argv[])
 			  		root_of_recv = index;
 				  }
 		     	 MPI_Group_incl(world_group, num_rev_dependencies, recv_ranks, &recv_group);
-		      	free(recv_ranks); //tentatively
+		      	if (recv_ranks != NULL) free(recv_ranks); //tentatively
 		      	MPI_Comm_create_group(MPI_COMM_WORLD, recv_group, 0, &recv_comm1);
 		      	MPI_Group_free(&recv_group); //tentatively
 		 
@@ -199,6 +199,8 @@ int main (int argc, char *argv[])
 		}
       graph_all_comms.push_back(dset_all_comms);
       graph_data_to_receive.push_back(dset_data_to_receive);
+      dset_all_comms.clear();
+      dset_data_to_receive.clear();
     }
 
   struct Timer__<struct MPITimer> timer;
@@ -213,7 +215,7 @@ int main (int argc, char *argv[])
 		{
 		  //extra time with api calls
 		  long dset = graph.dependence_set_at_timestep(timestep);
-      k.execute();
+      		  k.execute();
 		  
 		  for(int i = 0; i < graph_all_comms[graph_num][dset].size(); i++)     
 		    {
@@ -223,7 +225,7 @@ int main (int argc, char *argv[])
 				{
 			  		int data = taskid;
 			  		MPI_Bcast(&data, 1, MPI_INT, graph_all_comms[graph_num][dset][i].first, graph_all_comms[graph_num][dset][i].second);
-			  		graph_data_to_receive[graph_num][dset][i - 1] = data;
+			  		graph_data_to_receive[graph_num][dset][i] = data;
 				}
 	    	}
 		}  
@@ -234,6 +236,6 @@ int main (int argc, char *argv[])
   /* Free all memory */
   MPI_Group_free(&world_group);
   free_all_comms(graph_all_comms);
-  //free_all_data(graph_data_to_receive); //still need to do, some are null
+  free_all_data(graph_data_to_receive);
   MPI_Finalize();
 }
