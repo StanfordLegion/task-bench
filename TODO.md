@@ -15,7 +15,6 @@
       * GPUs?
       * Measure memory usage of runtimes
   * Legion Implementation
-      * Tracing
       * Dynamic control replication
       * Profile and tune at scale
   * Build system
