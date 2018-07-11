@@ -7,6 +7,9 @@
 *.o
 *.so
 
+*.out
+*.gz
+
 *.pdf
 *.log
 *.bbl
