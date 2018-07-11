@@ -1,10 +1,15 @@
 SLIB=libcore.a
-DLIB=libcore.0.so
+DLIB=libcore.so
 OBJS=core.o core_c.o
 HEADERS=core.h core_c.h timer.h
 
 CXXFLAGS ?=
 CXXFLAGS += -std=c++11 -fPIC
+ifeq ($(strip $(DEBUG)),0)
+	CXXFLAGS += -O3
+else
+	CXXFLAGS += -O0 -ggdb
+endif
 
 LDFLAGS ?=
 
@@ -29,7 +34,9 @@ $(SLIB): $(OBJS)
 	$(AR) rc $@ $^
 
 $(DLIB): $(SLIB)
-	$(CXX) $(LDFLAGS) -o $@
+	rm -f $@
+	$(CXX) $(LDFLAGS) -o $@.0
+	mv $@.0 $@
 
 $(OBJS) : %.o : %.cc $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
