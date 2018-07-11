@@ -12,7 +12,7 @@ source deps/env.sh
 
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     make -C mpi clean
-    make -C mpi all
+    make -C mpi all -j${THREADS:-4}
 fi
 
 if [[ $USE_GASNET -eq 1 ]]; then
@@ -35,7 +35,7 @@ fi
     make install
     popd
     make -C starpu clean
-    make -C starpu
+    make -C starpu -j${THREADS:-4}
 fi)
 
 if [[ $USE_PARSEC -eq 1 ]]; then
@@ -46,5 +46,5 @@ if [[ $USE_PARSEC -eq 1 ]]; then
     make install
     cd ../../../
     make -C parsec clean
-    make -C parsec
+    make -C parsec -j${THREADS:-4}
 fi
