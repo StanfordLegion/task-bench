@@ -30,7 +30,7 @@ fi
         export CXX=g++
     fi
     pushd "$STARPU_SRC_DIR"
-    ./configure --prefix=$STARPU_DIR --disable-cuda --without-hwloc
+    ./configure --prefix=$STARPU_DIR --disable-cuda --without-hwloc --disable-fortran --disable-build-tests --disable-build-examples
     make -j${THREADS:-4}
     make install
     popd
