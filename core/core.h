@@ -40,6 +40,8 @@ struct TaskGraph : public task_graph_t {
   long width_at_timestep(long timestep) const;
 
   long max_dependence_sets() const;
+  // number of timesteps after which the pattern of dependence sets repeats itself
+  long timestep_period() const;
   long dependence_set_at_timestep(long timestep) const;
   // std::pair(a, b) represents the INCLUSIVE interval from a to b
   std::vector<std::pair<long, long> > reverse_dependencies(long dset, long point) const;

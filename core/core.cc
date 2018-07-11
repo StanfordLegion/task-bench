@@ -143,7 +143,6 @@ long TaskGraph::max_dependence_sets() const
 {
   switch (dependence) {
   case DependenceType::TRIVIAL:
-    return 0;
   case DependenceType::NO_COMM:
   case DependenceType::STENCIL_1D:
   case DependenceType::STENCIL_1D_PERIODIC:
@@ -157,6 +156,13 @@ long TaskGraph::max_dependence_sets() const
   default:
     assert(false && "unexpected dependence type");
   };
+}
+
+long TaskGraph::timestep_period() const
+{
+  // For all the dependence types currently defined, the pattern
+  // repeats with a period equal to the number of timesteps.
+  return max_dependence_sets();
 }
 
 long TaskGraph::dependence_set_at_timestep(long timestep) const
