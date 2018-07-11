@@ -17,6 +17,8 @@
 #ifndef TIMER_H
 #define TIMER_H
 
+#include <sys/time.h>
+
 struct Timer {
 public:
   static double time_elapsed;

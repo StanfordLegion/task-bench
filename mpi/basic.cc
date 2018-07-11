@@ -56,8 +56,8 @@ int main (int argc, char *argv[])
       graph_dependencies.push_back(all_dependencies);
       graph_rev_deps.push_back(all_rev_dependencies); 
     }
-  struct Timer__<struct MPITimer> timer;
-  timer.sync_time_start();
+  MPI_Barrier(MPI_COMM_WORLD);
+  Timer::time_start();
   
   for (size_t i = 0; i < graphs.size(); i++)
     {
@@ -101,7 +101,8 @@ int main (int argc, char *argv[])
 	          }
 	     }   
     }
-  double time_elapsed = timer.sync_time_end();
+  MPI_Barrier(MPI_COMM_WORLD);
+  double time_elapsed = Timer::time_end();
   if (taskid == MASTER) new_app.report_timing(time_elapsed);
   free(data_to_transfer);
   MPI_Finalize();

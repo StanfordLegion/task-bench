@@ -220,8 +220,8 @@ int main (int argc, char *argv[])
       dset_data_to_receive.clear();
     }
 
-  struct Timer__<struct MPITimer> timer;
-  timer.sync_time_start();
+  MPI_Barrier(MPI_COMM_WORLD);
+  Timer::time_start();
 
   for (size_t graph_num = 0; graph_num < graphs.size(); graph_num++)
     {
@@ -247,7 +247,8 @@ int main (int argc, char *argv[])
 	    	}
 		}  
     }
-  double time_elapsed = timer.sync_time_end();
+  MPI_Barrier(MPI_COMM_WORLD);
+  double time_elapsed = Timer::time_end();
   if (taskid == MASTER) new_app.report_timing(time_elapsed);
 
   /* Free all memory */

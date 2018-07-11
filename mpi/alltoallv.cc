@@ -132,8 +132,8 @@ int main (int argc, char *argv[])
   graph_rdispls.push_back(all_rdispls);
   graph_recvs.push_back(all_recvs);
 }
-  struct Timer__<MPITimer> timer;
-  timer.sync_time_start();
+  MPI_Barrier(MPI_COMM_WORLD);
+  Timer::time_start();
   for (size_t i = 0; i < graphs.size(); i++)  
     {
       //extra time here copying graph?
@@ -157,7 +157,8 @@ int main (int argc, char *argv[])
 	         }
 	     }
     }
-  double time_elapsed = timer.sync_time_end();
+  MPI_Barrier(MPI_COMM_WORLD);
+  double time_elapsed = Timer::time_end();
   if (taskid == MASTER) new_app.report_timing(time_elapsed);
   
   
