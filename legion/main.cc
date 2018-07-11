@@ -13,12 +13,14 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <climits>
+#include <numeric>
 #include <utility>
 
 #include "legion.h"
 
 #include "core.h"
-#include "timer.h"
 
 using namespace Legion;
 
@@ -34,11 +36,17 @@ enum TaskIDs {
 // be done in the mapper, but it's easier to just do it here. The
 // tradeoff is that we're allocated a fixed amount of memory up front
 // for instances.
-constexpr long NUM_FIELDS = 10;
+
+// This is a static upper-bound on the number of fields, the actual
+// number is configured at runtime.
+constexpr long STATIC_NUM_FIELDS = 100;
+constexpr long DEFAULT_NUM_FIELDS = 10;
+static_assert(DEFAULT_NUM_FIELDS < STATIC_NUM_FIELDS,
+              "DEFAULT_NUM_FIELDS is out of bounds");
 
 enum FieldIDs {
   FID_FIRST,
-  FID_LAST=FID_FIRST+NUM_FIELDS,
+  FID_LAST=FID_FIRST+STATIC_NUM_FIELDS,
 };
 
 static Logger log_taskbench("taskbench");
@@ -74,6 +82,7 @@ private:
 private:
   Runtime *runtime;
   Context ctx;
+  long num_fields;
   std::vector<LogicalRegionT<1> > regions;
   std::vector<LogicalPartitionT<1> > primary_partitions;
   std::vector<std::vector<LogicalPartitionT<1> > > secondary_partitions;
@@ -83,7 +92,23 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
   : App(Runtime::get_input_args().argc, Runtime::get_input_args().argv)
   , runtime(runtime)
   , ctx(ctx)
+  , num_fields(DEFAULT_NUM_FIELDS)
 {
+  int argc = Runtime::get_input_args().argc;
+  char **argv = Runtime::get_input_args().argv;
+
+  for (int i = 1; i < argc; i++) {
+    if (!strcmp(argv[i], "-fields")) {
+      assert(i+1 < argc);
+      long value = atol(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"-fields %ld\" must be > 0\n", value);
+        abort();
+      }
+      num_fields = value;
+    }
+  }
+
   for (auto g : graphs) {
     // For now, create enough room for one output per task
     IndexSpaceT<1> is = runtime->create_index_space(ctx, Rect<1>(0, g.max_width-1));
@@ -91,7 +116,7 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     {
       FieldAllocator allocator =
         runtime->create_field_allocator(ctx, fs);
-      for (long i = 0; i < NUM_FIELDS; ++i) {
+      for (long i = 0; i < num_fields; ++i) {
         allocator.allocate_field(sizeof(double), FID_FIRST+i);
       }
     }
@@ -148,19 +173,35 @@ void LegionApp::run()
   report_timing(elapsed);
 }
 
+static long lcm(long a, long b) {
+  // Hack: Workaround to avoid needing C++17
+  return a * b / std::__gcd(a, b);
+}
+
 void LegionApp::execute_main_loop()
 {
-  for (long t = 0; ; ++t) {
-    bool still_executing = false;
+  long period = num_fields;
+  for (auto g : graphs) {
+    period = lcm(period, g.timestep_period());
+  }
+
+  long max_timesteps = LONG_MAX;
+  for (auto g : graphs) {
+    max_timesteps = std::min(max_timesteps, g.timesteps);
+  }
+
+  for (long t = 0; t < max_timesteps; ++t) {
+    if (t % period == 0 && t + period - 1 < max_timesteps) {
+      runtime->begin_trace(ctx, 0);
+    }
     for (size_t idx = 0; idx < graphs.size(); ++idx) {
       const TaskGraph &g = graphs[idx];
       if (t < g.timesteps) {
         execute_timestep(idx, t);
-        still_executing = true;
       }
     }
-    if (!still_executing) {
-      break;
+    if ((t+1) % period == 0 && t < max_timesteps) {
+      runtime->end_trace(ctx, 0);
     }
   }
 }
@@ -179,7 +220,7 @@ void LegionApp::execute_timestep(size_t idx, long t)
 
   Rect<1> bounds(offset, offset+width-1);
 
-  FieldID fout(FID_FIRST + ((t+1) % NUM_FIELDS)), fin(FID_FIRST + (t % NUM_FIELDS));
+  FieldID fout(FID_FIRST + ((t+1) % num_fields)), fin(FID_FIRST + (t % num_fields));
 
   Kernel kernel = g.kernel;
   IndexLauncher launcher(TID_LEAF, bounds,

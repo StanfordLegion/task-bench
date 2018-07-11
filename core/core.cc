@@ -143,7 +143,6 @@ long TaskGraph::max_dependence_sets() const
 {
   switch (dependence) {
   case DependenceType::TRIVIAL:
-    return 0;
   case DependenceType::NO_COMM:
   case DependenceType::STENCIL_1D:
   case DependenceType::STENCIL_1D_PERIODIC:
@@ -157,6 +156,13 @@ long TaskGraph::max_dependence_sets() const
   default:
     assert(false && "unexpected dependence type");
   };
+}
+
+long TaskGraph::timestep_period() const
+{
+  // For all the dependence types currently defined, the pattern
+  // repeats with a period equal to the number of timesteps.
+  return max_dependence_sets();
 }
 
 long TaskGraph::dependence_set_at_timestep(long timestep) const
@@ -176,6 +182,64 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   default:
     assert(false && "unexpected dependence type");
   };
+}
+
+std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, long point) const
+{
+  std::vector<std::pair<long, long> > deps;
+
+  switch (dependence) {
+  case DependenceType::TRIVIAL:                                                                                                                                           
+    break;
+  case DependenceType::NO_COMM:                                                                                                                                           
+    deps.push_back(std::pair<long, long>(point, point));
+    break;
+  case DependenceType::STENCIL_1D:                                                                                                                                        
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+    break;
+  case DependenceType::STENCIL_1D_PERIODIC:                                                                                                                              
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+    if (point-1 < 0) { // Wrap around negative case                                                                                                                              
+      deps.push_back(std::pair<long, long>(max_width-1, max_width-1));
+    }
+    if (point+1 >= max_width) { // Wrap around positive case                                                                                                                     
+      deps.push_back(std::pair<long, long>(0, 0));
+    }
+    break;
+  case DependenceType::DOM:
+    deps.push_back(std::pair<long, long>(point, std::min(max_width-1, point+1)));
+    break;
+  case DependenceType::TREE:
+    {
+      long child1 = point*2;
+      long child2 = point*2 + 1;
+      if (child1 < max_width && child2 < max_width)
+        deps.push_back(std::pair<long, long>(child1, child2));
+      else if (child1 < max_width)
+        deps.push_back(std::pair<long, long>(child1, child1));
+
+    }
+    break;
+    case DependenceType::FFT:                                                                                                                                               
+    {
+      long d1 = point - (1 << dset);
+      long d2 = point + (1 << dset);
+      if (d1 >= 0) {
+        deps.push_back(std::pair<long, long>(d1, d1));
+      }
+      if (d2 < max_width) {
+        deps.push_back(std::pair<long, long>(d2, d2));
+      }
+    }
+    break;
+  case DependenceType::ALL_TO_ALL:                                                                                                                                        
+    deps.push_back(std::pair<long, long>(0, max_width-1));
+    break;
+  default:
+    assert(false && "unexpected dependence type");
+  };
+
+  return deps;
 }
 
 std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long point) const
@@ -243,6 +307,13 @@ static TaskGraph default_graph()
   return graph;
 }
 
+void needs_argument(int i, int argc, const char *flag) {
+  if (i+1 >= argc) {
+    fprintf(stderr, "error: Flag \"%s\" requires an argument\n", flag);
+    abort();
+  }
+}
+
 App::App(int argc, char **argv)
   : verbose(false)
 {
@@ -255,25 +326,57 @@ App::App(int argc, char **argv)
     }
 
     if (!strcmp(argv[i], "-steps")) {
-      graph.timesteps = atol(argv[++i]);
+      needs_argument(i, argc, "-steps");
+      long value = atol(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"-steps %ld\" must be > 0\n", value);
+        abort();
+      }
+      graph.timesteps = value;
     }
 
     if (!strcmp(argv[i], "-width")) {
-      graph.max_width = atol(argv[++i]);
+      needs_argument(i, argc, "-width");
+      long value = atol(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"-width %ld\" must be > 0\n", value);
+        abort();
+      }
+      graph.max_width = value;
     }
 
     if (!strcmp(argv[i], "-type")) {
+      needs_argument(i, argc, "-type");
       auto types = dtype_by_name();
-      graph.dependence = types.at(argv[++i]);
+      auto name = argv[++i];
+      auto type = types.find(name);
+      if (type == types.end()) {
+        fprintf(stderr, "error: Invalid flag \"-type %s\"\n", name);
+        abort();
+      }
+      graph.dependence = type->second;
     }
 
     if (!strcmp(argv[i], "-kernel")) {
+      needs_argument(i, argc, "-kernel");
       auto types = ktype_by_name();
-      graph.kernel.type = types.at(argv[++i]);
+      auto name = argv[++i];
+      auto type = types.find(name);
+      if (type == types.end()) {
+        fprintf(stderr, "error: Invalid flag \"-kernel %s\"\n", name);
+        abort();
+      }
+      graph.kernel.type = type->second;
     }
 
     if (!strcmp(argv[i], "-iter")) {
-      graph.kernel.iterations = atol(argv[++i]);
+      needs_argument(i, argc, "-iter");
+      long value = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-iter %ld\" must be >= 0\n", value);
+        abort();
+      }
+      graph.kernel.iterations = value;
     }
 
     if (!strcmp(argv[i], "-and")) {
