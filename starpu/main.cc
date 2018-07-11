@@ -7,6 +7,7 @@
 #include <starpu_profiling.h>
 #include "data.h"
 #include "core.h"
+#include "timer.h"
 
 #include <unistd.h>
 
@@ -252,6 +253,9 @@ void StarPUApp::execute_main_loop()
 
   /* start timer */
   starpu_mpi_barrier(MPI_COMM_WORLD);
+  if (rank == 0) {
+    Timer::time_start();
+  }
   
   const TaskGraph &g = graphs[0];
 #if 1
@@ -383,6 +387,10 @@ void StarPUApp::execute_main_loop()
 
   starpu_task_wait_for_all();
   starpu_mpi_barrier(MPI_COMM_WORLD);
+  if (rank == 0) {
+    double elapsed = Timer::time_end();
+    report_timing(elapsed);
+  }
 }
 
 void StarPUApp::execute_timestep(size_t idx, long t)

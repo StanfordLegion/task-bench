@@ -39,11 +39,7 @@ main.o: main.cc ../core/timer.h
 	$(CC) -c $(CFLAGS) $<
 	
 main: main.o common.o core.o
-<<<<<<< HEAD
-	$(CC) $^ $(LIB) $(LDFLAGS)-o $@ 
-=======
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
->>>>>>> c59ae59a4b54f7fed4472710752529d64d7b3ff7
 
 
 clean:
