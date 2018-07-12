@@ -3,7 +3,7 @@
 
 #include <x10rt.h>
 
-#include "/home/users/nicolaig/x10/x10-2.6.1_linux_x86_64/projects/Benchmarks/TaskBench-x10/core.h"
+#include "/home/users/nicolaig/task-bench/x10/x10-2.6.1_linux_x86_64/projects/task-bench-x10/core.h"
 
 #define X10_LANG_PLACELOCALHANDLE_H_NODEPS
 #include <x10/lang/PlaceLocalHandle.h>

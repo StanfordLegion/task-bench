@@ -4,8 +4,8 @@ import x10.compiler.Native;
 import x10.compiler.NativeCPPInclude;
 import x10.compiler.NativeCPPCompilationUnit;
 
-@NativeCPPInclude("/home/users/nicolaig/x10/x10-2.6.1_linux_x86_64/projects/Benchmarks/TaskBench-x10/core.h")
-@NativeCPPCompilationUnit("/home/users/nicolaig/x10/x10-2.6.1_linux_x86_64/projects/Benchmarks/TaskBench-x10/core.cc")
+@NativeCPPInclude("/home/users/nicolaig/task-bench/x10/x10-2.6.1_linux_x86_64/projects/task-bench-x10/core.h")
+@NativeCPPCompilationUnit("/home/users/nicolaig/task-bench/x10/x10-2.6.1_linux_x86_64/projects/task-bench-x10/core.cc")
 
 public class TaskBench {
 
