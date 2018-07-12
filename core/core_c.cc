@@ -80,6 +80,12 @@ long task_graph_max_dependence_sets(task_graph_t graph)
   return t.max_dependence_sets();
 }
 
+long task_graph_timestep_period(task_graph_t graph)
+{
+  TaskGraph t(graph);
+  return t.timestep_period();
+}
+
 long task_graph_dependence_set_at_timestep(task_graph_t graph, long timestep)
 {
   TaskGraph t(graph);
