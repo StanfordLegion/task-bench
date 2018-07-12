@@ -15,6 +15,8 @@ env:
     - CC_FLAGS="-Wno-unused-command-line-argument"
 cache: ccache
 before_install:
+  - echo $PWD
+  - echo $(realpath $PWD)
   - |
     if [[ "$(uname)" = "Linux" ]]; then
       sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
