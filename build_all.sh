@@ -24,11 +24,7 @@ if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j${THREADS:-4}
 fi
 
-(if [[ $USE_STARPU -eq 1 ]]; then
-    if [[ $CXX = g++-5 ]]; then
-        export CC=gcc # FIXME: Can't use GCC 5
-        export CXX=g++
-    fi
+if [[ $USE_STARPU -eq 1 ]]; then
     pushd "$STARPU_SRC_DIR"
     ./configure --prefix=$STARPU_DIR --disable-cuda --without-hwloc --disable-fortran --disable-build-tests --disable-build-examples
     make -j${THREADS:-4}
@@ -36,7 +32,7 @@ fi
     popd
     make -C starpu clean
     make -C starpu -j${THREADS:-4}
-fi)
+fi
 
 if [[ $USE_PARSEC -eq 1 ]]; then
     mkdir -p "$PARSEC_DIR"
