@@ -13,6 +13,7 @@ env:
     - REALM_SYNTHETIC_CORE_MAP=""
     - REALM_BACKTRACE=1
     - CC_FLAGS="-Wno-unused-command-line-argument"
+cache: ccache
 before_install:
   - |
     if [[ "$(uname)" = "Linux" ]]; then
@@ -27,3 +28,5 @@ install:
 script:
   - ./build_all.sh
   - ./test_all.sh
+after_script:
+  - ccache -s
