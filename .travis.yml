@@ -25,6 +25,8 @@ before_install:
   - echo $PWD
   - echo $(realpath $PWD)
   - ls -l /usr/lib/ccache
+  - for comp in clang clang++; do ln -s ../../bin/ccache /usr/lib/ccache/$comp; done
+  - ls -l /usr/lib/ccache
   - if [[ "$(uname)" = "Linux" && "$CXX" = "g++" ]]; then export CXX="g++-5" CC="gcc-5"; fi
 install:
   - export CCACHE_BASEDIR=$PWD
