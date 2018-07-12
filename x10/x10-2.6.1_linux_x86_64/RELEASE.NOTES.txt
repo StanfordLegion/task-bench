@@ -1,0 +1,60 @@
+X10 Release 2.6.1
+
+HIGHLIGHTS OF THIS RELEASE
+
+The focus of the X10 2.6.1 release is improvements to Resilient X10.
+Some highlights include:
+  - Significant improvements to the performance of resilient finish
+  - A new resilient store implemented in X10
+  - Improved standard library APIs for elasticity and
+    non-shrinking recovery.
+  - Enhancements to the x10.util.resilient.iterative package to
+    exploit elasticity to support non-shrinking recovery.
+  - Updating of all Resilient X10 sample programs and applications
+    to showcase the improvements in Resilient X10.
+
+LIMITATIONS OF THIS RELEASE
+
+The size and index of arrays must be less than 2^31 with Managed X10.
+An attempt to allocate a longer array causes IllegalArgumentException. 
+
+The following features described in the 2.6 language manual do not
+currently work and may be fixed in the subsequent releases:
+  - Non-static type definitions as class or interface members
+    (static type defs do work)
+
+The constraint solver used by X10 typechecker is known to be incomplete 
+for situations in which a constraint implies an infinite number of 
+distinct constraints.
+
+Additionally, the following features described in the language
+manual do not currently work with Native X10.
+  - Non-final generic instance methods
+  - Exception stack traces on Cygwin
+
+The generated C++ code requires g++ 4.2 or better to be compiled; 
+we do almost all of our testing against g++ 4.4.
+  + On Power/Linux and BG/Q, you may either use g++ 4.2 or better
+    or xlC 11.1 or better. 
+
+SUMMARY OF ISSUES RESOLVED IN THIS RELEASE
+
+Below is a summary of JIRA issues addressed for the X10 2.6.1
+
+** New Feature
+    * [XTENLANG-3553] - Add method x10.lang.String.contains(String)
+    * [XTENLANG-3554] - New method x10.Random.nextGaussian
+    * [XTENLANG-3555] - X10 Launcher fails with buffer overflow if X10_HOSTFILE does not exist
+
+** Bug
+    * [XTENLANG-3498] - New place fails to connect to dead places
+    * [XTENLANG-3552] - X10 reading from a file not as expected
+    * [XTENLANG-3556] - x10rt_sockets: blocking_probe doesn't block after a Place is killed
+
+
+For the details of JIRA issues fixed in this release, see
+  https://xtenlang.atlassian.net/secure/ReleaseNote.jspa?version=10600&projectId=10005
+
+Please use the X10 JIRA to report bugs, after ensuring the problem is
+not already reported:
+  https://xtenlang.atlassian.net/projects/XTENLANG/issues
