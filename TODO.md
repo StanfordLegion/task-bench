@@ -39,3 +39,4 @@
       * TensorFlow
       * Dask
       * Ray
+      * Nimbus
