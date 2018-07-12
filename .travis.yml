@@ -28,9 +28,11 @@ before_install:
   - if [[ "$(uname)" = "Linux" && "$CXX" = "g++" ]]; then export CXX="g++-5" CC="gcc-5"; fi
 install:
   - export CCACHE_BASEDIR=$PWD
+  - export CCACHE_LOGFILE=/tmp/cache.debug
   - ./get_deps.sh
 script:
   - ccache --zero-stats
   - ./build_all.sh
   - ./test_all.sh
   - ccache --show-stats
+  - cat $CCACHE_LOGFILE
