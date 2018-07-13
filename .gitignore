@@ -5,6 +5,10 @@
 *.swp
 *.a
 *.o
+*.so
+
+*.out
+*.gz
 
 *.pdf
 *.log

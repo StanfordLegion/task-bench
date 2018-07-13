@@ -18,9 +18,10 @@
 #include "core.h"
 #include "common.h"
 #include <parsec/execution_stream.h>
-#include <dplasmatypes.h>
+//#include <dplasmatypes.h>
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <interfaces/superscalar/insert_function.h>
+#include <parsec/arena.h>
 
 /* timings */
 #if defined( PARSEC_HAVE_MPI)
@@ -33,6 +34,16 @@
 enum regions {
   TILE_FULL,
 };
+
+static inline int
+dplasma_add2arena_tile( parsec_arena_t *arena, size_t elem_size, size_t alignment,
+                        parsec_datatype_t oldtype, unsigned int tile_mb )
+{
+    (void)elem_size;
+    return parsec_matrix_add2arena( arena, oldtype,
+                                   matrix_UpperLower, 1, tile_mb, tile_mb, tile_mb,
+                                   alignment, -1 );
+}
 
 static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
@@ -272,7 +283,10 @@ void ParsecApp::execute_main_loop()
   //sleep(10);
   
   /* #### parsec context Starting #### */
-  Timer::sync_time_start();
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == 0) {
+    Timer::time_start();
+  }
   /* start parsec context */
   parsec_context_start(parsec);
   int i, j;
@@ -293,8 +307,12 @@ void ParsecApp::execute_main_loop()
   /* Waiting on all handle and turning everything off for this context */
   parsec_context_wait( parsec );
   
-  double t_elapsed = Timer::sync_time_end();
-  debug_printf(0, "[****] TIME(s) %12.5f : \tPxQ= %3d %-3d NB= %4d N= %7d M= %7d\n", t_elapsed, P, Q, NB, N, M);
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == 0) {
+    double elapsed = Timer::time_end();
+    report_timing(elapsed);
+    debug_printf(0, "[****] TIME(s) %12.5f : \tPxQ= %3d %-3d NB= %4d N= %7d M= %7d\n", elapsed, P, Q, NB, N, M);
+  }
 }
 
 void ParsecApp::execute_timestep(size_t idx, long t)

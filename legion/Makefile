@@ -29,7 +29,7 @@ ALT_MAPPERS     ?= 0		# Include alternative mappers (not recommended)
 # Put the binary file name here
 OUTFILE		?= task_bench
 # List all the application source files here
-GEN_SRC		?= main.cc ../core/core.cc ../core/core_c.cc		# .cc files
+GEN_SRC		?= main.cc ../core/core.cc ../core/core_c.cc ../core/core_kernel.cc		# .cc files
 GEN_GPU_SRC	?=		# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
@@ -39,7 +39,7 @@ NVCC_FLAGS	?=
 GASNET_FLAGS	?=
 LD_FLAGS	?=
 
-CC_FLAGS += -std=c++11 -I../core -DLEGION_TIMING
+CC_FLAGS += -std=c++14 -I../core
 
 ###########################################################################
 #

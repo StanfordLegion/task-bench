@@ -26,30 +26,31 @@ typedef dependence_type_t DependenceType;
 typedef kernel_type_t KernelType;
 
 struct Kernel : public kernel_t {
-  Kernel(kernel_t k) {
-    type = k.type;
-    iterations = k.iterations;
-  }
+  Kernel() = default;
+  Kernel(kernel_t k) : kernel_t(k) {}
 
   void execute() const;
 };
 
 struct TaskGraph : public task_graph_t {
-  TaskGraph() {}
-  TaskGraph(task_graph_t t) {
-    timesteps = t.timesteps;
-    max_width = t.max_width;
-    dependence = t.dependence;
-    kernel = t.kernel;
-  }
+  TaskGraph() = default;
+  TaskGraph(task_graph_t t) : task_graph_t(t) {}
 
   long offset_at_timestep(long timestep) const;
   long width_at_timestep(long timestep) const;
 
   long max_dependence_sets() const;
+  // number of timesteps after which the pattern of dependence sets repeats itself
+  long timestep_period() const;
   long dependence_set_at_timestep(long timestep) const;
   // std::pair(a, b) represents the INCLUSIVE interval from a to b
+  std::vector<std::pair<long, long> > reverse_dependencies(long dset, long point) const;
   std::vector<std::pair<long, long> > dependencies(long dset, long point) const;
+
+  void execute_point(long timestep, long point,
+                     char *output_ptr, size_t output_bytes,
+                     const char **input_ptr, const size_t *input_bytes,
+                     size_t n_inputs) const;
 };
 
 struct App {
@@ -59,6 +60,11 @@ struct App {
   App(int argc, char **argv);
   void check() const;
   void display() const;
+  void report_timing(double elapsed_seconds) const;
 };
+
+// Make sure core types are POD
+static_assert(std::is_pod<Kernel>::value, "Kernel must be POD");
+static_assert(std::is_pod<TaskGraph>::value, "TaskGraph must be POD");
 
 #endif

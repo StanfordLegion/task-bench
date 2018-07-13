@@ -1,5 +1,4 @@
 /* Copyright 2018 Stanford University
- * Copyright 2018 Los Alamos National Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,39 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef TIMER_H
-#define TIMER_H
+#ifndef CORE_KERNEL_H
+#define CORE_KERNEL_H
 
-#include <sys/time.h>
+struct Kernel;
 
-struct Timer {
-public:
-  static double time_elapsed;
-  
-  static inline double get_cur_time()
-  {
-    struct timeval tv;
-    double t;
+void execute_kernel_empty(const Kernel &kernel);
 
-    gettimeofday(&tv,NULL);
-    t = tv.tv_sec + tv.tv_usec / 1e6;
-    return t;
-  }
-  
-  static inline double time_start()
-  {
-    time_elapsed = get_cur_time();
-    return time_elapsed;
-  }
-  
-  static inline double time_end()
-  {
-    time_elapsed = get_cur_time() - time_elapsed;
-    return time_elapsed;
-  }
-};
+long long execute_kernel_busy_wait(const Kernel &kernel);
 
-double Timer::time_elapsed = 0;
-
-
-#endif //TIMER_H
+#endif

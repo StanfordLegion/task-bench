@@ -13,21 +13,21 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+#include <climits>
+#include <numeric>
 #include <utility>
 
 #include "legion.h"
 
 #include "core.h"
 
-//add by Yuankun
-#include <unistd.h> 
-#include "timer.h"
-
 using namespace Legion;
 
 enum TaskIDs {
   TID_TOP,
   TID_LEAF,
+  TID_DUMMY,
 };
 
 // In order to avoid spurious WAR dependencies, we round-robin the
@@ -36,39 +36,102 @@ enum TaskIDs {
 // be done in the mapper, but it's easier to just do it here. The
 // tradeoff is that we're allocated a fixed amount of memory up front
 // for instances.
-constexpr long NUM_FIELDS = 10;
+
+// This is a static upper-bound on the number of fields, the actual
+// number is configured at runtime.
+constexpr long STATIC_NUM_FIELDS = 100;
+constexpr long DEFAULT_NUM_FIELDS = 10;
+static_assert(DEFAULT_NUM_FIELDS < STATIC_NUM_FIELDS,
+              "DEFAULT_NUM_FIELDS is out of bounds");
 
 enum FieldIDs {
   FID_FIRST,
-  FID_LAST=FID_FIRST+NUM_FIELDS,
+  FID_LAST=FID_FIRST+STATIC_NUM_FIELDS,
 };
 
-void leaf(const Task *task,
-            const std::vector<PhysicalRegion> &regions,
-            Context ctx, Runtime *runtime)
+static Logger log_taskbench("taskbench");
+
+struct Payload {
+  TaskGraph graph;
+  long timestep;
+  IndexPartitionT<1> primary_partition;
+};
+
+void get_base_and_size(Runtime *runtime,
+                       const PhysicalRegion &region,
+                       const RegionRequirement &req,
+                       const Rect<1> &rect,
+                       char *&base,
+                       size_t &bytes)
 {
-  printf("Leaf at point %lld\n",
-         task->index_point[0]);
+  UnsafeFieldAccessor<char, 1, coord_t, Realm::AffineAccessor<char, 1, coord_t> > acc(
+    region, req.instance_fields[0]);
+  assert(acc.accessor.strides[0] == sizeof(char));
+  base = reinterpret_cast<char *>(acc.ptr(rect.lo));
+  bytes = rect.volume();
+}
 
-  //add by Yuankun
-  // if(task->index_point[0]==1)
-  //   sleep(2);
+void leaf(const Task *task,
+          const std::vector<PhysicalRegion> &regions,
+          Context ctx, Runtime *runtime)
+{
+  log_taskbench.info("Leaf at point %lld", task->index_point[0]);
 
-  assert(task->arglen == sizeof(Kernel));
-  Kernel kernel = *reinterpret_cast<Kernel *>(task->args);
-  kernel.execute();
+  assert(task->arglen == sizeof(Payload));
+  Payload payload = *reinterpret_cast<Payload *>(task->args);
+  TaskGraph graph = payload.graph;
+  long timestep = payload.timestep;
+  IndexPartitionT<1> primary = payload.primary_partition;
+
+  Point<1> point = task->index_point;
+
+  Rect<1> output_rect = runtime->get_index_space_domain(
+    regions[0].get_logical_region().get_index_space());
+  char *output_ptr;
+  size_t output_bytes;
+  get_base_and_size(runtime, regions[0], task->regions[0], output_rect, output_ptr, output_bytes);
+
+  long dset = graph.dependence_set_at_timestep(timestep);
+  std::vector<std::pair<long, long> > deps = graph.dependencies(dset, point);
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  for (auto span : deps) {
+    for (long dep = span.first; dep <= span.second; dep++) {
+      IndexSpaceT<1> is = runtime->get_index_subspace<1>(primary, Point<1>(dep));
+      Rect<1> rect = Domain(runtime->get_index_space_domain(is));
+      char *ptr;
+      size_t bytes;
+      get_base_and_size(runtime, regions[1], task->regions[1], rect, ptr, bytes);
+      input_ptrs.push_back(ptr);
+      input_bytes.push_back(bytes);
+    }
+  }
+
+  graph.execute_point(timestep, point, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+}
+
+void dummy(const Task *task,
+           const std::vector<PhysicalRegion> &regions,
+           Context ctx, Runtime *runtime)
+{
 }
 
 struct LegionApp : public App {
   LegionApp(Runtime *runtime, Context ctx);
+
+  void run();
+private:
   void execute_main_loop();
 
-private:
   void execute_timestep(size_t i, long t);
+
+  void issue_execution_fence_and_block();
 
 private:
   Runtime *runtime;
   Context ctx;
+  long num_fields;
   std::vector<LogicalRegionT<1> > regions;
   std::vector<LogicalPartitionT<1> > primary_partitions;
   std::vector<std::vector<LogicalPartitionT<1> > > secondary_partitions;
@@ -78,51 +141,59 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
   : App(Runtime::get_input_args().argc, Runtime::get_input_args().argv)
   , runtime(runtime)
   , ctx(ctx)
+  , num_fields(DEFAULT_NUM_FIELDS)
 {
+  int argc = Runtime::get_input_args().argc;
+  char **argv = Runtime::get_input_args().argv;
+
+  for (int i = 1; i < argc; i++) {
+    if (!strcmp(argv[i], "-fields")) {
+      assert(i+1 < argc);
+      long value = atol(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"-fields %ld\" must be > 0\n", value);
+        abort();
+      }
+      num_fields = value;
+    }
+  }
+
   for (auto g : graphs) {
-    // For now, create enough room for one output per task
-    IndexSpaceT<1> is = runtime->create_index_space(ctx, Rect<1>(0, g.max_width-1));
+    // Space of tasks
+    IndexSpaceT<1> ts = runtime->create_index_space(ctx, Rect<1>(0, g.max_width - 1));
+
+    // Space of task output
+    IndexSpaceT<1> is = runtime->create_index_space(
+      ctx, Rect<1>(0, g.max_width * g.output_bytes_per_task - 1));
     FieldSpace fs = runtime->create_field_space(ctx);
     {
       FieldAllocator allocator =
         runtime->create_field_allocator(ctx, fs);
-      for (long i = 0; i < NUM_FIELDS; ++i) {
-        allocator.allocate_field(sizeof(double), FID_FIRST+i);
+      for (long i = 0; i < num_fields; ++i) {
+        allocator.allocate_field(sizeof(char), FID_FIRST+i);
       }
     }
     LogicalRegionT<1> result_lr = runtime->create_logical_region(ctx, is, fs);
 
     // Divide this first into one piece per task
-    IndexPartitionT<1> primary_ip = runtime->create_equal_partition(ctx, is, is);
+    IndexPartitionT<1> primary_ip = runtime->create_equal_partition(ctx, is, ts);
     LogicalPartitionT<1> primary_lp = runtime->get_logical_partition(result_lr, primary_ip);
 
     // Next create secondary partitions for dependencies
     std::vector<LogicalPartitionT<1> >secondary_lps;
 
     long ndsets = g.max_dependence_sets();
-    printf("max_dependence_sets ndsets=%ld\n", ndsets);
-
     for (long dset = 0; dset < ndsets; ++dset) {
-      IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, is);
-
-      printf("\n1st-For: dest=%ld, ndsets=%ld\n", dset, ndsets);
+      IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, ts);
 
       for (long point = 0; point < g.max_width; ++point) {
-        
-        printf("\n2nd-For: point=%ld，max_width=%ld\n", point, g.max_width);
-
         std::vector<std::pair<long, long> > deps = g.dependencies(dset, point);
 
         std::vector<IndexSpace> subspaces;
         for (auto dep : deps) {
-
-          printf("subspaces.push_back deps from %ld to %ld\n", dep.first, dep.second);
-
           for (long i = dep.first; i <= dep.second; ++i) {
             subspaces.push_back(runtime->get_index_subspace(ctx, primary_ip, i));
-            printf("i=%ld ", i); 
           }
-          printf("\n");
         }
         runtime->create_index_space_union(ctx, secondary_ip, point, subspaces);
       }
@@ -137,21 +208,53 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
   }
 }
 
-void LegionApp::execute_main_loop()
+void LegionApp::run()
 {
   display();
 
-  for (long t = 0; ; ++t) {
-    bool still_executing = false;
+  execute_main_loop(); // warm-up
+
+  issue_execution_fence_and_block();
+  unsigned long long start = Realm::Clock::current_time_in_nanoseconds();
+
+  execute_main_loop(); // timed
+
+  issue_execution_fence_and_block();
+  unsigned long long stop = Realm::Clock::current_time_in_nanoseconds();
+
+  double elapsed = (stop - start) / 1e9;
+  report_timing(elapsed);
+}
+
+static long lcm(long a, long b) {
+  // Hack: Workaround to avoid needing C++17
+  return a * b / std::__gcd(a, b);
+}
+
+void LegionApp::execute_main_loop()
+{
+  long period = num_fields;
+  for (auto g : graphs) {
+    period = lcm(period, g.timestep_period());
+  }
+
+  long max_timesteps = LONG_MAX;
+  for (auto g : graphs) {
+    max_timesteps = std::min(max_timesteps, g.timesteps);
+  }
+
+  for (long t = 0; t < max_timesteps; ++t) {
+    if (t % period == 0 && t + period - 1 < max_timesteps) {
+      runtime->begin_trace(ctx, 0);
+    }
     for (size_t idx = 0; idx < graphs.size(); ++idx) {
       const TaskGraph &g = graphs[idx];
       if (t < g.timesteps) {
         execute_timestep(idx, t);
-        still_executing = true;
       }
     }
-    if (!still_executing) {
-      break;
+    if ((t+1) % period == 0 && t < max_timesteps) {
+      runtime->end_trace(ctx, 0);
     }
   }
 }
@@ -166,15 +269,18 @@ void LegionApp::execute_timestep(size_t idx, long t)
   long offset = g.offset_at_timestep(t);
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
-  printf("Timestep %ld offset %ld width %ld dset %ld\n", t, offset, width, dset);
+  log_taskbench.info("Timestep %ld offset %ld width %ld dset %ld", t, offset, width, dset);
 
   Rect<1> bounds(offset, offset+width-1);
 
-  FieldID fout(FID_FIRST + ((t+1) % NUM_FIELDS)), fin(FID_FIRST + (t % NUM_FIELDS));
+  FieldID fout(FID_FIRST + ((t+1) % num_fields)), fin(FID_FIRST + (t % num_fields));
 
-  Kernel kernel = g.kernel;
+  Payload payload;
+  payload.graph = g;
+  payload.timestep = t;
+  payload.primary_partition = primary.get_index_partition();
   IndexLauncher launcher(TID_LEAF, bounds,
-                         TaskArgument(&kernel, sizeof(kernel)), ArgumentMap());
+                         TaskArgument(&payload, sizeof(payload)), ArgumentMap());
   // This needs to be write-discard so that we don't catch a
   // dependence on the same point in the previous timestep, unless
   // that task is an explicit dependence. Note: there may still be a
@@ -193,25 +299,21 @@ void LegionApp::execute_timestep(size_t idx, long t)
   runtime->execute_index_space(ctx, launcher);
 }
 
+void LegionApp::issue_execution_fence_and_block()
+{
+  runtime->issue_execution_fence(ctx);
+
+  TaskLauncher launcher(TID_DUMMY, TaskArgument());
+  Future f = runtime->execute_task(ctx, launcher);
+  f.get_void_result();
+}
+
 void top(const Task *task,
          const std::vector<PhysicalRegion> &regions,
          Context ctx, Runtime *runtime)
 {
   LegionApp app(runtime, ctx);
-
-  //warm up
-  // app.execute_main_loop();
-
-  printf("\nAfter warm up, Starting main simulation loop\n");
-  // Execution fence to wait for all prior operations to be done before getting our timing result
-  Timer::sync_time_start();
-
-  app.execute_main_loop();
-
-  // Execution fence timer
-  double t_elapsed = Timer::sync_time_end();
-  printf("[****] TIME(s) %12.5f\n", t_elapsed * 1e-6);
-
+  app.run();
 }
 
 int main(int argc, char **argv)
@@ -229,6 +331,13 @@ int main(int argc, char **argv)
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     registrar.set_leaf();
     Runtime::preregister_task_variant<leaf>(registrar, "leaf");
+  }
+
+  {
+    TaskVariantRegistrar registrar(TID_DUMMY, "dummy");
+    registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
+    registrar.set_leaf();
+    Runtime::preregister_task_variant<dummy>(registrar, "dummy");
   }
 
   return Runtime::start(argc, argv);

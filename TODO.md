@@ -15,13 +15,7 @@
       * GPUs?
       * Measure memory usage of runtimes
   * Legion Implementation
-      * Tracing
       * Dynamic control replication
-      * Timing (Careful! Be sure to do this correctly)
-          * Execute entire task graph multiple times to warm up
-          * Execution fence, dummy task, block, start timer
-          * Execute task graph desired number of times
-          * Execution fence, dummy task, block, stop timer
       * Profile and tune at scale
   * Build system
       * Is there a reasonable way to build without N build systems?
@@ -45,3 +39,4 @@
       * TensorFlow
       * Dask
       * Ray
+      * Nimbus

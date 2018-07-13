@@ -80,16 +80,38 @@ long task_graph_max_dependence_sets(task_graph_t graph)
   return t.max_dependence_sets();
 }
 
+long task_graph_timestep_period(task_graph_t graph)
+{
+  TaskGraph t(graph);
+  return t.timestep_period();
+}
+
 long task_graph_dependence_set_at_timestep(task_graph_t graph, long timestep)
 {
   TaskGraph t(graph);
   return t.dependence_set_at_timestep(timestep);
 }
 
+interval_list_t task_graph_reverse_dependencies(task_graph_t graph, long dset, long point)
+{
+  TaskGraph t(graph);
+  return wrap_consume(t.reverse_dependencies(dset, point));
+}
+
 interval_list_t task_graph_dependencies(task_graph_t graph, long dset, long point)
 {
   TaskGraph t(graph);
   return wrap_consume(t.dependencies(dset, point));
+}
+
+void task_graph_execute_point(task_graph_t graph, long timestep, long point,
+                              char *output_ptr, size_t output_bytes,
+                              const char **input_ptr, const size_t *input_bytes,
+                              size_t n_inputs)
+{
+  TaskGraph t(graph);
+  t.execute_point(timestep, point, output_ptr, output_bytes,
+                  input_ptr, input_bytes, n_inputs);
 }
 
 void interval_list_destroy(interval_list_t intervals)
@@ -162,4 +184,10 @@ void app_display(app_t app)
 {
   App *a = unwrap(app);
   a->display();
+}
+
+void app_report_timing(app_t app, double elapsed_seconds)
+{
+  App *a = unwrap(app);
+  a->report_timing(elapsed_seconds);
 }
