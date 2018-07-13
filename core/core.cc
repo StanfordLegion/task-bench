@@ -300,6 +300,16 @@ void TaskGraph::execute_point(long timestep, long point,
                               const char **input_ptr, const size_t *input_bytes,
                               size_t n_inputs) const
 {
+  // Validate timestep and point
+  assert(0 <= timestep && timestep < timesteps);
+
+  long offset = offset_at_timestep(timestep);
+  long width = width_at_timestep(timestep);
+  assert(offset <= point && point < offset+width);
+
+  long last_offset = timestep > 0 ? offset_at_timestep(timestep-1) : 0;
+  long last_width = timestep > 0 ? width_at_timestep(timestep-1) : 0;
+
   // Validate input
   {
     size_t idx = 0;
@@ -312,8 +322,10 @@ void TaskGraph::execute_point(long timestep, long point,
         assert(input_bytes[idx] == output_bytes_per_task);
         assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
         const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
-        assert(timestep == 0 || input.first == timestep - 1);
-        assert(timestep == 0 || input.second == dep);
+        if (last_offset <= dep && dep < last_offset + last_width) {
+          assert(input.first == timestep - 1);
+          assert(timestep == 0 || input.second == dep);
+        }
 
         idx++;
       }
