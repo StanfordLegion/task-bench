@@ -26,10 +26,13 @@ CFLAGS += $(INC)
 
 TARGET = main
 all: $(TARGET)
-	
+
 .PRECIOUS: %.cc %.o
-	
-core.o: ../core/core.cc ../core/core.h
+
+core.o: ../core/core.cc ../core/core.h ../core/core_kernel.h
+	$(CC) -c $(CFLAGS) $<
+
+core_kernel.o: ../core/core_kernel.cc ../core/core_kernel.h
 	$(CC) -c $(CFLAGS) $<
 
 common.o: common.cc common.h
@@ -37,8 +40,8 @@ common.o: common.cc common.h
 
 main.o: main.cc ../core/timer.h
 	$(CC) -c $(CFLAGS) $<
-	
-main: main.o common.o core.o
+
+main: main.o common.o core.o core_kernel.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 
 

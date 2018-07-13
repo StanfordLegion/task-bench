@@ -23,20 +23,7 @@
 #include <string>
 
 #include "core.h"
-
-void __attribute__ ((noinline)) execute_kernel_empty(const Kernel &kernel)
-{
-  // Do nothing...
-}
-
-long long __attribute__ ((noinline)) execute_kernel_busy_wait(const Kernel &kernel)
-{
-  long long acc = 113;
-  for (long iter = 0; iter < kernel.iterations; iter++) {
-    acc = acc * 139 % 2147483647;
-  }
-  return acc;
-}
+#include "core_kernel.h"
 
 void Kernel::execute() const
 {

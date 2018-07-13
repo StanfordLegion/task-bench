@@ -2,20 +2,20 @@ Cxx         = mpicxx
 
 CxxFLAGS     = -g -O0 -g3 -std=c++11 -DMPI_TIMING
 
-CORE       = ../core/core.cc
+CORE       = ../core/core.cc ../core/core_kernel.cc
 
 all: nonblock basic bcast alltoall
 
-nonblock: nonblocking.cc ../core/core.cc ../core/core.h
+nonblock: nonblocking.cc $(CORE) ../core/core.h ../core/core_kernel.h
 	$(Cxx) $(CxxFLAGS) $< $(CORE) -o $@
 
-basic: basic.cc ../core/core.cc ../core/core.h
+basic: basic.cc $(CORE) ../core/core.h ../core/core_kernel.h
 	$(Cxx) $(CxxFLAGS) $< $(CORE) -o $@
 
-bcast: bcast.cc ../core/core.cc ../core/core.h
+bcast: bcast.cc $(CORE) ../core/core.h ../core/core_kernel.h
 	$(Cxx) $(CxxFLAGS) $< $(CORE) -o $@
 
-alltoall: alltoallv.cc ../core/core.cc ../core/core.h
+alltoall: alltoallv.cc $(CORE) ../core/core.h ../core/core_kernel.h
 	$(Cxx) $(CxxFLAGS) $< $(CORE) -o $@
 
 clean:
