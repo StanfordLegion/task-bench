@@ -295,6 +295,46 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
   return deps;
 }
 
+void TaskGraph::execute_point(long timestep, long point,
+                              char *output_ptr, size_t output_bytes,
+                              const char **input_ptr, const size_t *input_bytes,
+                              size_t n_inputs) const
+{
+  // Validate input
+  {
+    size_t idx = 0;
+    long dset = dependence_set_at_timestep(timestep);
+    std::vector<std::pair<long, long> > deps = dependencies(dset, point);
+    for (auto span : deps) {
+      for (long dep = span.first; dep <= span.second; dep++) {
+        assert(idx < n_inputs);
+
+        assert(input_bytes[idx] == output_bytes_per_task);
+        assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
+        const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
+        assert(timestep == 0 || input.first == timestep - 1);
+        assert(timestep == 0 || input.second == dep);
+
+        idx++;
+      }
+    }
+    assert(idx == n_inputs);
+  }
+
+  // Validate output
+  assert(output_bytes == output_bytes_per_task);
+  assert(output_bytes >= sizeof(std::pair<long, long>));
+
+  // Generate output
+  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(output_ptr);
+  output->first = timestep;
+  output->second = point;
+
+  // Execute kernel
+  Kernel k(kernel);
+  k.execute();
+}
+
 static TaskGraph default_graph()
 {
   TaskGraph graph;
@@ -303,6 +343,7 @@ static TaskGraph default_graph()
   graph.max_width = 4;
   graph.dependence = DependenceType::TRIVIAL;
   graph.kernel = {KernelType::EMPTY, 0};
+  graph.output_bytes_per_task = sizeof(std::pair<long, long>);
 
   return graph;
 }

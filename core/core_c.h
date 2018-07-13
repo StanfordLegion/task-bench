@@ -17,6 +17,7 @@
 #define CORE_C_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,6 +67,7 @@ typedef struct task_graph_t {
   long max_width;
   dependence_type_t dependence;
   kernel_t kernel;
+  size_t output_bytes_per_task;
 } task_graph_t;
 
 long task_graph_offset_at_timestep(task_graph_t graph, long timestep);
@@ -75,6 +77,10 @@ long task_graph_timestep_period(task_graph_t graph);
 long task_graph_dependence_set_at_timestep(task_graph_t graph, long timestep);
 interval_list_t task_graph_reverse_dependencies(task_graph_t graph, long dset, long point);
 interval_list_t task_graph_dependencies(task_graph_t graph, long dset, long point);
+void task_graph_execute_point(task_graph_t graph, long timestep, long point,
+                              char *output_ptr, size_t output_bytes,
+                              const char **input_ptr, const size_t *input_bytes,
+                              size_t n_inputs);
 
 typedef struct task_graph_list_t {
   void *impl;
