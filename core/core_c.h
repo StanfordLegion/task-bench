@@ -36,6 +36,7 @@ typedef enum dependence_type_t {
 
 typedef enum kernel_type_t {
   EMPTY,
+  BUSY_WAIT,
   MEMORY_BOUND,
   COMPUTE_BOUND,
 } kernel_type_t;

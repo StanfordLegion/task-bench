@@ -24,9 +24,18 @@
 
 #include "core.h"
 
-void execute_kernel_empty(const Kernel &kernel)
+void __attribute__ ((noinline)) execute_kernel_empty(const Kernel &kernel)
 {
   // Do nothing...
+}
+
+long long __attribute__ ((noinline)) execute_kernel_busy_wait(const Kernel &kernel)
+{
+  long long acc = 113;
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    acc = acc * 139 % 2147483647;
+  }
+  return acc;
 }
 
 void Kernel::execute() const
@@ -34,6 +43,9 @@ void Kernel::execute() const
   switch(type) {
   case KernelType::EMPTY:
     execute_kernel_empty(*this);
+    break;
+  case KernelType::BUSY_WAIT:
+    execute_kernel_busy_wait(*this);
     break;
   default:
     assert(false && "unimplemented kernel type");
@@ -46,6 +58,7 @@ static const std::map<std::string, KernelType> &ktype_by_name()
 
   if (types.empty()) {
     types["empty"] = KernelType::EMPTY;
+    types["busy_wait"] = KernelType::BUSY_WAIT;
     types["memory_bound"] = KernelType::MEMORY_BOUND;
     types["compute_bound"] = KernelType::COMPUTE_BOUND;
   }
