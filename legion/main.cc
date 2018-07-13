@@ -51,15 +51,64 @@ enum FieldIDs {
 
 static Logger log_taskbench("taskbench");
 
+struct Payload {
+  TaskGraph graph;
+  long timestep;
+  IndexPartitionT<1> primary_partition;
+};
+
+void get_base_and_size(Runtime *runtime,
+                       const PhysicalRegion &region,
+                       const RegionRequirement &req,
+                       const Rect<1> &rect,
+                       char *&base,
+                       size_t &bytes)
+{
+  UnsafeFieldAccessor<char, 1, coord_t, Realm::AffineAccessor<char, 1, coord_t> > acc(
+    region, req.instance_fields[0]);
+  assert(acc.accessor.strides[0] == sizeof(char));
+  base = reinterpret_cast<char *>(acc.ptr(rect.lo));
+  bytes = rect.volume();
+}
+
 void leaf(const Task *task,
-            const std::vector<PhysicalRegion> &regions,
-            Context ctx, Runtime *runtime)
+          const std::vector<PhysicalRegion> &regions,
+          Context ctx, Runtime *runtime)
 {
   log_taskbench.info("Leaf at point %lld", task->index_point[0]);
 
-  assert(task->arglen == sizeof(Kernel));
-  Kernel kernel = *reinterpret_cast<Kernel *>(task->args);
-  kernel.execute();
+  assert(task->arglen == sizeof(Payload));
+  Payload payload = *reinterpret_cast<Payload *>(task->args);
+  TaskGraph graph = payload.graph;
+  long timestep = payload.timestep;
+  IndexPartitionT<1> primary = payload.primary_partition;
+
+  Point<1> point = task->index_point;
+
+  Rect<1> output_rect = runtime->get_index_space_domain(
+    regions[0].get_logical_region().get_index_space());
+  char *output_ptr;
+  size_t output_bytes;
+  get_base_and_size(runtime, regions[0], task->regions[0], output_rect, output_ptr, output_bytes);
+
+  long dset = graph.dependence_set_at_timestep(timestep);
+  std::vector<std::pair<long, long> > deps = graph.dependencies(dset, point);
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  for (auto span : deps) {
+    for (long dep = span.first; dep <= span.second; dep++) {
+      IndexSpaceT<1> is = runtime->get_index_subspace<1>(primary, Point<1>(dep));
+      Rect<1> rect = Domain(runtime->get_index_space_domain(is));
+      char *ptr;
+      size_t bytes;
+      get_base_and_size(runtime, regions[1], task->regions[1], rect, ptr, bytes);
+      input_ptrs.push_back(ptr);
+      input_bytes.push_back(bytes);
+    }
+  }
+
+  graph.execute_point(timestep, point, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
 }
 
 void dummy(const Task *task,
@@ -110,20 +159,24 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
   }
 
   for (auto g : graphs) {
-    // For now, create enough room for one output per task
-    IndexSpaceT<1> is = runtime->create_index_space(ctx, Rect<1>(0, g.max_width-1));
+    // Space of tasks
+    IndexSpaceT<1> ts = runtime->create_index_space(ctx, Rect<1>(0, g.max_width - 1));
+
+    // Space of task output
+    IndexSpaceT<1> is = runtime->create_index_space(
+      ctx, Rect<1>(0, g.max_width * g.output_bytes_per_task - 1));
     FieldSpace fs = runtime->create_field_space(ctx);
     {
       FieldAllocator allocator =
         runtime->create_field_allocator(ctx, fs);
       for (long i = 0; i < num_fields; ++i) {
-        allocator.allocate_field(sizeof(double), FID_FIRST+i);
+        allocator.allocate_field(sizeof(char), FID_FIRST+i);
       }
     }
     LogicalRegionT<1> result_lr = runtime->create_logical_region(ctx, is, fs);
 
     // Divide this first into one piece per task
-    IndexPartitionT<1> primary_ip = runtime->create_equal_partition(ctx, is, is);
+    IndexPartitionT<1> primary_ip = runtime->create_equal_partition(ctx, is, ts);
     LogicalPartitionT<1> primary_lp = runtime->get_logical_partition(result_lr, primary_ip);
 
     // Next create secondary partitions for dependencies
@@ -131,7 +184,7 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
 
     long ndsets = g.max_dependence_sets();
     for (long dset = 0; dset < ndsets; ++dset) {
-      IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, is);
+      IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, ts);
 
       for (long point = 0; point < g.max_width; ++point) {
         std::vector<std::pair<long, long> > deps = g.dependencies(dset, point);
@@ -222,9 +275,12 @@ void LegionApp::execute_timestep(size_t idx, long t)
 
   FieldID fout(FID_FIRST + ((t+1) % num_fields)), fin(FID_FIRST + (t % num_fields));
 
-  Kernel kernel = g.kernel;
+  Payload payload;
+  payload.graph = g;
+  payload.timestep = t;
+  payload.primary_partition = primary.get_index_partition();
   IndexLauncher launcher(TID_LEAF, bounds,
-                         TaskArgument(&kernel, sizeof(kernel)), ArgumentMap());
+                         TaskArgument(&payload, sizeof(payload)), ArgumentMap());
   // This needs to be write-discard so that we don't catch a
   // dependence on the same point in the previous timestep, unless
   // that task is an explicit dependence. Note: there may still be a
