@@ -92,6 +92,12 @@ long task_graph_dependence_set_at_timestep(task_graph_t graph, long timestep)
   return t.dependence_set_at_timestep(timestep);
 }
 
+interval_list_t task_graph_reverse_dependencies(task_graph_t graph, long dset, long point)
+{
+  TaskGraph t(graph);
+  return wrap_consume(t.reverse_dependencies(dset, point));
+}
+
 interval_list_t task_graph_dependencies(task_graph_t graph, long dset, long point)
 {
   TaskGraph t(graph);

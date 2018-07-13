@@ -73,6 +73,7 @@ long task_graph_width_at_timestep(task_graph_t graph, long timestep);
 long task_graph_max_dependence_sets(task_graph_t graph);
 long task_graph_timestep_period(task_graph_t graph);
 long task_graph_dependence_set_at_timestep(task_graph_t graph, long timestep);
+interval_list_t task_graph_reverse_dependencies(task_graph_t graph, long dset, long point);
 interval_list_t task_graph_dependencies(task_graph_t graph, long dset, long point);
 
 typedef struct task_graph_list_t {
