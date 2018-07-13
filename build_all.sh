@@ -10,6 +10,8 @@ fi
 
 source deps/env.sh
 
+make -C core -j${THREADS:-4}
+
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     make -C mpi clean
     make -C mpi all -j${THREADS:-4}
