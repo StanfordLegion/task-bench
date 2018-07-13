@@ -44,7 +44,11 @@ typedef enum kernel_type_t {
 typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
+  
   // TODO: Add parameters for load imbalance, etc.
+  long size;
+  long bound;
+  long step;
 } kernel_t;
 
 void kernel_execute(kernel_t kernel);

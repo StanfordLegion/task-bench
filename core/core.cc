@@ -31,29 +31,30 @@ void execute_kernel_empty(const Kernel &kernel)
 
 void execute_kernel_memory(const Kernel &kernel)
 {
-  // double* data;
-  // double temp;
-  // int N = 1024*1024*1024;
-  // data = (double *) malloc(sizeof(double)* N);
-
-  // for(int i=0; i < N; i++){
-  //   data[i] = random(i);
-  //   temp = sqrt(data[i]);
-  // }
-  
+  for (r = 0; r < loop_cnt; r++) {
+    for (i = 0; i < step; i++) {
+        for (j = 0; j < (N*N/step); j++) {
+           k = (i+j*step) % (N*N);
+           C[k] = A[k] + B[k]; 
+        }
+    }   
+  }
 }
 
 void execute_kernel_compute(const Kernel &kernel)
 {
-  // double* data;
-  // double temp;
-  // int N = 1024;
-  // data = (double *) malloc(sizeof(double)* N);
 
-  // for(int i=0; i < N; i++){
-  //   data[i] = random(i);
-  //   temp = sqrt(data[i]);
-  // }
+  for (r = 0; r < loop_cnt; r++) {
+    for (i = 0; i < m*p; i++) {
+        temp = A[i];
+        sum = temp;
+        for (j=0; j<bound; j++){
+            temp *=temp;
+            sum += temp;
+        }    
+        A[i] = sum;
+    }    
+  }
 
 }
 
@@ -65,6 +66,23 @@ void execute_kernel_io(const Kernel &kernel)
 void execute_kernel_imbalance(const Kernel &kernel)
 {
   //random pick one task to be compute bound
+
+  // Use current time as seed for random generator
+  srand((dsecnd()+myid)); 
+  bound = rand() % bound;
+
+  for (r = 0; r < loop_cnt; r++) {
+    for (i = 0; i < m*p; i++) {
+        temp = A[i];
+        sum = temp;
+        for (j=0; j<bound; j++){
+            temp *=temp;
+            sum += temp;
+        }    
+        A[i] = sum;
+    }    
+  }
+
 }
 
 void Kernel::execute() const
