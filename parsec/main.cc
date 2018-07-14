@@ -35,6 +35,12 @@ enum regions {
   TILE_FULL,
 };
 
+typedef struct payload_s {
+  int i;
+  int j;
+  TaskGraph graph;
+}payload_t;
+
 static inline int
 dplasma_add2arena_tile( parsec_arena_t *arena, size_t elem_size, size_t alignment,
                         parsec_datatype_t oldtype, unsigned int tile_mb )
@@ -48,13 +54,18 @@ dplasma_add2arena_tile( parsec_arena_t *arena, size_t elem_size, size_t alignmen
 static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
-    int i, j;
+    payload_t payload;
     double *data1;
 
-    parsec_dtd_unpack_args(this_task, &i, &j, &data1);
+    parsec_dtd_unpack_args(this_task, &payload, &data1);
     
-    *data1 = 0.0;
-    printf("\nRank %d, core %d, i %d, j %d, data1 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data1);
+   // *data1 = 0.0;
+    
+    std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(data1);
+    output->first = payload.i;
+    output->second = payload.j;
+   
+   // printf("\nTask 1, rank %d, core %d, i %d, j %d, data1 %p\n", this_task->taskpool->context->my_rank, es->core_id, payload.i, payload.j, output);
 
     return PARSEC_HOOK_RETURN_DONE;
 }
@@ -62,13 +73,24 @@ static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
 static int test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
-    int i, j;
+    payload_t payload;
     double *data1, *data2;
 
-    parsec_dtd_unpack_args(this_task, &i, &j, &data1, &data2);
-    //sleep(5);
-    *data2 = *data1 + 1.0;
-    printf("\nRank %d, core %d, i %d, j %d, data2 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data2);
+    parsec_dtd_unpack_args(this_task, &payload, &data1, &data2);
+    
+    //*data2 = *data1 + 1.0;
+    //printf("\nTask 2, rank %d, core %d, i %d, j %d, data 1 %p data2 %p\n", this_task->taskpool->context->my_rank, es->core_id, payload.i, payload.j, data1, data2);
+    
+    TaskGraph graph = payload.graph;
+    char *output_ptr = (char*)data2;
+    size_t output_bytes= 16;
+    std::vector<const char *> input_ptrs;
+    std::vector<size_t> input_bytes;
+    input_ptrs.push_back((char*)data1);
+    input_bytes.push_back(16);
+    
+    graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                        input_ptrs.data(), input_bytes.data(), input_ptrs.size());
 
     return PARSEC_HOOK_RETURN_DONE;
 }
@@ -76,14 +98,29 @@ static int test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
 static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
-    int i, j;
+    payload_t payload;
     double *data1, *data2, *data3;
 
-    parsec_dtd_unpack_args(this_task, &i, &j, &data1, &data2, &data3);
+    parsec_dtd_unpack_args(this_task, &payload, &data1, &data2, &data3);
     
-    *data3 = *data1 + *data2 + 1.0;
+    //printf("\nTask 3, rank %d, core %d, i %d, j %d, data1 %p, data2 %p, data3 %p\n", this_task->taskpool->context->my_rank, es->core_id, payload.i, payload.j, data1, data2, data3);
+    
+    TaskGraph graph = payload.graph;
+    char *output_ptr = (char*)data3;
+    size_t output_bytes= 16;
+    std::vector<const char *> input_ptrs;
+    std::vector<size_t> input_bytes;
+    input_ptrs.push_back((char*)data1);
+    input_bytes.push_back(16);
+    input_ptrs.push_back((char*)data2);
+    input_bytes.push_back(16);
+    
+    graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                        input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+    
+    //*data3 = *data1 + *data2 + 1.0;
    // printf("\nRank %d, core %d, i %d, j %d, data3 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data3);
-    printf("\nTask 3, rank %d, core %d, i %d, j %d, data1 %.2f, data2 %.2f, data3 %.2f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data1, *data2, *data3);
+    
    // printf("\nTask 3, rank %d, core %d, i %d, j %d, data1 %p, data2 %p, data3 %p\n", this_task->taskpool->context->my_rank, es->core_id, i, j, data1, data2, data3);
 
     return PARSEC_HOOK_RETURN_DONE;
@@ -92,13 +129,29 @@ static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
 static int test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
     (void)es;
-    int i, j;
+    payload_t payload;
     double *data1, *data2, *data3, *data4;
 
-    parsec_dtd_unpack_args(this_task, &i, &j, &data1, &data2, &data3, &data4);
+    parsec_dtd_unpack_args(this_task, &payload, &data1, &data2, &data3, &data4);
     
-    *data4 = *data1 + *data2 + *data3 + 1.0;
-    printf("\nRank %d, core %d, i %d, j %d, data4 %f\n", this_task->taskpool->context->my_rank, es->core_id, i, j, *data4);
+   // *data4 = *data1 + *data2 + *data3 + 1.0;
+   // printf("\nTask 4, rank %d, core %d, i %d, j %d, data4 %f\n", this_task->taskpool->context->my_rank, es->core_id, payload.i, payload.j, *data4);
+    //printf("\nTask 4, rank %d, core %d, i %d, j %d, data1 %p, data2 %p, data3 %p, data4 %p\n", this_task->taskpool->context->my_rank, es->core_id, payload.i, payload.j, data1, data2, data3, data4);
+    
+    TaskGraph graph = payload.graph;
+    char *output_ptr = (char*)data4;
+    size_t output_bytes= 16;
+    std::vector<const char *> input_ptrs;
+    std::vector<size_t> input_bytes;
+    input_ptrs.push_back((char*)data1);
+    input_bytes.push_back(16);
+    input_ptrs.push_back((char*)data2);
+    input_bytes.push_back(16);
+    input_ptrs.push_back((char*)data3);
+    input_bytes.push_back(16);
+    
+    graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                        input_ptrs.data(), input_bytes.data(), input_ptrs.size());
 
     return PARSEC_HOOK_RETURN_DONE;
 }
@@ -110,7 +163,7 @@ struct ParsecApp : public App {
   void execute_timestep(size_t idx, long t);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
-  void insert_task(int num_args, int i, int j, std::vector<parsec_dtd_tile_t*> &args);
+  void insert_task(int num_args, payload_t payload, std::vector<parsec_dtd_tile_t*> &args);
 private:
   parsec_context_t* parsec;
   parsec_taskpool_t *dtd_tp;
@@ -145,28 +198,25 @@ private:
   int iparam[IPARAM_SIZEOF];
 };
 
-void ParsecApp::insert_task(int num_args, int i, int j, std::vector<parsec_dtd_tile_t*> &args)
+void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_dtd_tile_t*> &args)
 {
   switch(num_args) {
   case 1:
     parsec_dtd_taskpool_insert_task(dtd_tp, test_task1,    0,  "test_task1",
-                                    sizeof(int),    &i,  VALUE,
-                                    sizeof(int),    &j,  VALUE,
+                                    sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                     PARSEC_DTD_ARG_END);
     break;
   case 2:
     parsec_dtd_taskpool_insert_task(dtd_tp, test_task2,    0,  "test_task2",
-                                    sizeof(int),    &i,  VALUE,
-                                    sizeof(int),    &j,  VALUE,
+                                    sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                     PARSEC_DTD_ARG_END);
     break;
   case 3:
     parsec_dtd_taskpool_insert_task(dtd_tp, test_task3,    0,  "test_task3",
-                                    sizeof(int),    &i,  VALUE,
-                                    sizeof(int),    &j,  VALUE,
+                                    sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
@@ -174,8 +224,7 @@ void ParsecApp::insert_task(int num_args, int i, int j, std::vector<parsec_dtd_t
     break;
   case 4:
     parsec_dtd_taskpool_insert_task(dtd_tp, test_task4,    0,  "test_task4",
-                                    sizeof(int),    &i,  VALUE,
-                                    sizeof(int),    &j,  VALUE,
+                                    sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
@@ -194,7 +243,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
 
   /* Set defaults for non argv iparams */
   iparam_default_gemm(iparam);
-  iparam_default_ibnbmb(iparam, 0, 1, 1);
+  iparam_default_ibnbmb(iparam, 0, 4, 4);
 #if defined(HAVE_CUDA) && 1
   iparam[IPARAM_NGPUS] = 0;
 #endif
@@ -323,6 +372,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   long dset = g.dependence_set_at_timestep(t);
   
   std::vector<parsec_dtd_tile_t*> args;
+  payload_t payload;
   
   debug_printf(0, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
@@ -350,7 +400,10 @@ void ParsecApp::execute_timestep(size_t idx, long t)
         }
       }
     }
-    insert_task(num_args, t, x, args); 
+    payload.i = t;
+    payload.j = x;
+    payload.graph = g;
+    insert_task(num_args, payload, args); 
     args.clear();
   }
   debug_printf(0, "\n");

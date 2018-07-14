@@ -11,69 +11,118 @@
 
 #include <unistd.h>
 
+typedef struct payload_s {
+  int i;
+  int j;
+  TaskGraph graph;
+}payload_t;
+
 static void task1(void *descr[], void *cl_arg)
 {
     float *a;
-    int i, j;
+    payload_t payload;
     a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
-    starpu_codelet_unpack_args(cl_arg, &i, &j);
+    starpu_codelet_unpack_args(cl_arg, &payload);
     
-    a[0] = 0.0;
+    //a[0] = 0.0;
+    std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(a);
+    output->first = payload.i;
+    output->second = payload.j;
+    
     int rank;
     starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
-    printf("Task1 i %d, j %d, rank %d, data %f\n", i, j, rank, a[0]);
+    //printf("Task1 i %d, j %d, rank %d, data %f\n", payload.i, payload.j, rank, a[0]);
 }
 
 static void task2(void *descr[], void *cl_arg)
 {
     float *a, *b;
-    int i, j;
+    payload_t payload;
     a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
     b = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
-    starpu_codelet_unpack_args(cl_arg, &i, &j);
+    starpu_codelet_unpack_args(cl_arg, &payload);
     
-    b[0] = a[0] + 1.0;
+    //b[0] = a[0] + 1.0;
+    
+    TaskGraph graph = payload.graph;
+    char *output_ptr = (char*)b;
+    size_t output_bytes= 16;
+    std::vector<const char *> input_ptrs;
+    std::vector<size_t> input_bytes;
+    input_ptrs.push_back((char*)a);
+    input_bytes.push_back(16);
+    
+    graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                        input_ptrs.data(), input_bytes.data(), input_ptrs.size());
     
     int rank;
     starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
-    printf("Task2 i %d, j %d, rank %d, value %f\n", i, j, rank, b[0]);
+   // printf("Task2 i %d, j %d, rank %d, value %f\n", payload.i, payload.j, rank, b[0]);
 }
 
 static void task3(void *descr[], void *cl_arg)
 {
     float *a, *b, *c;
-    int i, j;
+    payload_t payload;
     a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
     b = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
     c = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
-    starpu_codelet_unpack_args(cl_arg, &i, &j);
+    starpu_codelet_unpack_args(cl_arg, &payload);
     
-    c[0] = a[0] + b[0] + 1.0;
+   // c[0] = a[0] + b[0] + 1.0;
+    
+    TaskGraph graph = payload.graph;
+    char *output_ptr = (char*)c;
+    size_t output_bytes= 16;
+    std::vector<const char *> input_ptrs;
+    std::vector<size_t> input_bytes;
+    input_ptrs.push_back((char*)a);
+    input_bytes.push_back(16);
+    input_ptrs.push_back((char*)b);
+    input_bytes.push_back(16);
+    
+    graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                        input_ptrs.data(), input_bytes.data(), input_ptrs.size());
     
     int rank;
     starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
-    printf("Task3 i %d, j %d, rank %d, value %f\n", i, j, rank, c[0]);
+   // printf("Task3 i %d, j %d, rank %d, value %f\n", payload.i, payload.j, rank, c[0]);
 }
 
 static void task4(void *descr[], void *cl_arg)
 {
     float *a, *b, *c, *d;
-    int i, j;
+    payload_t payload;
     a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
     b = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
     c = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
     d = (float *)STARPU_MATRIX_GET_PTR(descr[3]);
-    starpu_codelet_unpack_args(cl_arg, &i, &j);
+    starpu_codelet_unpack_args(cl_arg, &payload);
     
-    d[0] = a[0] + b[0] + c[0] + 1.0;
+    //d[0] = a[0] + b[0] + c[0] + 1.0;
+    
+    TaskGraph graph = payload.graph;
+    char *output_ptr = (char*)d;
+    size_t output_bytes= 16;
+    std::vector<const char *> input_ptrs;
+    std::vector<size_t> input_bytes;
+    input_ptrs.push_back((char*)a);
+    input_bytes.push_back(16);
+    input_ptrs.push_back((char*)b);
+    input_bytes.push_back(16);
+    input_ptrs.push_back((char*)c);
+    input_bytes.push_back(16);
+    
+    graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                        input_ptrs.data(), input_bytes.data(), input_ptrs.size());
     
     int rank;
     starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
-    printf("Task4 i %d, j %d, rank %d, value %f\n", i, j, rank, d[0]);
+   // printf("Task4 i %d, j %d, rank %d, value %f\n", payload.i, payload.j, rank, d[0]);
 }
 
 struct starpu_codelet cl_task1; 
@@ -88,7 +137,7 @@ public:
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
 private:
-  void insert_task(int num_args, int i, int j, std::vector<void*> &args);
+  void insert_task(int num_args, payload_t payload, std::vector<void*> &args);
   void parse_argument(int argc, char **argv);
 private:
   struct starpu_conf *conf;
@@ -103,26 +152,24 @@ private:
   int MB;
 };
 
-void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args)
+void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<void*> &args)
 {
   void (*callback)(void*) = NULL;
   switch(num_args) {
   case 1:
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task1),
-        STARPU_VALUE,    &i,  sizeof(int),
-        STARPU_VALUE,    &j,  sizeof(int),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_RW, args[0],
         STARPU_CALLBACK,  callback,
         STARPU_PRIORITY,  0,
-        STARPU_NAME, "task2",
+        STARPU_NAME, "task1",
         0);
     break;
   case 2:
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task2),
-        STARPU_VALUE,    &i,  sizeof(int),
-        STARPU_VALUE,    &j,  sizeof(int),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_RW, args[0],
         STARPU_CALLBACK,  callback,
@@ -133,8 +180,7 @@ void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args
   case 3:
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task3),
-        STARPU_VALUE,    &i,  sizeof(int),
-        STARPU_VALUE,    &j,  sizeof(int),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
         STARPU_RW, args[0],
@@ -146,8 +192,7 @@ void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args
   case 4:
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task4),
-        STARPU_VALUE,    &i,  sizeof(int),
-        STARPU_VALUE,    &j,  sizeof(int),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
         STARPU_R, args[3],
@@ -401,6 +446,7 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   long dset = g.dependence_set_at_timestep(t);
   
   std::vector<void*> args;
+  payload_t payload;
   
   printf("ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
@@ -428,7 +474,10 @@ void StarPUApp::execute_timestep(size_t idx, long t)
         }
       }
     }
-    insert_task(num_args, t, x, args); 
+    payload.i = t;
+    payload.j = x;
+    payload.graph = g;
+    insert_task(num_args, payload, args); 
     args.clear();
   }
   printf("\n");
