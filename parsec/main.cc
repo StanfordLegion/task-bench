@@ -31,6 +31,8 @@
 
 #define MAX_ARGS  4
 
+#define VERBOSE_LEVEL 0
+
 #define USE_CORE_VERIFICATION
 
 enum regions {
@@ -381,26 +383,26 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   std::vector<parsec_dtd_tile_t*> args;
   payload_t payload;
   
-  debug_printf(0, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
+  debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args;    
     
     if (deps.size() == 0) {
       num_args = 1;
-      debug_printf(0, "%d[%d] ", x, num_args);
+      debug_printf(1, "%d[%d] ", x, num_args);
       args.push_back(TILE_OF(C, t, x)); 
     } else {
       if (t == 0) {
         num_args = 1;
-        debug_printf(0, "%d[%d] ", x, num_args);
+        debug_printf(1, "%d[%d] ", x, num_args);
         args.push_back(TILE_OF(C, t, x)); 
       } else {
         num_args = 1;
         args.push_back(TILE_OF(C, t, x));
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
-          debug_printf(0, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
             args.push_back(TILE_OF(C, t-1, i));  
           }
@@ -413,11 +415,14 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     insert_task(num_args, payload, args); 
     args.clear();
   }
-  debug_printf(0, "\n");
+  debug_printf(1, "\n");
 }
 
 void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
 {
+  if (verbose_level > VERBOSE_LEVEL) {
+    return;
+  }
   if (rank == 0) {
     va_list args;
     va_start(args, format);
