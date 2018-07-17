@@ -81,9 +81,9 @@ class NativeCPPCompilationUnit;
 
 class TaskBench_Strings {
   public:
-    static ::x10::lang::String sl__729;
-    static ::x10::lang::String sl__727;
-    static ::x10::lang::String sl__728;
+    static ::x10::lang::String sl__652;
+    static ::x10::lang::String sl__650;
+    static ::x10::lang::String sl__651;
 };
 
 class TaskBench : public ::x10::lang::X10Class   {
@@ -101,7 +101,7 @@ class TaskBench : public ::x10::lang::X10Class   {
     virtual void sendAndRecv();
     static ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >*
       makeMap();
-    static void printString(::x10::lang::String* str, x10_int size);
+    static void constructArray(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
     static void callCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argv);
     static void main(::x10::lang::Rail< ::x10::lang::String* >* args);
     virtual ::TaskBench* TaskBench____this__TaskBench();

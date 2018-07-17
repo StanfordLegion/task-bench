@@ -129,38 +129,45 @@ public class TaskBench {
 		return map;
 	}
 
-	// private static def printString(byteArr:Array_1[Byte], size:Int) {
-	// 	//@Native("c++", "char *ch = (char *)&byteArr[0]; std::cout << *ch << std::endl;") {}
-
-	// 	//@Native("c++", "for (int i = 0; i < size; i++) { char ch = (*byteArr)(i); std::cout << ch << std::endl; }") {}
-
-	// 	for (i in 0..(byteArr.size-1)) {
-	// 		b = byteArr(i);
-	// 		@Native("c++", "char *c = (char *)&b;") {}
-	// 	}
-	// }
-
-	private static def printString(str:String, size:Int):void {
+	private static def constructArray(argc:Int, argRail:Rail[String]) {
 		@Native("c++", "
-			char result[size]; 
-			for (int i = 0; i < size; i++) { 
-				x10_char c = (*str).charAt(i); 
-				char *ch = (char *)&c; 
-				result[i] = *ch; 
-			} 
-			printf(\"%s\\n\", result);
+			char **argv = new char *[argc];
+			for (int i = 0; i < argc; i++) {
+				x10::lang::String str = *((*argRail)[i]);
+				x10_int strSize = str.length();
+				char *result = new char[strSize];
+				for (int j = 0; j < strSize; j++) { 
+					x10_char c = (str).charAt(j);
+					char *ch = (char *)&c;
+					result[j] = *ch;
+				}
+				argv[i] = result;
+			}
+			App app(argc, argv);
+			// cleanup allocated arrays
+			for (int i = 0; i < argc; i++) {
+				delete [] argv[i];
+			}
+			delete [] argv;
 		") {}
 	}
+
+	// private static def printString(str:String, strSize:Int):void {
+	// 	@Native("c++", "
+	// 		char result[strSize]; 
+	// 		for (int i = 0; i < strSize; i++) { 
+	// 			x10_char c = (*str).charAt(i); 
+	// 			char *ch = (char *)&c; 
+	// 			result[i] = *ch; 
+	// 		} 
+	// 		printf(\"%s\\n\", result);
+	// 	") {}
+	// }
 
 	
 
 	private static def callCore(argc:Int, argv:Rail[String]):void {
-		for (i in 0..(argv.size-1)) {
-			// val strBytes = argv(i).bytes();
-			// val byteArr = new Array_1[Byte](strBytes.size, (i:Long) => strBytes(i));
-			// printString(byteArr, byteArr.size as Int);
-			printString(argv(i), argv(i).length() as Int);
-		}
+		constructArray(argc, argv);
 	}
 
 	public static def main(args:Rail[String]):void {
