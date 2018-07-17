@@ -3,7 +3,7 @@
 
 #include <x10rt.h>
 
-#include "/home/users/nicolaig/task-bench/x10/task-bench-x10/core.h"
+#include "/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core.h"
 
 #define X10_LANG_PLACELOCALHANDLE_H_NODEPS
 #include <x10/lang/PlaceLocalHandle.h>
@@ -67,6 +67,9 @@ namespace x10 { namespace lang {
 class String;
 } } 
 namespace x10 { namespace compiler { 
+class Native;
+} } 
+namespace x10 { namespace compiler { 
 class Synthetic;
 } } 
 namespace x10 { namespace compiler { 
@@ -78,9 +81,9 @@ class NativeCPPCompilationUnit;
 
 class TaskBench_Strings {
   public:
-    static ::x10::lang::String sl__647;
-    static ::x10::lang::String sl__645;
-    static ::x10::lang::String sl__646;
+    static ::x10::lang::String sl__729;
+    static ::x10::lang::String sl__727;
+    static ::x10::lang::String sl__728;
 };
 
 class TaskBench : public ::x10::lang::X10Class   {
@@ -98,6 +101,8 @@ class TaskBench : public ::x10::lang::X10Class   {
     virtual void sendAndRecv();
     static ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >*
       makeMap();
+    static void printString(::x10::lang::String* str, x10_int size);
+    static void callCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argv);
     static void main(::x10::lang::Rail< ::x10::lang::String* >* args);
     virtual ::TaskBench* TaskBench____this__TaskBench();
     virtual void __fieldInitializers_TaskBench();

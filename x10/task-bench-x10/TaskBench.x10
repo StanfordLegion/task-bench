@@ -1,11 +1,12 @@
 import x10.io.Console;
+import x10.array.*;
 
 import x10.compiler.Native;
 import x10.compiler.NativeCPPInclude;
 import x10.compiler.NativeCPPCompilationUnit;
 
-@NativeCPPInclude("/home/users/nicolaig/task-bench/x10/task-bench-x10/core.h")
-@NativeCPPCompilationUnit("/home/users/nicolaig/task-bench/x10/task-bench-x10/core.cc")
+@NativeCPPInclude("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core.h")
+@NativeCPPCompilationUnit("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core.cc")
 
 public class TaskBench {
 
@@ -128,10 +129,43 @@ public class TaskBench {
 		return map;
 	}
 
+	// private static def printString(byteArr:Array_1[Byte], size:Int) {
+	// 	//@Native("c++", "char *ch = (char *)&byteArr[0]; std::cout << *ch << std::endl;") {}
+
+	// 	//@Native("c++", "for (int i = 0; i < size; i++) { char ch = (*byteArr)(i); std::cout << ch << std::endl; }") {}
+
+	// 	for (i in 0..(byteArr.size-1)) {
+	// 		b = byteArr(i);
+	// 		@Native("c++", "char *c = (char *)&b;") {}
+	// 	}
+	// }
+
+	private static def printString(str:String, size:Int):void {
+		@Native("c++", "
+			char result[size]; 
+			for (int i = 0; i < size; i++) { 
+				x10_char c = (*str).charAt(i); 
+				char *ch = (char *)&c; 
+				result[i] = *ch; 
+			} 
+			printf(\"%s\\n\", result);
+		") {}
+	}
+
+	
+
+	private static def callCore(argc:Int, argv:Rail[String]):void {
+		for (i in 0..(argv.size-1)) {
+			// val strBytes = argv(i).bytes();
+			// val byteArr = new Array_1[Byte](strBytes.size, (i:Long) => strBytes(i));
+			// printString(byteArr, byteArr.size as Int);
+			printString(argv(i), argv(i).length() as Int);
+		}
+	}
+
 	public static def main(args:Rail[String]):void {
-		val argc = args.size;
-		@Native("c++", "char** argv; App app(argc, argv);");
-		{}
+		val argc = args.size as Int;
+		callCore(argc, args);
 	}
 
 }
