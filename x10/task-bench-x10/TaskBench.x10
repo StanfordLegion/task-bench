@@ -1,5 +1,6 @@
 import x10.io.Console;
 import x10.array.*;
+import x10.util.*;
 
 import x10.compiler.Native;
 import x10.compiler.NativeCPPInclude;
@@ -129,7 +130,7 @@ public class TaskBench {
 		return map;
 	}
 
-	private static def constructArray(argc:Int, argRail:Rail[String]) {
+	private static def dependenceSetsFromCore(argc:Int, argRail:Rail[String]):Rail[Rail[Rail[Long]]] {
 		@Native("c++", "
 			char **argv = new char *[argc];
 			for (int i = 0; i < argc; i++) {
@@ -144,35 +145,69 @@ public class TaskBench {
 				argv[i] = result;
 			}
 			App app(argc, argv);
+			// app.display();
 			// cleanup allocated arrays
 			for (int i = 0; i < argc; i++) {
 				delete [] argv[i];
 			}
 			delete [] argv;
-		") {}
+			
+			std::vector<TaskGraph> graphs = app.graphs;
+			TaskGraph tg = graphs.at(0);
+			// var dependenceSets: Rail[Rail[Rail[Long]]] = new Rail[Rail[Rail[Long]]](tg.timestep_period());
+			::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* >* dependenceSets =
+      			::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* >::_make((x10_long)tg.timestep_period());
+			for (int ts = 0; ts < tg.timestep_period(); ts++) {
+				long dset = tg.dependence_set_at_timestep(ts);
+				// var dependenceSet:Rail[Rail[Long]] = new Rail[Rail[Long]](tg.max_width);
+				::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* dependenceSet =
+      				::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::_make(((x10_long)tg.max_width));
+				for (long point = 0; point < tg.width_at_timestep(ts); point++) {
+					auto dependencies = tg.dependencies(dset, point);
+					int depsSize = 0;
+					for (auto p : dependencies) {
+						for (long dp = p.first; dp <= p.second; ++dp) {
+							++depsSize;
+						}
+					}
+					// var deps:Rail[Long] = new Rail[Long](depsSize);
+					x10::lang::Rail< x10_long >* deps = ::x10::lang::Rail< x10_long >::_make((x10_long)depsSize);
+					int i = 0;
+					for (auto p : dependencies) {
+						for (long dp = p.first; dp <= p.second; ++dp) {
+							// deps(i) = dp;
+							::x10aux::nullCheck(deps)->x10::lang::Rail< x10_long >::__set(((x10_long)i), ((x10_long)dp));
+							++i;
+						}
+					}
+					// dependenceSet(point) = deps;
+					::x10aux::nullCheck(dependenceSet)->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__set(
+  						((x10_long)point), deps);
+				}
+				// dependenceSets(ts) = dependenceSet;
+				::x10aux::nullCheck(dependenceSets)->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* >::__set(
+      				((x10_long)ts), dependenceSet);
+			}
+			return dependenceSets;
+		") { return new Rail[Rail[Rail[Long]]](); }
 	}
 
-	// private static def printString(str:String, strSize:Int):void {
-	// 	@Native("c++", "
-	// 		char result[strSize]; 
-	// 		for (int i = 0; i < strSize; i++) { 
-	// 			x10_char c = (*str).charAt(i); 
-	// 			char *ch = (char *)&c; 
-	// 			result[i] = *ch; 
-	// 		} 
-	// 		printf(\"%s\\n\", result);
-	// 	") {}
-	// }
-
-	
-
-	private static def callCore(argc:Int, argv:Rail[String]):void {
-		constructArray(argc, argv);
+	private static def constructCPPArgs(args:Rail[String]):Rail[String] {
+		val argv = new Rail[String](args.size+1);
+		argv(0) = "";
+		for (i in 1..(args.size)) {
+			argv(i) = args(i-1);
+		}
+		return argv;
 	}
 
 	public static def main(args:Rail[String]):void {
-		val argc = args.size as Int;
-		callCore(argc, args);
+		val argc = (args.size+1);
+		val argv = constructCPPArgs(args);
+		var dependenceSets: Rail[Rail[Rail[Long]]] = dependenceSetsFromCore((argc as Int), argv);
+		for (dependenceSet in dependenceSets) {
+			Console.OUT.println(dependenceSet.toString());
+		}
 	}
 
 }

@@ -81,9 +81,10 @@ class NativeCPPCompilationUnit;
 
 class TaskBench_Strings {
   public:
-    static ::x10::lang::String sl__652;
-    static ::x10::lang::String sl__650;
-    static ::x10::lang::String sl__651;
+    static ::x10::lang::String sl__784;
+    static ::x10::lang::String sl__785;
+    static ::x10::lang::String sl__783;
+    static ::x10::lang::String sl__782;
 };
 
 class TaskBench : public ::x10::lang::X10Class   {
@@ -101,8 +102,10 @@ class TaskBench : public ::x10::lang::X10Class   {
     virtual void sendAndRecv();
     static ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >*
       makeMap();
-    static void constructArray(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
-    static void callCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argv);
+    static ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* >*
+      dependenceSetsFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
+    static ::x10::lang::Rail< ::x10::lang::String* >* constructCPPArgs(
+      ::x10::lang::Rail< ::x10::lang::String* >* args);
     static void main(::x10::lang::Rail< ::x10::lang::String* >* args);
     virtual ::TaskBench* TaskBench____this__TaskBench();
     virtual void __fieldInitializers_TaskBench();
