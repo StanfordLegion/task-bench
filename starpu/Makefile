@@ -2,14 +2,23 @@ ifndef STARPU_DIR
 $(error STARPU_DIR variable is not defined, aborting build)
 endif
 
+DEBUG			 = 0
+
 CC         = mpic++
 
-CFLAGS     = -g -O0  -DADD_ -fPIC -std=c++11
-LDFLAGS    = -Wall -g -O0 -std=c++11
+CFLAGS     = -DADD_ -fPIC -std=c++11
+LDFLAGS    = -Wall -std=c++11
 
 #STARPU_DIR = /home/wwu12/starpu/install
 #MPI_DIR    = /sw/openmpi/2.1.1
 
+ifeq ($(strip $(DEBUG)),1)
+CFLAGS		 += -g -O0
+LDFLAGS		 += -g -O0
+else
+CFLAGS		 += -O2
+LDFLAGS		 += -O2
+endif
 
 # Include directories
 INC        = -I$(STARPU_DIR)/include/starpu/1.2 -I../core

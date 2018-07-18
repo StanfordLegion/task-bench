@@ -11,6 +11,8 @@
 
 #include <unistd.h>
 
+#define VERBOSE_LEVEL 0
+
 #define USE_CORE_VERIFICATION
 
 typedef struct payload_s {
@@ -147,6 +149,7 @@ public:
 private:
   void insert_task(int num_args, payload_t payload, std::vector<void*> &args);
   void parse_argument(int argc, char **argv);
+  void debug_printf(int verbose_level, const char *format, ...);
 private:
   struct starpu_conf *conf;
   starpu_ddesc_t *ddescA;
@@ -282,7 +285,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   NT = graph.max_width;
   MT = graph.timesteps;
   
-  printf("mt %d, nt %d\n", MT, NT);
+  debug_printf(0, "mt %d, nt %d\n", MT, NT);
   assert (graph.output_bytes_per_task <= sizeof(float)*MB*MB);
 
   ddescA = create_and_distribute_data(rank, world, MB, MB, MT, NT, P, Q);
@@ -457,26 +460,26 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   std::vector<void*> args;
   payload_t payload;
   
-  printf("ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
+  debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args;    
     
     if (deps.size() == 0) {
       num_args = 1;
-      printf("%d[%d] ", x, num_args);
+      debug_printf(1, "%d[%d] ", x, num_args);
       args.push_back(starpu_desc_getaddr( ddescA, t, x ));
     } else {
       if (t == 0) {
         num_args = 1;
-        printf("%d[%d] ", x, num_args);
+        debug_printf(1, "%d[%d] ", x, num_args);
         args.push_back(starpu_desc_getaddr( ddescA, t, x ));
       } else {
         num_args = 1;
         args.push_back(starpu_desc_getaddr( ddescA, t, x ));
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
-          printf("%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
             args.push_back(starpu_desc_getaddr( ddescA, t-1, i ));
           }
@@ -489,8 +492,22 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     insert_task(num_args, payload, args); 
     args.clear();
   }
-  printf("\n");
+  debug_printf(1, "\n");
 }
+
+void StarPUApp::debug_printf(int verbose_level, const char *format, ...)
+{
+  if (verbose_level > VERBOSE_LEVEL) {
+    return;
+  }
+  if (rank == 0) {
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+  }
+}
+
 
 int main(int argc, char **argv)
 {
