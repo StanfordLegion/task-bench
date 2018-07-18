@@ -43,8 +43,8 @@ class Synthetic;
 
 class TaskBench__PlaceInstance_Strings {
   public:
-    static ::x10::lang::String sl__795;
-    static ::x10::lang::String sl__796;
+    static ::x10::lang::String sl__791;
+    static ::x10::lang::String sl__792;
 };
 
 class TaskBench__PlaceInstance : public ::x10::lang::X10Class   {
@@ -62,10 +62,10 @@ class TaskBench__PlaceInstance : public ::x10::lang::X10Class   {
     ::x10::lang::Rail< x10_long >* FMGL(neighborsRecv);
     
     virtual x10_long getSenderIndex(x10_long recvId);
-    void _constructor(::x10::lang::Rail< x10_long >* neighborsSend, ::x10::lang::Rail< x10_long >* neighborsRecv);
+    void _constructor(::x10::lang::Rail< x10_long >* neighborsRecv, ::x10::lang::Rail< x10_long >* neighborsSend);
     
-    static ::TaskBench__PlaceInstance* _make(::x10::lang::Rail< x10_long >* neighborsSend,
-                                             ::x10::lang::Rail< x10_long >* neighborsRecv);
+    static ::TaskBench__PlaceInstance* _make(::x10::lang::Rail< x10_long >* neighborsRecv,
+                                             ::x10::lang::Rail< x10_long >* neighborsSend);
     
     virtual ::TaskBench__PlaceInstance* TaskBench__PlaceInstance____this__TaskBench__PlaceInstance(
       );

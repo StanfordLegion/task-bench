@@ -42,14 +42,14 @@ public class TaskBench {
 			return -1;
 		}
 
-		protected def this(neighborsSend:Rail[Long], neighborsRecv:Rail[Long]) {
+		protected def this(neighborsRecv:Rail[Long], neighborsSend:Rail[Long]) {
 
-			this.neighborsSend = neighborsSend;
 			this.neighborsRecv = neighborsRecv;
+			this.neighborsSend = neighborsSend;
 
 			// for now only holds space for Rails of size 1
-			this.send = new Rail[Rail[Double]](neighborsSend.size, (i:Long) => new Rail[Double](1));
 			this.recv = new Rail[Rail[Double]](neighborsRecv.size, (i:Long) => new Rail[Double](1));
+			this.send = new Rail[Rail[Double]](neighborsSend.size, (i:Long) => new Rail[Double](1));
 
 			val plchldr = new GlobalRail[Double](new Rail[Double](0));
 			this.remoteSend = new Rail[GlobalRail[Double]](neighborsRecv.size, plchldr);
@@ -58,13 +58,15 @@ public class TaskBench {
 
 	}
 
+	private static val data = new Rail[Double](1, 1.0);
+
 	public val plh:PlaceLocalHandle[PlaceInstance];
 
-	public def this(neighborSendMap:Rail[Rail[Long]], neighborRecvMap:Rail[Rail[Long]]) {
+	public def this(dependenceSet:Rail[Pair[Rail[Long], Rail[Long]]]) {
 
 		// create a PlaceInstance instance at each place
 		val pplh = PlaceLocalHandle.make[PlaceInstance](Place.places(), () => {
-			new PlaceInstance(neighborSendMap(here.id), neighborRecvMap(here.id))
+			new PlaceInstance(dependenceSet(here.id).first, dependenceSet(here.id).second)
 		});
 		this.plh = pplh;
 
@@ -105,6 +107,7 @@ public class TaskBench {
 
 				for (i in 0..(pi.neighborsSend.size-1)) {
 					// send data
+					pi.send(i) = data;
 				}
 			}
 		}
@@ -125,12 +128,7 @@ public class TaskBench {
 
 	}
 
-	private static def makeMap():Rail[Rail[Long]] {
-		val map = new Rail[Rail[Long]]();
-		return map;
-	}
-
-	private static def dependenceSetsFromCore(argc:Int, argRail:Rail[String]):Rail[Rail[Rail[Long]]] {
+	private static def dependenceSetsFromCore(argc:Int, argRail:Rail[String]):Rail[Rail[Pair[Rail[Long],Rail[Long]]]] {
 		@Native("c++", "
 			char **argv = new char *[argc];
 			for (int i = 0; i < argc; i++) {
@@ -145,7 +143,7 @@ public class TaskBench {
 				argv[i] = result;
 			}
 			App app(argc, argv);
-			// app.display();
+			app.display();
 			// cleanup allocated arrays
 			for (int i = 0; i < argc; i++) {
 				delete [] argv[i];
@@ -154,24 +152,34 @@ public class TaskBench {
 			
 			std::vector<TaskGraph> graphs = app.graphs;
 			TaskGraph tg = graphs.at(0);
-			// var dependenceSets: Rail[Rail[Rail[Long]]] = new Rail[Rail[Rail[Long]]](tg.timestep_period());
-			::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* >* dependenceSets =
-      			::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* >::_make((x10_long)tg.timestep_period());
-			for (int ts = 0; ts < tg.timestep_period(); ts++) {
+			// val dependenceSets = new Rail[Rail[Pair[Rail[Long], Rail[Long]]]](tg.timestep_period());
+			::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dependenceSets =
+				::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, 
+				::x10::lang::Rail< x10_long >*> >* >::_make((x10_long)tg.timestep_period());
+			for (long ts = 0; ts < tg.timestep_period(); ts++) {
 				long dset = tg.dependence_set_at_timestep(ts);
-				// var dependenceSet:Rail[Rail[Long]] = new Rail[Rail[Long]](tg.max_width);
-				::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* dependenceSet =
-      				::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::_make(((x10_long)tg.max_width));
-				for (long point = 0; point < tg.width_at_timestep(ts); point++) {
+				// val dependenceSet = new Rail[Pair[Rail[Long], Rail[Long]]](tg.max_width);
+				::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* dependenceSet =
+					::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >::_make(((x10_long)tg.max_width));
+				for (long point = tg.offset_at_timestep(ts); point < tg.offset_at_timestep(ts) + tg.width_at_timestep(ts); point++) {
 					auto dependencies = tg.dependencies(dset, point);
+					auto reverseDependencies = tg.reverse_dependencies(dset, point);
 					int depsSize = 0;
 					for (auto p : dependencies) {
 						for (long dp = p.first; dp <= p.second; ++dp) {
 							++depsSize;
 						}
 					}
+					int revDepsSize = 0;
+					for (auto rp : reverseDependencies) {
+						for (long rdp = rp.first; rdp <= rp.second; ++rdp) {
+							++revDepsSize;
+						}
+					}
 					// var deps:Rail[Long] = new Rail[Long](depsSize);
 					x10::lang::Rail< x10_long >* deps = ::x10::lang::Rail< x10_long >::_make((x10_long)depsSize);
+					// var revDeps:Rail[Long] = new Rail[Long](depsSize);
+					x10::lang::Rail< x10_long >* revDeps = ::x10::lang::Rail< x10_long >::_make((x10_long)revDepsSize);
 					int i = 0;
 					for (auto p : dependencies) {
 						for (long dp = p.first; dp <= p.second; ++dp) {
@@ -180,16 +188,29 @@ public class TaskBench {
 							++i;
 						}
 					}
-					// dependenceSet(point) = deps;
-					::x10aux::nullCheck(dependenceSet)->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__set(
-  						((x10_long)point), deps);
+					i = 0;
+					for (auto rp : reverseDependencies) {
+						for (long rdp = rp.first; rdp <= rp.second; rdp++) {
+							// revDeps(i) = rdp
+							::x10aux::nullCheck(revDeps)->x10::lang::Rail< x10_long >::__set(((x10_long)i), ((x10_long)rdp));
+							++i;
+						}
+					}
+					// val dependencePair = new Pair(deps, revDeps);
+					::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> dependencePair =
+						::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*>::_make(deps, revDeps);
+					// dependenceSet(point) = dependencePair;
+					::x10aux::nullCheck(dependenceSet)->x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >::
+						__set(point, dependencePair);
+
 				}
 				// dependenceSets(ts) = dependenceSet;
-				::x10aux::nullCheck(dependenceSets)->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* >::__set(
-      				((x10_long)ts), dependenceSet);
+				::x10aux::nullCheck(dependenceSets)->
+				x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >::
+						__set(ts, dependenceSet);
 			}
 			return dependenceSets;
-		") { return new Rail[Rail[Rail[Long]]](); }
+		") { return new Rail[Rail[Pair[Rail[Long],Rail[Long]]]](); }
 	}
 
 	private static def constructCPPArgs(args:Rail[String]):Rail[String] {
@@ -202,12 +223,11 @@ public class TaskBench {
 	}
 
 	public static def main(args:Rail[String]):void {
-		val argc = (args.size+1);
+		val argc = (args.size+1) as Int;
 		val argv = constructCPPArgs(args);
-		var dependenceSets: Rail[Rail[Rail[Long]]] = dependenceSetsFromCore((argc as Int), argv);
-		for (dependenceSet in dependenceSets) {
-			Console.OUT.println(dependenceSet.toString());
-		}
+		val dependenceSets = dependenceSetsFromCore(argc, argv);
+		val dependenceSet = dependenceSets(0);
+		val task_bench = new TaskBench(dependenceSet);
 	}
 
 }
