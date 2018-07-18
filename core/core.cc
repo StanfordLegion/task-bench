@@ -324,13 +324,14 @@ void TaskGraph::execute_point(long timestep, long point,
         const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
         if (last_offset <= dep && dep < last_offset + last_width) {
           assert(input.first == timestep - 1);
-          assert(timestep == 0 || input.second == dep);
+          assert(input.second == dep);
+          idx++;
         }
-
-        idx++;
       }
     }
-    assert(idx == n_inputs);
+    // FIXME (Elliott): Legion is currently passing in uninitialized
+    // memory for dependencies outside of the last offset/width.
+    // assert(idx == n_inputs);
   }
 
   // Validate output
