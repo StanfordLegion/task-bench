@@ -84,10 +84,11 @@ class NativeCPPCompilationUnit;
 
 class TaskBench_Strings {
   public:
-    static ::x10::lang::String sl__780;
-    static ::x10::lang::String sl__781;
-    static ::x10::lang::String sl__778;
-    static ::x10::lang::String sl__779;
+    static ::x10::lang::String sl__820;
+    static ::x10::lang::String sl__821;
+    static ::x10::lang::String sl__818;
+    static ::x10::lang::String sl__819;
+    static ::x10::lang::String sl__817;
 };
 
 class TaskBench : public ::x10::lang::X10Class   {

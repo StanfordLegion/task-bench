@@ -119,6 +119,7 @@ public class TaskBench {
 
 				finish for (i in pi.neighborsRecv.range) {
 					Rail.asyncCopy(pi.remoteSend(i), 0, pi.recv(i), 0, pi.recv(i).size);
+					Console.OUT.println(here + " RECEIVED FROM " + pi.neighborsRecv(i));
 				}
 
 				Console.OUT.println(p + " " + pi.recv.toString());	
@@ -228,6 +229,7 @@ public class TaskBench {
 		val dependenceSets = dependenceSetsFromCore(argc, argv);
 		val dependenceSet = dependenceSets(0);
 		val task_bench = new TaskBench(dependenceSet);
+		task_bench.sendAndRecv();
 	}
 
 }
