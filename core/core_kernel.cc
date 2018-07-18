@@ -29,3 +29,60 @@ long long execute_kernel_busy_wait(const Kernel &kernel)
   }
   return acc;
 }
+
+
+void execute_kernel_memory(const Kernel &kernel)
+{
+  // for (r = 0; r < loop_cnt; r++) {
+  //   for (i = 0; i < step; i++) {
+  //       for (j = 0; j < (N*N/step); j++) {
+  //          k = (i+j*step) % (N*N);
+  //          C[k] = A[k] + B[k]; 
+  //       }
+  //   }   
+  // }
+}
+
+void execute_kernel_compute(const Kernel &kernel)
+{
+
+  // for (r = 0; r < loop_cnt; r++) {
+  //   for (i = 0; i < m*p; i++) {
+  //       temp = A[i];
+  //       sum = temp;
+  //       for (j=0; j<kernel.bound; j++){
+  //           temp *=temp;
+  //           sum += temp;
+  //       }    
+  //       A[i] = sum;
+  //   }    
+  // }
+
+}
+
+void execute_kernel_io(const Kernel &kernel)
+{
+  
+}
+
+void execute_kernel_imbalance(const Kernel &kernel)
+{
+  //random pick one task to be compute bound
+
+  // Use current time as seed for random generator
+  // srand((dsecnd()+myid)); 
+  // bound = rand() % bound;
+
+  // for (r = 0; r < loop_cnt; r++) {
+  //   for (i = 0; i < m*p; i++) {
+  //       temp = A[i];
+  //       sum = temp;
+  //       for (j=0; j<bound; j++){
+  //           temp *=temp;
+  //           sum += temp;
+  //       }    
+  //       A[i] = sum;
+  //   }    
+  // }
+
+}
