@@ -193,7 +193,8 @@ static void starpu_ddesc_create( starpu_ddesc_t *ddesc )
       printf("error, check data.c line 210\n");
       return;
     }
-    assert(lmt*lmt<=(1<<tag_sep));
+    printf("lnt*lmt %lld, 1<<tag %lld\n", lnt*lmt, 1<<tag_sep);
+    assert(lnt*lmt<=(1<<tag_sep));
   }
 }
 
