@@ -28,7 +28,7 @@ fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
     pushd "$STARPU_SRC_DIR"
-    ./configure --prefix=$STARPU_DIR --disable-cuda --without-hwloc --disable-fortran --disable-build-tests --disable-build-examples
+    ./configure --prefix=$STARPU_DIR --disable-cuda --disable-opencl --without-hwloc --disable-fortran --disable-build-tests --disable-build-examples
     make -j${THREADS:-4}
     make install
     popd
