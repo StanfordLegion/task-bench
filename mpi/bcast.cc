@@ -2,6 +2,7 @@
 #include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "../core/core.h"
 #include "../core/timer.h"
 #define  MASTER 0
