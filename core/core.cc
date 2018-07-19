@@ -317,12 +317,13 @@ void TaskGraph::execute_point(long timestep, long point,
     std::vector<std::pair<long, long> > deps = dependencies(dset, point);
     for (auto span : deps) {
       for (long dep = span.first; dep <= span.second; dep++) {
-        assert(idx < n_inputs);
-
-        assert(input_bytes[idx] == output_bytes_per_task);
-        assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
-        const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
         if (last_offset <= dep && dep < last_offset + last_width) {
+          assert(idx < n_inputs);
+
+          assert(input_bytes[idx] == output_bytes_per_task);
+          assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
+
+          const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
           assert(input.first == timestep - 1);
           assert(input.second == dep);
           idx++;
