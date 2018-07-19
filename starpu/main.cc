@@ -32,6 +32,8 @@ static void task1(void *descr[], void *cl_arg)
   std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(a);
   output->first = payload.i;
   output->second = payload.j;
+  Kernel k(payload.graph.kernel);
+  k.execute();
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
