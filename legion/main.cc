@@ -208,6 +208,28 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
   }
 }
 
+void create_data(){
+    printf (" Allocating memory for matrices aligned on 64-byte boundary for better \n"
+                " performance \n\n");
+    long num_input = graph.kernel.kernel_arg.num_input;
+    double ** input = reinterpret_cast<double *>(graph.kernel.kernel_arg.input);
+    for (long i=0; i < num_input; i++){
+      long N = graph.kernel.kernel_arg.input_bytes[i]/;
+      double *A = (double *)malloc( m*p*sizeof( double ), 64 );
+      if (A == NULL) {
+          printf( "\n ERROR: Can't allocate memory for matrices. Aborting... \n\n");
+          mkl_free(A);
+      }
+      printf (" Intializing matrix data \n\n");
+      for (i = 0; i < (m*p); i++) {
+        A[i] = (double)(i+1);
+      }
+
+      input[i] = A;
+    }
+
+}
+
 void LegionApp::run()
 {
   display();

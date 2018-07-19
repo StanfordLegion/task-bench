@@ -34,6 +34,18 @@ void Kernel::execute() const
   case KernelType::BUSY_WAIT:
     execute_kernel_busy_wait(*this);
     break;
+  case KernelType::MEMORY_BOUND:
+    execute_kernel_memory(*this);
+    break;
+  case KernelType::COMPUTE_BOUND:
+    execute_kernel_compute(*this);
+    break;
+  case KernelType::IO_BOUND:
+    execute_kernel_io(*this);
+    break;
+  case KernelType::LOAD_IMBALANCE:
+    execute_kernel_imbalance(*this);
+    break;          
   default:
     assert(false && "unimplemented kernel type");
   };
@@ -439,6 +451,52 @@ App::App(int argc, char **argv)
       graphs.push_back(graph);
       graph = default_graph();
     }
+
+    // -- add by Yuankun
+    if (!strcmp(argv[i], "-num_input")) {
+      needs_argument(i, argc, "-num_input");
+      long value  = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-num_input %ld\" must be >= 0\n", value);
+        abort();
+      }
+      graph.kernel.kernel_arg.num_input = value;
+      graph.kernel.kernel_arg.input = (unsigned char **)malloc(sizeof(unsigned char*) * value);
+      graph.kernel.kernel_arg.input_bytes = (size_t *)malloc(sizeof(size_t) * value);
+    }
+
+    if (!strcmp(argv[i], "-size")) {
+      needs_argument(i, argc, "-size");
+      long value  = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-size %ld\" must be >= 0\n", value);
+        abort();
+      }
+      for(long j=0; j<graph.kernel.kernel_arg.num_input; j++)
+        graph.kernel.kernel_arg.input_bytes[j] = value;
+    }
+
+    if (!strcmp(argv[i], "-max_power")) {
+      needs_argument(i, argc, "-max_power");
+      long value  = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-max_power %ld\" must be >= 0\n", value);
+        abort();
+      }
+      graph.kernel.kernel_arg.max_power = value;
+    }
+
+    if (!strcmp(argv[i], "-jump")) {
+      needs_argument(i, argc, "-jump");
+      long value  = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-jump %ld\" must be >= 0\n", value);
+        abort();
+      }
+      graph.kernel.kernel_arg.jump = value;    
+    }
+    // -- add by Yuankun
+
   }
 
   graphs.push_back(graph);

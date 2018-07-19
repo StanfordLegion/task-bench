@@ -43,17 +43,27 @@ typedef enum kernel_type_t {
   LOAD_IMBALANCE
 } kernel_type_t;
 
+//-- add by Yuankun
 typedef strcut kernel_arg_t{
-  long data_size; // data buffer size
+  unsigned char **input;
+  long num_input;
+  size_t *input_bytes;
+
+  unsigned char *output;
+  size_t output_bytes;
+
   long max_power; // compute kernel parameter
   long jump;  // memeory kernel parameter
+
+  // TODO: Add parameters for load imbalance, etc
 } kernel_arg_t;
+//-- add by Yuankun
 
 typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
   
-  // TODO: Add parameters for load imbalance, etc
+  //-- add by Yuankun
   kernel_arg_t kernel_arg;
 } kernel_t;
 
