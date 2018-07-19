@@ -9,6 +9,6 @@
 
 (for s in 0 1 2 3 4 5 6 7 8 9 10 11 12; do
      srun --cpu_bind none ../../starpu/main -kernel busy_wait -iter $(( 1 << (24-s) )) -type stencil_1d -steps 100 -width 20 -core 20
- done) | tee parsec.txt
+ done) | tee starpu.txt
 
-grep Elapsed parsec.txt | cut -d' ' -f 3
+grep Elapsed starpu.txt | cut -d' ' -f 3
