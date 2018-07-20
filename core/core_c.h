@@ -44,7 +44,7 @@ typedef enum kernel_type_t {
 } kernel_type_t;
 
 //-- add by Yuankun
-typedef strcut kernel_arg_t{
+typedef struct kernel_arg_t{
   unsigned char **input;
   long num_input;
   size_t *input_bytes;

@@ -341,6 +341,8 @@ void TaskGraph::execute_point(long timestep, long point,
           assert(input.second == dep);
           idx++;
         }
+
+
       }
     }
     // FIXME (Elliott): Legion is currently passing in uninitialized
@@ -359,6 +361,16 @@ void TaskGraph::execute_point(long timestep, long point,
 
   // Execute kernel
   Kernel k(kernel);
+  //-- add by Yuankun
+  printf("num_input=%ld\n", k.kernel_arg.num_input);
+  k.kernel_arg.input = (unsigned char **)malloc(sizeof(unsigned char*) * k.kernel_arg.num_input);
+  k.kernel_arg.input_bytes = (size_t *)malloc(sizeof(size_t) * k.kernel_arg.num_input);
+  for(long i=0; i < k.kernel_arg.num_input; i++){
+    k.kernel_arg.input[i] = const_cast<unsigned char *>(reinterpret_cast<const unsigned char *>(input_ptr[i]+sizeof(std::pair<long, long>)));
+    // k.kernel_arg.input_bytes[i] = input_bytes[i];
+  }
+  k.kernel_arg.output = const_cast<unsigned char*>(reinterpret_cast<const unsigned char *>(output_ptr));
+  //-- add by Yuankun
   k.execute();
 }
 

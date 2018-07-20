@@ -103,12 +103,13 @@ void leaf(const Task *task,
       size_t bytes;
       get_base_and_size(runtime, regions[1], task->regions[1], rect, ptr, bytes);
       input_ptrs.push_back(ptr);
-      input_bytes.push_back(bytes);
+      input_bytes.push_back(bytes);      
     }
   }
 
   graph.execute_point(timestep, point, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+
 }
 
 void dummy(const Task *task,
@@ -206,29 +207,10 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     primary_partitions.push_back(primary_lp);
     secondary_partitions.push_back(secondary_lps);
   }
-}
-
-void create_data(){
-    printf (" Allocating memory for matrices aligned on 64-byte boundary for better \n"
-                " performance \n\n");
-    long num_input = graph.kernel.kernel_arg.num_input;
-    double ** input = reinterpret_cast<double *>(graph.kernel.kernel_arg.input);
-    for (long i=0; i < num_input; i++){
-      long N = graph.kernel.kernel_arg.input_bytes[i]/;
-      double *A = (double *)malloc( m*p*sizeof( double ), 64 );
-      if (A == NULL) {
-          printf( "\n ERROR: Can't allocate memory for matrices. Aborting... \n\n");
-          mkl_free(A);
-      }
-      printf (" Intializing matrix data \n\n");
-      for (i = 0; i < (m*p); i++) {
-        A[i] = (double)(i+1);
-      }
-
-      input[i] = A;
-    }
 
 }
+
+
 
 void LegionApp::run()
 {
