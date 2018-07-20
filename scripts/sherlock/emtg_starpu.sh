@@ -7,7 +7,7 @@
 #SBATCH --mail-type=ALL
 
 function launch {
-    srun -n $1 -N $1 --cpu_bind none ../../starpu/main "${@:2}" -width 20 -core 20
+    srun -n $1 -N $1 --cpu_bind none ../../starpu/main "${@:2}" -width 20 -core 20 -p 1
 }
 
 function sweep {
