@@ -23,9 +23,6 @@ import os
 import re
 import sys
 
-cores = 20
-threshold = 0.5
-
 _columns = collections.OrderedDict([
     ('elapsed', (re.compile(r'^\s*Elapsed Time ([0-9.e+-]+) seconds$', re.MULTILINE), float)),
     ('iterations', (re.compile(r'^\s*Iterations: ([0-9]+)$', re.MULTILINE), int)),
@@ -34,16 +31,16 @@ _columns = collections.OrderedDict([
     ('width', (re.compile(r'^\s*Max Width: ([0-9]+)$', re.MULTILINE), int)),
 ])
 
-_compute = collections.OrderedDict([
-    ('scale_factor', lambda t: t['iterations'][0] / t['iterations']),
-    ('time_per_task', lambda t: t['elapsed'] / t['tasks'] * cores * 1000),
-    ('efficiency', lambda t: t['elapsed'][0] / (t['elapsed'] * t['scale_factor'])),
-])
-
 def same(values):
     return all(value == values[0] for value in values)
 
-def analyze(filename):
+def analyze(filename, cores, threshold):
+    compute = collections.OrderedDict([
+        ('scale_factor', lambda t: t['iterations'][0] / t['iterations']),
+        ('time_per_task', lambda t: t['elapsed'] / t['tasks'] * cores * 1000),
+        ('efficiency', lambda t: t['elapsed'][0] / (t['elapsed'] * t['scale_factor'])),
+    ])
+
     # Parse input columns:
     with open(filename) as f:
         text = f.read()
@@ -59,7 +56,7 @@ def analyze(filename):
     assert all(table['tasks'] == table['steps'] * table['width'])
 
     # Compute derived columns:
-    for k, f in _compute.items():
+    for k, f in compute.items():
         table[k] = f(table)
 
     # Find smallest task granularity above efficiency threshold:
@@ -89,10 +86,10 @@ def analyze(filename):
 
     return min_time
 
-def driver(inputs, summary):
+def driver(inputs, summary, cores, threshold):
     min_times = []
     for filename in inputs:
-        min_times.append(analyze(filename))
+        min_times.append(analyze(filename, cores, threshold))
     if summary:
         with open(summary, 'w') as f:
             out = csv.writer(f)
@@ -103,6 +100,8 @@ def driver(inputs, summary):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('inputs', nargs='+')
-    parser.add_argument('-s', '--summary', required=False)
+    parser.add_argument('-c', '--cores', type=int, required=True)
+    parser.add_argument('-t', '--threshold', type=float, default=0.5)
+    parser.add_argument('-s', '--summary')
     args = parser.parse_args()
-    driver(args.inputs, args.summary)
+    driver(**vars(args))
