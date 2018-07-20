@@ -19,6 +19,7 @@ else
 fi
 THREADS=${THREADS:-$DEFAULT_THREADS}
 
+make -C core clean
 make -C core -j$THREADS
 
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
