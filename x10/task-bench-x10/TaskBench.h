@@ -5,6 +5,15 @@
 
 #include "/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core.h"
 
+#define X10_UTIL_PAIR_H_NODEPS
+#include <x10/util/Pair.h>
+#undef X10_UTIL_PAIR_H_NODEPS
+#define X10_LANG_LONG_H_NODEPS
+#include <x10/lang/Long.h>
+#undef X10_LANG_LONG_H_NODEPS
+#define X10_LANG_LONG_H_NODEPS
+#include <x10/lang/Long.h>
+#undef X10_LANG_LONG_H_NODEPS
 #define X10_LANG_PLACELOCALHANDLE_H_NODEPS
 #include <x10/lang/PlaceLocalHandle.h>
 #undef X10_LANG_PLACELOCALHANDLE_H_NODEPS
@@ -15,9 +24,6 @@ namespace x10 { namespace lang {
 template<class TPMGL(T)> class Rail;
 } } 
 class TaskBench__PlaceInstance;
-namespace x10 { namespace util { 
-template<class TPMGL(T), class TPMGL(U)> class Pair;
-} } 
 namespace x10 { namespace lang { 
 class Place;
 } } 
@@ -69,6 +75,9 @@ class Any;
 namespace x10 { namespace lang { 
 class String;
 } } 
+namespace x10 { namespace lang { 
+template<class TPMGL(T)> class GlobalRef;
+} } 
 namespace x10 { namespace compiler { 
 class Native;
 } } 
@@ -84,34 +93,43 @@ class NativeCPPCompilationUnit;
 
 class TaskBench_Strings {
   public:
-    static ::x10::lang::String sl__820;
-    static ::x10::lang::String sl__821;
-    static ::x10::lang::String sl__818;
-    static ::x10::lang::String sl__819;
-    static ::x10::lang::String sl__817;
+    static ::x10::lang::String sl__1872;
+    static ::x10::lang::String sl__1865;
+    static ::x10::lang::String sl__1871;
+    static ::x10::lang::String sl__1867;
+    static ::x10::lang::String sl__1869;
+    static ::x10::lang::String sl__1866;
+    static ::x10::lang::String sl__1864;
+    static ::x10::lang::String sl__1870;
+    static ::x10::lang::String sl__1868;
 };
 
 class TaskBench : public ::x10::lang::X10Class   {
     public:
     RTT_H_DECLS_CLASS
     
-    /* Static field: FMGL(data) */
-    static ::x10::lang::Rail< x10_double >* FMGL(data);
-    static void FMGL(data__do_init)();
-    static void FMGL(data__init)();
-    static volatile ::x10aux::StaticInitController::status FMGL(data__status);
-    static ::x10::lang::CheckedThrowable* FMGL(data__exception);
-    static ::x10::lang::Rail< x10_double >* FMGL(data__get)();
+    ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >*
+      FMGL(dependenceSets);
+    
+    ::x10::lang::Rail< x10_long >* FMGL(dsetForTimestep);
+    
+    x10_long FMGL(maxWidth);
     
     ::x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*> FMGL(plh);
     
-    void _constructor(::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* dependenceSet);
+    void _constructor(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dsets,
+                      ::x10::lang::Rail< x10_long >* dsetForTimestep);
     
-    static ::TaskBench* _make(::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* dependenceSet);
+    static ::TaskBench* _make(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dsets,
+                              ::x10::lang::Rail< x10_long >* dsetForTimestep);
     
-    virtual void sendAndRecv();
-    static ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >*
+    virtual void checkTaskGraph();
+    static void executeTaskBench(::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >* taskGraphDependenceSets,
+                                 ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* dependenceSetsForTimesteps);
+    static ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >*
       dependenceSetsFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
+    static ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >*
+      timestepsFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
     static ::x10::lang::Rail< ::x10::lang::String* >* constructCPPArgs(
       ::x10::lang::Rail< ::x10::lang::String* >* args);
     static void main(::x10::lang::Rail< ::x10::lang::String* >* args);
@@ -139,44 +157,7 @@ class TaskBench;
 
 #ifndef TASKBENCH_H_NODEPS
 #define TASKBENCH_H_NODEPS
-#include <x10/lang/PlaceLocalHandle.h>
-#include <x10/lang/Rail.h>
-#include <x10/lang/Double.h>
-#include <TaskBench__PlaceInstance.h>
-#include <x10/util/Pair.h>
-#include <x10/lang/Long.h>
-#include <x10/lang/Place.h>
-#include <x10/lang/PlaceGroup.h>
-#include <x10/lang/Fun_0_0.h>
-#include <x10/xrx/Runtime.h>
-#include <x10/xrx/FinishState.h>
-#include <x10/lang/Iterator.h>
-#include <x10/lang/Iterable.h>
-#include <x10/lang/Boolean.h>
-#include <x10/lang/VoidFun_0_0.h>
-#include <x10/lang/GlobalRail.h>
-#include <x10/lang/FailedDynamicCheckException.h>
-#include <x10/compiler/AsyncClosure.h>
-#include <x10/xrx/Runtime__Profile.h>
-#include <x10/lang/CheckedThrowable.h>
-#include <x10/io/Printer.h>
-#include <x10/io/Console.h>
-#include <x10/lang/Any.h>
-#include <x10/lang/String.h>
-#include <x10/lang/Int.h>
-#include <x10/compiler/Native.h>
-#include <x10/compiler/Synthetic.h>
-#include <x10/compiler/NativeCPPInclude.h>
-#include <x10/compiler/NativeCPPCompilationUnit.h>
-#include <x10/lang/String.h>
 #ifndef TASKBENCH_H_GENERICS
 #define TASKBENCH_H_GENERICS
-inline ::x10::lang::Rail< x10_double >* TaskBench::FMGL(data__get)() {
-    if (FMGL(data__status) != ::x10aux::StaticInitController::INITIALIZED) {
-        FMGL(data__init)();
-    }
-    return TaskBench::FMGL(data);
-}
-
 #endif // TASKBENCH_H_GENERICS
 #endif // __TASKBENCH_H_NODEPS

@@ -13,6 +13,9 @@
 #define X10_LANG_LONG_H_NODEPS
 #include <x10/lang/Long.h>
 #undef X10_LANG_LONG_H_NODEPS
+#define X10_LANG_LONG_H_NODEPS
+#include <x10/lang/Long.h>
+#undef X10_LANG_LONG_H_NODEPS
 namespace x10 { namespace lang { 
 template<class TPMGL(T)> class Rail;
 } } 
@@ -34,6 +37,9 @@ class Place;
 namespace x10 { namespace xrx { 
 class Runtime;
 } } 
+namespace x10 { namespace util { 
+template<class TPMGL(T), class TPMGL(U)> class Pair;
+} } 
 namespace x10 { namespace lang { 
 template<class TPMGL(Z1), class TPMGL(U)> class Fun_0_1;
 } } 
@@ -43,29 +49,40 @@ class Synthetic;
 
 class TaskBench__PlaceInstance_Strings {
   public:
-    static ::x10::lang::String sl__832;
-    static ::x10::lang::String sl__833;
+    static ::x10::lang::String sl__1890;
+    static ::x10::lang::String sl__1889;
+    static ::x10::lang::String sl__1891;
 };
 
 class TaskBench__PlaceInstance : public ::x10::lang::X10Class   {
     public:
     RTT_H_DECLS_CLASS
     
-    ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* FMGL(send);
+    ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >*
+      FMGL(sendRails);
     
     ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* FMGL(recv);
     
-    ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* FMGL(remoteSend);
+    ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* >*
+      FMGL(remoteSendRails);
     
-    ::x10::lang::Rail< x10_long >* FMGL(neighborsSend);
+    ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* FMGL(neighborsSendRails);
     
-    ::x10::lang::Rail< x10_long >* FMGL(neighborsRecv);
+    ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* FMGL(neighborsRecvRails);
     
-    virtual x10_long getSenderIndex(x10_long recvId);
-    void _constructor(::x10::lang::Rail< x10_long >* neighborsRecv, ::x10::lang::Rail< x10_long >* neighborsSend);
+    x10_long FMGL(timestep);
     
-    static ::TaskBench__PlaceInstance* _make(::x10::lang::Rail< x10_long >* neighborsRecv,
-                                             ::x10::lang::Rail< x10_long >* neighborsSend);
+    x10_long FMGL(neighborsReceived);
+    
+    x10_boolean allNeighborsReceived();
+    virtual x10_long getSenderIndex(x10_long recvId, x10_long timestep);
+    void _constructor(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dependenceSets,
+                      ::x10::lang::Rail< x10_long >* dsetForTimestep,
+                      x10_long maxWidth);
+    
+    static ::TaskBench__PlaceInstance* _make(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dependenceSets,
+                                             ::x10::lang::Rail< x10_long >* dsetForTimestep,
+                                             x10_long maxWidth);
     
     virtual ::TaskBench__PlaceInstance* TaskBench__PlaceInstance____this__TaskBench__PlaceInstance(
       );
