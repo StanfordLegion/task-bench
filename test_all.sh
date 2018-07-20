@@ -19,7 +19,7 @@ fi
 
 if [[ $USE_LEGION -eq 1 ]]; then
     for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree fft all_to_all; do
-        ./legion/task_bench -steps 9 -type $type
+        ./legion/task_bench -steps 9 -type $t
     done
 fi
 
