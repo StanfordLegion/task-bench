@@ -1,0 +1,13 @@
+module subchare {
+
+  include "vectorWrapper.h";
+
+  array [1D] Subchare {
+    entry Subchare(VectorWrapper wrapper);
+    entry void initGraph(int graphIndex);
+    entry void runTimestep();
+    entry void receive(std::pair<long, long> input);
+	entry void reset();
+  };
+
+};
