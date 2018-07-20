@@ -305,7 +305,9 @@ StarPUApp::~StarPUApp()
 
 void StarPUApp::execute_main_loop()
 {
-  display();
+  if (rank == 0) {
+    display();
+  }
 
   void (*callback)(void*) = NULL;
 

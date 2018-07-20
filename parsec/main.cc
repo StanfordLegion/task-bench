@@ -338,7 +338,9 @@ ParsecApp::~ParsecApp()
 void ParsecApp::execute_main_loop()
 {
   
-  display();
+  if (rank == 0) {
+    display();
+  }
   
   debug_printf(0, "rank %d, pid %d, M %d, N %d\n", rank, getpid(), M, N);
   //sleep(10);

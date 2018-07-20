@@ -24,10 +24,14 @@ if [[ $USE_LEGION -eq 1 ]]; then
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
-    mpirun -np 1 ./starpu/main -steps 7 -width 4 -type dom
+    for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree fft; do
+        mpirun -np 1 ./starpu/main -steps 9 -type $t
+    done
 fi
 
 if [[ $USE_PARSEC -eq 1 ]]; then
-    mpirun -np 1 ./parsec/main -steps 7 -width 4 -type dom
+    for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree fft; do
+        mpirun -np 1 ./parsec/main -steps 9 -type $t
+    done
 fi
 
