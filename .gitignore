@@ -7,6 +7,7 @@
 *.o
 *.so
 
+*.csv
 *.out
 *.gz
 
@@ -15,5 +16,7 @@
 *.bbl
 *.blg
 *.aux
+
+legion_prof
 
 /deps
