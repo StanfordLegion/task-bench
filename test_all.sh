@@ -18,7 +18,9 @@ if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
 fi
 
 if [[ $USE_LEGION -eq 1 ]]; then
-    ./legion/task_bench -steps 9 -type dom
+    for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree fft all_to_all; do
+        ./legion/task_bench -steps 9 -type $type
+    done
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
