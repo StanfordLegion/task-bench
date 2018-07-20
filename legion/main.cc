@@ -103,12 +103,13 @@ void leaf(const Task *task,
       size_t bytes;
       get_base_and_size(runtime, regions[1], task->regions[1], rect, ptr, bytes);
       input_ptrs.push_back(ptr);
-      input_bytes.push_back(bytes);
+      input_bytes.push_back(bytes);      
     }
   }
 
   graph.execute_point(timestep, point, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+
 }
 
 void dummy(const Task *task,
@@ -206,7 +207,10 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     primary_partitions.push_back(primary_lp);
     secondary_partitions.push_back(secondary_lps);
   }
+
 }
+
+
 
 void LegionApp::run()
 {

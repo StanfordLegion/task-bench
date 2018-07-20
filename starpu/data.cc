@@ -30,9 +30,9 @@ int
 elem_size(int type)
 {
     if(type == 1) {
-        return sizeof(int);
+        return sizeof(float);
     }
-    return sizeof(int);
+    return sizeof(float);
 }
 
 inline static void* getaddr_ccrb(const starpu_ddesc_t *A, int m, int n)

@@ -25,62 +25,6 @@
 #include "core.h"
 #include "core_kernel.h"
 
-void execute_kernel_memory(const Kernel &kernel)
-{
-  for (r = 0; r < loop_cnt; r++) {
-    for (i = 0; i < step; i++) {
-        for (j = 0; j < (N*N/step); j++) {
-           k = (i+j*step) % (N*N);
-           C[k] = A[k] + B[k]; 
-        }
-    }   
-  }
-}
-
-void execute_kernel_compute(const Kernel &kernel)
-{
-
-  for (r = 0; r < loop_cnt; r++) {
-    for (i = 0; i < m*p; i++) {
-        temp = A[i];
-        sum = temp;
-        for (j=0; j<bound; j++){
-            temp *=temp;
-            sum += temp;
-        }    
-        A[i] = sum;
-    }    
-  }
-
-}
-
-void execute_kernel_io(const Kernel &kernel)
-{
-  
-}
-
-void execute_kernel_imbalance(const Kernel &kernel)
-{
-  //random pick one task to be compute bound
-
-  // Use current time as seed for random generator
-  srand((dsecnd()+myid)); 
-  bound = rand() % bound;
-
-  for (r = 0; r < loop_cnt; r++) {
-    for (i = 0; i < m*p; i++) {
-        temp = A[i];
-        sum = temp;
-        for (j=0; j<bound; j++){
-            temp *=temp;
-            sum += temp;
-        }    
-        A[i] = sum;
-    }    
-  }
-
-}
-
 void Kernel::execute() const
 {
   switch(type) {
@@ -90,6 +34,18 @@ void Kernel::execute() const
   case KernelType::BUSY_WAIT:
     execute_kernel_busy_wait(*this);
     break;
+  case KernelType::MEMORY_BOUND:
+    execute_kernel_memory(*this);
+    break;
+  case KernelType::COMPUTE_BOUND:
+    execute_kernel_compute(*this);
+    break;
+  case KernelType::IO_BOUND:
+    execute_kernel_io(*this);
+    break;
+  case KernelType::LOAD_IMBALANCE:
+    execute_kernel_imbalance(*this);
+    break;          
   default:
     assert(false && "unimplemented kernel type");
   };
@@ -382,13 +338,16 @@ void TaskGraph::execute_point(long timestep, long point,
         const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
         if (last_offset <= dep && dep < last_offset + last_width) {
           assert(input.first == timestep - 1);
-          assert(timestep == 0 || input.second == dep);
+          assert(input.second == dep);
+          idx++;
         }
 
-        idx++;
+
       }
     }
-    assert(idx == n_inputs);
+    // FIXME (Elliott): Legion is currently passing in uninitialized
+    // memory for dependencies outside of the last offset/width.
+    // assert(idx == n_inputs);
   }
 
   // Validate output
@@ -402,6 +361,16 @@ void TaskGraph::execute_point(long timestep, long point,
 
   // Execute kernel
   Kernel k(kernel);
+  //-- add by Yuankun
+  printf("num_input=%ld\n", k.kernel_arg.num_input);
+  k.kernel_arg.input = (unsigned char **)malloc(sizeof(unsigned char*) * k.kernel_arg.num_input);
+  k.kernel_arg.input_bytes = (size_t *)malloc(sizeof(size_t) * k.kernel_arg.num_input);
+  for(long i=0; i < k.kernel_arg.num_input; i++){
+    k.kernel_arg.input[i] = const_cast<unsigned char *>(reinterpret_cast<const unsigned char *>(input_ptr[i]+sizeof(std::pair<long, long>)));
+    // k.kernel_arg.input_bytes[i] = input_bytes[i];
+  }
+  k.kernel_arg.output = const_cast<unsigned char*>(reinterpret_cast<const unsigned char *>(output_ptr));
+  //-- add by Yuankun
   k.execute();
 }
 
@@ -494,6 +463,52 @@ App::App(int argc, char **argv)
       graphs.push_back(graph);
       graph = default_graph();
     }
+
+    // -- add by Yuankun
+    if (!strcmp(argv[i], "-num_input")) {
+      needs_argument(i, argc, "-num_input");
+      long value  = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-num_input %ld\" must be >= 0\n", value);
+        abort();
+      }
+      graph.kernel.kernel_arg.num_input = value;
+      graph.kernel.kernel_arg.input = (unsigned char **)malloc(sizeof(unsigned char*) * value);
+      graph.kernel.kernel_arg.input_bytes = (size_t *)malloc(sizeof(size_t) * value);
+    }
+
+    if (!strcmp(argv[i], "-size")) {
+      needs_argument(i, argc, "-size");
+      long value  = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-size %ld\" must be >= 0\n", value);
+        abort();
+      }
+      for(long j=0; j<graph.kernel.kernel_arg.num_input; j++)
+        graph.kernel.kernel_arg.input_bytes[j] = value;
+    }
+
+    if (!strcmp(argv[i], "-max_power")) {
+      needs_argument(i, argc, "-max_power");
+      long value  = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-max_power %ld\" must be >= 0\n", value);
+        abort();
+      }
+      graph.kernel.kernel_arg.max_power = value;
+    }
+
+    if (!strcmp(argv[i], "-jump")) {
+      needs_argument(i, argc, "-jump");
+      long value  = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-jump %ld\" must be >= 0\n", value);
+        abort();
+      }
+      graph.kernel.kernel_arg.jump = value;    
+    }
+    // -- add by Yuankun
+
   }
 
   graphs.push_back(graph);

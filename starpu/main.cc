@@ -11,69 +11,128 @@
 
 #include <unistd.h>
 
+#define VERBOSE_LEVEL 0
+
+#define USE_CORE_VERIFICATION
+
+typedef struct payload_s {
+  int i;
+  int j;
+  TaskGraph graph;
+}payload_t;
+
 static void task1(void *descr[], void *cl_arg)
 {
-    float *a;
-    int i, j;
-    a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
-    starpu_codelet_unpack_args(cl_arg, &i, &j);
-    
-    a[0] = 0.0;
-    int rank;
-    starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
+  float *a;
+  payload_t payload;
+  a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
+  starpu_codelet_unpack_args(cl_arg, &payload);
+  
+#if defined (USE_CORE_VERIFICATION) 
+  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(a);
+  output->first = payload.i;
+  output->second = payload.j;
+#else
+  int rank;
+  starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
-    printf("Task1 i %d, j %d, rank %d, data %f\n", i, j, rank, a[0]);
+  a[0] = 0.0;
+  printf("Task1 i %d, j %d, rank %d, data %f\n", payload.i, payload.j, rank, a[0]);
+#endif
 }
 
 static void task2(void *descr[], void *cl_arg)
 {
-    float *a, *b;
-    int i, j;
-    a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
-    b = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
-    starpu_codelet_unpack_args(cl_arg, &i, &j);
-    
-    b[0] = a[0] + 1.0;
-    
-    int rank;
-    starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
-
-    printf("Task2 i %d, j %d, rank %d, value %f\n", i, j, rank, b[0]);
+  float *a, *b;
+  payload_t payload;
+  a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
+  b = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
+  starpu_codelet_unpack_args(cl_arg, &payload);
+  
+#if defined (USE_CORE_VERIFICATION)   
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)b;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)a);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+#else  
+  int rank;
+  starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
+  
+  b[0] = a[0] + 1.0;
+  printf("Task2 i %d, j %d, rank %d, value %f\n", payload.i, payload.j, rank, b[0]);
+#endif
 }
 
 static void task3(void *descr[], void *cl_arg)
 {
-    float *a, *b, *c;
-    int i, j;
-    a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
-    b = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
-    c = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
-    starpu_codelet_unpack_args(cl_arg, &i, &j);
-    
-    c[0] = a[0] + b[0] + 1.0;
-    
-    int rank;
-    starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
+  float *a, *b, *c;
+  payload_t payload;
+  a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
+  b = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
+  c = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
+  starpu_codelet_unpack_args(cl_arg, &payload);
 
-    printf("Task3 i %d, j %d, rank %d, value %f\n", i, j, rank, c[0]);
+#if defined (USE_CORE_VERIFICATION)  
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)c;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)a);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)b);
+  input_bytes.push_back(graph.output_bytes_per_task);
+
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+#else
+  int rank;
+  starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
+
+  c[0] = a[0] + b[0] + 1.0;
+  printf("Task3 i %d, j %d, rank %d, value %f\n", payload.i, payload.j, rank, c[0]);
+#endif
 }
 
 static void task4(void *descr[], void *cl_arg)
 {
-    float *a, *b, *c, *d;
-    int i, j;
-    a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
-    b = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
-    c = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
-    d = (float *)STARPU_MATRIX_GET_PTR(descr[3]);
-    starpu_codelet_unpack_args(cl_arg, &i, &j);
-    
-    d[0] = a[0] + b[0] + c[0] + 1.0;
-    
-    int rank;
-    starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
+  float *a, *b, *c, *d;
+  payload_t payload;
+  a = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
+  b = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
+  c = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
+  d = (float *)STARPU_MATRIX_GET_PTR(descr[3]);
+  starpu_codelet_unpack_args(cl_arg, &payload);
 
-    printf("Task4 i %d, j %d, rank %d, value %f\n", i, j, rank, d[0]);
+#if defined (USE_CORE_VERIFICATION)  
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)d;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)a);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)b);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)c);
+  input_bytes.push_back(graph.output_bytes_per_task);
+
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+
+#else
+  int rank;
+  starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
+
+  d[0] = a[0] + b[0] + c[0] + 1.0;
+  printf("Task4 i %d, j %d, rank %d, value %f\n", payload.i, payload.j, rank, d[0]);
+#endif
 }
 
 struct starpu_codelet cl_task1; 
@@ -88,8 +147,9 @@ public:
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
 private:
-  void insert_task(int num_args, int i, int j, std::vector<void*> &args);
+  void insert_task(int num_args, payload_t payload, std::vector<void*> &args);
   void parse_argument(int argc, char **argv);
+  void debug_printf(int verbose_level, const char *format, ...);
 private:
   struct starpu_conf *conf;
   starpu_ddesc_t *ddescA;
@@ -103,26 +163,24 @@ private:
   int MB;
 };
 
-void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args)
+void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<void*> &args)
 {
   void (*callback)(void*) = NULL;
   switch(num_args) {
   case 1:
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task1),
-        STARPU_VALUE,    &i,  sizeof(int),
-        STARPU_VALUE,    &j,  sizeof(int),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_RW, args[0],
         STARPU_CALLBACK,  callback,
         STARPU_PRIORITY,  0,
-        STARPU_NAME, "task2",
+        STARPU_NAME, "task1",
         0);
     break;
   case 2:
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task2),
-        STARPU_VALUE,    &i,  sizeof(int),
-        STARPU_VALUE,    &j,  sizeof(int),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_RW, args[0],
         STARPU_CALLBACK,  callback,
@@ -133,8 +191,7 @@ void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args
   case 3:
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task3),
-        STARPU_VALUE,    &i,  sizeof(int),
-        STARPU_VALUE,    &j,  sizeof(int),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
         STARPU_RW, args[0],
@@ -146,8 +203,7 @@ void StarPUApp::insert_task(int num_args, int i, int j, std::vector<void*> &args
   case 4:
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task4),
-        STARPU_VALUE,    &i,  sizeof(int),
-        STARPU_VALUE,    &j,  sizeof(int),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
         STARPU_R, args[3],
@@ -229,7 +285,8 @@ StarPUApp::StarPUApp(int argc, char **argv)
   NT = graph.max_width;
   MT = graph.timesteps;
   
-  printf("mt %d, nt %d\n", MT, NT);
+  debug_printf(0, "mt %d, nt %d\n", MT, NT);
+  assert (graph.output_bytes_per_task <= sizeof(float)*MB*MB);
 
   ddescA = create_and_distribute_data(rank, world, MB, MB, MT, NT, P, Q);
 }
@@ -401,38 +458,56 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   long dset = g.dependence_set_at_timestep(t);
   
   std::vector<void*> args;
+  payload_t payload;
   
-  printf("ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
+  debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args;    
     
     if (deps.size() == 0) {
       num_args = 1;
-      printf("%d[%d] ", x, num_args);
+      debug_printf(1, "%d[%d] ", x, num_args);
       args.push_back(starpu_desc_getaddr( ddescA, t, x ));
     } else {
       if (t == 0) {
         num_args = 1;
-        printf("%d[%d] ", x, num_args);
+        debug_printf(1, "%d[%d] ", x, num_args);
         args.push_back(starpu_desc_getaddr( ddescA, t, x ));
       } else {
         num_args = 1;
         args.push_back(starpu_desc_getaddr( ddescA, t, x ));
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
-          printf("%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
             args.push_back(starpu_desc_getaddr( ddescA, t-1, i ));
           }
         }
       }
     }
-    insert_task(num_args, t, x, args); 
+    payload.i = t;
+    payload.j = x;
+    payload.graph = g;
+    insert_task(num_args, payload, args); 
     args.clear();
   }
-  printf("\n");
+  debug_printf(1, "\n");
 }
+
+void StarPUApp::debug_printf(int verbose_level, const char *format, ...)
+{
+  if (verbose_level > VERBOSE_LEVEL) {
+    return;
+  }
+  if (rank == 0) {
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+  }
+}
+
 
 int main(int argc, char **argv)
 {
