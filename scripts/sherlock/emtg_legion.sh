@@ -20,12 +20,15 @@ function launch_util_2 {
 
 function sweep {
     for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-        $1 $2 -kernel busy_wait -iter $(( 1 << (24-s) )) -type stencil_1d -steps 800
+        $1 $2 -kernel busy_wait -iter $(( 1 << (24-s) )) -type $3 -steps 1000
+        $1 $2 -kernel busy_wait -iter $(( 3 << (22-s) )) -type $3 -steps 1000
     done
 }
 
 for n in 4 2 1; do
-    sweep launch_util_0 $n > legion_util_0_nodes_$n.log
-    sweep launch_util_1 $n > legion_util_1_nodes_$n.log
-    sweep launch_util_2 $n > legion_util_2_nodes_$n.log
+    for t in trivial no_comm stencil_1d stencil_1d_periodic; do
+        sweep launch_util_0 $n $t > legion_util_0_type_${t}_nodes_${n}.log
+        sweep launch_util_1 $n $t > legion_util_1_type_${t}_nodes_${n}.log
+        sweep launch_util_2 $n $t > legion_util_2_type_${t}_nodes_${n}.log
+    done
 done
