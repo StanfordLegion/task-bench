@@ -7,15 +7,15 @@
 #SBATCH --mail-type=ALL
 
 function launch_util_0 {
-     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width 18 -fields 2 -ll:cpu 18 -ll:util 0 -dm:memoize -lg:parallel_replay 18
+     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( 18 * $1 )) -fields 2 -ll:cpu 18 -ll:util 0 -dm:memoize -lg:parallel_replay 18
 }
 
 function launch_util_1 {
-     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width 18 -fields 2 -ll:cpu 18 -ll:util 1 -ll:pin_util -dm:memoize
+     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( 18 * $1 )) -fields 2 -ll:cpu 18 -ll:util 1 -ll:pin_util -dm:memoize
 }
 
 function launch_util_2 {
-     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width 18 -fields 2 -ll:cpu 18 -ll:util 2 -dm:memoize
+     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( 18 * $1 )) -fields 2 -ll:cpu 18 -ll:util 2 -dm:memoize
 }
 
 function sweep {

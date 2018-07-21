@@ -7,7 +7,7 @@
 #SBATCH --mail-type=ALL
 
 function launch {
-    srun -n $1 -N $1 --cpu_bind none ../../parsec/main "${@:2}" -width 20 -c 20 -p 1
+    srun -n $1 -N $1 --cpu_bind none ../../parsec/main "${@:2}" -width $(( 20 * $1 )) -c 20 -p 1
 }
 
 function sweep {
