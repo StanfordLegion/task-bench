@@ -45,7 +45,7 @@ if [[ $USE_LEGION -eq 1 ]]; then
 export USE_LEGION=$USE_LEGION
 export LG_RT_DIR="$LEGION_DIR"/runtime
 EOF
-    git clone -b master https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+    git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
