@@ -210,7 +210,10 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
 
 void LegionApp::run()
 {
-  display();
+  // FIXME (Elliott): Do this correctly for control replication
+  if (runtime->get_executing_processor(ctx).address_space() == 0) {
+    display();
+  }
 
   execute_main_loop(); // warm-up
 
@@ -223,7 +226,9 @@ void LegionApp::run()
   unsigned long long stop = Realm::Clock::current_time_in_nanoseconds();
 
   double elapsed = (stop - start) / 1e9;
-  report_timing(elapsed);
+  if (runtime->get_executing_processor(ctx).address_space() == 0) {
+    report_timing(elapsed);
+  }
 }
 
 static long lcm(long a, long b) {
@@ -323,6 +328,7 @@ int main(int argc, char **argv)
   {
     TaskVariantRegistrar registrar(TID_TOP, "top");
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
+    registrar.set_replicable();
     Runtime::preregister_task_variant<top>(registrar, "top");
   }
 
