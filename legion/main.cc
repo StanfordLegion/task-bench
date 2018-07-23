@@ -65,7 +65,7 @@ void get_base_and_size(Runtime *runtime,
                        size_t &bytes)
 {
   UnsafeFieldAccessor<char, 1, coord_t, Realm::AffineAccessor<char, 1, coord_t> > acc(
-    region, req.instance_fields[0]);
+    region, req.instance_fields[0]); // ?
   assert(acc.accessor.strides[0] == sizeof(char));
   base = reinterpret_cast<char *>(acc.ptr(rect.lo));
   bytes = rect.volume();
@@ -78,15 +78,15 @@ void leaf(const Task *task,
   log_taskbench.info("Leaf at point %lld", task->index_point[0]);
 
   assert(task->arglen == sizeof(Payload));
-  Payload payload = *reinterpret_cast<Payload *>(task->args);
+  Payload payload = *reinterpret_cast<Payload *>(task->args); // ?
   TaskGraph graph = payload.graph;
   long timestep = payload.timestep;
   IndexPartitionT<1> primary = payload.primary_partition;
 
   Point<1> point = task->index_point;
 
-  Rect<1> output_rect = runtime->get_index_space_domain(
-    regions[0].get_logical_region().get_index_space());
+  Rect<1> output_rect = runtime->get_index_space_domain( // size varies
+    regions[0].get_logical_region().get_index_space()); 
   char *output_ptr;
   size_t output_bytes;
   get_base_and_size(runtime, regions[0], task->regions[0], output_rect, output_ptr, output_bytes);
@@ -98,12 +98,13 @@ void leaf(const Task *task,
   for (auto span : deps) {
     for (long dep = span.first; dep <= span.second; dep++) {
       IndexSpaceT<1> is = runtime->get_index_subspace<1>(primary, Point<1>(dep));
-      Rect<1> rect = Domain(runtime->get_index_space_domain(is));
+      Rect<1> rect = Domain(runtime->get_index_space_domain(is)); //define rect, size?
       char *ptr;
       size_t bytes;
-      get_base_and_size(runtime, regions[1], task->regions[1], rect, ptr, bytes);
+      get_base_and_size(runtime, regions[1], task->regions[1], rect, ptr, bytes); // ?
       input_ptrs.push_back(ptr);
-      input_bytes.push_back(bytes);      
+      input_bytes.push_back(bytes);
+      printf("bytes=%lld\n", bytes);      
     }
   }
 
@@ -184,17 +185,24 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     std::vector<LogicalPartitionT<1> >secondary_lps;
 
     long ndsets = g.max_dependence_sets();
+    printf("max_dependence_sets ndsets=%ld\n", ndsets);
+
     for (long dset = 0; dset < ndsets; ++dset) {
       IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, ts);
+      printf("\n1st-For: dest=%ld, ndsets=%ld\n", dset, ndsets);
 
       for (long point = 0; point < g.max_width; ++point) {
+        printf("\n2nd-For: point=%ld，max_width=%ld\n", point, g.max_width);
         std::vector<std::pair<long, long> > deps = g.dependencies(dset, point);
 
         std::vector<IndexSpace> subspaces;
         for (auto dep : deps) {
+          printf("subspaces.push_back deps from %ld to %ld\n", dep.first, dep.second);
           for (long i = dep.first; i <= dep.second; ++i) {
             subspaces.push_back(runtime->get_index_subspace(ctx, primary_ip, i));
+            printf("i=%ld ", i); 
           }
+          printf("\n");
         }
         runtime->create_index_space_union(ctx, secondary_ip, point, subspaces);
       }

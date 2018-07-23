@@ -312,7 +312,8 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
 void TaskGraph::execute_point(long timestep, long point,
                               char *output_ptr, size_t output_bytes,
                               const char **input_ptr, const size_t *input_bytes,
-                              size_t n_inputs) const
+                              size_t n_inputs) const //? graph.execute_point(timestep, point, output_ptr, output_bytes,
+                      //input_ptrs.data(), input_bytes.data(), input_ptrs.size());
 {
   // Validate timestep and point
   assert(0 <= timestep && timestep < timesteps);
@@ -342,8 +343,6 @@ void TaskGraph::execute_point(long timestep, long point,
           assert(input.second == dep);
           idx++;
         }
-
-
       }
     }
     // FIXME (Elliott): Legion is currently passing in uninitialized
@@ -363,14 +362,13 @@ void TaskGraph::execute_point(long timestep, long point,
   // Execute kernel
   Kernel k(kernel);
   //-- add by Yuankun
-  printf("num_input=%ld\n", k.kernel_arg.num_input);
-  k.kernel_arg.input = (unsigned char **)malloc(sizeof(unsigned char*) * k.kernel_arg.num_input);
-  k.kernel_arg.input_bytes = (size_t *)malloc(sizeof(size_t) * k.kernel_arg.num_input);
-  for(long i=0; i < k.kernel_arg.num_input; i++){
-    k.kernel_arg.input[i] = const_cast<unsigned char *>(reinterpret_cast<const unsigned char *>(input_ptr[i]+sizeof(std::pair<long, long>)));
+  printf("user set num_src_input=%ld, but real n_inputs=%ld\n", k.kernel_arg.num_src_input, n_inputs);
+
+  for(long i=0; i < k.kernel_arg.num_src_input; i++){
+    k.kernel_arg.input_data[i] = input_ptr[i]+sizeof(std::pair<long, long>);
     // k.kernel_arg.input_bytes[i] = input_bytes[i];
   }
-  k.kernel_arg.output = const_cast<unsigned char*>(reinterpret_cast<const unsigned char *>(output_ptr));
+  k.kernel_arg.output_data = output_ptr;
   //-- add by Yuankun
   k.execute();
 }
@@ -460,22 +458,22 @@ App::App(int argc, char **argv)
       graph.kernel.iterations = value;
     }
 
-    if (!strcmp(argv[i], "-and")) {
+    if (!strcmp(argv[i], "-and")) { //add a new task graph
       graphs.push_back(graph);
       graph = default_graph();
     }
 
     // -- add by Yuankun
-    if (!strcmp(argv[i], "-num_input")) {
-      needs_argument(i, argc, "-num_input");
+    if (!strcmp(argv[i], "-num_src_input")) {
+      needs_argument(i, argc, "-num_src_input");
       long value  = atol(argv[++i]);
       if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-num_input %ld\" must be >= 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"-num_src_input %ld\" must be >= 0\n", value);
         abort();
       }
-      graph.kernel.kernel_arg.num_input = value;
-      graph.kernel.kernel_arg.input = (unsigned char **)malloc(sizeof(unsigned char*) * value);
-      graph.kernel.kernel_arg.input_bytes = (size_t *)malloc(sizeof(size_t) * value);
+      graph.kernel.kernel_arg.num_src_input = value;
+      graph.kernel.kernel_arg.input_data = (const char **)malloc(sizeof(char*) * value);
+      graph.kernel.kernel_arg.input_bytes_per_src = (size_t *)malloc(sizeof(size_t) * value);
     }
 
     if (!strcmp(argv[i], "-size")) {
@@ -485,8 +483,14 @@ App::App(int argc, char **argv)
         fprintf(stderr, "error: Invalid flag \"-size %ld\" must be >= 0\n", value);
         abort();
       }
-      for(long j=0; j<graph.kernel.kernel_arg.num_input; j++)
-        graph.kernel.kernel_arg.input_bytes[j] = value;
+
+      // currently set kernel input size equals to kernel output size
+      graph.output_bytes_per_task = sizeof(std::pair<long, long>) * (value+1);
+      
+      for(long j=0; j<graph.kernel.kernel_arg.num_src_input; j++)
+        graph.kernel.kernel_arg.input_bytes_per_src[j] = sizeof(std::pair<long, long>) * value;
+
+      graph.kernel.kernel_arg.output_bytes = sizeof(std::pair<long, long>) * value;
     }
 
     if (!strcmp(argv[i], "-max_power")) {

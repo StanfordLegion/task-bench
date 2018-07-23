@@ -45,11 +45,11 @@ typedef enum kernel_type_t {
 
 //-- add by Yuankun
 typedef struct kernel_arg_t{
-  unsigned char **input;
-  long num_input;
-  size_t *input_bytes;
+  const char **input_data;
+  long num_src_input;
+  size_t *input_bytes_per_src;
 
-  unsigned char *output;
+  char *output_data;
   size_t output_bytes;
 
   long max_power; // compute kernel parameter
