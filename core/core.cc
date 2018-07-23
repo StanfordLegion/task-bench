@@ -130,7 +130,7 @@ long TaskGraph::width_at_timestep(long timestep) const
     return std::min(max_width,
                     std::min(timestep + 1, timesteps - timestep));
   case DependenceType::TREE:
-    return std::min(max_width, 1L << timestep);
+    return std::min(max_width, 1L << std::min(timestep, 62L));
   case DependenceType::FFT:
   case DependenceType::ALL_TO_ALL:
     return max_width;
@@ -317,18 +317,17 @@ void TaskGraph::execute_point(long timestep, long point,
     std::vector<std::pair<long, long> > deps = dependencies(dset, point);
     for (auto span : deps) {
       for (long dep = span.first; dep <= span.second; dep++) {
-        assert(idx < n_inputs);
+      	if (last_offset <= dep && dep < last_offset + last_width) {
+          assert(idx < n_inputs);
 
-        assert(input_bytes[idx] == output_bytes_per_task);
-        assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
-        const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
-        if (last_offset <= dep && dep < last_offset + last_width) {
+          assert(input_bytes[idx] == output_bytes_per_task);
+          assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
+          const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
           assert(input.first == timestep - 1);
-          assert(timestep == 0 || input.second == dep);
+          assert(input.second == dep);
+          idx++;
         }
-
-        idx++;
-      }
+			}
     }
     assert(idx == n_inputs);
   }
