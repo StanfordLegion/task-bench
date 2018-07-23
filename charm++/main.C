@@ -12,7 +12,7 @@ CProxy_Main mainProxy;
  * internal structures.
  */
 Main::Main(CkArgMsg* msg) : numFinished(0), numSubchares(0), numReady(0), totalTimeElapsed(0.0),
-                            numRuns(5), numRunsDone(0), app(msg->argc, msg->argv) {
+                            numRuns(1), numRunsDone(0), app(msg->argc, msg->argv) {
   app.display();
 
   std::vector<std::string> msgVec;
