@@ -30,7 +30,7 @@ std::vector<std::pair<long, long> > * unwrap(interval_list_t d) {
 
 interval_t wrap(const std::pair<long, long> &p) {
   interval_t result;
-  result.begin = p.first;
+  result.start = p.first;
   result.end = p.second;
   return result;
 }

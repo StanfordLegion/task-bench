@@ -67,6 +67,8 @@ static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
   std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(data1);
   output->first = payload.i;
   output->second = payload.j;
+  Kernel k(payload.graph.kernel);
+  k.execute();
 #else   
   *data1 = 0.0;
   printf("\nTask 1, rank %d, core %d, i %d, j %d, data1 %f\n", this_task->taskpool->context->my_rank, es->core_id, payload.i, payload.j, *data1);
@@ -270,7 +272,8 @@ ParsecApp::ParsecApp(int argc, char **argv)
   
   PASTE_CODE_IPARAM_LOCALS(iparam);
 
-  debug_printf(0, "init parsec\n");
+  debug_printf(0, "init parsec, pid %d\n", getpid());
+ // sleep(10);
 
   LDA = max(LDA, max(M, K));
   LDB = max(LDB, max(K, N));
@@ -335,7 +338,9 @@ ParsecApp::~ParsecApp()
 void ParsecApp::execute_main_loop()
 {
   
-  display();
+  if (rank == 0) {
+    display();
+  }
   
   debug_printf(0, "rank %d, pid %d, M %d, N %d\n", rank, getpid(), M, N);
   //sleep(10);

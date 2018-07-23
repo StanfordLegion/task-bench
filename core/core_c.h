@@ -70,8 +70,8 @@ typedef struct kernel_t {
 void kernel_execute(kernel_t kernel);
 
 typedef struct interval_t {
-  // represents the INCLUSIVE interval from begin to end
-  long begin;
+  // represents the INCLUSIVE interval from start to end
+  long start;
   long end;
 } interval_t;
 
