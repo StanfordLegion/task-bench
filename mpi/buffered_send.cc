@@ -95,7 +95,7 @@ int main (int argc, char *argv[])
       std::vector<int> all_num_inputs;
       std::vector<std::vector<char *> > all_data;
 
-      for (long dset = 0; dset < graph.max_dependence_sets(); dset
+      for (long dset = 0; dset < graph.max_dependence_sets(); dset++)
         {
           all_dependencies.push_back(graph.dependencies(dset, taskid));
           all_rev_dependencies.push_back(graph.reverse_dependencies(dset, taskid));
