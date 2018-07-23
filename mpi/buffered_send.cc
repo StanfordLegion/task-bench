@@ -22,7 +22,7 @@
 #include "../core/timer.h"
 #define  MASTER 0
 #define  NUM_ITER 1
-#define NUM_BUFFERS 3
+#define NUM_BUFFERS 1
 
 void free_output (std::vector<char *> output_ptrs)
 {
