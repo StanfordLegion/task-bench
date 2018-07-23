@@ -2,7 +2,6 @@
 #define __SUBCHARE_H__
 
 #include "../core/core.h"
-//#include "main.h"
 #include <vector>
 #include <set>
 
