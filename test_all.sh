@@ -15,6 +15,7 @@ if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     mpirun -np 4 ./mpi/nonblock -steps 9 -width 4 -type stencil_1d
     mpirun -np 4 ./mpi/bcast    -steps 9 -width 4 -type stencil_1d
     mpirun -np 4 ./mpi/alltoall -steps 9 -width 4 -type stencil_1d
+    mpirun -np 4 ./mpi/buffered_send -steps 9 -width 4 -type stencil_1d
 fi
 
 if [[ $USE_LEGION -eq 1 ]]; then
