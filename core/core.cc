@@ -329,7 +329,9 @@ void TaskGraph::execute_point(long timestep, long point,
         }
 			}
     }
-    assert(idx == n_inputs);
+    // FIXME (Elliott): Legion is currently passing in uninitialized
+    // memory for dependencies outside of the last offset/width.
+    // assert(idx == n_inputs);
   }
 
   // Validate output
