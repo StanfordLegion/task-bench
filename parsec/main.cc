@@ -188,9 +188,6 @@ private:
   int N;
   int K;
   int NRHS;
-  int LDA;
-  int LDB;
-  int LDC;
   int IB;
   int MB;
   int NB;
@@ -274,15 +271,11 @@ ParsecApp::ParsecApp(int argc, char **argv)
 
   debug_printf(0, "init parsec, pid %d\n", getpid());
  // sleep(10);
-
-  LDA = max(LDA, max(M, K));
-  LDB = max(LDB, max(K, N));
-  LDC = max(LDC, M);
   
   assert(graph.output_bytes_per_task <= sizeof(float)*MB*NB);
   
   two_dim_block_cyclic_init(&dcC, matrix_RealFloat, matrix_Tile,
-                             nodes, rank, MB, NB, LDC, N, 0, 0,
+                             nodes, rank, MB, NB, M, N, 0, 0,
                              M, N, SMB, SNB, P);
 
   dcC.mat = parsec_data_allocate((size_t)dcC.super.nb_local_tiles * \

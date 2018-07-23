@@ -55,9 +55,6 @@ enum iparam_t {
   IPARAM_M,            /* Number of rows of the matrix      */
   IPARAM_N,            /* Number of columns of the matrix   */
   IPARAM_K,            /* RHS or K                          */
-  IPARAM_LDA,          /* Leading dimension of A            */
-  IPARAM_LDB,          /* Leading dimension of B            */
-  IPARAM_LDC,          /* Leading dimension of C            */
   IPARAM_IB,           /* Inner-blocking size               */
   IPARAM_NB,           /* Number of columns in a tile       */
   IPARAM_MB,           /* Number of rows in a tile          */
@@ -95,9 +92,6 @@ void iparam_default_ibnbmb(int* iparam, int ib, int nb, int mb);
     N     = iparam[IPARAM_N];                                       \
     K     = iparam[IPARAM_K];                                       \
     NRHS  = K;                                                      \
-    LDA   = max(M, iparam[IPARAM_LDA]);                             \
-    LDB   = max(N, iparam[IPARAM_LDB]);                             \
-    LDC   = max(K, iparam[IPARAM_LDC]);                             \
     IB    = iparam[IPARAM_IB];                                      \
     MB    = iparam[IPARAM_MB];                                      \
     NB    = iparam[IPARAM_NB];                                      \
@@ -112,7 +106,7 @@ void iparam_default_ibnbmb(int* iparam, int ib, int nb, int mb);
     loud  = iparam[IPARAM_VERBOSE];                                 \
     scheduler = iparam[IPARAM_SCHEDULER];                           \
     (void)rank;(void)nodes;(void)cores;(void)gpus;(void)P;(void)Q;(void)M;(void)N;(void)K;(void)NRHS; \
-    (void)LDA;(void)LDB;(void)LDC;(void)IB;(void)MB;(void)NB;(void)MT;(void)NT;(void)KT; \
+    (void)IB;(void)MB;(void)NB;(void)MT;(void)NT;(void)KT; \
     (void)SMB;(void)SNB;(void)HMB;(void)HNB;(void)check;(void)loud; \
     (void)scheduler;
 
