@@ -18,8 +18,8 @@
 #include <map>
 #include <stdio.h>
 #include <stdlib.h>
-#include "core/core.h"
-#include "core/timer.h"
+#include "../core/core.h"
+#include "../core/timer.h"
 #define  MASTER 0
 #define  NUM_ITER 1
 
