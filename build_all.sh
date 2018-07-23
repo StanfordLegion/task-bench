@@ -10,8 +10,6 @@ fi
 
 source deps/env.sh
 
-CHARM_VERSION=${CHARM_VERSION:-netlrts-linux-x86_64}
-
 if [[ $(uname -s) = Linux ]]; then
     DEFAULT_THREADS=$(nproc --all)
 elif [[ $(uname -s) = Darwin ]]; then

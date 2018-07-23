@@ -75,6 +75,7 @@ fi
 if [[ $USE_CHARM -eq 1 ]]; then
     export CHARM_DIR="$PWD"/deps/charm++
     cat >>deps/env.sh <<EOF
+export CHARM_VERSION=${CHARM_VERSION:-netlrts-linux-x86_64}
 export USE_CHARM=$USE_CHARM
 export CHARM_DIR=$CHARM_DIR
 EOF
