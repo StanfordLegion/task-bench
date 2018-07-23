@@ -187,7 +187,7 @@ static struct option long_options[] =
 };
 #endif  /* defined(PARSEC_HAVE_GETOPT_LONG) */
 
-static void parse_arguments(int *_argc, char*** _argv, int* iparam)
+void parse_arguments(int *_argc, char*** _argv, int* iparam)
 {
     extern char **environ;
     int opt = 0;
@@ -471,7 +471,7 @@ parsec_context_t* setup_parsec(int argc, char **argv, int *iparam)
     iparam[IPARAM_NNODES] = 1;
     iparam[IPARAM_RANK] = 0;
 #endif
-    parse_arguments(&argc, &argv, iparam);
+    //parse_arguments(&argc, &argv, iparam);
     int verbose = iparam[IPARAM_VERBOSE];
     if(iparam[IPARAM_RANK] > 0 && verbose < 4) verbose = 0;
 
