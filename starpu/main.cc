@@ -16,6 +16,7 @@
 #define USE_CORE_VERIFICATION
 
 typedef struct payload_s {
+  int graph_id;
   int i;
   int j;
   TaskGraph graph;
@@ -39,7 +40,7 @@ static void task1(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   a[0] = 0.0;
-  printf("Task1 i %d, j %d, rank %d, data %f\n", payload.i, payload.j, rank, a[0]);
+  printf("Graph %d, Task1 i %d, j %d, rank %d, data %f\n", payload.graph_id, payload.i, payload.j, rank, a[0]);
 #endif
 }
 
@@ -67,7 +68,7 @@ static void task2(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
   
   b[0] = a[0] + 1.0;
-  printf("Task2 i %d, j %d, rank %d, value %f\n", payload.i, payload.j, rank, b[0]);
+  printf("Graph %d, Task2 i %d, j %d, rank %d, value %f\n", payload.graph_id, payload.i, payload.j, rank, b[0]);
 #endif
 }
 
@@ -98,7 +99,7 @@ static void task3(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   c[0] = a[0] + b[0] + 1.0;
-  printf("Task3 i %d, j %d, rank %d, value %f\n", payload.i, payload.j, rank, c[0]);
+  printf("Graph %d, Task3 i %d, j %d, rank %d, value %f\n", payload.graph_id, payload.i, payload.j, rank, c[0]);
 #endif
 }
 
@@ -133,7 +134,7 @@ static void task4(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   d[0] = a[0] + b[0] + c[0] + 1.0;
-  printf("Task4 i %d, j %d, rank %d, value %f\n", payload.i, payload.j, rank, d[0]);
+  printf("Graph %d, Task4 i %d, j %d, rank %d, value %f\n", payload.graph_id, payload.i, payload.j, rank, d[0]);
 #endif
 }
 
@@ -141,6 +142,12 @@ struct starpu_codelet cl_task1;
 struct starpu_codelet cl_task2;
 struct starpu_codelet cl_task3;
 struct starpu_codelet cl_task4;
+
+typedef struct matrix_s {
+  int MT;
+  int NT;
+  starpu_ddesc_t *ddescA;
+}matrix_t;
 
 struct StarPUApp : public App {
 public:
@@ -154,15 +161,13 @@ private:
   void debug_printf(int verbose_level, const char *format, ...);
 private:
   struct starpu_conf *conf;
-  starpu_ddesc_t *ddescA;
   int rank;
   int world;
   int nb_cores;
-  int MT;
-  int NT;
   int P;
   int Q;
   int MB;
+  matrix_t mat_array[10];
 };
 
 void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<void*> &args)
@@ -283,19 +288,27 @@ StarPUApp::StarPUApp(int argc, char **argv)
   Q = world/P;
   assert(P*Q == world);  
   
-  TaskGraph &graph = graphs[0];
-  NT = graph.max_width;
-  MT = graph.timesteps;
+  for (int i = 0; i < graphs.size(); i++)
+  {
+    TaskGraph &graph = graphs[i];
+    matrix_t &mat = mat_array[i];
+    mat.NT = graph.max_width;
+    mat.MT = graph.timesteps;
   
-  debug_printf(0, "mt %d, nt %d\n", MT, NT);
-  assert (graph.output_bytes_per_task <= sizeof(float)*MB*MB);
+    debug_printf(0, "mt %d, nt %d\n", mat.MT, mat.NT);
+    assert (graph.output_bytes_per_task <= sizeof(float) * MB * MB);
 
-  ddescA = create_and_distribute_data(rank, world, MB, MB, MT, NT, P, Q);
+    mat.ddescA = create_and_distribute_data(rank, world, MB, MB, mat.MT, mat.NT, P, Q, i);
+  }
 }
 
 StarPUApp::~StarPUApp()
 {
-  destroy_data(ddescA);
+  for (int i = 0; i < graphs.size(); i++)
+  {
+    matrix_t &mat = mat_array[i];
+    destroy_data(mat.ddescA);
+  }
   if (conf != NULL) {
     free (conf);
   } 
@@ -319,10 +332,13 @@ void StarPUApp::execute_main_loop()
     Timer::time_start();
   }
   
-  const TaskGraph &g = graphs[0];
+  for (int i = 0; i < graphs.size(); i++)
+  {
+    const TaskGraph &g = graphs[i];
 
-  for (y = 0; y < g.timesteps; y++) {
-    execute_timestep(0, y);
+    for (y = 0; y < g.timesteps; y++) {
+      execute_timestep(i, y);
+    }
   }
 
   starpu_task_wait_for_all();
@@ -339,6 +355,7 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   long offset = g.offset_at_timestep(t);
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
+  matrix_t &mat = mat_array[idx];
   
   std::vector<void*> args;
   payload_t payload;
@@ -351,20 +368,20 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     if (deps.size() == 0) {
       num_args = 1;
       debug_printf(1, "%d[%d] ", x, num_args);
-      args.push_back(starpu_desc_getaddr( ddescA, t, x ));
+      args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
     } else {
       if (t == 0) {
         num_args = 1;
         debug_printf(1, "%d[%d] ", x, num_args);
-        args.push_back(starpu_desc_getaddr( ddescA, t, x ));
+        args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
       } else {
         num_args = 1;
-        args.push_back(starpu_desc_getaddr( ddescA, t, x ));
+        args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
           debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
-            args.push_back(starpu_desc_getaddr( ddescA, t-1, i ));
+            args.push_back(starpu_desc_getaddr( mat.ddescA, t-1, i ));
           }
         }
       }
@@ -372,6 +389,7 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     payload.i = t;
     payload.j = x;
     payload.graph = g;
+    payload.graph_id = idx;
     insert_task(num_args, payload, args); 
     args.clear();
   }
@@ -395,7 +413,7 @@ void StarPUApp::debug_printf(int verbose_level, const char *format, ...)
 int main(int argc, char **argv)
 {
   printf("pid %d, %d\n", getpid(), STARPU_NMAXBUFS);
-  //sleep(10); 
+ // sleep(10); 
 
   
   StarPUApp app(argc, argv);
