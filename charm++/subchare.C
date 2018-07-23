@@ -1,0 +1,164 @@
+#include "subchare.decl.h"
+
+#include "subchare.h"
+#include "main.decl.h"
+#include <thread>
+#include <chrono>
+
+#include <stdlib.h>
+#include "unistd.h"
+
+extern CProxy_Main mainProxy;
+
+const static bool SENDING = false;
+const static bool RECEIVING = true;
+
+Subchare::Subchare(VectorWrapper wrapper) : app(wrapper.vec.size(), wrapper.toArgv()) { }
+
+Subchare::Subchare(CkMigrateMessage* msg) : app(0, (char **)NULL) { }
+
+/**
+ * Initializes the graph and necessary data structures to minimize computation
+ * during the timing for Charm++.
+ */
+void Subchare::initGraph(int graphIndex) {
+	this->graphIndex = graphIndex;
+	graph = app.graphs[graphIndex];
+	currentTimestep = 0;
+
+	// Init receiving and sending vectors.
+	for (long timestep = 0; timestep < graph.timesteps; timestep++) {
+		long offset = graph.offset_at_timestep(timestep);
+		long width = graph.width_at_timestep(timestep);
+		long last_offset = timestep == 0 ? 0 : graph.offset_at_timestep(timestep - 1);
+		long last_width = timestep == 0 ? 0 : graph.width_at_timestep(timestep - 1);
+		long next_offset = graph.offset_at_timestep(timestep + 1);
+		long next_width = graph.width_at_timestep(timestep + 1);
+
+		auto deps = graph.dependencies(graph.dependence_set_at_timestep(timestep), thisIndex);
+		if (timestep == 0 || thisIndex < offset || thisIndex >= width + offset)
+			deps.clear();
+		notReceived.push_back(std::set<long>());
+		for (auto interval : deps) {
+			for (long dep = interval.first; dep <= interval.second; dep++) {
+				if (dep >= last_offset && dep < last_width + last_offset) {
+					notReceived[timestep].insert(dep);
+				}
+			}
+		}
+
+		auto revDeps = graph.reverse_dependencies(graph.dependence_set_at_timestep(timestep + 1), thisIndex);
+		if (timestep == graph.timesteps - 1 || thisIndex < offset || thisIndex >= width + offset)
+			revDeps.clear();
+		whereToSend.push_back(std::set<long>());
+		for (auto interval : revDeps) {
+			for (long target = interval.first; target <= interval.second; target++) {
+				if (target >= next_offset && target < next_width + next_offset) {
+					whereToSend[timestep].insert(target);
+				}
+			}
+		}
+
+		inputs.push_back(std::vector<std::pair<long, long>*>());
+		input_bytes.push_back(std::vector<size_t>());
+		size_t idx = 0;
+		deps = graph.dependencies(graph.dependence_set_at_timestep(timestep), thisIndex);
+		for (auto interval : deps) {
+			for (long dep = interval.first; dep <= interval.second; dep++) {
+				if (dep >= last_offset && dep < last_width + last_offset) {
+					receivingMap[std::pair<long, long>(timestep, dep)] = idx;
+					inputs[timestep].push_back(new std::pair<long, long>());
+					input_bytes[timestep].push_back(sizeof(std::pair<long, long>));
+					idx++;
+				}
+			}
+		}
+	}
+
+	// Fabricate a set of inputs so the core api's assertions don't scream when we start.
+	output_bytes = sizeof(output);
+	// size_t idx = 0;
+	// auto fakeDeps = graph.dependencies(graph.dependence_set_at_timestep(0), thisIndex);
+	// if (thisIndex >= graph.offset_at_timestep(0) 
+	// 	&& thisIndex < graph.width_at_timestep(0) + graph.offset_at_timestep(0)) {
+	// 	for (auto interval : fakeDeps) {
+	// 		for (long dep = interval.first; dep <= interval.second; dep++) {
+	// 			inputs[0][idx]->first = -1;
+	// 			inputs[0][idx]->second = dep;
+	// 			idx++;
+	// 		}
+	// 	}
+	// }
+
+	mainProxy.workerReady();
+}
+
+/**
+ * Executes a single timestep of the task graph for this particular chare.
+ */
+void Subchare::runTimestep() {
+	if (app.verbose) CkPrintf("Chare %d running timestep %d.\n", thisIndex, currentTimestep);
+	long offset = graph.offset_at_timestep(currentTimestep);
+	long width = graph.width_at_timestep(currentTimestep);
+	if (offset <= thisIndex && thisIndex < offset + width) 
+		graph.execute_point(currentTimestep, thisIndex, (char *)&output, output_bytes,
+							(const char**)inputs[currentTimestep].data(), (const size_t*)input_bytes[currentTimestep].data(),
+							inputs[currentTimestep].size());
+
+	for (long target : whereToSend[currentTimestep]) {
+		if (app.verbose) CkPrintf("\tChare %d sending message from timestep %d to chare %d.\n", thisIndex, currentTimestep, target);
+		thisProxy[target].receive(output);
+	}
+	sent = true;
+
+	checkAndRun(SENDING);
+}
+
+/**
+ * Entry method that acts according to the message sent from another chare.
+ */
+void Subchare::receive(std::pair<long, long> input) {
+	if (app.verbose) CkPrintf("\tChare %d receiving message from timestep %d from chare %d.\n", thisIndex, input.first, input.second);
+	notReceived[input.first + 1].erase(input.second);
+	size_t idx = receivingMap[std::pair<long, long>(input.first + 1, input.second)];
+	inputs[input.first + 1][idx]->first = input.first;
+	inputs[input.first + 1][idx]->second = input.second;
+	input_bytes[input.first + 1][idx] = sizeof(input);
+
+	checkAndRun(RECEIVING);
+}
+
+/**
+ * Checks to see if all messages have been received for the current timestep, then schedules the
+ * next timestep if they have. If this was the last timestep, then indicates to the main proxy
+ * that this chare has finished.
+ */
+void Subchare::checkAndRun(bool receiving) {
+	if (notReceived[currentTimestep + 1].empty()) {
+		if (currentTimestep + 1 == graph.timesteps - 1) {
+			mainProxy.finishedGraph();
+		} else if (!receiving || sent) {
+			sent = false;
+			currentTimestep++;
+			thisProxy[thisIndex].runTimestep();
+		}
+	}
+}
+
+/**
+ * Resets the data structures within the subchare for another run of the graphs.
+ */
+void Subchare::reset() {
+	notReceived.clear();
+	whereToSend.clear();
+	receivingMap.clear();
+	for (auto inputSet : inputs)
+		for (auto input : inputSet)
+			delete input;
+	inputs.clear();
+	input_bytes.clear();
+	sent = false;
+	initGraph(graphIndex);
+}
+
+#include "subchare.def.h"
