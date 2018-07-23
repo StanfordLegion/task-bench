@@ -66,6 +66,27 @@ int num_rev_dependencies(TaskGraph &graph, long dset, int taskid)
   return num_deps;
 }
 
+void add_buffers(std::vector<std::vector<void *> > &graph_buffers, int index, size_t max_deps, size_t output_bytes)
+{
+  std::vector<void *> buffers;
+  for (int i = 0; i < NUM_BUFFERS; i++)
+    {
+      int size = (output_bytes + MPI_BSEND_OVERHEAD) * max_deps;
+      void *buf = malloc(size);
+      buffers.push_back(buf);
+    }
+  graph_buffers.push_back(buffers);
+}
+
+void free_buffers(std::vector<std::vector<void *> > &graph_buffers)
+{
+  for (std::vector<void *> buf_vec: graph_buffers)
+    {
+      for (void *buf: buf_vec)
+	      free(buf);
+    }   
+
+}
 
 int main (int argc, char *argv[])
 {
@@ -84,6 +105,8 @@ int main (int argc, char *argv[])
   std::vector<std::vector<int> > graph_num_inputs;
   std::vector<std::vector<std::vector<char *> > > graph_all_data;
   std::vector<char *> output_ptrs;
+  std::vector<std::vector<void *> > graph_buffers;
+  std::vector<int> max_num_deps;
 
   for (size_t i = 0; i < graphs.size(); i++)
     {
@@ -94,13 +117,14 @@ int main (int argc, char *argv[])
       std::vector< std::vector<size_t> > all_input_bytes;
       std::vector<int> all_num_inputs;
       std::vector<std::vector<char *> > all_data;
-
+      int max_dep = -1;
       for (long dset = 0; dset < graph.max_dependence_sets(); dset++)
         {
           all_dependencies.push_back(graph.dependencies(dset, taskid));
           all_rev_dependencies.push_back(graph.reverse_dependencies(dset, taskid));
 
           int num_deps = num_dependencies(graph, dset, taskid);
+          if (max_dep < num_deps) max_dep = num_deps;
           all_num_inputs.push_back(num_deps);
           std::vector<size_t> input_bytes;
           std::vector<char *> input_ptrs;
@@ -121,6 +145,8 @@ int main (int argc, char *argv[])
       graph_input_bytes.push_back(all_input_bytes);
       graph_num_inputs.push_back(all_num_inputs);
       graph_all_data.push_back(all_data);
+      add_buffers(graph_buffers, i, max_dep, output_bytes);
+      max_num_deps.push_back(max_dep);
     }
 
   double total_time_elapsed = 0.0;
@@ -134,15 +160,19 @@ int main (int argc, char *argv[])
           TaskGraph graph = graphs[i];
           size_t output_bytes = graph.output_bytes_per_task;
           char *output_ptr = output_ptrs[i];
+          int current_buf = -1;
+          bool looped_buffers = false;
 
           for (long timestep = 0L; timestep < graph.timesteps; timestep += 1)
             {
+              if (++current_buf == NUM_BUFFERS)
+                {
+                  current_buf = 0;
+                  looped_buffers = true;
+                }
               long old_dset = graph.dependence_set_at_timestep(timestep);
               long dset = graph.dependence_set_at_timestep(timestep+1);
               int num_inputs = graph_num_inputs[i][old_dset];
-              int size;
-              void *buf = NULL;
-              bool buffered = false;
               if (taskid < graph.width_at_timestep(timestep) + graph.offset_at_timestep(timestep)
                   && taskid >= graph.offset_at_timestep(timestep))
                 {
@@ -153,12 +183,8 @@ int main (int argc, char *argv[])
 
                   /* Sends */
                   /* Only send if you are in the current timestep of the graph */
-                  //attach a big enough buffer                                                                                                                                      
-                  //it has to block on the receive                                                                                                                                  
-                  size = (output_bytes + MPI_BSEND_OVERHEAD) * num_rev_dependencies(graph, dset, taskid);
-                  buf = malloc(size);
-                  buffered = true;
-                  MPI_Buffer_attach(buf, size);
+                  if (looped_buffers) MPI_Buffer_detach(&graph_buffers[i][current_buf], &max_num_deps[i]);
+                  MPI_Buffer_attach(graph_buffers[i][current_buf], max_num_deps[i]);
 
                   for (std::pair<long, long> interval: graph_rev_deps[i][dset])
                     {
@@ -187,10 +213,6 @@ int main (int argc, char *argv[])
                         }
                     }
                 }
-              if (buffered) {
-                MPI_Buffer_detach(&buf, &size);
-                free(buf);
-              }
             }
         }
       MPI_Barrier(MPI_COMM_WORLD);
