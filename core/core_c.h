@@ -45,12 +45,9 @@ typedef enum kernel_type_t {
 
 //-- add by Yuankun
 typedef struct kernel_arg_t{
-  char **input_data;
+  char *scratch_ptr;
   long num_src_input;
-  size_t *input_bytes_per_src;
-
-  char *output_data;
-  size_t output_bytes;
+  size_t scratch_bytes_per_task;
 
   long max_power; // compute kernel parameter
   long jump;  // memeory kernel parameter
@@ -98,10 +95,14 @@ long task_graph_timestep_period(task_graph_t graph);
 long task_graph_dependence_set_at_timestep(task_graph_t graph, long timestep);
 interval_list_t task_graph_reverse_dependencies(task_graph_t graph, long dset, long point);
 interval_list_t task_graph_dependencies(task_graph_t graph, long dset, long point);
+// void task_graph_execute_point(task_graph_t graph, long timestep, long point,
+//                               char *output_ptr, size_t output_bytes,
+//                               const char **input_ptr, const size_t *input_bytes,
+//                               size_t n_inputs);
 void task_graph_execute_point(task_graph_t graph, long timestep, long point,
                               char *output_ptr, size_t output_bytes,
                               const char **input_ptr, const size_t *input_bytes,
-                              size_t n_inputs);
+                              size_t n_inputs, char *scratch_ptr, size_t scratch_bytes_per_task);
 
 typedef struct task_graph_list_t {
   void *impl;
