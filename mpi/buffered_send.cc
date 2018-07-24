@@ -180,7 +180,6 @@ int main (int argc, char *argv[])
 
                   /* Sends */
                   /* Only send if you are in the current timestep of the graph */
-		  int size;
                   MPI_Buffer_attach(graph_buffers[i][current_buf], (output_bytes + MPI_BSEND_OVERHEAD) * max_num_deps[i]);
 
                   for (std::pair<long, long> interval: graph_rev_deps[i][dset])
@@ -210,6 +209,7 @@ int main (int argc, char *argv[])
                         }
                     }
 	      	}
+		int size;
 		MPI_Buffer_detach(&graph_buffers[i][current_buf], &size);
             }
         }
