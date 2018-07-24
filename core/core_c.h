@@ -45,7 +45,7 @@ typedef enum kernel_type_t {
 
 //-- add by Yuankun
 typedef struct kernel_arg_t{
-  const char **input_data;
+  char **input_data;
   long num_src_input;
   size_t *input_bytes_per_src;
 

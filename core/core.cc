@@ -312,8 +312,7 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
 void TaskGraph::execute_point(long timestep, long point,
                               char *output_ptr, size_t output_bytes,
                               const char **input_ptr, const size_t *input_bytes,
-                              size_t n_inputs) const //? graph.execute_point(timestep, point, output_ptr, output_bytes,
-                      //input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                              size_t n_inputs) const
 {
   // Validate timestep and point
   assert(0 <= timestep && timestep < timesteps);
@@ -340,6 +339,7 @@ void TaskGraph::execute_point(long timestep, long point,
 
           const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
           assert(input.first == timestep - 1);
+          // printf("input.second=%ld, dep=%ld\n", input.second, dep);
           assert(input.second == dep);
           idx++;
         }
@@ -362,11 +362,19 @@ void TaskGraph::execute_point(long timestep, long point,
   // Execute kernel
   Kernel k(kernel);
   //-- add by Yuankun
-  printf("user set num_src_input=%ld, but real n_inputs=%ld\n", k.kernel_arg.num_src_input, n_inputs);
+  // printf("user set num_src_input=%ld, but real n_inputs=%ld\n", k.kernel_arg.num_src_input, n_inputs);
 
   for(long i=0; i < k.kernel_arg.num_src_input; i++){
-    k.kernel_arg.input_data[i] = input_ptr[i]+sizeof(std::pair<long, long>);
-    // k.kernel_arg.input_bytes[i] = input_bytes[i];
+    k.kernel_arg.input_data[i] = NULL;
+  }
+
+  for(long i=0; i < k.kernel_arg.num_src_input; i++){
+    // (TODO) need alignment address
+    k.kernel_arg.input_data[i] = const_cast<char *>(input_ptr[i]+sizeof(std::pair<long, long>));
+    if (n_inputs == 1){
+      // printf("n_inputs==1 break, i=%ld\n", i);
+      break;
+    }
   }
   k.kernel_arg.output_data = output_ptr;
   //-- add by Yuankun
@@ -472,7 +480,7 @@ App::App(int argc, char **argv)
         abort();
       }
       graph.kernel.kernel_arg.num_src_input = value;
-      graph.kernel.kernel_arg.input_data = (const char **)malloc(sizeof(char*) * value);
+      graph.kernel.kernel_arg.input_data = (char **)malloc(sizeof(char*) * value);
       graph.kernel.kernel_arg.input_bytes_per_src = (size_t *)malloc(sizeof(size_t) * value);
     }
 
