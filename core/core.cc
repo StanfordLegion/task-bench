@@ -144,7 +144,7 @@ long TaskGraph::width_at_timestep(long timestep) const
     return std::min(max_width,
                     std::min(timestep + 1, timesteps - timestep));
   case DependenceType::TREE:
-    return std::min(max_width, 1L << timestep);
+    return std::min(max_width, 1L << std::min(timestep, 62L));
   case DependenceType::FFT:
   case DependenceType::ALL_TO_ALL:
     return max_width;
