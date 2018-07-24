@@ -103,13 +103,12 @@ void leaf(const Task *task,
       size_t bytes;
       get_base_and_size(runtime, regions[1], task->regions[1], rect, ptr, bytes);
       input_ptrs.push_back(ptr);
-      input_bytes.push_back(bytes);      
+      input_bytes.push_back(bytes);
     }
   }
 
   graph.execute_point(timestep, point, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size());
-
 }
 
 void dummy(const Task *task,
@@ -207,14 +206,14 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     primary_partitions.push_back(primary_lp);
     secondary_partitions.push_back(secondary_lps);
   }
-
 }
-
-
 
 void LegionApp::run()
 {
-  display();
+  // FIXME (Elliott): Do this correctly for control replication
+  if (runtime->get_executing_processor(ctx).address_space() == 0) {
+    display();
+  }
 
   execute_main_loop(); // warm-up
 
@@ -227,7 +226,9 @@ void LegionApp::run()
   unsigned long long stop = Realm::Clock::current_time_in_nanoseconds();
 
   double elapsed = (stop - start) / 1e9;
-  report_timing(elapsed);
+  if (runtime->get_executing_processor(ctx).address_space() == 0) {
+    report_timing(elapsed);
+  }
 }
 
 static long lcm(long a, long b) {
@@ -327,6 +328,7 @@ int main(int argc, char **argv)
   {
     TaskVariantRegistrar registrar(TID_TOP, "top");
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
+    registrar.set_replicable();
     Runtime::preregister_task_variant<top>(registrar, "top");
   }
 

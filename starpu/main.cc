@@ -32,6 +32,8 @@ static void task1(void *descr[], void *cl_arg)
   std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(a);
   output->first = payload.i;
   output->second = payload.j;
+  Kernel k(payload.graph.kernel);
+  k.execute();
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -293,6 +295,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
 
 StarPUApp::~StarPUApp()
 {
+  destroy_data(ddescA);
   if (conf != NULL) {
     free (conf);
   } 
@@ -302,7 +305,9 @@ StarPUApp::~StarPUApp()
 
 void StarPUApp::execute_main_loop()
 {
-  display();
+  if (rank == 0) {
+    display();
+  }
 
   void (*callback)(void*) = NULL;
 
@@ -315,132 +320,10 @@ void StarPUApp::execute_main_loop()
   }
   
   const TaskGraph &g = graphs[0];
-#if 1
+
   for (y = 0; y < g.timesteps; y++) {
     execute_timestep(0, y);
   }
-#endif
-
-#if 0
-  for( y = 0; y < mt; y++ ) {
-      for (x = 0; x < nt; x++) {
-          if (y == 0) {
-             // printf("insert x %d, y %d\n");
-              starpu_mpi_insert_task(
-                  MPI_COMM_WORLD, &(codelet_task1.codelet),
-                  STARPU_VALUE,    &y,  sizeof(int),
-                  STARPU_VALUE,    &x,  sizeof(int),
-                  STARPU_RW, starpu_desc_getaddr( ddescA, y, x ),
-                  STARPU_CALLBACK,  callback,
-                  STARPU_PRIORITY,  0,
-                  STARPU_NAME, "chain1",
-                  0);
-          } else {
-             // printf("insert x %d, y %d\n");
-              starpu_mpi_insert_task(
-                  MPI_COMM_WORLD, &(codelet_task2.codelet),
-                  STARPU_VALUE,    &y,  sizeof(int),
-                  STARPU_VALUE,    &x,  sizeof(int),
-                  STARPU_R, starpu_desc_getaddr( ddescA, y-1, x ),
-                  STARPU_RW, starpu_desc_getaddr( ddescA, y, x ),
-                  STARPU_CALLBACK,  callback,
-                  STARPU_PRIORITY,  0,
-                  STARPU_NAME, "chain2",
-                  0);
-          }
-      }
-  }
-#endif
-  
-#if 0
-  for( y = 0; y < mt; y++ ) {
-      for (x = 0; x < nt; x++) {
-          if (y == 0) {
-             // printf("insert x %d, y %d\n");
-              starpu_mpi_insert_task(
-                  MPI_COMM_WORLD, &(cl_task1),
-                  STARPU_VALUE,    &y,  sizeof(int),
-                  STARPU_VALUE,    &x,  sizeof(int),
-                  STARPU_RW, starpu_desc_getaddr( ddescA, y, x ),
-                  STARPU_CALLBACK,  callback,
-                  STARPU_PRIORITY,  0,
-                  STARPU_NAME, "chain1",
-                  0);
-          } else if (x == 0 && y != 0) {
-             // printf("insert x %d, y %d\n");
-              starpu_mpi_insert_task(
-                  MPI_COMM_WORLD, &(cl_task3),
-                  STARPU_VALUE,    &y,  sizeof(int),
-                  STARPU_VALUE,    &x,  sizeof(int),
-                  STARPU_R, starpu_desc_getaddr( ddescA, y-1, x ),
-                  STARPU_R, starpu_desc_getaddr( ddescA, y-1, x+1 ),
-                  STARPU_RW, starpu_desc_getaddr( ddescA, y, x ),
-                  STARPU_CALLBACK,  callback,
-                  STARPU_PRIORITY,  0,
-                  STARPU_NAME, "chain3",
-                  0);
-          } else if (x == (nt-1) && y != 0) {
-             // printf("insert x %d, y %d\n");
-              starpu_mpi_insert_task(
-                  MPI_COMM_WORLD, &(cl_task3),
-                  STARPU_VALUE,    &y,  sizeof(int),
-                  STARPU_VALUE,    &x,  sizeof(int),
-                  STARPU_R, starpu_desc_getaddr( ddescA, y-1, x-1 ),
-                  STARPU_R, starpu_desc_getaddr( ddescA, y-1, x ),
-                  STARPU_RW, starpu_desc_getaddr( ddescA, y, x ),
-                  STARPU_CALLBACK,  callback,
-                  STARPU_PRIORITY,  0,
-                  STARPU_NAME, "chain3",
-                  0);
-          } else {
-            starpu_mpi_insert_task(
-                MPI_COMM_WORLD, &(cl_task4),
-                STARPU_VALUE,    &y,  sizeof(int),
-                STARPU_VALUE,    &x,  sizeof(int),
-                STARPU_R, starpu_desc_getaddr( ddescA, y-1, x-1 ),
-                STARPU_R, starpu_desc_getaddr( ddescA, y-1, x ),
-                STARPU_R, starpu_desc_getaddr( ddescA, y-1, x+1 ),
-                STARPU_RW, starpu_desc_getaddr( ddescA, y, x ),
-                STARPU_CALLBACK,  callback,
-                STARPU_PRIORITY,  0,
-                STARPU_NAME, "chain4",
-                0);
-          }
-      }
-  }
-#endif
-  
-#if 0
-  std::vector<void*> args;
-  for( y = 0; y < mt; y++ ) {
-      for (x = 0; x < nt; x++) {
-          if (y == 0) {
-             // printf("insert x %d, y %d\n");
-            args.clear();
-            args.push_back(starpu_desc_getaddr( ddescA, y, x ));
-            insert_task(1, y, x, args);
-          } else {
-             // printf("insert x %d, y %d\n");
-            args.clear();
-            args.push_back(starpu_desc_getaddr( ddescA, y, x ));
-            args.push_back(starpu_desc_getaddr( ddescA, y-1, x ));
-            insert_task(2, y, x, args);
-          }
-      }
-  }
-#endif
-  
-#if 0
-  std::vector<void*> args;
-  for( y = 0; y < mt; y++ ) {
-    for (x = 0; x < nt; x++) {
-      args.clear();
-      args.push_back(starpu_desc_getaddr( ddescA, y, x ));
-      insert_task(1, y, x, args);
-    }
-  }
-#endif
-
 
   starpu_task_wait_for_all();
   starpu_mpi_barrier(MPI_COMM_WORLD);

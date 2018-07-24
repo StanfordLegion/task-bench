@@ -45,11 +45,11 @@ typedef enum kernel_type_t {
 
 //-- add by Yuankun
 typedef struct kernel_arg_t{
-  unsigned char **input;
-  long num_input;
-  size_t *input_bytes;
+  char **input_data;
+  long num_src_input;
+  size_t *input_bytes_per_src;
 
-  unsigned char *output;
+  char *output_data;
   size_t output_bytes;
 
   long max_power; // compute kernel parameter
@@ -70,8 +70,8 @@ typedef struct kernel_t {
 void kernel_execute(kernel_t kernel);
 
 typedef struct interval_t {
-  // represents the INCLUSIVE interval from begin to end
-  long begin;
+  // represents the INCLUSIVE interval from start to end
+  long start;
   long end;
 } interval_t;
 
