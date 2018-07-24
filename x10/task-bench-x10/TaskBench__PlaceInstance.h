@@ -13,6 +13,9 @@
 #define X10_LANG_LONG_H_NODEPS
 #include <x10/lang/Long.h>
 #undef X10_LANG_LONG_H_NODEPS
+#define X10_LANG_BOOLEAN_H_NODEPS
+#include <x10/lang/Boolean.h>
+#undef X10_LANG_BOOLEAN_H_NODEPS
 #define X10_LANG_LONG_H_NODEPS
 #include <x10/lang/Long.h>
 #undef X10_LANG_LONG_H_NODEPS
@@ -49,9 +52,10 @@ class Synthetic;
 
 class TaskBench__PlaceInstance_Strings {
   public:
-    static ::x10::lang::String sl__1890;
-    static ::x10::lang::String sl__1889;
-    static ::x10::lang::String sl__1891;
+    static ::x10::lang::String sl__1896;
+    static ::x10::lang::String sl__1895;
+    static ::x10::lang::String sl__1898;
+    static ::x10::lang::String sl__1897;
 };
 
 class TaskBench__PlaceInstance : public ::x10::lang::X10Class   {
@@ -61,7 +65,8 @@ class TaskBench__PlaceInstance : public ::x10::lang::X10Class   {
     ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >*
       FMGL(sendRails);
     
-    ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* FMGL(recv);
+    ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >*
+      FMGL(recvRails);
     
     ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* >*
       FMGL(remoteSendRails);
@@ -70,12 +75,13 @@ class TaskBench__PlaceInstance : public ::x10::lang::X10Class   {
     
     ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* FMGL(neighborsRecvRails);
     
+    ::x10::lang::Rail< ::x10::lang::Rail< x10_boolean >* >* FMGL(recvReadyRails);
+    
     x10_long FMGL(timestep);
     
-    x10_long FMGL(neighborsReceived);
-    
-    x10_boolean allNeighborsReceived();
     virtual x10_long getSenderIndex(x10_long recvId, x10_long timestep);
+    virtual x10_long getRecvIndex(x10_long sendId, x10_long timestep);
+    virtual x10_boolean allNeighborsReceived(x10_long timestep);
     void _constructor(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dependenceSets,
                       ::x10::lang::Rail< x10_long >* dsetForTimestep,
                       x10_long maxWidth);

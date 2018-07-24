@@ -11,3 +11,5 @@ do
 	srun hostname >> x10-hostfile.txt
 done
 export X10_HOSTFILE=x10-hostfile.txt
+
+srun ./a.out -type stencil_1d -steps 4 -width 4

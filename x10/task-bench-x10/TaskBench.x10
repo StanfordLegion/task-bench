@@ -17,7 +17,7 @@ public class TaskBench {
 		public val sendRails:Rail[Rail[Rail[Double]]];
 
 		// Holds values received from neighbors in neighborsReceive at
-		public val recv:Rail[Rail[Double]];
+		public val recvRails:Rail[Rail[Rail[Double]]];
 
 		// Global Rails pointing to send rails of all neighbors in neighborsReceive at each timestep
 		public val remoteSendRails:Rail[Rail[GlobalRail[Double]]];
@@ -28,18 +28,14 @@ public class TaskBench {
 		// All neighbors to receive values from at each timestep
 		public val neighborsRecvRails:Rail[Rail[Long]];
 
+		// Booleans updated when data is loaded into remoteSend
+		public val recvReadyRails:Rail[Rail[Boolean]];
+
 		// current timestep this place is on
 		public val timestep:Long;
 
-		// count of number of neighbors from which data has been reveived
-		private val neighborsReceived:Long;
-
 		/** used for pushing to neighbors */
 		// public val remoteRecv:Rail[GlobalRail[Double]];
-
-		private def allNeighborsReceived():Boolean {
-			return (this.neighborsReceived == neighborsRecvRails(this.timestep).size);
-		}
 
 		public def getSenderIndex(recvId:Long, timestep:Long):Long {
 			val neighborsSend = neighborsSendRails(timestep);
@@ -48,21 +44,38 @@ public class TaskBench {
 					return (i as Long);
 				}
 			}
-			Console.OUT.println("UNABLE TO FIND SENDER: " + recvId + " FOR " + here.id + " AT TIMESTEP " + timestep);
+			Console.OUT.println("UNABLE TO FIND RECEIVER: " + recvId + " FOR " + here.id + " AT TIMESTEP " + timestep);
 			return -1;
+		}
+
+		public def getRecvIndex(sendId:Long, timestep:Long):Long {
+			val neighborsRecv = neighborsRecvRails(timestep);
+			for (i in 0..(neighborsRecv.size-1)) {
+				if (neighborsRecv(i) == sendId) {
+					return (i as Long);
+				}
+			}
+			Console.OUT.println("UNABLE TO FIND SENDER: " + sendId + " FOR " + here.id + " AT TIMESTEP " + timestep);
+			return -1;
+		}
+
+		public def allNeighborsReceived(timestep:Long):Boolean {
+			for (i in recvReadyRails(timestep).range()) {
+				if (!recvReadyRails(timestep)(i)) return false;
+			}
+			return true;
 		}
 
 		protected def this(dependenceSets:Rail[Rail[Pair[Rail[Long], Rail[Long]]]], dsetForTimestep:Rail[Long], maxWidth:Long) {
 
 			val timesteps = dsetForTimestep.size;
 			this.timestep = 0;
-			this.neighborsReceived = 0;
 			this.neighborsRecvRails = new Rail[Rail[Long]](timesteps);
 			this.neighborsSendRails = new Rail[Rail[Long]](timesteps);
+			this.recvRails = new Rail[Rail[Rail[Double]]](timesteps);
 			this.sendRails = new Rail[Rail[Rail[Double]]](timesteps);
 			this.remoteSendRails = new Rail[Rail[GlobalRail[Double]]](timesteps);
-
-			this.recv = new Rail[Rail[Double]](maxWidth);
+			this.recvReadyRails = new Rail[Rail[Boolean]](timesteps);
 
 
 			for (ts in 0..(timesteps-1)) {
@@ -70,13 +83,17 @@ public class TaskBench {
 				val dependencePair = dependenceSets(dset)(here.id);
 				val neighborsSend = dependencePair.first;
 				val neighborsRecv = dependencePair.second;
+				val recv = new Rail[Rail[Double]](neighborsRecv.size, (i:Long) => new Rail[Double](1));
 				val send = new Rail[Rail[Double]](neighborsSend.size, (i:Long) => new Rail[Double](1, -1.0));
 				val plchldr = new GlobalRail[Double](new Rail[Double](0));
 				val remoteSend = new Rail[GlobalRail[Double]](neighborsRecv.size, plchldr);
+				val recvReady = new Rail[Boolean](neighborsRecv.size, false);
 				this.neighborsSendRails(ts) = neighborsSend;
 				this.neighborsRecvRails(ts) = neighborsRecv;
+				this.recvRails(ts) = recv;
 				this.sendRails(ts) = send;
 				this.remoteSendRails(ts) = remoteSend;
+				this.recvReadyRails(ts) = recvReady;
 			}
 
 		}
@@ -131,53 +148,36 @@ public class TaskBench {
 		}
 	}
 
-	/** Send values between places
-		Steps:
-		1. Each place puts data into send rail
-		2. Places get data from other places via remoteSend
-		3. Perform local operation on data
-	*/
-	public def checkTaskGraph() {
+	public def executeTaskGraph() {
 
 		finish for (p in Place.places()) {
 			at (p) async {
 				val pi = plh();
-				for (ts in 0..(dsetForTimestep.size-1)) {
-					Console.OUT.println(p + " NEIGHBORS SEND AT TIMESTEP " + ts + ": " + pi.neighborsSendRails(ts).toString());
-					Console.OUT.println(p + " NEIGHBORS RECV AT TIMESTEP " + ts + ": " + pi.neighborsRecvRails(ts).toString());
-					Console.OUT.println(p + " SEND RAIL AT TIMESTEP " + ts + ": " + pi.sendRails(ts).toString());
-					val remoteSend = pi.remoteSendRails(ts);
-					at (remoteSend(0).home) Console.OUT.println(p + " REMOTE SEND AT TIMESTEP " + ts + ": " + remoteSend(0)(0).toString());
+				for (ts in 0..(dsetForTimestep.size-1)) { // loop through time steps
+
+					Console.OUT.println(p + " AT TIMESTEP " + ts);
+
+					// send data
+					for (sendNeighbor in pi.neighborsSendRails(ts).range()) {
+						pi.sendRails(ts)(sendNeighbor)(0) = 1.0;
+						val sendId = here.id;
+						at (Place(pi.neighborsSendRails(ts)(sendNeighbor))) {
+							val pi2 = plh();
+							val recvIndex = pi2.getRecvIndex(sendId, ts);
+							atomic pi2.recvReadyRails(ts)(recvIndex) = true;
+						}
+					}
+
+					// receive data
+					finish for (i in pi.neighborsRecvRails(ts).range()) async {
+						when (pi.recvReadyRails(ts)(i)) {
+							Rail.asyncCopy(pi.remoteSendRails(ts)(i), 0, pi.recvRails(ts)(i), 0, pi.recvRails(ts)(i).size);
+						}
+					}					
+					Console.OUT.println(p + " RECV RAIL AT TIMESTEP " + ts + ": " + pi.recvRails(ts).toString());
 				}
 			}
 		}
-
-		// 1: put data into send rail
-		// finish for (p in Place.places()) {
-		// 	at (p) async {
-		// 		val pi = plh();
-
-		// 		for (i in 0..(pi.neighborsSend.size-1)) {
-		// 			// send data
-		// 			pi.send(i)(0) = 1.0;
-		// 		}
-		// 	}
-		// }
-
-		// // 2: pull data from all neighbors in neighborsRecv
-		// for (p in Place.places()) {
-		// 	at (p) async {
-		// 		val pi = plh();
-
-		// 		finish for (i in pi.neighborsRecv.range) {
-		// 			Rail.asyncCopy(pi.remoteSend(i), 0, pi.recv(i), 0, pi.recv(i).size);
-		// 		}
-
-		// 		Console.OUT.println(p + " " + pi.recv.toString());	
-
-		// 	}
-		// }
-
 	}
 
 	private static def executeTaskBench(taskGraphDependenceSets:Rail[Rail[Rail[Pair[Rail[Long], Rail[Long]]]]], 
@@ -187,7 +187,7 @@ public class TaskBench {
 			val dsets = taskGraphDependenceSets(tg);
 			val dsetForTimestep = dependenceSetsForTimesteps(tg);
 			val taskBench = new TaskBench(dsets, dsetForTimestep);
-			taskBench.checkTaskGraph();
+			taskBench.executeTaskGraph();
 		}
 
 	}

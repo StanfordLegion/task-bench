@@ -75,8 +75,14 @@ class Any;
 namespace x10 { namespace lang { 
 class String;
 } } 
-namespace x10 { namespace lang { 
-template<class TPMGL(T)> class GlobalRef;
+namespace x10 { namespace compiler { 
+class Abort;
+} } 
+namespace x10 { namespace compiler { 
+class CompilerFlags;
+} } 
+namespace x10 { namespace compiler { 
+class Finalization;
 } } 
 namespace x10 { namespace compiler { 
 class Native;
@@ -93,15 +99,12 @@ class NativeCPPCompilationUnit;
 
 class TaskBench_Strings {
   public:
-    static ::x10::lang::String sl__1872;
-    static ::x10::lang::String sl__1865;
-    static ::x10::lang::String sl__1871;
-    static ::x10::lang::String sl__1867;
-    static ::x10::lang::String sl__1869;
-    static ::x10::lang::String sl__1866;
-    static ::x10::lang::String sl__1864;
-    static ::x10::lang::String sl__1870;
     static ::x10::lang::String sl__1868;
+    static ::x10::lang::String sl__1864;
+    static ::x10::lang::String sl__1866;
+    static ::x10::lang::String sl__1867;
+    static ::x10::lang::String sl__1863;
+    static ::x10::lang::String sl__1865;
 };
 
 class TaskBench : public ::x10::lang::X10Class   {
@@ -123,7 +126,7 @@ class TaskBench : public ::x10::lang::X10Class   {
     static ::TaskBench* _make(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dsets,
                               ::x10::lang::Rail< x10_long >* dsetForTimestep);
     
-    virtual void checkTaskGraph();
+    virtual void executeTaskGraph();
     static void executeTaskBench(::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >* taskGraphDependenceSets,
                                  ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* dependenceSetsForTimesteps);
     static ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >*
