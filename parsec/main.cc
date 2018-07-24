@@ -35,6 +35,8 @@
 
 #define USE_CORE_VERIFICATION
 
+char **extra_local_memory;
+
 enum regions {
   TILE_FULL,
 };
@@ -60,19 +62,20 @@ static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
-  float *data1;
+  float *out;
 
-  parsec_dtd_unpack_args(this_task, &payload, &data1);
+  parsec_dtd_unpack_args(this_task, &payload, &out);
 
 #if defined (USE_CORE_VERIFICATION)    
-  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(data1);
+  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(out);
   output->first = payload.i;
   output->second = payload.j;
   Kernel k(payload.graph.kernel);
   k.execute();
 #else   
-  *data1 = 0.0;
-  printf("\nGraph %d, Task 1, rank %d, core %d, i %d, j %d, data1 %f\n", payload.graph_id, this_task->taskpool->context->my_rank, es->core_id, payload.i, payload.j, *data1);
+  *out = 0.0;
+  printf("\nGraph %d, Task1, [%d, %d], rank %d, core %d, out %.2f, local_mem %p\n", 
+        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *out, extra_local_memory[es->core_id]);
 #endif
 
   return PARSEC_HOOK_RETURN_DONE;
@@ -82,24 +85,25 @@ static int test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
-  float *data1, *data2;
+  float *in1, *out;
 
-  parsec_dtd_unpack_args(this_task, &payload, &data1, &data2);
+  parsec_dtd_unpack_args(this_task, &payload, &in1, &out);
 
 #if defined (USE_CORE_VERIFICATION)      
   TaskGraph graph = payload.graph;
-  char *output_ptr = (char*)data2;
+  char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
   std::vector<const char *> input_ptrs;
   std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)data1);
+  input_ptrs.push_back((char*)in1);
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size());
 #else
-  *data2 = *data1 + 1.0;
-  printf("\nGraph %d, Task 2, rank %d, core %d, i %d, j %d, data 1 %f data2 %f\n", payload.graph_id, this_task->taskpool->context->my_rank, es->core_id, payload.i, payload.j, *data1, *data2);
+  *out = *in1 + 1.0;
+  printf("\nGraph %d, Task2, [%d, %d], rank %d, core %d, in1 %.2f out %.2f, local_mem %p\n", 
+        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *out, extra_local_memory[es->core_id]);
 #endif
 
   return PARSEC_HOOK_RETURN_DONE;
@@ -109,27 +113,28 @@ static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
-  float *data1, *data2, *data3;
+  float *in1, *in2, *out;
 
-  parsec_dtd_unpack_args(this_task, &payload, &data1, &data2, &data3);
+  parsec_dtd_unpack_args(this_task, &payload, &in1, &in2, &out);
 
 #if defined (USE_CORE_VERIFICATION)      
   TaskGraph graph = payload.graph;
-  char *output_ptr = (char*)data3;
+  char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
   std::vector<const char *> input_ptrs;
   std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)data1);
+  input_ptrs.push_back((char*)in1);
   input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)data2);
+  input_ptrs.push_back((char*)in2);
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
 
 #else    
-  *data3 = *data1 + *data2 + 1.0;
-  printf("\nGraph %d, Task 3, rank %d, core %d, i %d, j %d, data1 %f, data2 %f, data3 %f\n", payload.graph_id, this_task->taskpool->context->my_rank, es->core_id, payload.i, payload.j, *data1, *data2, *data3);
+  *out = *in1 + *in2 + 1.0;
+  printf("\nGraph %d, Task3, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, out %.2f, local_mem %p\n", 
+        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *out, extra_local_memory[es->core_id]);
 #endif
 
   return PARSEC_HOOK_RETURN_DONE;
@@ -139,28 +144,29 @@ static int test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
-  float *data1, *data2, *data3, *data4;
+  float *in1, *in2, *in3, *out;
 
-  parsec_dtd_unpack_args(this_task, &payload, &data1, &data2, &data3, &data4);
+  parsec_dtd_unpack_args(this_task, &payload, &in1, &in2, &in3, &out);
 
 #if defined (USE_CORE_VERIFICATION)  
   TaskGraph graph = payload.graph;
-  char *output_ptr = (char*)data4;
+  char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
   std::vector<const char *> input_ptrs;
   std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)data1);
+  input_ptrs.push_back((char*)in1);
   input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)data2);
+  input_ptrs.push_back((char*)in2);
   input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)data3);
+  input_ptrs.push_back((char*)in3);
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size());
 #else
-  *data4 = *data1 + *data2 + *data3 + 1.0;
-  printf("\nGraph %d, Task 4, rank %d, core %d, i %d, j %d, data1 %f, data2 %f, data3 %f, data4 %f\n", payload.graph_id, this_task->taskpool->context->my_rank, es->core_id, payload.i, payload.j, *data1, *data2, *data3, *data4);                   
+  *out = *in1 + *in2 + *in3 + 1.0;
+  printf("\nGraph %d, Task4, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, out %.2f, local_mem %p\n", 
+        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *out, extra_local_memory[es->core_id]);                   
 #endif
   
   return PARSEC_HOOK_RETURN_DONE;
@@ -250,7 +256,7 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
 ParsecApp::ParsecApp(int argc, char **argv)
   : App(argc, argv)
 { 
-  int Cseed = 0;
+  int i;
 
   /* Set defaults for non argv iparams */
   iparam_default_gemm(iparam);
@@ -263,21 +269,24 @@ ParsecApp::ParsecApp(int argc, char **argv)
   //sleep(10);
   
   /* Initialize PaRSEC */
-  parsec = setup_parsec(argc, argv, iparam);
-  
   iparam[IPARAM_N] = 4;
   iparam[IPARAM_M] = 4;
   
   parse_arguments(&argc, &argv, iparam);
   
+  parsec = setup_parsec(argc, argv, iparam);
+  
   PASTE_CODE_IPARAM_LOCALS(iparam);
   
+  extra_local_memory = (char**)malloc(sizeof(char*) * cores);
+  for (i = 0; i < cores; i++) {
+    extra_local_memory[i] = (char*)malloc(sizeof(char)*128);
+  }
   
   /* Getting new parsec handle of dtd type */
   dtd_tp = parsec_dtd_taskpool_new();
   
-  for (int i = 0; i < graphs.size(); i++)
-  {
+  for (i = 0; i < graphs.size(); i++) {
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
     
@@ -323,15 +332,25 @@ ParsecApp::ParsecApp(int argc, char **argv)
 
 ParsecApp::~ParsecApp()
 {
+  int i; 
+  
   debug_printf(0, "clean up parsec\n");
+  
+  for (i = 0; i < cores; i++) {
+    if (extra_local_memory[i] != NULL) {
+      free(extra_local_memory[i]);
+      extra_local_memory[i] = NULL;
+    }
+  }
+  free(extra_local_memory);
+  extra_local_memory = NULL;
   
   /* #### PaRSEC context is done #### */
   
   /* Cleaning up the parsec handle */
   parsec_taskpool_free( dtd_tp );
   
-  for (int i = 0; i < graphs.size(); i++)
-  {
+  for (i = 0; i < graphs.size(); i++) {
     matrix_t &mat = mat_array[i];
     
     /* Cleaning data arrays we allocated for communication */
@@ -367,8 +386,7 @@ void ParsecApp::execute_main_loop()
   
   int x, y;
   
-  for (int i = 0; i < graphs.size(); i++)
-  {
+  for (int i = 0; i < graphs.size(); i++) {
     const TaskGraph &g = graphs[i];
     matrix_t &mat = mat_array[i];
 
