@@ -104,24 +104,14 @@ interval_list_t task_graph_dependencies(task_graph_t graph, long dset, long poin
   return wrap_consume(t.dependencies(dset, point));
 }
 
-// void task_graph_execute_point(task_graph_t graph, long timestep, long point,
-//                               char *output_ptr, size_t output_bytes,
-//                               const char **input_ptr, const size_t *input_bytes,
-//                               size_t n_inputs)
-// {
-//   TaskGraph t(graph);
-//   t.execute_point(timestep, point, output_ptr, output_bytes,
-//                   input_ptr, input_bytes, n_inputs);
-// }
-
 void task_graph_execute_point(task_graph_t graph, long timestep, long point,
                               char *output_ptr, size_t output_bytes,
                               const char **input_ptr, const size_t *input_bytes,
-                              size_t n_inputs, char *scratch_ptr, size_t scratch_bytes_per_task)
+                              size_t n_inputs)
 {
   TaskGraph t(graph);
   t.execute_point(timestep, point, output_ptr, output_bytes,
-                  input_ptr, input_bytes, n_inputs, scratch_ptr, scratch_bytes_per_task);
+                  input_ptr, input_bytes, n_inputs);
 }
 
 void interval_list_destroy(interval_list_t intervals)

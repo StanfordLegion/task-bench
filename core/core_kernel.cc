@@ -15,6 +15,7 @@
 
 #include "core.h"
 #include "core_kernel.h"
+#include "timer.h"
 
 void execute_kernel_empty(const Kernel &kernel)
 {
@@ -86,7 +87,7 @@ void execute_kernel_imbalance(const Kernel &kernel)
   	//random pick one task to be compute bound
 
   	// Use current time as seed for random generator
-  	// srand((dsecnd()+myid)); 
+  	srand(Timer::get_cur_time()); 
 
   	long long max_power = rand() % kernel.kernel_arg.max_power;
   	double temp, sum;

@@ -339,7 +339,6 @@ void TaskGraph::execute_point(long timestep, long point,
 
           const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
           assert(input.first == timestep - 1);
-          // printf("input.second=%ld, dep=%ld\n", input.second, dep);
           assert(input.second == dep);
           idx++;
         }
