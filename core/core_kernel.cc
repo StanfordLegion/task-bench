@@ -95,7 +95,7 @@ void execute_kernel_imbalance(const Kernel &kernel)
 
 	for (long iter = 0; iter < kernel.iterations; iter++) {
 		for (long i = 0; i < 128; i++) {
-		    temp = A[i];
+		    temp = ((double) rand() / (RAND_MAX));
 		    sum = temp;
 		    for (long j=0; j<max_power; j++){
 		        temp *=temp;
