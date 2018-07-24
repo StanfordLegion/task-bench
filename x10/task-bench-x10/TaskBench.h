@@ -99,12 +99,12 @@ class NativeCPPCompilationUnit;
 
 class TaskBench_Strings {
   public:
-    static ::x10::lang::String sl__1868;
-    static ::x10::lang::String sl__1864;
-    static ::x10::lang::String sl__1866;
-    static ::x10::lang::String sl__1867;
-    static ::x10::lang::String sl__1863;
-    static ::x10::lang::String sl__1865;
+    static ::x10::lang::String sl__2154;
+    static ::x10::lang::String sl__2152;
+    static ::x10::lang::String sl__2153;
+    static ::x10::lang::String sl__2150;
+    static ::x10::lang::String sl__2149;
+    static ::x10::lang::String sl__2151;
 };
 
 class TaskBench : public ::x10::lang::X10Class   {
@@ -116,23 +116,32 @@ class TaskBench : public ::x10::lang::X10Class   {
     
     ::x10::lang::Rail< x10_long >* FMGL(dsetForTimestep);
     
+    ::x10::lang::Rail< x10_long >* FMGL(widthForTimesteps);
+    
+    ::x10::lang::Rail< x10_long >* FMGL(offsetForTimesteps);
+    
     x10_long FMGL(maxWidth);
     
     ::x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*> FMGL(plh);
     
     void _constructor(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dsets,
-                      ::x10::lang::Rail< x10_long >* dsetForTimestep);
+                      ::x10::lang::Rail< x10_long >* dsetForTimestep,
+                      ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> widthOffsets);
     
     static ::TaskBench* _make(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dsets,
-                              ::x10::lang::Rail< x10_long >* dsetForTimestep);
+                              ::x10::lang::Rail< x10_long >* dsetForTimestep,
+                              ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> widthOffsets);
     
     virtual void executeTaskGraph();
     static void executeTaskBench(::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >* taskGraphDependenceSets,
-                                 ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* dependenceSetsForTimesteps);
+                                 ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* dependenceSetsForTimesteps,
+                                 ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* widthAndOffsetForTimesteps);
     static ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >*
       dependenceSetsFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
     static ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >*
       timestepsFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
+    static ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >*
+      widthAndOffsetFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
     static ::x10::lang::Rail< ::x10::lang::String* >* constructCPPArgs(
       ::x10::lang::Rail< ::x10::lang::String* >* args);
     static void main(::x10::lang::Rail< ::x10::lang::String* >* args);
