@@ -1,0 +1,11 @@
+mainmodule main {
+  readonly CProxy_Main mainProxy;
+
+  extern module subchare;
+
+  mainchare Main {
+    entry Main(CkArgMsg* msg);
+    entry void finishedGraph();
+    entry void workerReady();
+  };
+};
