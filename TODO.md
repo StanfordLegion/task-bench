@@ -1,7 +1,6 @@
 # To Do
 
   * Core API
-      * Specify the result type and size of tasks
       * Load imbalanced tasks
       * Load imbalanced task output
       * Other dependence types
