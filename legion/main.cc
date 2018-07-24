@@ -65,7 +65,7 @@ void get_base_and_size(Runtime *runtime,
                        size_t &bytes)
 {
   UnsafeFieldAccessor<char, 1, coord_t, Realm::AffineAccessor<char, 1, coord_t> > acc(
-    region, req.instance_fields[0]); // ?
+    region, req.instance_fields[0]);
   assert(acc.accessor.strides[0] == sizeof(char));
   base = reinterpret_cast<char *>(acc.ptr(rect.lo));
   bytes = rect.volume();
@@ -86,7 +86,7 @@ void leaf(const Task *task,
   Point<1> point = task->index_point;
 
   Rect<1> output_rect = runtime->get_index_space_domain(
-    regions[0].get_logical_region().get_index_space()); 
+    regions[0].get_logical_region().get_index_space());
   char *output_ptr;
   size_t output_bytes;
   get_base_and_size(runtime, regions[0], task->regions[0], output_rect, output_ptr, output_bytes);
@@ -103,13 +103,12 @@ void leaf(const Task *task,
       size_t bytes;
       get_base_and_size(runtime, regions[1], task->regions[1], rect, ptr, bytes);
       input_ptrs.push_back(ptr);
-      input_bytes.push_back(bytes);    
+      input_bytes.push_back(bytes);
     }
   }
 
   graph.execute_point(timestep, point, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size());
-
 }
 
 void dummy(const Task *task,
@@ -184,7 +183,6 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     std::vector<LogicalPartitionT<1> >secondary_lps;
 
     long ndsets = g.max_dependence_sets();
-
     for (long dset = 0; dset < ndsets; ++dset) {
       IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, ts);
 
@@ -208,10 +206,7 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     primary_partitions.push_back(primary_lp);
     secondary_partitions.push_back(secondary_lps);
   }
-
 }
-
-
 
 void LegionApp::run()
 {
