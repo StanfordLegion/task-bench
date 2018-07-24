@@ -312,6 +312,60 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
 void TaskGraph::execute_point(long timestep, long point,
                               char *output_ptr, size_t output_bytes,
                               const char **input_ptr, const size_t *input_bytes,
+                              size_t n_inputs) const
+{
+  // Validate timestep and point
+  assert(0 <= timestep && timestep < timesteps);
+
+  long offset = offset_at_timestep(timestep);
+  long width = width_at_timestep(timestep);
+  assert(offset <= point && point < offset+width);
+
+  long last_offset = timestep > 0 ? offset_at_timestep(timestep-1) : 0;
+  long last_width = timestep > 0 ? width_at_timestep(timestep-1) : 0;
+
+  // Validate input
+  {
+    size_t idx = 0;
+    long dset = dependence_set_at_timestep(timestep);
+    std::vector<std::pair<long, long> > deps = dependencies(dset, point);
+    for (auto span : deps) {
+      for (long dep = span.first; dep <= span.second; dep++) {
+        if (last_offset <= dep && dep < last_offset + last_width) {
+          assert(idx < n_inputs);
+
+          assert(input_bytes[idx] == output_bytes_per_task);
+          assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
+
+          const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
+          assert(input.first == timestep - 1);
+          assert(input.second == dep);
+          idx++;
+        }
+      }
+    }
+    // FIXME (Elliott): Legion is currently passing in uninitialized
+    // memory for dependencies outside of the last offset/width.
+    // assert(idx == n_inputs);
+  }
+
+  // Validate output
+  assert(output_bytes == output_bytes_per_task);
+  assert(output_bytes >= sizeof(std::pair<long, long>));
+
+  // Generate output
+  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(output_ptr);
+  output->first = timestep;
+  output->second = point;
+
+  // Execute kernel
+  Kernel k(kernel);
+  k.execute();
+}
+
+void TaskGraph::execute_point(long timestep, long point,
+                              char *output_ptr, size_t output_bytes,
+                              const char **input_ptr, const size_t *input_bytes,
                               size_t n_inputs, char *scratch_ptr, size_t scratch_bytes_per_task) const
 {
   // Validate timestep and point

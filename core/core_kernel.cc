@@ -87,7 +87,7 @@ void execute_kernel_imbalance(const Kernel &kernel)
   	//random pick one task to be compute bound
 
   	// Use current time as seed for random generator
-  	srand(Timer::get_cur_time()); 
+  	// srand(Timer::get_cur_time()); 
 
   	long long max_power = rand() % kernel.kernel_arg.max_power;
   	double temp, sum;
@@ -105,7 +105,7 @@ void execute_kernel_imbalance(const Kernel &kernel)
 		}    
 	}
 
-	// printf("execute_kernel_memory! A[127]=%f, max_power=%lld\n", A[127], max_power);
+	// printf("execute_load_imbalance! A[127]=%f, max_power=%lld\n", A[127], max_power);
 
 }
 
