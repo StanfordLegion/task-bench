@@ -161,16 +161,12 @@ int main (int argc, char *argv[])
           TaskGraph graph = graphs[i];
           size_t output_bytes = graph.output_bytes_per_task;
           char *output_ptr = output_ptrs[i];
-          int current_buf = -1;
-          bool looped_buffers = false;
+          int current_buf = 0;
+          //bool looped_buffers = false;
 
           for (long timestep = 0L; timestep < graph.timesteps; timestep += 1)
             {
-              if (++current_buf == NUM_BUFFERS)
-                {
-                  current_buf = 0;
-                  looped_buffers = true;
-                }
+              
               long old_dset = graph.dependence_set_at_timestep(timestep);
               long dset = graph.dependence_set_at_timestep(timestep+1);
               int num_inputs = graph_num_inputs[i][old_dset];
@@ -185,7 +181,6 @@ int main (int argc, char *argv[])
                   /* Sends */
                   /* Only send if you are in the current timestep of the graph */
 		  int size;
-                  if (looped_buffers) MPI_Buffer_detach(&graph_buffers[i][current_buf], &size);
                   MPI_Buffer_attach(graph_buffers[i][current_buf], (output_bytes + MPI_BSEND_OVERHEAD) * max_num_deps[i]);
 
                   for (std::pair<long, long> interval: graph_rev_deps[i][dset])
@@ -214,7 +209,8 @@ int main (int argc, char *argv[])
                           idx++;
                         }
                     }
-                }
+	      	}
+		MPI_Buffer_detach(&graph_buffers[i][current_buf], &size);
             }
         }
       MPI_Barrier(MPI_COMM_WORLD);
