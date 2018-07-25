@@ -15,7 +15,6 @@
 
 #include "core.h"
 #include "core_kernel.h"
-#include "timer.h"
 
 void execute_kernel_empty(const Kernel &kernel)
 {
