@@ -49,7 +49,6 @@ void execute_kernel_memory(const Kernel &kernel)
             }
         }   
     }
-
     // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
 }
 
@@ -62,7 +61,7 @@ void execute_kernel_compute(const Kernel &kernel)
 
 	for (long iter = 0; iter < kernel.iterations; iter++) {
 		for (long i = 0; i < 128; i++) {
-		    temp = A[i];
+		    temp = ((double) rand() / (RAND_MAX));
 		    sum = temp;
 		    for (long j=0; j<max_power; j++){
 		        temp *=temp;
@@ -71,9 +70,7 @@ void execute_kernel_compute(const Kernel &kernel)
 		    A[i] = sum;
 		}    
 	}
-
 	// printf("execute_kernel_memory! A[127]=%f, max_power=%lld\n", A[127], max_power);
-
 }
 
 void execute_kernel_io(const Kernel &kernel)
@@ -103,9 +100,7 @@ void execute_kernel_imbalance(const Kernel &kernel)
 		    A[i] = sum;
 		}    
 	}
-
 	// printf("execute_load_imbalance! A[127]=%f, max_power=%lld\n", A[127], max_power);
-
 }
 
 // -- add by Yuankun
