@@ -6,5 +6,4 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-cd ../..
 DEBUG=0 srun ./build_all.sh
