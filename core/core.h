@@ -51,6 +51,11 @@ struct TaskGraph : public task_graph_t {
                      char *output_ptr, size_t output_bytes,
                      const char **input_ptr, const size_t *input_bytes,
                      size_t n_inputs) const;
+
+  void execute_point(long timestep, long point,
+                     char *output_ptr, size_t output_bytes,
+                     const char **input_ptr, const size_t *input_bytes,
+                     size_t n_inputs, char *scratch_ptr, size_t scratch_bytes_per_task) const;
 };
 
 struct App {

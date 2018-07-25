@@ -107,8 +107,10 @@ void leaf(const Task *task,
     }
   }
 
+  char *scratch_ptr = (char *) malloc(graph.kernel.kernel_arg.scratch_bytes_per_task);
   graph.execute_point(timestep, point, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), 
+                      scratch_ptr, graph.kernel.kernel_arg.scratch_bytes_per_task);
 }
 
 void dummy(const Task *task,

@@ -56,3 +56,11 @@ if [[ $USE_PARSEC -eq 1 ]]; then
     make -C parsec clean
     make -C parsec -j$THREADS
 fi
+
+if [[ $USE_CHARM -eq 1 ]]; then
+    pushd "$CHARM_DIR"
+    ./build charm++ $CHARM_VERSION --with-production
+    popd
+    make -C charm++ clean
+    make -C charm++
+fi 

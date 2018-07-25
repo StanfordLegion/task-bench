@@ -9,6 +9,7 @@ cd task-bench
 ./build_all.sh
 ./legion/task_bench -steps 9 -type dom
 
-./task_bench -steps 4 -type fft -width 4 -kernel compute_bound -num_src_input 1 -size 512 -max_power 200 -iter 20
-./task_bench -steps 4 -type dom -width 4 -kernel memory_bound -num_src_input 2 -size 512 -jump 64 -iter 2000
+./task_bench -steps 4 -type fft -width 4 -kernel compute_bound -max_power 200 -iter 20
+./task_bench -steps 4 -type fft -width 4 -kernel memory_bound -size 8192 -jump 256 -iter 20
+./task_bench -steps 4 -type fft -width 4 -kernel load_imbalance -max_power 200 -iter 20
 ```

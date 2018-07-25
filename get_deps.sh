@@ -7,6 +7,7 @@ USE_GASNET=${USE_GASNET:-0}
 USE_LEGION=${USE_LEGION:-1}
 USE_STARPU=${USE_STARPU:-1}
 USE_PARSEC=${USE_PARSEC:-1}
+USE_CHARM=${USE_CHARM:-1}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -70,3 +71,15 @@ EOF
     mkdir -p "$PARSEC_DL_DIR"
     git clone https://wwu12@bitbucket.org/wwu12/parsec.git "$PARSEC_DL_DIR" 
 fi
+
+if [[ $USE_CHARM -eq 1 ]]; then
+    export CHARM_DIR="$PWD"/deps/charm++
+    cat >>deps/env.sh <<EOF
+export CHARM_VERSION=${CHARM_VERSION:-netlrts-linux-x86_64}
+export USE_CHARM=$USE_CHARM
+export CHARM_DIR=$CHARM_DIR
+EOF
+    mkdir -p "$CHARM_DIR"
+    git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_DIR"
+fi
+

@@ -35,3 +35,9 @@ if [[ $USE_PARSEC -eq 1 ]]; then
     done
 fi
 
+if [[ $USE_CHARM -eq 1 ]]; then
+    for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree fft all_to_all; do
+        ./charm++/charmrun +p1 ++mpiexec ./charm++/benchmark -steps 9 -type $t
+    done
+    rm charmrun.*
+fi

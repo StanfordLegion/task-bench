@@ -45,12 +45,9 @@ typedef enum kernel_type_t {
 
 //-- add by Yuankun
 typedef struct kernel_arg_t{
-  char **input_data;
+  char *scratch_ptr;
   long num_src_input;
-  size_t *input_bytes_per_src;
-
-  char *output_data;
-  size_t output_bytes;
+  size_t scratch_bytes_per_task;
 
   long max_power; // compute kernel parameter
   long jump;  // memeory kernel parameter

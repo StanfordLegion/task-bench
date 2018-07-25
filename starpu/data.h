@@ -55,7 +55,7 @@ struct starpu_ddesc_s {
 };
 
 
-starpu_ddesc_t* create_and_distribute_data(int rank, int world, int mb, int nb, int mt, int nt, int p, int q);
+starpu_ddesc_t* create_and_distribute_data(int rank, int world, int mb, int nb, int mt, int nt, int p, int q, int desc_id);
 
 void destroy_data(starpu_ddesc_t *ddesc);
 
