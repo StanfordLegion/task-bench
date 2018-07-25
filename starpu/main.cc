@@ -471,7 +471,7 @@ void StarPUApp::debug_printf(int verbose_level, const char *format, ...)
 
 int main(int argc, char **argv)
 {
-  printf("pid %d, %d\n", getpid(), STARPU_NMAXBUFS);
+ // printf("pid %d, %d\n", getpid(), STARPU_NMAXBUFS);
  // sleep(10); 
 
   
