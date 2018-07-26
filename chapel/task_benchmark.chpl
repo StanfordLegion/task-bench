@@ -5,7 +5,7 @@ var t: Timer;
 config const dataSize = 10;
 config const numNeighbors = 3;
 
-
+//test comment 
  /*
   * Extern block for the 'core_c.h' file.
   * The file 'core_c.h' contains the nessicary functions for 
