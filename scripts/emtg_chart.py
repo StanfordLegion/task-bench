@@ -34,10 +34,10 @@ _columns = collections.OrderedDict([
 def same(values):
     return all(value == values[0] for value in values)
 
-def analyze(filename, cores, threshold):
+def analyze(filename, nodes, cores, threshold):
     compute = collections.OrderedDict([
         ('scale_factor', lambda t: t['iterations'][0] / t['iterations']),
-        ('time_per_task', lambda t: t['elapsed'] / t['tasks'] * cores * 1000),
+        ('time_per_task', lambda t: t['elapsed'] / t['tasks'] * nodes * cores * 1000),
         ('efficiency', lambda t: t['elapsed'][0] / (t['elapsed'] * t['scale_factor'])),
     ])
 
@@ -86,10 +86,10 @@ def analyze(filename, cores, threshold):
 
     return min_time
 
-def driver(inputs, summary, cores, threshold):
+def driver(inputs, summary, nodes, cores, threshold):
     min_times = []
     for filename in inputs:
-        min_times.append(analyze(filename, cores, threshold))
+        min_times.append(analyze(filename, nodes, cores, threshold))
     if summary:
         with open(summary, 'w') as f:
             out = csv.writer(f)
@@ -101,6 +101,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('inputs', nargs='+')
     parser.add_argument('-c', '--cores', type=int, required=True)
+    parser.add_argument('-n', '--nodes', type=int, required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('-s', '--summary')
     args = parser.parse_args()

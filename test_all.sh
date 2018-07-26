@@ -26,12 +26,18 @@ fi
 if [[ $USE_STARPU -eq 1 ]]; then
     for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree fft; do
         mpirun -np 1 ./starpu/main -steps 9 -type $t
+        mpirun -np 4 ./starpu/main -steps 9 -type $t -p 1
+        mpirun -np 4 ./starpu/main -steps 9 -type $t -p 2
+        mpirun -np 4 ./starpu/main -steps 9 -type $t -p 4
     done
 fi
 
 if [[ $USE_PARSEC -eq 1 ]]; then
     for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree fft; do
         mpirun -np 1 ./parsec/main -steps 9 -type $t
+        mpirun -np 4 ./parsec/main -steps 9 -type $t -p 1
+        mpirun -np 4 ./parsec/main -steps 9 -type $t -p 2
+        mpirun -np 4 ./parsec/main -steps 9 -type $t -p 4
     done
 fi
 

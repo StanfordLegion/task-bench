@@ -13,12 +13,11 @@ function launch {
 function sweep {
     for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
         $1 $2 -kernel busy_wait -iter $(( 1 << (24-s) )) -type $3 -steps 1000
-        $1 $2 -kernel busy_wait -iter $(( 3 << (22-s) )) -type $3 -steps 1000
     done
 }
 
 for n in 4 2 1; do
-    for t in trivial no_comm stencil_1d stencil_1d_periodic; do
+    for t in stencil_1d; do
         sweep launch $n $t > parsec_type_${t}_nodes_${n}.log
     done
 done

@@ -59,7 +59,7 @@ inline static int getrankof_2d(const starpu_ddesc_t *desc, int m, int n)
 
 static void desc_init( starpu_ddesc_t *ddesc, int dtyp, int mb, int nb, int bsiz,
                 int lm, int ln, int i, int j,
-                int m,  int n,  int p, int q, int my_rank)
+                int m,  int n,  int p, int q, int my_rank, int desc_id)
 {
   ddesc->get_blkaddr = getaddr_ccrb;
   ddesc->get_blkldd  = getblkldd_ccrb;
@@ -87,7 +87,7 @@ static void desc_init( starpu_ddesc_t *ddesc, int dtyp, int mb, int nb, int bsiz
   ddesc->mt = (m == 0) ? 0 : (i+m-1)/mb - i/mb + 1;
   ddesc->nt = (n == 0) ? 0 : (j+n-1)/nb - j/nb + 1;
 
-  ddesc->id = 0;
+  ddesc->id = desc_id;
   ddesc->occurences = 0;
   ddesc->use_mat = 1;
   ddesc->alloc_mat = 1;
@@ -272,13 +272,13 @@ starpu_data_handle_t starpu_desc_getaddr( starpu_ddesc_t *desc, int m, int n )
   return (*ptrtile);
 }
 
-starpu_ddesc_t* create_and_distribute_data(int rank, int world, int mb, int nb, int mt, int nt, int p, int q)
+starpu_ddesc_t* create_and_distribute_data(int rank, int world, int mb, int nb, int mt, int nt, int p, int q, int desc_id)
 {
   starpu_ddesc_t *ddesc = (starpu_ddesc_t *)malloc(sizeof(starpu_ddesc_t));
 
   int m = mb * mt;
   int n = nb * nt;
-  desc_init(ddesc, 1, mb, nb, mb*nb, m, n, 0, 0, m, n, p, q, rank);
+  desc_init(ddesc, 1, mb, nb, mb*nb, m, n, 0, 0, m, n, p, q, rank, desc_id);
  // desc_init(ddesc, 1, mb, 1, mb, mt*mb, 1, 0, 0, mt*mb, 1, world, 1, rank);
 
   size_t size = (size_t)(ddesc->llm) * (size_t)(ddesc->lln)
@@ -303,4 +303,9 @@ void destroy_data(starpu_ddesc_t *ddesc)
   starpu_mat_free( ddesc->mat, size );
   free(ddesc);
   ddesc = NULL;
+}
+
+int desc_islocal(const starpu_ddesc_t *A, int m, int n)
+{
+  return (A->myrank == A->get_rankof(A, m, n));
 }
