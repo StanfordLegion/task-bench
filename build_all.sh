@@ -37,7 +37,7 @@ if [[ $USE_LEGION -eq 1 ]]; then
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
-    STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples"
+    STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples "
     if [[ $STARPU_ENABLE_HWLOC -eq 1 ]]; then
       STARPU_CONFIGURE_FLAG+="" 
     else
