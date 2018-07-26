@@ -260,12 +260,11 @@ ParsecApp::ParsecApp(int argc, char **argv)
 
   /* Set defaults for non argv iparams */
   iparam_default_gemm(iparam);
-  iparam_default_ibnbmb(iparam, 0, 4, 4);
+  iparam_default_ibnbmb(iparam, 0, 2, 2);
 #if defined(HAVE_CUDA) && 1
   iparam[IPARAM_NGPUS] = 0;
 #endif
   
-  debug_printf(0, "init parsec, pid %d\n", getpid());
   //sleep(10);
   
   /* Initialize PaRSEC */
@@ -277,6 +276,8 @@ ParsecApp::ParsecApp(int argc, char **argv)
   parsec = setup_parsec(argc, argv, iparam);
   
   PASTE_CODE_IPARAM_LOCALS(iparam);
+  
+  debug_printf(0, "init parsec, pid %d\n", getpid());
   
   extra_local_memory = (char**)malloc(sizeof(char*) * cores);
   for (i = 0; i < cores; i++) {

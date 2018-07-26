@@ -304,7 +304,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   int i;
   
   P = 1;
-  MB = 10;
+  MB = 2;
   nb_cores = 1;
   
   parse_argument(argc, argv);
