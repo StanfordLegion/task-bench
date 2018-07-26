@@ -17,7 +17,7 @@ function sweep {
 }
 
 for n in 4 2 1; do
-    for t in trivial no_comm stencil_1d stencil_1d_periodic; do
+    for t in stencil_1d; do
         sweep launch $n $t > parsec_type_${t}_nodes_${n}.log
     done
 done
