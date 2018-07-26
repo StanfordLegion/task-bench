@@ -37,8 +37,14 @@ if [[ $USE_LEGION -eq 1 ]]; then
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
+    STARPU_CONFIGURE_FLAG = --disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples
+    if [[ $STARPU_ENABLE_HWLOC -eq 1 ]]; then
+      STARPU_HWLOC_FLAG = 
+    else
+      STARPU_CONFIGURE_FLAG += --without-hwloc
+    fi 
     pushd "$STARPU_SRC_DIR"
-    ./configure --prefix=$STARPU_DIR --disable-cuda --disable-opencl --without-hwloc --disable-fortran --disable-build-tests --disable-build-examples
+    ./configure --prefix=$STARPU_DIR $STARPU_CONFIGURE_FLAG
     make -j$THREADS
     make install
     popd
