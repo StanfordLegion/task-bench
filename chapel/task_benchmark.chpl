@@ -1,4 +1,5 @@
 use Time;
+use BlockDist;
 config const quiet: bool = false;
 var t: Timer;
 
@@ -7,7 +8,7 @@ config const numNeighbors = 3;
 
  /*
   * Extern block for the 'core_c.h' file.
-  * The file 'core_c.h' contains the nessicary functions for 
+  * The file 'core_c.h' contains the functions for 
   * creating and running variious task graphs
   */
   extern {
@@ -37,7 +38,7 @@ config const numNeighbors = 3;
     //writeln("tasksArray: ", tasksArray);
 
     var tasksGrid = init_env(totalWidth);
-    // have an grid of atomic variables that are all set to 0
+    // have an cube of atomic variables that are all set to 0
     var atomicCube: [1..totalWidth][1..totalWidth][1..totalSteps] atomic int;
     // a cube of all of the neighboring array
     var depenCube: [1..dataSize][1..totalWidth][1..totalSteps] int;
