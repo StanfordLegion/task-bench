@@ -20,7 +20,7 @@ config const numNeighbors = 3;
  // command line to build and run program  
  // chpl core_c.h -lcore -L. task_benchmark.chpl
  // LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. ./task_benchmark -nl 1 -type trivial
-  // bebug line           compilerError( "tmp.type: ", (tmp.type : string ) );
+ // bebug line:          compilerError( "tmp.type: ", (tmp.type : string ) );
 
 
   proc main(args: [] string) {
