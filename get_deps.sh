@@ -4,6 +4,7 @@ set -e
 
 TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-1}
 USE_GASNET=${USE_GASNET:-0}
+USE_HWLOC=${USE_HWLOC:-1}
 USE_LEGION=${USE_LEGION:-1}
 USE_STARPU=${USE_STARPU:-1}
 USE_PARSEC=${USE_PARSEC:-1}
@@ -38,6 +39,19 @@ export GASNET="$GASNET_DIR"/release
 export CONDUIT=$CONDUIT
 EOF
     git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
+fi
+
+if [[ $USE_HWLOC -eq 1 ]]; then
+    export HWLOC_DL_DIR="$PWD"/deps/hwloc
+    cat >>deps/env.sh <<EOF
+export USE_HWLOC=$USE_HWLOC
+export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
+export HWLOC_DIR=$HWLOC_DL_DIR
+EOF
+    wget https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
+    mkdir -p "$HWLOC_DL_DIR"
+    tar -zxf hwloc-1.11.10.tar.gz -C "$HWLOC_DL_DIR"
+    rm -rf hwloc-1.11.10.tar.gz
 fi
 
 if [[ $USE_LEGION -eq 1 ]]; then
