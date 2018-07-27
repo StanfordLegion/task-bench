@@ -52,7 +52,7 @@ if [[ $USE_STARPU -eq 1 ]]; then
       STARPU_CONFIGURE_FLAG+="--without-hwloc"
     fi 
     pushd "$STARPU_SRC_DIR"
-    PATH=$HWLOC_DIR/bin:$PATH LD_LIBRARY_PATH=$HWLOC_DIR/lib:$LD_LIBRARY_PATH ./configure --prefix=$STARPU_DIR $STARPU_CONFIGURE_FLAG
+    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ./configure --prefix=$STARPU_DIR $STARPU_CONFIGURE_FLAG
     make -j$THREADS
     make install
     popd

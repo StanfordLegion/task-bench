@@ -2,13 +2,13 @@
 
 set -e
 
-TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-1}
+TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-0}
 USE_GASNET=${USE_GASNET:-0}
 USE_HWLOC=${USE_HWLOC:-1}
-USE_LEGION=${USE_LEGION:-1}
+USE_LEGION=${USE_LEGION:-0}
 USE_STARPU=${USE_STARPU:-1}
 USE_PARSEC=${USE_PARSEC:-1}
-USE_CHARM=${USE_CHARM:-1}
+USE_CHARM=${USE_CHARM:-0}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
