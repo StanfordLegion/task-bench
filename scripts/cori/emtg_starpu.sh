@@ -1,5 +1,7 @@
 #!/bin/bash
-#SBATCH --partition=aaiken
+#SBATCH --account=m2872
+#SBATCH --qos=regular
+#SBATCH --constraint=haswell
 #SBATCH --cpus-per-task=20
 #SBATCH --exclusive
 #SBATCH --time=01:00:00
@@ -8,7 +10,7 @@
 cores=$SLURM_JOB_CPUS_PER_NODE
 
 function launch {
-    srun -n $1 -N $1 --cpu_bind none ../../parsec/main "${@:2}" -width $(( $1 * cores )) -c $cores -p 1
+    srun -n $1 -N $1 --cpu_bind none ../../starpu/main "${@:2}" -width $(( $1 * cores )) -core $cores -p 1
 }
 
 function sweep {
@@ -21,6 +23,6 @@ function sweep {
 
 for n in $SLURM_JOB_NUM_NODES; do
     for t in stencil_1d; do
-        sweep launch $n $t > parsec_type_${t}_nodes_${n}.log
+        sweep launch $n $t > starpu_type_${t}_nodes_${n}.log
     done
 done

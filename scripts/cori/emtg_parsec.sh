@@ -1,5 +1,7 @@
 #!/bin/bash
-#SBATCH --partition=aaiken
+#SBATCH --account=m2872
+#SBATCH --qos=regular
+#SBATCH --constraint=haswell
 #SBATCH --cpus-per-task=20
 #SBATCH --exclusive
 #SBATCH --time=01:00:00

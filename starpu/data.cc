@@ -304,3 +304,8 @@ void destroy_data(starpu_ddesc_t *ddesc)
   free(ddesc);
   ddesc = NULL;
 }
+
+int desc_islocal(const starpu_ddesc_t *A, int m, int n)
+{
+  return (A->myrank == A->get_rankof(A, m, n));
+}

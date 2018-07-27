@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "legion.h"
+#include "mappers/default_mapper.h"
 
 #include "core.h"
 
@@ -41,6 +42,7 @@ enum TaskIDs {
 // number is configured at runtime.
 constexpr long STATIC_NUM_FIELDS = 100;
 constexpr long DEFAULT_NUM_FIELDS = 10;
+constexpr bool DEFAULT_EXACT_INSTANCE = false;
 static_assert(DEFAULT_NUM_FIELDS < STATIC_NUM_FIELDS,
               "DEFAULT_NUM_FIELDS is out of bounds");
 
@@ -134,6 +136,7 @@ private:
   Runtime *runtime;
   Context ctx;
   long num_fields;
+  bool exact_instance;
   std::vector<LogicalRegionT<1> > regions;
   std::vector<LogicalPartitionT<1> > primary_partitions;
   std::vector<std::vector<LogicalPartitionT<1> > > secondary_partitions;
@@ -144,6 +147,7 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
   , runtime(runtime)
   , ctx(ctx)
   , num_fields(DEFAULT_NUM_FIELDS)
+  , exact_instance(DEFAULT_EXACT_INSTANCE)
 {
   int argc = Runtime::get_input_args().argc;
   char **argv = Runtime::get_input_args().argv;
@@ -157,6 +161,9 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
         abort();
       }
       num_fields = value;
+    }
+    else if (!strcmp(argv[i], "-exact")) {
+      exact_instance = true;
     }
   }
 
@@ -233,9 +240,20 @@ void LegionApp::run()
   }
 }
 
+template<typename T>
+T gcd(T a, T b)
+{
+  while (b != 0)
+  {
+    T old_b = b;
+    b = a % b;
+    a = old_b;
+  }
+  return a;
+}
+
 static long lcm(long a, long b) {
-  // Hack: Workaround to avoid needing C++17
-  return a * b / std::__gcd(a, b);
+  return a * b / gcd(a, b);
 }
 
 void LegionApp::execute_main_loop()
@@ -288,6 +306,7 @@ void LegionApp::execute_timestep(size_t idx, long t)
   payload.primary_partition = primary.get_index_partition();
   IndexLauncher launcher(TID_LEAF, bounds,
                          TaskArgument(&payload, sizeof(payload)), ArgumentMap());
+  MappingTagID tag = exact_instance ? Legion::Mapping::DefaultMapper::EXACT_REGION : 0;
   // This needs to be write-discard so that we don't catch a
   // dependence on the same point in the previous timestep, unless
   // that task is an explicit dependence. Note: there may still be a
@@ -295,12 +314,12 @@ void LegionApp::execute_timestep(size_t idx, long t)
   // different instances.
   launcher.add_region_requirement(
     RegionRequirement(primary, 0 /* default projection */,
-                      WRITE_DISCARD, EXCLUSIVE, region)
+                      WRITE_DISCARD, EXCLUSIVE, region, tag)
     .add_field(fout));
   if (dset < g.max_dependence_sets()) {
     launcher.add_region_requirement(
       RegionRequirement(secondary[dset], 0 /* default projection */,
-                        READ_ONLY, EXCLUSIVE, region)
+                        READ_ONLY, EXCLUSIVE, region, tag)
       .add_field(fin));
   }
   runtime->execute_index_space(ctx, launcher);

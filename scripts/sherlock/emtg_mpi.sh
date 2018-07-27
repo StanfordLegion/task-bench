@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=aaiken
-#SBATCH --cpus-per-task=20
+#SBATCH --ntasks-per-node=20
+#SBATCH --cpus-per-task=1
 #SBATCH --exclusive
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
@@ -8,7 +9,7 @@
 cores=$SLURM_JOB_CPUS_PER_NODE
 
 function launch {
-    srun -n $1 -N $1 --cpu_bind none ../../parsec/main "${@:2}" -width $(( $1 * cores )) -c $cores -p 1
+    srun -n $(( $1 * cores )) -N $1 --cpu_bind cores ../../mpi/nonblock "${@:2}" -width $(( $1 * cores ))
 }
 
 function sweep {
@@ -21,6 +22,6 @@ function sweep {
 
 for n in $SLURM_JOB_NUM_NODES; do
     for t in stencil_1d; do
-        sweep launch $n $t > parsec_type_${t}_nodes_${n}.log
+        sweep launch $n $t > mpi_nonblock_type_${t}_nodes_${n}.log
     done
 done
