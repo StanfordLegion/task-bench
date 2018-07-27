@@ -23,17 +23,16 @@
 #include <string>
 
 #include "core.h"
-
-void execute_kernel_empty(const Kernel &kernel)
-{
-  // Do nothing...
-}
+#include "core_kernel.h"
 
 void Kernel::execute() const
 {
   switch(type) {
   case KernelType::EMPTY:
     execute_kernel_empty(*this);
+    break;
+  case KernelType::BUSY_WAIT:
+    execute_kernel_busy_wait(*this);
     break;
   default:
     assert(false && "unimplemented kernel type");
@@ -46,6 +45,7 @@ static const std::map<std::string, KernelType> &ktype_by_name()
 
   if (types.empty()) {
     types["empty"] = KernelType::EMPTY;
+    types["busy_wait"] = KernelType::BUSY_WAIT;
     types["memory_bound"] = KernelType::MEMORY_BOUND;
     types["compute_bound"] = KernelType::COMPUTE_BOUND;
   }
@@ -130,7 +130,7 @@ long TaskGraph::width_at_timestep(long timestep) const
     return std::min(max_width,
                     std::min(timestep + 1, timesteps - timestep));
   case DependenceType::TREE:
-    return std::min(max_width, 1L << timestep);
+    return std::min(max_width, 1L << std::min(timestep, 62L));
   case DependenceType::FFT:
   case DependenceType::ALL_TO_ALL:
     return max_width;
@@ -295,6 +295,60 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
   return deps;
 }
 
+void TaskGraph::execute_point(long timestep, long point,
+                              char *output_ptr, size_t output_bytes,
+                              const char **input_ptr, const size_t *input_bytes,
+                              size_t n_inputs) const
+{
+  // Validate timestep and point
+  assert(0 <= timestep && timestep < timesteps);
+
+  long offset = offset_at_timestep(timestep);
+  long width = width_at_timestep(timestep);
+  assert(offset <= point && point < offset+width);
+
+  long last_offset = timestep > 0 ? offset_at_timestep(timestep-1) : 0;
+  long last_width = timestep > 0 ? width_at_timestep(timestep-1) : 0;
+
+  // Validate input
+  {
+    size_t idx = 0;
+    long dset = dependence_set_at_timestep(timestep);
+    std::vector<std::pair<long, long> > deps = dependencies(dset, point);
+    for (auto span : deps) {
+      for (long dep = span.first; dep <= span.second; dep++) {
+        if (last_offset <= dep && dep < last_offset + last_width) {
+          assert(idx < n_inputs);
+
+          assert(input_bytes[idx] == output_bytes_per_task);
+          assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
+
+          const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
+          assert(input.first == timestep - 1);
+          assert(input.second == dep);
+          idx++;
+        }
+      }
+    }
+    // FIXME (Elliott): Legion is currently passing in uninitialized
+    // memory for dependencies outside of the last offset/width.
+    // assert(idx == n_inputs);
+  }
+
+  // Validate output
+  assert(output_bytes == output_bytes_per_task);
+  assert(output_bytes >= sizeof(std::pair<long, long>));
+
+  // Generate output
+  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(output_ptr);
+  output->first = timestep;
+  output->second = point;
+
+  // Execute kernel
+  Kernel k(kernel);
+  k.execute();
+}
+
 static TaskGraph default_graph()
 {
   TaskGraph graph;
@@ -303,6 +357,7 @@ static TaskGraph default_graph()
   graph.max_width = 4;
   graph.dependence = DependenceType::TRIVIAL;
   graph.kernel = {KernelType::EMPTY, 0};
+  graph.output_bytes_per_task = sizeof(std::pair<long, long>);
 
   return graph;
 }

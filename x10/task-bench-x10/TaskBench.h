@@ -3,7 +3,9 @@
 
 #include <x10rt.h>
 
+#include "/home/users/nicolaig/task-bench/x10/task-bench-x10/core/timer.h"
 #include "/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core.h"
+#include "/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core_kernel.h"
 
 #define X10_UTIL_PAIR_H_NODEPS
 #include <x10/util/Pair.h>
@@ -14,6 +16,15 @@
 #define X10_LANG_LONG_H_NODEPS
 #include <x10/lang/Long.h>
 #undef X10_LANG_LONG_H_NODEPS
+#define X10_UTIL_PAIR_H_NODEPS
+#include <x10/util/Pair.h>
+#undef X10_UTIL_PAIR_H_NODEPS
+#define X10_LANG_INT_H_NODEPS
+#include <x10/lang/Int.h>
+#undef X10_LANG_INT_H_NODEPS
+#define X10_UTIL_PAIR_H_NODEPS
+#include <x10/util/Pair.h>
+#undef X10_UTIL_PAIR_H_NODEPS
 #define X10_LANG_PLACELOCALHANDLE_H_NODEPS
 #include <x10/lang/PlaceLocalHandle.h>
 #undef X10_LANG_PLACELOCALHANDLE_H_NODEPS
@@ -54,6 +65,9 @@ template<class TPMGL(T)> class GlobalRail;
 namespace x10 { namespace lang { 
 class FailedDynamicCheckException;
 } } 
+namespace x10 { namespace lang { 
+template<class TPMGL(T)> class GlobalRef;
+} } 
 namespace x10 { namespace compiler { 
 class AsyncClosure;
 } } 
@@ -63,17 +77,8 @@ class Runtime__Profile;
 namespace x10 { namespace lang { 
 class CheckedThrowable;
 } } 
-namespace x10 { namespace io { 
-class Printer;
-} } 
-namespace x10 { namespace io { 
-class Console;
-} } 
-namespace x10 { namespace lang { 
-class Any;
-} } 
-namespace x10 { namespace lang { 
-class String;
+namespace x10 { namespace compiler { 
+class Native;
 } } 
 namespace x10 { namespace compiler { 
 class Abort;
@@ -84,8 +89,17 @@ class CompilerFlags;
 namespace x10 { namespace compiler { 
 class Finalization;
 } } 
-namespace x10 { namespace compiler { 
-class Native;
+namespace x10 { namespace lang { 
+class String;
+} } 
+namespace x10 { namespace io { 
+class Printer;
+} } 
+namespace x10 { namespace io { 
+class Console;
+} } 
+namespace x10 { namespace lang { 
+class Any;
 } } 
 namespace x10 { namespace compiler { 
 class Synthetic;
@@ -99,12 +113,13 @@ class NativeCPPCompilationUnit;
 
 class TaskBench_Strings {
   public:
-    static ::x10::lang::String sl__2154;
-    static ::x10::lang::String sl__2152;
-    static ::x10::lang::String sl__2153;
-    static ::x10::lang::String sl__2150;
-    static ::x10::lang::String sl__2149;
-    static ::x10::lang::String sl__2151;
+    static ::x10::lang::String sl__3633;
+    static ::x10::lang::String sl__3636;
+    static ::x10::lang::String sl__3632;
+    static ::x10::lang::String sl__3634;
+    static ::x10::lang::String sl__3630;
+    static ::x10::lang::String sl__3631;
+    static ::x10::lang::String sl__3635;
 };
 
 class TaskBench : public ::x10::lang::X10Class   {
@@ -122,26 +137,26 @@ class TaskBench : public ::x10::lang::X10Class   {
     
     x10_long FMGL(maxWidth);
     
+    ::x10::util::Pair<x10_int, x10_long> FMGL(kernel);
+    
     ::x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*> FMGL(plh);
     
     void _constructor(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dsets,
                       ::x10::lang::Rail< x10_long >* dsetForTimestep,
-                      ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> widthOffsets);
+                      ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> widthOffsets,
+                      ::x10::util::Pair<x10_int, x10_long> kernel);
     
     static ::TaskBench* _make(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dsets,
                               ::x10::lang::Rail< x10_long >* dsetForTimestep,
-                              ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> widthOffsets);
+                              ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> widthOffsets,
+                              ::x10::util::Pair<x10_int, x10_long> kernel);
     
+    void kernelExecute(x10_int kernelType, x10_long iterations);
     virtual void executeTaskGraph();
-    static void executeTaskBench(::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >* taskGraphDependenceSets,
-                                 ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* dependenceSetsForTimesteps,
-                                 ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* widthAndOffsetForTimesteps);
-    static ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >*
-      dependenceSetsFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
-    static ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >*
-      timestepsFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
-    static ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >*
-      widthAndOffsetFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
+    static x10_double getTime();
+    static x10_double executeTaskBench(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
+    static void appReport(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail,
+                          x10_double time);
     static ::x10::lang::Rail< ::x10::lang::String* >* constructCPPArgs(
       ::x10::lang::Rail< ::x10::lang::String* >* args);
     static void main(::x10::lang::Rail< ::x10::lang::String* >* args);
