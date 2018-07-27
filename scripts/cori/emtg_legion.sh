@@ -7,18 +7,30 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-cores=$(( SLURM_JOB_CPUS_PER_NODE - 2 ))
+cores=$(( (SLURM_JOB_CPUS_PER_NODE / 2) - 2 ))
 
 function launch_util_0 {
-     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 0 -dm:memoize -lg:parallel_replay $cores
+    memoize=
+    if [[ $1 > 1 ]]; then
+        memoize="-dm:memoize -lg:parallel_replay $cores"
+    fi
+    srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 0 $memoize
 }
 
 function launch_util_1 {
-     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 1 -ll:pin_util -dm:memoize
+    memoize=
+    if [[ $1 > 1 ]]; then
+        memoize="-dm:memoize"
+    fi
+     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize
 }
 
 function launch_util_2 {
-     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 2 -dm:memoize
+    memoize=
+    if [[ $1 > 1 ]]; then
+        memoize="-dm:memoize"
+    fi
+     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 2 $memoize
 }
 
 function sweep {

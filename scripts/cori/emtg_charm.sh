@@ -2,13 +2,13 @@
 #SBATCH --account=m2872
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
-#SBATCH --ntasks-per-node=20
+#SBATCH --ntasks-per-node=32
 #SBATCH --cpus-per-task=1
 #SBATCH --exclusive
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-cores=$SLURM_JOB_CPUS_PER_NODE
+cores=$(( SLURM_JOB_CPUS_PER_NODE / 2 ))
 
 function get_nodefile {
     srun -N $1 hostname | sort > nodefile
