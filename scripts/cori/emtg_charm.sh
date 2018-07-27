@@ -2,8 +2,6 @@
 #SBATCH --account=m2872
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
-#SBATCH --ntasks-per-node=32
-#SBATCH --cpus-per-task=1
 #SBATCH --exclusive
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
@@ -19,7 +17,8 @@ function get_nodefile {
 }
 
 function launch {
-    ./charmrun ./benchmark +p$(( $1 * cores )) ++nodelist hostfile +setcpuaffinity ++mpiexec "${@:2}" -width $(( $1 * cores ))
+    # ./charmrun ./benchmark +p$(( $1 * cores )) ++nodelist hostfile +setcpuaffinity ++mpiexec "${@:2}" -width $(( $1 * cores ))
+    srun -n $(( $1 * cores )) -N $1 --ntasks-per-node=$cores --cpus-per-task=1 --cpu_bind cores ./benchmark +p$(( $1 * cores )) "${@:2}" -width $(( $1 * cores ))
 }
 
 function sweep {
@@ -31,7 +30,7 @@ function sweep {
 }
 
 for n in $SLURM_JOB_NUM_NODES; do
-    get_nodefile $n
+    # get_nodefile $n
     for t in stencil_1d; do
         sweep launch $n $t > parsec_type_${t}_nodes_${n}.log
     done
