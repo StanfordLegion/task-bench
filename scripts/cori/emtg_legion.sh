@@ -22,7 +22,7 @@ function launch_util_1 {
     if [[ $1 -le 1 ]]; then
         memoize="-dm:memoize"
     fi
-     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize
+    srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize
 }
 
 function launch_util_2 {
@@ -30,7 +30,7 @@ function launch_util_2 {
     if [[ $1 -le 1 ]]; then
         memoize="-dm:memoize"
     fi
-     srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 2 $memoize
+    srun -n $1 -N $1 --cpu_bind none ../../legion/task_bench "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 2 $memoize
 }
 
 function sweep {
