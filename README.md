@@ -41,6 +41,7 @@ Place the following into `~/.bashrc`:
 ```
 module unload PrgEnv-intel
 module load PrgEnv-gnu
+module load craype-hugepages8M
 export CC=cc
 export CXX=CC
 export MPICXX=CC
