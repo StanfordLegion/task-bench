@@ -1,5 +1,6 @@
 ---
 BasedOnStyle: Google
+AccessModifierOffset: -2
 BraceWrapping:
   AfterClass:      true
   AfterControlStatement: false
