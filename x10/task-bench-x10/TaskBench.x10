@@ -6,8 +6,11 @@ import x10.compiler.Native;
 import x10.compiler.NativeCPPInclude;
 import x10.compiler.NativeCPPCompilationUnit;
 
+@NativeCPPInclude("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/timer.h")
 @NativeCPPInclude("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core.h")
+@NativeCPPInclude("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core_kernel.h")
 @NativeCPPCompilationUnit("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core.cc")
+@NativeCPPCompilationUnit("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core_kernel.cc")
 
 public class TaskBench {
 
@@ -110,14 +113,17 @@ public class TaskBench {
 
 	public val maxWidth:Long;
 
+	public val kernel:Pair[Int, Long];
+
 	public val plh:PlaceLocalHandle[PlaceInstance];
 
-	public def this(dsets:Rail[Rail[Pair[Rail[Long], Rail[Long]]]], dsetForTimestep:Rail[Long], widthOffsets:Pair[Rail[Long], Rail[Long]]) {
+	public def this(dsets:Rail[Rail[Pair[Rail[Long], Rail[Long]]]], dsetForTimestep:Rail[Long], widthOffsets:Pair[Rail[Long], Rail[Long]], kernel:Pair[Int, Long]) {
 
 		this.dependenceSets = dsets;
 		this.dsetForTimestep = dsetForTimestep;
 		this.widthForTimesteps = widthOffsets.first;
 		this.offsetForTimesteps = widthOffsets.second;
+		this.kernel = kernel;
 		this.maxWidth = this.dependenceSets(0).size; // set maxWidth to the number of places/points in the task graph
 
 		// create a PlaceInstance instance at each place
@@ -151,13 +157,23 @@ public class TaskBench {
 		}
 	}
 
+	private def kernelExecute(kernelType:Int, iterations:Long):void {
+		@Native("c++", "
+			kernel_t k;
+			k.type = kernel_type_t(kernelType);
+			k.iterations = *((long*)&iterations);
+			Kernel kernel(k);
+			kernel.execute();
+		") {}
+	}
+
 	public def executeTaskGraph() {
 
 		finish for (p in Place.places()) {
 			at (p) async {
 				val pi = plh();
 				for (ts in 0..(dsetForTimestep.size-1)) { // loop through timesteps
-					Console.OUT.println(p + " AT TIMESTEP " + ts);
+					// Console.OUT.println(p + " AT TIMESTEP " + ts);
 					// send data
 					if (ts < dsetForTimestep.size-1) { // only if not on last timestep
 						for (sendNeighbor in pi.neighborsSendRails(ts).range()) {
@@ -181,24 +197,43 @@ public class TaskBench {
 								}
 							}
 						}
-					}					
-					Console.OUT.println(p + " RECV RAIL AT TIMESTEP " + ts + ": " + pi.recvRails(ts).toString());
+						// Console.OUT.println("KERNEL: TYPE " + kernel.first + " ITERATIONS: " + kernel.second);
+						kernelExecute(kernel.first, kernel.second);
+					}
 				}
 			}
 		}
 	}
 
-	private static def executeTaskBench(taskGraphDependenceSets:Rail[Rail[Rail[Pair[Rail[Long], Rail[Long]]]]], 
-			dependenceSetsForTimesteps:Rail[Rail[Long]], widthAndOffsetForTimesteps:Rail[Pair[Rail[Long], Rail[Long]]]) {
+	private static def getTime():Double {
+		@Native("c++", "
+			return ((x10_double) Timer::get_cur_time());
+		") { return -1.0; }
+	}
 
+	private static def executeTaskBench(taskGraphDependenceSets:Rail[Rail[Rail[Pair[Rail[Long], Rail[Long]]]]], 
+			dependenceSetsForTimesteps:Rail[Rail[Long]], widthAndOffsetForTimesteps:Rail[Pair[Rail[Long], Rail[Long]]], 
+			kernelTypeIterationsRail:Rail[Pair[Int, Long]]): Double {
 		for (tg in 0..(taskGraphDependenceSets.size-1)) {
 			val dsets = taskGraphDependenceSets(tg);
 			val dsetForTimestep = dependenceSetsForTimesteps(tg);
 			val widthAndOffsetForTimestep = widthAndOffsetForTimesteps(tg);
-			val taskBench = new TaskBench(dsets, dsetForTimestep, widthAndOffsetForTimestep);
+			val kernel = kernelTypeIterationsRail(tg);
+			val taskBench = new TaskBench(dsets, dsetForTimestep, widthAndOffsetForTimestep, kernel);
 			taskBench.executeTaskGraph();
 		}
-
+		val start = getTime();
+		for (tg in 0..(taskGraphDependenceSets.size-1)) {
+			// create kernel
+			val dsets = taskGraphDependenceSets(tg);
+			val dsetForTimestep = dependenceSetsForTimesteps(tg);
+			val widthAndOffsetForTimestep = widthAndOffsetForTimesteps(tg);
+			val kernel = kernelTypeIterationsRail(tg);
+			val taskBench = new TaskBench(dsets, dsetForTimestep, widthAndOffsetForTimestep, kernel);
+			taskBench.executeTaskGraph();
+		}
+		val end = getTime();
+		return end - start;
 	}
 
 	private static def dependenceSetsFromCore(argc:Int, argRail:Rail[String]):Rail[Rail[Rail[Pair[Rail[Long],Rail[Long]]]]] {
@@ -218,10 +253,10 @@ public class TaskBench {
 			App app(argc, argv);
 			app.display();
 			// cleanup allocated arrays
-			for (int i = 0; i < argc; i++) {
-				delete [] argv[i];
-			}
-			delete [] argv;
+			// for (int i = 0; i < argc; i++) {
+			// 	delete [] argv[i];
+			// }
+			// delete [] argv;
 			
 			std::vector<TaskGraph> graphs = app.graphs;
 			// var taskGraphDependenceSets = new Rail[Rail[Rail[Pair[Rail[Long], Rail[Long]]]]];
@@ -317,10 +352,10 @@ public class TaskBench {
 			}
 			App app(argc, argv);
 			// app.display();
-			for (int i = 0; i < argc; i++) { // cleanup allocated arrays
-				delete [] argv[i];
-			}
-			delete [] argv;
+			// for (int i = 0; i < argc; i++) { // cleanup allocated arrays
+			// 	delete [] argv[i];
+			// }
+			// delete [] argv;
 			
 			std::vector<TaskGraph> graphs = app.graphs;
 			// val timeStepMaps = new Rail[Rail[Long]](graphs.size());
@@ -360,10 +395,10 @@ public class TaskBench {
 			}
 			App app(argc, argv);
 			// app.display();
-			for (int i = 0; i < argc; i++) { // cleanup allocated arrays
-				delete [] argv[i];
-			}
-			delete [] argv;
+			// for (int i = 0; i < argc; i++) { // cleanup allocated arrays
+			// 	delete [] argv[i];
+			// }
+			// delete [] argv;
 
 			std::vector<TaskGraph> graphs = app.graphs;
 			// val widthAndOffsetForTimesteps = new Rail[Pair(Rail[Long], Rail[Long])](graphs.size());
@@ -394,6 +429,73 @@ public class TaskBench {
 		") { return new Rail[Pair[Rail[Long], Rail[Long]]](); }
 	}
 
+	private static def kernelTypeIterationsFromCore(argc:Int, argRail: Rail[String]):Rail[Pair[Int, Long]] {
+		@Native("c++", "
+			char **argv = new char *[argc];
+			for (int i = 0; i < argc; i++) {
+				x10::lang::String str = *((*argRail)[i]);
+				x10_int strSize = str.length();
+				char *result = new char[strSize];
+				for (int j = 0; j < strSize; j++) { 
+					x10_char c = (str).charAt(j);
+					char *ch = (char *)&c;
+					result[j] = *ch;
+				}
+				argv[i] = result;
+			}
+			App app(argc, argv);
+			// app.display();
+			// for (int i = 0; i < argc; i++) { // cleanup allocated arrays
+			// 	delete [] argv[i];
+			// }
+			// delete [] argv;
+
+			std::vector<TaskGraph> graphs = app.graphs;
+			// val kernelTypeIterationsRail = new Rail[Pair[Int, Long]]();
+			::x10::lang::Rail< ::x10::util::Pair< x10_int, x10_long > >* kernelTypeIterationsRail =
+      			::x10::lang::Rail< ::x10::util::Pair< x10_int, x10_long > >::_make((x10_long)graphs.size());
+      		for (int tgi = 0; tgi < graphs.size(); ++tgi) {
+      			TaskGraph tg = graphs.at(tgi);
+      			auto kernel = tg.kernel;
+      			auto kernelType = kernel.type;
+      			long iterations = kernel.iterations;
+      			// std::cout << \"ITERATIONS: \" << iterations << std::endl;
+      			// val kernelTypeIterations = new Pair(kernelType, iterations);
+      			::x10::util::Pair< x10_int, x10_long > kernelTypeIterations = 
+      				::x10::util::Pair< x10_int, x10_long >::_make((x10_int)kernelType, (x10_long)iterations);
+      			// kernelTypeIterationsRail(tgi) = kernelTypeIterations;
+      			::x10aux::nullCheck(kernelTypeIterationsRail)->
+					x10::lang::Rail< ::x10::util::Pair< x10_int, x10_long > >::__set((x10_long)tgi, kernelTypeIterations);
+      		}
+      		return kernelTypeIterationsRail;
+		") { return new Rail[Pair[Int, Long]](); }
+	}
+
+	private static def appReport(argc: Int, argRail: Rail[String], time: Double) {
+		@Native("c++", "
+			char **argv = new char *[argc];
+			for (int i = 0; i < argc; i++) {
+				x10::lang::String str = *((*argRail)[i]);
+				x10_int strSize = str.length();
+				char *result = new char[strSize];
+				for (int j = 0; j < strSize; j++) { 
+					x10_char c = (str).charAt(j);
+					char *ch = (char *)&c;
+					result[j] = *ch;
+				}
+				argv[i] = result;
+			}
+			App app(argc, argv);
+			//app.display();
+			for (int i = 0; i < argc; i++) { // cleanup allocated arrays
+				delete [] argv[i];
+			}
+			delete [] argv;
+
+			app.report_timing(time);
+		") {}
+	}
+
 	private static def constructCPPArgs(args:Rail[String]):Rail[String] {
 		val argv = new Rail[String](args.size+1);
 		argv(0) = "";
@@ -409,7 +511,9 @@ public class TaskBench {
 		val taskGraphDependenceSets = dependenceSetsFromCore(argc, argv);
 		val dependenceSetsForTimesteps = timestepsFromCore(argc, argv);
 		val widthAndOffsetForTimesteps = widthAndOffsetFromCore(argc, argv);
-		executeTaskBench(taskGraphDependenceSets, dependenceSetsForTimesteps, widthAndOffsetForTimesteps);
+		val kernelTypeIterationsRail = kernelTypeIterationsFromCore(argc, argv);
+		val time = executeTaskBench(taskGraphDependenceSets, dependenceSetsForTimesteps, widthAndOffsetForTimesteps, kernelTypeIterationsRail);
+		appReport(argc, argv, time);
 	}
 
 }
