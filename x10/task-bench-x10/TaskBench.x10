@@ -211,56 +211,35 @@ public class TaskBench {
 		") { return -1.0; }
 	}
 
-	private static def executeTaskBench(taskGraphDependenceSets:Rail[Rail[Rail[Pair[Rail[Long], Rail[Long]]]]], 
-			dependenceSetsForTimesteps:Rail[Rail[Long]], widthAndOffsetForTimesteps:Rail[Pair[Rail[Long], Rail[Long]]], 
-			kernelTypeIterationsRail:Rail[Pair[Int, Long]]): Double {
-		for (tg in 0..(taskGraphDependenceSets.size-1)) {
-			val dsets = taskGraphDependenceSets(tg);
-			val dsetForTimestep = dependenceSetsForTimesteps(tg);
-			val widthAndOffsetForTimestep = widthAndOffsetForTimesteps(tg);
-			val kernel = kernelTypeIterationsRail(tg);
-			val taskBench = new TaskBench(dsets, dsetForTimestep, widthAndOffsetForTimestep, kernel);
-			taskBench.executeTaskGraph();
-		}
-		val start = getTime();
-		for (tg in 0..(taskGraphDependenceSets.size-1)) {
-			// create kernel
-			val dsets = taskGraphDependenceSets(tg);
-			val dsetForTimestep = dependenceSetsForTimesteps(tg);
-			val widthAndOffsetForTimestep = widthAndOffsetForTimesteps(tg);
-			val kernel = kernelTypeIterationsRail(tg);
-			val taskBench = new TaskBench(dsets, dsetForTimestep, widthAndOffsetForTimestep, kernel);
-			taskBench.executeTaskGraph();
-		}
-		val end = getTime();
-		return end - start;
-	}
-
-	private static def dependenceSetsFromCore(argc:Int, argRail:Rail[String]):Rail[Rail[Rail[Pair[Rail[Long],Rail[Long]]]]] {
+	private static def executeTaskBench(argc: Int, argRail: Rail[String]) {
+		var taskGraphDependenceSets:Rail[Rail[Rail[Pair[Rail[Long], Rail[Long]]]]];
+		var timeStepMaps:Rail[Rail[Long]];
+		var widthsOffsetsRail:Rail[Pair[Rail[Long], Rail[Long]]];
+		var kernels:Rail[Pair[Int, Long]];
 		@Native("c++", "
 			char **argv = new char *[argc];
 			for (int i = 0; i < argc; i++) {
 				x10::lang::String str = *((*argRail)[i]);
 				x10_int strSize = str.length();
-				char *result = new char[strSize];
+				char *result = new char[strSize+1];
 				for (int j = 0; j < strSize; j++) { 
 					x10_char c = (str).charAt(j);
 					char *ch = (char *)&c;
 					result[j] = *ch;
 				}
+				result[strSize] = \'\\0\';
 				argv[i] = result;
 			}
 			App app(argc, argv);
 			app.display();
 			// cleanup allocated arrays
-			// for (int i = 0; i < argc; i++) {
-			// 	delete [] argv[i];
-			// }
-			// delete [] argv;
+			for (int i = 0; i < argc; i++) {
+				delete [] argv[i];
+			}
+			delete [] argv;
 			
 			std::vector<TaskGraph> graphs = app.graphs;
-			// var taskGraphDependenceSets = new Rail[Rail[Rail[Pair[Rail[Long], Rail[Long]]]]];
-			::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >* 
+			// taskGraphDependenceSets = new Rail[Rail[Rail[Pair[Rail[Long], Rail[Long]]]]];
 			taskGraphDependenceSets = ::x10::lang::Rail< 
 				::x10::lang::Rail< 
 					::x10::lang::Rail< 
@@ -268,13 +247,47 @@ public class TaskBench {
 					>*
 				>* 
 			>::_make((x10_long)graphs.size());
+			// timeStepMaps = new Rail[Rail[Long]](graphs.size());
+			timeStepMaps = ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::_make(graphs.size());
+      		// widthsOffsetsRail = new Rail[Pair(Rail[Long], Rail[Long])](graphs.size());
+			widthsOffsetsRail = ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >::_make((x10_long)graphs.size());
+      		// kernels = new Rail[Pair[Int, Long]]();
+			kernels = ::x10::lang::Rail< ::x10::util::Pair< x10_int, x10_long > >::_make((x10_long)graphs.size());
+
 			for (int tgi = 0; tgi < graphs.size(); ++tgi) {
 				TaskGraph tg = graphs.at(tgi);
+
+      			// KERNEL
+      			auto kernel = tg.kernel;
+      			auto kernelType = kernel.type;
+      			long iterations = kernel.iterations;
+      			// val kernelPair = new Pair(kernelType, iterations);
+      			::x10::util::Pair< x10_int, x10_long > kernelPair = 
+      				::x10::util::Pair< x10_int, x10_long >::_make((x10_int)kernelType, (x10_long)iterations);
+      			// kernels(tgi) = kernel;
+      			::x10aux::nullCheck(kernels)->
+					x10::lang::Rail< ::x10::util::Pair< x10_int, x10_long > >::__set((x10_long)tgi, kernelPair);
+
+				// DEPENDENCE SETS
 				// val dependenceSets = new Rail[Rail[Pair[Rail[Long], Rail[Long]]]](tg.timestep_period());
 				::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dependenceSets =
 					::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, 
 					::x10::lang::Rail< x10_long >*> >* >::_make((x10_long)tg.timestep_period());
+
+				// DEPENDENCE SETS FOR TIMESTEPS
+				// val dependenceSetsForTimesteps = new Rail[Long](tg.timesteps);
+				::x10::lang::Rail< x10_long >* dependenceSetsForTimesteps = 
+					::x10::lang::Rail< x10_long >::_make(tg.timesteps);
+
+				// WIDTHS AND OFFSETS
+				// val widths = new Rail[Long](tg.timesteps);
+      			::x10::lang::Rail< x10_long >* widths = ::x10::lang::Rail< x10_long >::_make((x10_long)tg.timesteps);
+      			// val offsets = new Rail[Long](tg.timesteps);
+      			::x10::lang::Rail< x10_long >* offsets = ::x10::lang::Rail< x10_long >::_make((x10_long)tg.timesteps);
+
+				
 				for (long ts = 0; ts < tg.timestep_period(); ts++) {
+					// DEPENDENCE SETS
 					long dset = tg.dependence_set_at_timestep(ts);
 					// val dependenceSet = new Rail[Pair[Rail[Long], Rail[Long]]](tg.max_width);
 					::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* dependenceSet =
@@ -326,153 +339,77 @@ public class TaskBench {
 					::x10aux::nullCheck(dependenceSets)->
 					x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >::
 							__set(ts, dependenceSet);
-				}
-				// taskGraphDependenceSets(tgi) = dependenceSets;
-				::x10aux::nullCheck(taskGraphDependenceSets)->
-				x10::lang::Rail< x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >::
-						__set(tgi, dependenceSets);
-			}
-			return taskGraphDependenceSets;
-		") { return new Rail[Rail[Rail[Pair[Rail[Long],Rail[Long]]]]](); }
-	}
 
-	private static def timestepsFromCore(argc:Int, argRail:Rail[String]):Rail[Rail[Long]] {
-		@Native("c++", "
-			char **argv = new char *[argc];
-			for (int i = 0; i < argc; i++) {
-				x10::lang::String str = *((*argRail)[i]);
-				x10_int strSize = str.length();
-				char *result = new char[strSize];
-				for (int j = 0; j < strSize; j++) { 
-					x10_char c = (str).charAt(j);
-					char *ch = (char *)&c;
-					result[j] = *ch;
 				}
-				argv[i] = result;
-			}
-			App app(argc, argv);
-			// app.display();
-			// for (int i = 0; i < argc; i++) { // cleanup allocated arrays
-			// 	delete [] argv[i];
-			// }
-			// delete [] argv;
-			
-			std::vector<TaskGraph> graphs = app.graphs;
-			// val timeStepMaps = new Rail[Rail[Long]](graphs.size());
-			::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* timeStepMaps =
-      			::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::_make(graphs.size());
-			for (int tgi = 0; tgi < graphs.size(); ++tgi) { // dependence set for each timestep in this graph
-				TaskGraph graph = graphs.at(tgi);
-				// val dependenceSetsForTimesteps = new Rail[Long](graph.timesteps);
-				::x10::lang::Rail< x10_long >* dependenceSetsForTimesteps = 
-					::x10::lang::Rail< x10_long >::_make(graph.timesteps);
-				for (int ts = 0; ts < graph.timesteps; ++ts) {
-					// dependenceSetsForTimesteps(ts) = graph.dependence_set_at_timestep(ts);
+
+				for (long ts = 0; ts < tg.timesteps; ++ts) {
+					// DEPENDENCE SETS FOR TIMESTEPS
+					// dependenceSetsForTimesteps(ts) = tg.dependence_set_at_timestep(ts);
 					::x10aux::nullCheck(dependenceSetsForTimesteps)->
-						x10::lang::Rail< x10_long >::__set(((x10_long)ts), ((x10_long)graph.dependence_set_at_timestep(ts)));
-				}
-				// timeStepMaps(tgi) = dependenceSetsForTimesteps;
-				::x10aux::nullCheck(timeStepMaps)->
-						x10::lang::Rail< x10::lang::Rail< x10_long >* >::__set(((x10_long)tgi), dependenceSetsForTimesteps);
-			}
-			return timeStepMaps;
-			") { return new Rail[Rail[Long]](); }
-	}
+						x10::lang::Rail< x10_long >::__set(((x10_long)ts), ((x10_long)tg.dependence_set_at_timestep(ts)));
 
-	private static def widthAndOffsetFromCore(argc: Int, argRail: Rail[String]): Rail[Pair[Rail[Long], Rail[Long]]] {
-		@Native("c++", "
-			char **argv = new char *[argc];
-			for (int i = 0; i < argc; i++) {
-				x10::lang::String str = *((*argRail)[i]);
-				x10_int strSize = str.length();
-				char *result = new char[strSize];
-				for (int j = 0; j < strSize; j++) { 
-					x10_char c = (str).charAt(j);
-					char *ch = (char *)&c;
-					result[j] = *ch;
-				}
-				argv[i] = result;
-			}
-			App app(argc, argv);
-			// app.display();
-			// for (int i = 0; i < argc; i++) { // cleanup allocated arrays
-			// 	delete [] argv[i];
-			// }
-			// delete [] argv;
-
-			std::vector<TaskGraph> graphs = app.graphs;
-			// val widthAndOffsetForTimesteps = new Rail[Pair(Rail[Long], Rail[Long])](graphs.size());
-			::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* widthAndOffsetForTimesteps =
-      			::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >::_make((x10_long)graphs.size());
-      		for (int tgi = 0; tgi < graphs.size(); ++tgi) {
-      			TaskGraph tg = graphs.at(tgi);
-      			// val widths = new Rail[Long](tg.timesteps);
-      			::x10::lang::Rail< x10_long >* widths = ::x10::lang::Rail< x10_long >::_make((x10_long)tg.timesteps);
-      			// val offsets = new Rail[Long](tg.timesteps);
-      			::x10::lang::Rail< x10_long >* offsets = ::x10::lang::Rail< x10_long >::_make((x10_long)tg.timesteps);
-      			for (int ts = 0; ts < tg.timesteps; ++ts) {
-      				// widths(ts) = tg.width_at_timestep(ts);
+					// WIDTHS AND OFFSETS
+					// widths(ts) = tg.width_at_timestep(ts);
       				::x10aux::nullCheck(widths)->
 						x10::lang::Rail< x10_long >::__set((x10_long)ts, (x10_long)tg.width_at_timestep(ts));
       				// offsets(ts) = tg.offset_at_timestep(ts);
 					::x10aux::nullCheck(offsets)->
 						x10::lang::Rail< x10_long >::__set(((x10_long)ts), ((x10_long)tg.offset_at_timestep(ts)));
-      			}
-      			// val widthOffsetPair = new Pair(widths, offsets);
+				}
+
+				// DEPENDENCE SETS
+				// taskGraphDependenceSets(tgi) = dependenceSets;
+				::x10aux::nullCheck(taskGraphDependenceSets)->
+				x10::lang::Rail< x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >::
+						__set(tgi, dependenceSets);
+
+				// DEPENDENCE SETS FOR TIMESTEPS
+				// timeStepMaps(tgi) = dependenceSetsForTimesteps;
+				::x10aux::nullCheck(timeStepMaps)->
+						x10::lang::Rail< x10::lang::Rail< x10_long >* >::__set(((x10_long)tgi), dependenceSetsForTimesteps);
+
+				// WIDTHS AND OFFSETS
+				// val widthOffsetPair = new Pair(widths, offsets);
       			::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> widthOffsetPair =
 					::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*>::_make(widths, offsets);
-				// widthAndOffsetForTimesteps(tgi) = widthOffsetPair;
-				::x10aux::nullCheck(widthAndOffsetForTimesteps)->
+				// widthsOffsetsRail(tgi) = widthOffsetPair;
+				::x10aux::nullCheck(widthsOffsetsRail)->
 					x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >::__set((x10_long)tgi, widthOffsetPair);
-				return widthAndOffsetForTimesteps;
-      		}
-		") { return new Rail[Pair[Rail[Long], Rail[Long]]](); }
-	}
-
-	private static def kernelTypeIterationsFromCore(argc:Int, argRail: Rail[String]):Rail[Pair[Int, Long]] {
-		@Native("c++", "
-			char **argv = new char *[argc];
-			for (int i = 0; i < argc; i++) {
-				x10::lang::String str = *((*argRail)[i]);
-				x10_int strSize = str.length();
-				char *result = new char[strSize];
-				for (int j = 0; j < strSize; j++) { 
-					x10_char c = (str).charAt(j);
-					char *ch = (char *)&c;
-					result[j] = *ch;
-				}
-				argv[i] = result;
 			}
-			App app(argc, argv);
-			// app.display();
-			// for (int i = 0; i < argc; i++) { // cleanup allocated arrays
-			// 	delete [] argv[i];
-			// }
-			// delete [] argv;
-
-			std::vector<TaskGraph> graphs = app.graphs;
-			// val kernelTypeIterationsRail = new Rail[Pair[Int, Long]]();
-			::x10::lang::Rail< ::x10::util::Pair< x10_int, x10_long > >* kernelTypeIterationsRail =
-      			::x10::lang::Rail< ::x10::util::Pair< x10_int, x10_long > >::_make((x10_long)graphs.size());
-      		for (int tgi = 0; tgi < graphs.size(); ++tgi) {
-      			TaskGraph tg = graphs.at(tgi);
-      			auto kernel = tg.kernel;
-      			auto kernelType = kernel.type;
-      			long iterations = kernel.iterations;
-      			// std::cout << \"ITERATIONS: \" << iterations << std::endl;
-      			// val kernelTypeIterations = new Pair(kernelType, iterations);
-      			::x10::util::Pair< x10_int, x10_long > kernelTypeIterations = 
-      				::x10::util::Pair< x10_int, x10_long >::_make((x10_int)kernelType, (x10_long)iterations);
-      			// kernelTypeIterationsRail(tgi) = kernelTypeIterations;
-      			::x10aux::nullCheck(kernelTypeIterationsRail)->
-					x10::lang::Rail< ::x10::util::Pair< x10_int, x10_long > >::__set((x10_long)tgi, kernelTypeIterations);
-      		}
-      		return kernelTypeIterationsRail;
-		") { return new Rail[Pair[Int, Long]](); }
+		") {
+			taskGraphDependenceSets = new Rail[Rail[Rail[Pair[Rail[Long], Rail[Long]]]]]();
+			timeStepMaps = new Rail[Rail[Long]]();
+			widthsOffsetsRail = new Rail[Pair[Rail[Long], Rail[Long]]]();
+			kernels = new Rail[Pair[Int, Long]]();
+		}
+		Console.OUT.println("TASK GRAPH DEPENDENCE SETS: " + taskGraphDependenceSets.toString());
+		Console.OUT.println("TIME STEP MAPS: " + timeStepMaps.toString());
+		Console.OUT.println("WIDTHS OFFSETS: " + widthsOffsetsRail.toString());
+		Console.OUT.println("KERNELS: " + kernels.toString());
+		for (tg in 0..(taskGraphDependenceSets.size-1)) {
+			val dsets = taskGraphDependenceSets(tg);
+			val dsetForTimestep = timeStepMaps(tg);
+			val widthsOffsets = widthsOffsetsRail(tg);
+			val kernel = kernels(tg);
+			val taskBench = new TaskBench(dsets, dsetForTimestep, widthsOffsets, kernel);
+			taskBench.executeTaskGraph();
+		}
+		val start = getTime();
+		for (tg in 0..(taskGraphDependenceSets.size-1)) {
+			val dsets = taskGraphDependenceSets(tg);
+			val dsetForTimestep = timeStepMaps(tg);
+			val widthsOffsets = widthsOffsetsRail(tg);
+			val kernel = kernels(tg);
+			val taskBench = new TaskBench(dsets, dsetForTimestep, widthsOffsets, kernel);
+			taskBench.executeTaskGraph();
+		}
+		val end = getTime();
+		return end - start;
 	}
 
 	private static def appReport(argc: Int, argRail: Rail[String], time: Double) {
 		@Native("c++", "
+			std::cout << \"APP REPORT\" << std::endl;
 			char **argv = new char *[argc];
 			for (int i = 0; i < argc; i++) {
 				x10::lang::String str = *((*argRail)[i]);
@@ -508,11 +445,7 @@ public class TaskBench {
 	public static def main(args:Rail[String]):void {
 		val argc = (args.size+1) as Int;
 		val argv = constructCPPArgs(args);
-		val taskGraphDependenceSets = dependenceSetsFromCore(argc, argv);
-		val dependenceSetsForTimesteps = timestepsFromCore(argc, argv);
-		val widthAndOffsetForTimesteps = widthAndOffsetFromCore(argc, argv);
-		val kernelTypeIterationsRail = kernelTypeIterationsFromCore(argc, argv);
-		val time = executeTaskBench(taskGraphDependenceSets, dependenceSetsForTimesteps, widthAndOffsetForTimesteps, kernelTypeIterationsRail);
+		val time = executeTaskBench(argc, argv);
 		appReport(argc, argv, time);
 	}
 

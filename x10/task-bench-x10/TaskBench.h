@@ -92,6 +92,15 @@ class Finalization;
 namespace x10 { namespace lang { 
 class String;
 } } 
+namespace x10 { namespace io { 
+class Printer;
+} } 
+namespace x10 { namespace io { 
+class Console;
+} } 
+namespace x10 { namespace lang { 
+class Any;
+} } 
 namespace x10 { namespace compiler { 
 class Synthetic;
 } } 
@@ -104,9 +113,13 @@ class NativeCPPCompilationUnit;
 
 class TaskBench_Strings {
   public:
-    static ::x10::lang::String sl__3310;
-    static ::x10::lang::String sl__3309;
-    static ::x10::lang::String sl__3308;
+    static ::x10::lang::String sl__3633;
+    static ::x10::lang::String sl__3636;
+    static ::x10::lang::String sl__3632;
+    static ::x10::lang::String sl__3634;
+    static ::x10::lang::String sl__3630;
+    static ::x10::lang::String sl__3631;
+    static ::x10::lang::String sl__3635;
 };
 
 class TaskBench : public ::x10::lang::X10Class   {
@@ -141,18 +154,7 @@ class TaskBench : public ::x10::lang::X10Class   {
     void kernelExecute(x10_int kernelType, x10_long iterations);
     virtual void executeTaskGraph();
     static x10_double getTime();
-    static x10_double executeTaskBench(::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >* taskGraphDependenceSets,
-                                       ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >* dependenceSetsForTimesteps,
-                                       ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* widthAndOffsetForTimesteps,
-                                       ::x10::lang::Rail< ::x10::util::Pair<x10_int, x10_long> >* kernelTypeIterationsRail);
-    static ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >*
-      dependenceSetsFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
-    static ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >*
-      timestepsFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
-    static ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >*
-      widthAndOffsetFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
-    static ::x10::lang::Rail< ::x10::util::Pair<x10_int, x10_long> >*
-      kernelTypeIterationsFromCore(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
+    static x10_double executeTaskBench(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail);
     static void appReport(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail,
                           x10_double time);
     static ::x10::lang::Rail< ::x10::lang::String* >* constructCPPArgs(
