@@ -4,7 +4,7 @@ set -e
 
 TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-1}
 USE_GASNET=${USE_GASNET:-0}
-USE_HWLOC=${USE_HWLOC:-1}
+USE_HWLOC_TMP=${USE_HWLOC_TMP:-1}
 USE_LEGION=${USE_LEGION:-1}
 USE_STARPU=${USE_STARPU:-1}
 USE_PARSEC=${USE_PARSEC:-1}
@@ -41,10 +41,10 @@ EOF
     git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
 fi
 
-if [[ $USE_HWLOC -eq 1 ]]; then
+if [[ $USE_HWLOC_TMP -eq 1 ]]; then
     export HWLOC_DL_DIR="$PWD"/deps/hwloc
     cat >>deps/env.sh <<EOF
-export USE_HWLOC=$USE_HWLOC
+export USE_HWLOC_TMP=$USE_HWLOC_TMP
 export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
 export HWLOC_DIR=$HWLOC_DL_DIR
 EOF
