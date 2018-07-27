@@ -22,3 +22,26 @@ sbatch ./scripts/sherlock/build.sh
 cd scripts/sherlock
 sbatch --nodes 1 emtg_legion.sh
 ```
+
+### Cori
+
+Place the following into `~/.bashrc`:
+
+```
+module unload PrgEnv-intel
+module load PrgEnv-gnu
+export CC=cc
+export CXX=CC
+export MPICXX=CC
+```
+
+Then run:
+
+```
+git clone https://github.com/StanfordLegion/task-bench.git
+cd task-bench
+CONDUIT=aries USE_GASNET=1 CHARM_VERSION=gni-crayxc ./get_deps.sh
+DEBUG=0 ./build_all.sh
+cd scripts/cori
+sbatch --nodes 1 emtg_legion.sh
+```
