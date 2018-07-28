@@ -6,7 +6,7 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-cores=$(( SLURM_JOB_CPUS_PER_NODE / 2 ))
+cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
 function launch {
     srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../parsec/main "${@:2}" -width $(( $1 * cores )) -c $cores -p 1

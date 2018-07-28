@@ -6,8 +6,8 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-total_cores=$(( SLURM_JOB_CPUS_PER_NODE / 2 ))
-cores=$(( ( SLURM_JOB_CPUS_PER_NODE / 2 ) - 2 ))
+total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+cores=$(( $total_cores - 2 ))
 
 function launch_util_0 {
     memoize=
