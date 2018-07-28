@@ -59,6 +59,7 @@ if [[ $USE_LEGION -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export USE_LEGION=$USE_LEGION
 export LG_RT_DIR="$LEGION_DIR"/runtime
+export USE_LIBDL=0
 EOF
     git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
