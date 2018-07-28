@@ -66,6 +66,8 @@ int main(int argc, char *argv[])
   MPI_Comm_rank(MPI_COMM_WORLD, &taskid);
 
   App new_app(argc, argv);
+  if (taskid == MASTER) new_app.display();
+
   std::vector<TaskGraph> graphs = new_app.graphs;
 
   std::vector<std::vector<int *> > graph_send_counts;

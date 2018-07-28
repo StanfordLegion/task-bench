@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
   MPI_Comm_group(MPI_COMM_WORLD, &world_group);
 
   App new_app(argc, argv);
+  if (taskid == MASTER) new_app.display();
 
   /* Preallocated storage needed for all the graphs */
   std::vector<TaskGraph> graphs = new_app.graphs;
