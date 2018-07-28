@@ -1,15 +1,13 @@
 #!/bin/bash
 #SBATCH --partition=aaiken
-#SBATCH --ntasks-per-node=20
-#SBATCH --cpus-per-task=1
 #SBATCH --exclusive
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-cores=$SLURM_JOB_CPUS_PER_NODE
+cores=$(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1)
 
 function get_nodefile {
-    srun -N $1 hostname | sort > nodefile
+    srun -N $1 --ntasks-per-node=$cores --cpus-per-task=1 hostname | sort > nodefile
     echo group main > hostfile
     while read node; do
         echo host $node >> hostfile
