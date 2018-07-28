@@ -314,53 +314,9 @@ void TaskGraph::execute_point(long timestep, long point,
                               const char **input_ptr, const size_t *input_bytes,
                               size_t n_inputs) const
 {
-  // Validate timestep and point
-  assert(0 <= timestep && timestep < timesteps);
-
-  long offset = offset_at_timestep(timestep);
-  long width = width_at_timestep(timestep);
-  assert(offset <= point && point < offset+width);
-
-  long last_offset = timestep > 0 ? offset_at_timestep(timestep-1) : 0;
-  long last_width = timestep > 0 ? width_at_timestep(timestep-1) : 0;
-
-  // Validate input
-  {
-    size_t idx = 0;
-    long dset = dependence_set_at_timestep(timestep);
-    std::vector<std::pair<long, long> > deps = dependencies(dset, point);
-    for (auto span : deps) {
-      for (long dep = span.first; dep <= span.second; dep++) {
-        if (last_offset <= dep && dep < last_offset + last_width) {
-          assert(idx < n_inputs);
-
-          assert(input_bytes[idx] == output_bytes_per_task);
-          assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
-
-          const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
-          assert(input.first == timestep - 1);
-          assert(input.second == dep);
-          idx++;
-        }
-      }
-    }
-    // FIXME (Elliott): Legion is currently passing in uninitialized
-    // memory for dependencies outside of the last offset/width.
-    // assert(idx == n_inputs);
-  }
-
-  // Validate output
-  assert(output_bytes == output_bytes_per_task);
-  assert(output_bytes >= sizeof(std::pair<long, long>));
-
-  // Generate output
-  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(output_ptr);
-  output->first = timestep;
-  output->second = point;
-
-  // Execute kernel
-  Kernel k(kernel);
-  k.execute();
+  TaskGraph::execute_point(timestep, point, output_ptr, output_bytes,
+                      input_ptr, input_bytes, n_inputs, 
+                      NULL, 0);
 }
 
 void TaskGraph::execute_point(long timestep, long point,
@@ -416,12 +372,8 @@ void TaskGraph::execute_point(long timestep, long point,
   Kernel k(kernel);
 
   //-- add by Yuankun, Init kernel parameters
-  k.kernel_arg.num_src_input = n_inputs;
-  k.kernel_arg.scratch_ptr = scratch_ptr;
-  k.kernel_arg.scratch_bytes_per_task = scratch_bytes_per_task;
-  
-  // printf("kernel_arg: num_src_input=%ld, scratch_bytes_per_task=%ld\n", 
-  //   k.kernel_arg.num_src_input, scratch_bytes_per_task);
+  k.scratch_ptr = scratch_ptr;
+  k.scratch_bytes_per_task = scratch_bytes_per_task;
   //-- add by Yuankun
   k.execute();
 }
@@ -435,9 +387,6 @@ static TaskGraph default_graph()
   graph.dependence = DependenceType::TRIVIAL;
   graph.kernel = {KernelType::EMPTY, 0};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
-
-  //-- add by Yuankun, default kernel parameters
-  graph.kernel.kernel_arg.scratch_bytes_per_task = 0;
 
   return graph;
 }
@@ -514,22 +463,6 @@ App::App(int argc, char **argv)
       graph.kernel.iterations = value;
     }
 
-    if (!strcmp(argv[i], "-and")) {
-      graphs.push_back(graph);
-      graph = default_graph();
-    }
-
-    // -- add by Yuankun
-    if (!strcmp(argv[i], "-num_src_input")) {
-      needs_argument(i, argc, "-num_src_input");
-      long value  = atol(argv[++i]);
-      if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-num_src_input %ld\" must be >= 0\n", value);
-        abort();
-      }
-      graph.kernel.kernel_arg.num_src_input = value;
-    }
-
     if (!strcmp(argv[i], "-size")) {
       needs_argument(i, argc, "-size");
       long value  = atol(argv[++i]);
@@ -537,7 +470,7 @@ App::App(int argc, char **argv)
         fprintf(stderr, "error: Invalid flag \"-size %ld\" must be >= 0\n", value);
         abort();
       }
-      graph.kernel.kernel_arg.scratch_bytes_per_task = value;     
+      graph.kernel.scratch_bytes_per_task = value;     
     }
 
     if (!strcmp(argv[i], "-max_power")) {
@@ -547,7 +480,7 @@ App::App(int argc, char **argv)
         fprintf(stderr, "error: Invalid flag \"-max_power %ld\" must be >= 0\n", value);
         abort();
       }
-      graph.kernel.kernel_arg.max_power = value;
+      graph.kernel.max_power = value;
     }
 
     if (!strcmp(argv[i], "-jump")) {
@@ -557,10 +490,13 @@ App::App(int argc, char **argv)
         fprintf(stderr, "error: Invalid flag \"-jump %ld\" must be >= 0\n", value);
         abort();
       }
-      graph.kernel.kernel_arg.jump = value;    
+      graph.kernel.jump = value;    
     }
-    // -- add by Yuankun
 
+    if (!strcmp(argv[i], "-and")) {
+      graphs.push_back(graph);
+      graph = default_graph();
+    }
   }
 
   graphs.push_back(graph);
