@@ -42,6 +42,7 @@ Place the following into `~/.bashrc`:
 module unload PrgEnv-intel
 module load PrgEnv-gnu
 module load craype-hugepages8M
+module load python/3.6-anaconda-4.4
 export CC=cc
 export CXX=CC
 export MPICXX=CC
