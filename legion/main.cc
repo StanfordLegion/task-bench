@@ -110,11 +110,13 @@ void leaf(const Task *task,
   }
 
   //add by Yuankun
-  Rect<1> scratch_rect = runtime->get_index_space_domain(
-    regions[2].get_logical_region().get_index_space());
   char *scratch_ptr;
   size_t scratch_bytes_per_task;
-  get_base_and_size(runtime, regions[2], task->regions[2], scratch_rect, scratch_ptr, scratch_bytes_per_task);
+  if(graph.kernel.scratch_bytes_per_task != 0){
+    Rect<1> scratch_rect = runtime->get_index_space_domain(
+      regions[2].get_logical_region().get_index_space()); 
+    get_base_and_size(runtime, regions[2], task->regions[2], scratch_rect, scratch_ptr, scratch_bytes_per_task);
+  }
   graph.execute_point(timestep, point, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), 
                       scratch_ptr, scratch_bytes_per_task);
@@ -196,22 +198,26 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     LogicalPartitionT<1> primary_lp = runtime->get_logical_partition(result_lr, primary_ip);
 
     // --- add by Yuankun
-    // Space of scarch output
-    IndexSpaceT<1> scartch_is = runtime->create_index_space(
-      ctx, Rect<1>(0, g.max_width * g.kernel.scratch_bytes_per_task - 1));
-    FieldSpace scratch_fs = runtime->create_field_space(ctx);
-    {
-      FieldAllocator allocator =
-        runtime->create_field_allocator(ctx, scratch_fs);
-      for (long i = 0; i < num_fields; ++i) {
-        allocator.allocate_field(sizeof(char), FID_FIRST+i);
+    if(g.kernel.scratch_bytes_per_task != 0){
+      // Space of scarch output
+      IndexSpaceT<1> scartch_is = runtime->create_index_space(
+        ctx, Rect<1>(0, g.max_width * g.kernel.scratch_bytes_per_task - 1));
+      FieldSpace scratch_fs = runtime->create_field_space(ctx);
+      {
+        FieldAllocator allocator =
+          runtime->create_field_allocator(ctx, scratch_fs);
+        for (long i = 0; i < num_fields; ++i) {
+          allocator.allocate_field(sizeof(char), FID_FIRST+i);
+        }
       }
-    }
-    LogicalRegionT<1> scratch_result_lr = runtime->create_logical_region(ctx, scartch_is, scratch_fs);
+      LogicalRegionT<1> scratch_result_lr = runtime->create_logical_region(ctx, scartch_is, scratch_fs);
 
-    // Divide this first into one piece per task
-    IndexPartitionT<1> scratch_ip = runtime->create_equal_partition(ctx, scartch_is, ts);
-    LogicalPartitionT<1> scratch_lp = runtime->get_logical_partition(scratch_result_lr, scratch_ip);
+      // Divide this first into one piece per task
+      IndexPartitionT<1> scratch_ip = runtime->create_equal_partition(ctx, scartch_is, ts);
+      LogicalPartitionT<1> scratch_lp = runtime->get_logical_partition(scratch_result_lr, scratch_ip);
+      scratch_regions.push_back(scratch_result_lr);
+      scratch_partitions.push_back(scratch_lp);
+    }
     // --- add by Yuankun
 
     // Next create secondary partitions for dependencies
@@ -238,9 +244,7 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     }
 
     regions.push_back(result_lr);
-    scratch_regions.push_back(scratch_result_lr);
     primary_partitions.push_back(primary_lp);
-    scratch_partitions.push_back(scratch_lp);//add by Yuankun
     secondary_partitions.push_back(secondary_lps);
   }
 }
@@ -317,8 +321,6 @@ void LegionApp::execute_timestep(size_t idx, long t)
   const TaskGraph &g = graphs[idx];
   const LogicalRegionT<1> &region = regions[idx];
   const LogicalPartitionT<1> &primary = primary_partitions[idx];
-  const LogicalRegionT<1> &sratch_region = scratch_regions[idx]; //add by Yuankun
-  const LogicalPartitionT<1> &scratch = scratch_partitions[idx]; // add by Yuankun
   const std::vector<LogicalPartitionT<1> > &secondary = secondary_partitions[idx];
 
   long offset = g.offset_at_timestep(t);
@@ -353,11 +355,16 @@ void LegionApp::execute_timestep(size_t idx, long t)
       .add_field(fin));
   }
   // add by Yuankun
-  launcher.add_region_requirement(
-    RegionRequirement(scratch, 0 /* default projection */,
+  if(g.kernel.scratch_bytes_per_task != 0) {
+    const LogicalRegionT<1> &sratch_region = scratch_regions[idx]; //add by Yuankun
+    const LogicalPartitionT<1> &scratch = scratch_partitions[idx]; // add by Yuankun
+    launcher.add_region_requirement(
+      RegionRequirement(scratch, 0 /* default projection */,
                       WRITE_DISCARD, EXCLUSIVE, sratch_region, tag)
-    .add_field(fout));
+      .add_field(fout));
+  }
   // add by Yuankun
+
   runtime->execute_index_space(ctx, launcher);
 }
 

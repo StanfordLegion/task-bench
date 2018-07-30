@@ -388,6 +388,8 @@ static TaskGraph default_graph()
   graph.kernel = {KernelType::EMPTY, 0};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
 
+  graph.kernel.scratch_bytes_per_task = 0;
+
   return graph;
 }
 
