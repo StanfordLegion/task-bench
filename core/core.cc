@@ -27,6 +27,14 @@
 
 void Kernel::execute() const
 {
+  Kernel::execute(NULL, 0);
+}
+
+void Kernel::execute(char *scratch_ptr, size_t scratch_bytes_per_task) const
+{
+  (*(const_cast <Kernel*>(this))).scratch_ptr = scratch_ptr;
+  (*(const_cast <Kernel*>(this))).scratch_bytes_per_task = scratch_bytes_per_task;
+
   switch(type) {
   case KernelType::EMPTY:
     execute_kernel_empty(*this);
@@ -370,12 +378,7 @@ void TaskGraph::execute_point(long timestep, long point,
 
   // Execute kernel
   Kernel k(kernel);
-
-  //-- add by Yuankun, Init kernel parameters
-  k.scratch_ptr = scratch_ptr;
-  k.scratch_bytes_per_task = scratch_bytes_per_task;
-  //-- add by Yuankun
-  k.execute();
+  k.execute(scratch_ptr, scratch_bytes_per_task);
 }
 
 static TaskGraph default_graph()

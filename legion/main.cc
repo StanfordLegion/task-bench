@@ -224,7 +224,7 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     // --- add by Yuankun
     if(g.kernel.scratch_bytes_per_task != 0){
       // Space of scarch output
-      IndexSpaceT<1> scartch_is = runtime->create_index_space(
+      IndexSpaceT<1> scratch_is = runtime->create_index_space(
         ctx, Rect<1>(0, g.max_width * g.kernel.scratch_bytes_per_task - 1));
       FieldSpace scratch_fs = runtime->create_field_space(ctx);
       {
@@ -234,10 +234,10 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
           allocator.allocate_field(sizeof(char), FID_FIRST+i);
         }
       }
-      LogicalRegionT<1> scratch_result_lr = runtime->create_logical_region(ctx, scartch_is, scratch_fs);
+      LogicalRegionT<1> scratch_result_lr = runtime->create_logical_region(ctx, scratch_is, scratch_fs);
 
       // Divide this first into one piece per task
-      IndexPartitionT<1> scratch_ip = runtime->create_equal_partition(ctx, scartch_is, ts);
+      IndexPartitionT<1> scratch_ip = runtime->create_equal_partition(ctx, scratch_is, ts);
       LogicalPartitionT<1> scratch_lp = runtime->get_logical_partition(scratch_result_lr, scratch_ip);
       scratch_regions.push_back(scratch_result_lr);
       scratch_partitions.push_back(scratch_lp);

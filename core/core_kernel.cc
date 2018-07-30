@@ -34,9 +34,12 @@ long long execute_kernel_busy_wait(const Kernel &kernel)
 // -- add by Yuankun
 void execute_kernel_memory(const Kernel &kernel)
 {
+    assert(kernel.scratch_bytes_per_task>0);
+    assert(kernel.scratch_ptr != NULL);
+
     //currently use two src input
     long long jump = kernel.jump;
-    long long N = kernel.scratch_bytes_per_task / 3;
+    long long N = kernel.scratch_bytes_per_task / (3 * sizeof(double));
 
     double *A = reinterpret_cast<double *>(kernel.scratch_ptr);
     double *B = reinterpret_cast<double *>(kernel.scratch_ptr + N * sizeof(double));
@@ -87,21 +90,9 @@ void execute_kernel_imbalance(const Kernel &kernel)
   	// srand(Timer::get_cur_time()); 
 
   	long long max_power = rand() % kernel.max_power;
-  	double temp, sum;
-	double A[128];
-
-	for (long iter = 0; iter < kernel.iterations; iter++) {
-		for (long i = 0; i < 128; i++) {
-		    temp = ((double) rand() / (RAND_MAX));
-		    sum = temp;
-		    for (long j=0; j<max_power; j++){
-		        temp *=temp;
-		        sum += temp;
-		    }    
-		    A[i] = sum;
-		}    
-	}
-	// printf("execute_load_imbalance! A[127]=%f, max_power=%lld\n", A[127], max_power);
+  	Kernel k(kernel);
+	k.max_power = max_power;
+	execute_kernel_compute(k);
 }
 
 // -- add by Yuankun
