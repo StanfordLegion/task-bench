@@ -24,6 +24,7 @@
 #include "core.h"
 
 using namespace Legion;
+using namespace Legion::Mapping;
 
 enum TaskIDs {
   TID_TOP,
@@ -58,6 +59,29 @@ struct Payload {
   long timestep;
   IndexPartitionT<1> primary_partition;
 };
+
+class TaskBenchMapper : public DefaultMapper
+{
+  public:
+    TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor local,
+                    const char *mapper_name);
+    virtual void default_policy_select_target_processors(MapperContext ctx,
+                                                         const Task &task,
+                                                         std::vector<Processor> &target_procs);
+};
+
+TaskBenchMapper::TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor local,
+                                 const char *mapper_name)
+  : DefaultMapper(rt, machine, local, mapper_name)
+{
+}
+
+void TaskBenchMapper::default_policy_select_target_processors(MapperContext ctx,
+                                                              const Task &task,
+                                                              std::vector<Processor> &target_procs)
+{
+  target_procs.push_back(task.target_proc);
+}
 
 void get_base_and_size(Runtime *runtime,
                        const PhysicalRegion &region,
@@ -385,6 +409,18 @@ void top(const Task *task,
   app.run();
 }
 
+void update_mappers(Machine machine, Runtime *runtime,
+                    const std::set<Processor> &local_procs)
+{
+  for (std::set<Processor>::const_iterator it = local_procs.begin();
+        it != local_procs.end(); it++)
+  {
+    TaskBenchMapper* mapper = new TaskBenchMapper(runtime->get_mapper_runtime(),
+                                                  machine, *it, "task_bench_mapper");
+    runtime->replace_default_mapper(mapper, *it);
+  }
+}
+
 int main(int argc, char **argv)
 {
   Runtime::set_top_level_task_id(TID_TOP);
@@ -410,5 +446,6 @@ int main(int argc, char **argv)
     Runtime::preregister_task_variant<dummy>(registrar, "dummy");
   }
 
+  Runtime::add_registration_callback(update_mappers);
   return Runtime::start(argc, argv);
 }

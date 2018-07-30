@@ -2,16 +2,14 @@
 #SBATCH --account=m2872
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
-#SBATCH --ntasks-per-node=20
-#SBATCH --cpus-per-task=1
 #SBATCH --exclusive
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-cores=$SLURM_JOB_CPUS_PER_NODE
+cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
 function launch {
-    srun -n $(( $1 * cores )) -N $1 --cpu_bind cores ../../mpi/nonblock "${@:2}" -width $(( $1 * cores ))
+    srun -n $(( $1 * cores )) -N $1 --ntasks-per-node=$cores --cpus-per-task=1 --cpu_bind cores ../../mpi/nonblock "${@:2}" -width $(( $1 * cores ))
 }
 
 function sweep {
