@@ -39,7 +39,7 @@ static void task1(void *descr[], void *cl_arg)
   output->first = payload.i;
   output->second = payload.j;
   Kernel k(payload.graph.kernel);
-  k.execute();
+  k.execute(extra_local_memory[tid], payload.graph.scratch_bytes_per_task);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -69,7 +69,7 @@ static void task2(void *descr[], void *cl_arg)
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else  
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -102,7 +102,7 @@ static void task3(void *descr[], void *cl_arg)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -138,7 +138,7 @@ static void task4(void *descr[], void *cl_arg)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 
 #else
   int rank;
@@ -317,11 +317,6 @@ StarPUApp::StarPUApp(int argc, char **argv)
   conf->nopencl = 0;
   conf->sched_policy_name = "lws";
   
-  extra_local_memory = (char**)malloc(sizeof(char*) * nb_cores);
-  for (i = 0; i < nb_cores; i++) {
-    extra_local_memory[i] = (char*)malloc(sizeof(char)*128);
-  }
-  
   int ret;
   ret = starpu_init(conf);
   STARPU_CHECK_RETURN_VALUE(ret, "starpu_init");
@@ -333,6 +328,8 @@ StarPUApp::StarPUApp(int argc, char **argv)
   Q = world/P;
   assert(P*Q == world);  
   
+  size_t max_scratch_bytes_per_task = 0;
+  
   for (i = 0; i < graphs.size(); i++) {
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
@@ -343,7 +340,23 @@ StarPUApp::StarPUApp(int argc, char **argv)
     assert (graph.output_bytes_per_task <= sizeof(float) * MB * MB);
 
     mat.ddescA = create_and_distribute_data(rank, world, MB, MB, mat.MT, mat.NT, P, Q, i);
+    
+    if (graph.scratch_bytes_per_task > max_scratch_bytes_per_task) {
+      max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
+    }
   }
+   
+  extra_local_memory = (char**)malloc(sizeof(char*) * nb_cores);
+  assert(extra_local_memory != NULL);
+  for (i = 0; i < nb_cores; i++) {
+    if (max_scratch_bytes_per_task > 0) {
+      extra_local_memory[i] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
+    } else {
+      extra_local_memory[i] = NULL;
+    }
+  }
+  
+  debug_printf(0, "max_scratch_bytes_per_task %lld\n", max_scratch_bytes_per_task);
 }
 
 StarPUApp::~StarPUApp()
