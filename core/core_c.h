@@ -40,17 +40,15 @@ typedef enum kernel_type_t {
   MEMORY_BOUND,
   COMPUTE_BOUND,
   IO_BOUND,
-  LOAD_IMBALANCE
+  LOAD_IMBALANCE,
 } kernel_type_t;
 
 typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
-  
-  long max_power; // compute kernel parameter
-  long jump;  // memeory kernel parameter
 
-  char *scratch_ptr;
+  long max_power; // compute kernel parameter
+  long jump;      // memory kernel parameter
 } kernel_t;
 
 void kernel_execute(kernel_t kernel);

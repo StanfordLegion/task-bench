@@ -30,10 +30,8 @@ void Kernel::execute() const
   Kernel::execute(NULL, 0);
 }
 
-void Kernel::execute(char *scratch_ptr, size_t scratch_bytes_per_task) const
+void Kernel::execute(char *scratch_ptr, size_t scratch_bytes) const
 {
-  (*(const_cast <Kernel*>(this))).scratch_ptr = scratch_ptr;
-
   switch(type) {
   case KernelType::EMPTY:
     execute_kernel_empty(*this);
@@ -42,7 +40,9 @@ void Kernel::execute(char *scratch_ptr, size_t scratch_bytes_per_task) const
     execute_kernel_busy_wait(*this);
     break;
   case KernelType::MEMORY_BOUND:
-    execute_kernel_memory(*this, scratch_bytes_per_task);
+    assert(scratch_ptr != NULL);
+    assert(scratch_bytes > 0);
+    execute_kernel_memory(*this, scratch_ptr, scratch_bytes);
     break;
   case KernelType::COMPUTE_BOUND:
     execute_kernel_compute(*this);
@@ -52,7 +52,7 @@ void Kernel::execute(char *scratch_ptr, size_t scratch_bytes_per_task) const
     break;
   case KernelType::LOAD_IMBALANCE:
     execute_kernel_imbalance(*this);
-    break;          
+    break;
   default:
     assert(false && "unimplemented kernel type");
   };
@@ -322,14 +322,15 @@ void TaskGraph::execute_point(long timestep, long point,
                               size_t n_inputs) const
 {
   TaskGraph::execute_point(timestep, point, output_ptr, output_bytes,
-                      input_ptr, input_bytes, n_inputs, 
-                      NULL, 0);
+                           input_ptr, input_bytes, n_inputs,
+                           NULL, 0);
 }
 
 void TaskGraph::execute_point(long timestep, long point,
                               char *output_ptr, size_t output_bytes,
                               const char **input_ptr, const size_t *input_bytes,
-                              size_t n_inputs, char *scratch_ptr, size_t scratch_bytes_per_task) const
+                              size_t n_inputs,
+                              char *scratch_ptr, size_t scratch_bytes) const
 {
   // Validate timestep and point
   assert(0 <= timestep && timestep < timesteps);
@@ -375,9 +376,12 @@ void TaskGraph::execute_point(long timestep, long point,
   output->first = timestep;
   output->second = point;
 
+  // Validate scratch
+  assert(scratch_bytes == scratch_bytes_per_task);
+
   // Execute kernel
   Kernel k(kernel);
-  k.execute(scratch_ptr, scratch_bytes_per_task);
+  k.execute(scratch_ptr, scratch_bytes);
 }
 
 static TaskGraph default_graph()
@@ -387,7 +391,7 @@ static TaskGraph default_graph()
   graph.timesteps = 4;
   graph.max_width = 4;
   graph.dependence = DependenceType::TRIVIAL;
-  graph.kernel = {KernelType::EMPTY, 0};
+  graph.kernel = {KernelType::EMPTY, 0, 0, 0};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
   graph.scratch_bytes_per_task = 0;
 
@@ -466,14 +470,14 @@ App::App(int argc, char **argv)
       graph.kernel.iterations = value;
     }
 
-    if (!strcmp(argv[i], "-size")) {
-      needs_argument(i, argc, "-size");
+    if (!strcmp(argv[i], "-scratch")) {
+      needs_argument(i, argc, "-scratch");
       long value  = atol(argv[++i]);
       if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-size %ld\" must be >= 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"-scratch %ld\" must be >= 0\n", value);
         abort();
       }
-      graph.scratch_bytes_per_task = value;     
+      graph.scratch_bytes_per_task = value;
     }
 
     if (!strcmp(argv[i], "-max_power")) {
@@ -493,7 +497,7 @@ App::App(int argc, char **argv)
         fprintf(stderr, "error: Invalid flag \"-jump %ld\" must be >= 0\n", value);
         abort();
       }
-      graph.kernel.jump = value;    
+      graph.kernel.jump = value;
     }
 
     if (!strcmp(argv[i], "-and")) {
