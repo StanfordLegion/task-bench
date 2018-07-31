@@ -74,7 +74,7 @@ static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
   k.execute();
 #else   
   *out = 0.0;
-  printf("\nGraph %d, Task1, [%d, %d], rank %d, core %d, out %.2f, local_mem %p\n", 
+  printf("Graph %d, Task1, [%d, %d], rank %d, core %d, out %.2f, local_mem %p\n", 
         payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *out, extra_local_memory[es->core_id]);
 #endif
 
@@ -102,7 +102,7 @@ static int test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size());
 #else
   *out = *in1 + 1.0;
-  printf("\nGraph %d, Task2, [%d, %d], rank %d, core %d, in1 %.2f out %.2f, local_mem %p\n", 
+  printf("Graph %d, Task2, [%d, %d], rank %d, core %d, in1 %.2f out %.2f, local_mem %p\n", 
         payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *out, extra_local_memory[es->core_id]);
 #endif
 
@@ -133,7 +133,7 @@ static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
 
 #else    
   *out = *in1 + *in2 + 1.0;
-  printf("\nGraph %d, Task3, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, out %.2f, local_mem %p\n", 
+  printf("Graph %d, Task3, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, out %.2f, local_mem %p\n", 
         payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *out, extra_local_memory[es->core_id]);
 #endif
 
@@ -165,7 +165,7 @@ static int test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size());
 #else
   *out = *in1 + *in2 + *in3 + 1.0;
-  printf("\nGraph %d, Task4, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, out %.2f, local_mem %p\n", 
+  printf("Graph %d, Task4, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, out %.2f, local_mem %p\n", 
         payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *out, extra_local_memory[es->core_id]);                   
 #endif
   
@@ -260,23 +260,24 @@ ParsecApp::ParsecApp(int argc, char **argv)
 
   /* Set defaults for non argv iparams */
   iparam_default_gemm(iparam);
-  iparam_default_ibnbmb(iparam, 0, 4, 4);
+  iparam_default_ibnbmb(iparam, 0, 2, 2);
 #if defined(HAVE_CUDA) && 1
   iparam[IPARAM_NGPUS] = 0;
 #endif
   
-  debug_printf(0, "init parsec, pid %d\n", getpid());
   //sleep(10);
   
   /* Initialize PaRSEC */
   iparam[IPARAM_N] = 4;
   iparam[IPARAM_M] = 4;
   
-  parse_arguments(&argc, &argv, iparam);
+ // parse_arguments(&argc, &argv, iparam);
   
   parsec = setup_parsec(argc, argv, iparam);
   
   PASTE_CODE_IPARAM_LOCALS(iparam);
+  
+  debug_printf(0, "init parsec, pid %d\n", getpid());
   
   extra_local_memory = (char**)malloc(sizeof(char*) * cores);
   for (i = 0; i < cores; i++) {

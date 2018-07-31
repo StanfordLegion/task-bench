@@ -59,7 +59,9 @@ starpu_ddesc_t* create_and_distribute_data(int rank, int world, int mb, int nb, 
 
 void destroy_data(starpu_ddesc_t *ddesc);
 
-starpu_data_handle_t starpu_desc_getaddr( starpu_ddesc_t *desc, int m, int n );
+starpu_data_handle_t starpu_desc_getaddr(starpu_ddesc_t *desc, int m, int n);
+
+int desc_islocal(const starpu_ddesc_t *A, int m, int n);
 
 #ifdef __cplusplus
 }

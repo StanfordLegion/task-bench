@@ -14,6 +14,7 @@
 #define VERBOSE_LEVEL 0
 
 #define USE_CORE_VERIFICATION
+#define ENABLE_PRUNE_MPI_TASK_INSERT
 
 char **extra_local_memory;
 
@@ -166,7 +167,7 @@ public:
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
 private:
-  void insert_task(int num_args, payload_t payload, std::vector<void*> &args);
+  void insert_task(int num_args, payload_t payload, std::vector<starpu_data_handle_t> &args, std::vector<std::pair<long, long>> &args_loc);
   void parse_argument(int argc, char **argv);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
@@ -180,55 +181,82 @@ private:
   matrix_t mat_array[10];
 };
 
-void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<void*> &args)
+void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_data_handle_t> &args, std::vector<std::pair<long, long>> &args_loc)
 {
   void (*callback)(void*) = NULL;
+  starpu_ddesc_t *descA = mat_array[payload.graph_id].ddescA;
   switch(num_args) {
   case 1:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task1),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
-        STARPU_NAME, "task1",
-        0);
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1) 
+#endif
+    { 
+      starpu_mpi_insert_task(
+          MPI_COMM_WORLD, &(cl_task1),
+          STARPU_VALUE,    &payload, sizeof(payload_t),
+          STARPU_RW, args[0],
+          STARPU_CALLBACK,  callback,
+          STARPU_PRIORITY,  0,
+          STARPU_NAME, "task1",
+          0);
+    }
     break;
   case 2:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task2),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
-        STARPU_NAME, "task2",
-        0);
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
+       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1) 
+#endif    
+    {
+      starpu_mpi_insert_task(
+          MPI_COMM_WORLD, &(cl_task2),
+          STARPU_VALUE,    &payload, sizeof(payload_t),
+          STARPU_R, args[1],
+          STARPU_RW, args[0],
+          STARPU_CALLBACK,  callback,
+          STARPU_PRIORITY,  0,
+          STARPU_NAME, "task2",
+          0);
+    }
     break;
   case 3:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task3),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_R, args[2],
-        STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
-        STARPU_NAME, "task3",
-        0);
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
+       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
+       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1) 
+#endif    
+    {
+      starpu_mpi_insert_task(
+          MPI_COMM_WORLD, &(cl_task3),
+          STARPU_VALUE,    &payload, sizeof(payload_t),
+          STARPU_R, args[1],
+          STARPU_R, args[2],
+          STARPU_RW, args[0],
+          STARPU_CALLBACK,  callback,
+          STARPU_PRIORITY,  0,
+          STARPU_NAME, "task3",
+          0);
+    }
     break;
   case 4:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task4),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_R, args[2],
-        STARPU_R, args[3],
-        STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
-        STARPU_NAME, "task4",
-        0);
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
+       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
+       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
+       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1) 
+#endif    
+    {
+      starpu_mpi_insert_task(
+          MPI_COMM_WORLD, &(cl_task4),
+          STARPU_VALUE,    &payload, sizeof(payload_t),
+          STARPU_R, args[1],
+          STARPU_R, args[2],
+          STARPU_R, args[3],
+          STARPU_RW, args[0],
+          STARPU_CALLBACK,  callback,
+          STARPU_PRIORITY,  0,
+          STARPU_NAME, "task4",
+          0);
+    }
     break;
   default:
     assert(false && "unexpected num_args");
@@ -276,7 +304,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   int i;
   
   P = 1;
-  MB = 10;
+  MB = 2;
   nb_cores = 1;
   
   parse_argument(argc, argv);
@@ -382,7 +410,8 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   long dset = g.dependence_set_at_timestep(t);
   matrix_t &mat = mat_array[idx];
   
-  std::vector<void*> args;
+  std::vector<starpu_data_handle_t> args;
+  std::vector<std::pair<long, long>> args_loc;
   payload_t payload;
   
   debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
@@ -394,19 +423,23 @@ void StarPUApp::execute_timestep(size_t idx, long t)
       num_args = 1;
       debug_printf(1, "%d[%d] ", x, num_args);
       args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
+      args_loc.push_back(std::make_pair(t, x));
     } else {
       if (t == 0) {
         num_args = 1;
         debug_printf(1, "%d[%d] ", x, num_args);
         args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
+        args_loc.push_back(std::make_pair(t, x));
       } else {
         num_args = 1;
         args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
+        args_loc.push_back(std::make_pair(t, x));
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
           debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
             args.push_back(starpu_desc_getaddr( mat.ddescA, t-1, i ));
+            args_loc.push_back(std::make_pair(t-1, i));
           }
         }
       }
@@ -415,8 +448,9 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     payload.j = x;
     payload.graph = g;
     payload.graph_id = idx;
-    insert_task(num_args, payload, args); 
+    insert_task(num_args, payload, args, args_loc); 
     args.clear();
+    args_loc.clear();
   }
   debug_printf(1, "\n");
 }
@@ -437,7 +471,7 @@ void StarPUApp::debug_printf(int verbose_level, const char *format, ...)
 
 int main(int argc, char **argv)
 {
-  printf("pid %d, %d\n", getpid(), STARPU_NMAXBUFS);
+ // printf("pid %d, %d\n", getpid(), STARPU_NMAXBUFS);
  // sleep(10); 
 
   

@@ -19,10 +19,12 @@
 #include <utility>
 
 #include "legion.h"
+#include "mappers/default_mapper.h"
 
 #include "core.h"
 
 using namespace Legion;
+using namespace Legion::Mapping;
 
 enum TaskIDs {
   TID_TOP,
@@ -41,6 +43,7 @@ enum TaskIDs {
 // number is configured at runtime.
 constexpr long STATIC_NUM_FIELDS = 100;
 constexpr long DEFAULT_NUM_FIELDS = 10;
+constexpr bool DEFAULT_EXACT_INSTANCE = false;
 static_assert(DEFAULT_NUM_FIELDS < STATIC_NUM_FIELDS,
               "DEFAULT_NUM_FIELDS is out of bounds");
 
@@ -56,6 +59,29 @@ struct Payload {
   long timestep;
   IndexPartitionT<1> primary_partition;
 };
+
+class TaskBenchMapper : public DefaultMapper
+{
+  public:
+    TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor local,
+                    const char *mapper_name);
+    virtual void default_policy_select_target_processors(MapperContext ctx,
+                                                         const Task &task,
+                                                         std::vector<Processor> &target_procs);
+};
+
+TaskBenchMapper::TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor local,
+                                 const char *mapper_name)
+  : DefaultMapper(rt, machine, local, mapper_name)
+{
+}
+
+void TaskBenchMapper::default_policy_select_target_processors(MapperContext ctx,
+                                                              const Task &task,
+                                                              std::vector<Processor> &target_procs)
+{
+  target_procs.push_back(task.target_proc);
+}
 
 void get_base_and_size(Runtime *runtime,
                        const PhysicalRegion &region,
@@ -107,10 +133,17 @@ void leaf(const Task *task,
     }
   }
 
-  char *scratch_ptr = (char *) malloc(graph.kernel.kernel_arg.scratch_bytes_per_task);
+  //add by Yuankun
+  char *scratch_ptr;
+  size_t scratch_bytes_per_task;
+  if(graph.scratch_bytes_per_task != 0){
+    Rect<1> scratch_rect = runtime->get_index_space_domain(
+      regions[2].get_logical_region().get_index_space()); 
+    get_base_and_size(runtime, regions[2], task->regions[2], scratch_rect, scratch_ptr, scratch_bytes_per_task);
+  }
   graph.execute_point(timestep, point, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), 
-                      scratch_ptr, graph.kernel.kernel_arg.scratch_bytes_per_task);
+                      scratch_ptr, scratch_bytes_per_task);
 }
 
 void dummy(const Task *task,
@@ -134,8 +167,11 @@ private:
   Runtime *runtime;
   Context ctx;
   long num_fields;
+  bool exact_instance;
   std::vector<LogicalRegionT<1> > regions;
+  std::vector<LogicalRegionT<1> > scratch_regions;
   std::vector<LogicalPartitionT<1> > primary_partitions;
+  std::vector<LogicalPartitionT<1> > scratch_partitions; //add by Yuankun
   std::vector<std::vector<LogicalPartitionT<1> > > secondary_partitions;
 };
 
@@ -144,6 +180,7 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
   , runtime(runtime)
   , ctx(ctx)
   , num_fields(DEFAULT_NUM_FIELDS)
+  , exact_instance(DEFAULT_EXACT_INSTANCE)
 {
   int argc = Runtime::get_input_args().argc;
   char **argv = Runtime::get_input_args().argv;
@@ -157,6 +194,9 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
         abort();
       }
       num_fields = value;
+    }
+    else if (!strcmp(argv[i], "-exact")) {
+      exact_instance = true;
     }
   }
 
@@ -180,6 +220,29 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     // Divide this first into one piece per task
     IndexPartitionT<1> primary_ip = runtime->create_equal_partition(ctx, is, ts);
     LogicalPartitionT<1> primary_lp = runtime->get_logical_partition(result_lr, primary_ip);
+
+    // --- add by Yuankun
+    if(g.scratch_bytes_per_task != 0){
+      // Space of scarch output
+      IndexSpaceT<1> scratch_is = runtime->create_index_space(
+        ctx, Rect<1>(0, g.max_width * g.scratch_bytes_per_task - 1));
+      FieldSpace scratch_fs = runtime->create_field_space(ctx);
+      {
+        FieldAllocator allocator =
+          runtime->create_field_allocator(ctx, scratch_fs);
+        for (long i = 0; i < num_fields; ++i) {
+          allocator.allocate_field(sizeof(char), FID_FIRST+i);
+        }
+      }
+      LogicalRegionT<1> scratch_result_lr = runtime->create_logical_region(ctx, scratch_is, scratch_fs);
+
+      // Divide this first into one piece per task
+      IndexPartitionT<1> scratch_ip = runtime->create_equal_partition(ctx, scratch_is, ts);
+      LogicalPartitionT<1> scratch_lp = runtime->get_logical_partition(scratch_result_lr, scratch_ip);
+      scratch_regions.push_back(scratch_result_lr);
+      scratch_partitions.push_back(scratch_lp);
+    }
+    // --- add by Yuankun
 
     // Next create secondary partitions for dependencies
     std::vector<LogicalPartitionT<1> >secondary_lps;
@@ -233,9 +296,20 @@ void LegionApp::run()
   }
 }
 
+template<typename T>
+T gcd(T a, T b)
+{
+  while (b != 0)
+  {
+    T old_b = b;
+    b = a % b;
+    a = old_b;
+  }
+  return a;
+}
+
 static long lcm(long a, long b) {
-  // Hack: Workaround to avoid needing C++17
-  return a * b / std::__gcd(a, b);
+  return a * b / gcd(a, b);
 }
 
 void LegionApp::execute_main_loop()
@@ -288,6 +362,7 @@ void LegionApp::execute_timestep(size_t idx, long t)
   payload.primary_partition = primary.get_index_partition();
   IndexLauncher launcher(TID_LEAF, bounds,
                          TaskArgument(&payload, sizeof(payload)), ArgumentMap());
+  MappingTagID tag = exact_instance ? Legion::Mapping::DefaultMapper::EXACT_REGION : 0;
   // This needs to be write-discard so that we don't catch a
   // dependence on the same point in the previous timestep, unless
   // that task is an explicit dependence. Note: there may still be a
@@ -295,14 +370,25 @@ void LegionApp::execute_timestep(size_t idx, long t)
   // different instances.
   launcher.add_region_requirement(
     RegionRequirement(primary, 0 /* default projection */,
-                      WRITE_DISCARD, EXCLUSIVE, region)
+                      WRITE_DISCARD, EXCLUSIVE, region, tag)
     .add_field(fout));
   if (dset < g.max_dependence_sets()) {
     launcher.add_region_requirement(
       RegionRequirement(secondary[dset], 0 /* default projection */,
-                        READ_ONLY, EXCLUSIVE, region)
+                        READ_ONLY, EXCLUSIVE, region, tag)
       .add_field(fin));
   }
+  // add by Yuankun
+  if(g.scratch_bytes_per_task != 0) {
+    const LogicalRegionT<1> &sratch_region = scratch_regions[idx]; //add by Yuankun
+    const LogicalPartitionT<1> &scratch = scratch_partitions[idx]; // add by Yuankun
+    launcher.add_region_requirement(
+      RegionRequirement(scratch, 0 /* default projection */,
+                      WRITE_DISCARD, EXCLUSIVE, sratch_region, tag)
+      .add_field(fout));
+  }
+  // add by Yuankun
+
   runtime->execute_index_space(ctx, launcher);
 }
 
@@ -321,6 +407,18 @@ void top(const Task *task,
 {
   LegionApp app(runtime, ctx);
   app.run();
+}
+
+void update_mappers(Machine machine, Runtime *runtime,
+                    const std::set<Processor> &local_procs)
+{
+  for (std::set<Processor>::const_iterator it = local_procs.begin();
+        it != local_procs.end(); it++)
+  {
+    TaskBenchMapper* mapper = new TaskBenchMapper(runtime->get_mapper_runtime(),
+                                                  machine, *it, "task_bench_mapper");
+    runtime->replace_default_mapper(mapper, *it);
+  }
 }
 
 int main(int argc, char **argv)
@@ -348,5 +446,6 @@ int main(int argc, char **argv)
     Runtime::preregister_task_variant<dummy>(registrar, "dummy");
   }
 
+  Runtime::add_registration_callback(update_mappers);
   return Runtime::start(argc, argv);
 }

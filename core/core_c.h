@@ -43,25 +43,15 @@ typedef enum kernel_type_t {
   LOAD_IMBALANCE
 } kernel_type_t;
 
-//-- add by Yuankun
-typedef struct kernel_arg_t{
-  char *scratch_ptr;
-  long num_src_input;
-  size_t scratch_bytes_per_task;
-
-  long max_power; // compute kernel parameter
-  long jump;  // memeory kernel parameter
-
-  // TODO: Add parameters for load imbalance, etc
-} kernel_arg_t;
-//-- add by Yuankun
-
 typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
   
-  //-- add by Yuankun
-  kernel_arg_t kernel_arg;
+  long max_power; // compute kernel parameter
+  long jump;  // memeory kernel parameter
+
+  char *scratch_ptr;
+  size_t scratch_bytes_per_task;
 } kernel_t;
 
 void kernel_execute(kernel_t kernel);
@@ -86,6 +76,7 @@ typedef struct task_graph_t {
   dependence_type_t dependence;
   kernel_t kernel;
   size_t output_bytes_per_task;
+  size_t scratch_bytes_per_task;
 } task_graph_t;
 
 long task_graph_offset_at_timestep(task_graph_t graph, long timestep);
