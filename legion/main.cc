@@ -133,8 +133,16 @@ void leaf(const Task *task,
     }
   }
 
+  char *scratch_ptr = NULL;
+  size_t scratch_bytes = 0;
+  if (graph.scratch_bytes_per_task != 0) {
+    Rect<1> scratch_rect = runtime->get_index_space_domain(
+      regions[2].get_logical_region().get_index_space());
+    get_base_and_size(runtime, regions[2], task->regions[2], scratch_rect, scratch_ptr, scratch_bytes);
+  }
   graph.execute_point(timestep, point, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(),
+                      scratch_ptr, scratch_bytes);
 }
 
 void dummy(const Task *task,
@@ -160,7 +168,9 @@ private:
   long num_fields;
   bool exact_instance;
   std::vector<LogicalRegionT<1> > regions;
+  std::vector<LogicalRegionT<1> > scratch_regions;
   std::vector<LogicalPartitionT<1> > primary_partitions;
+  std::vector<LogicalPartitionT<1> > scratch_partitions;
   std::vector<std::vector<LogicalPartitionT<1> > > secondary_partitions;
 };
 
@@ -236,6 +246,19 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     regions.push_back(result_lr);
     primary_partitions.push_back(primary_lp);
     secondary_partitions.push_back(secondary_lps);
+
+    // Create scratch space for tasks
+    if (g.scratch_bytes_per_task != 0) {
+      IndexSpaceT<1> scratch_is = runtime->create_index_space(
+        ctx, Rect<1>(0, g.max_width * g.scratch_bytes_per_task - 1));
+      LogicalRegionT<1> scratch_lr = runtime->create_logical_region(ctx, scratch_is, fs);
+
+      // Divide into one piece per task
+      IndexPartitionT<1> scratch_ip = runtime->create_equal_partition(ctx, scratch_is, ts);
+      LogicalPartitionT<1> scratch_lp = runtime->get_logical_partition(scratch_lr, scratch_ip);
+      scratch_regions.push_back(scratch_lr);
+      scratch_partitions.push_back(scratch_lp);
+    }
   }
 }
 
@@ -344,6 +367,15 @@ void LegionApp::execute_timestep(size_t idx, long t)
                         READ_ONLY, EXCLUSIVE, region, tag)
       .add_field(fin));
   }
+  if (g.scratch_bytes_per_task != 0) {
+    const LogicalRegionT<1> &sratch_region = scratch_regions[idx];
+    const LogicalPartitionT<1> &scratch = scratch_partitions[idx];
+    launcher.add_region_requirement(
+      RegionRequirement(scratch, 0 /* default projection */,
+                        WRITE_DISCARD, EXCLUSIVE, sratch_region, tag)
+      .add_field(fout));
+  }
+
   runtime->execute_index_space(ctx, launcher);
 }
 
