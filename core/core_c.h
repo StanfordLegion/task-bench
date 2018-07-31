@@ -51,7 +51,6 @@ typedef struct kernel_t {
   long jump;  // memeory kernel parameter
 
   char *scratch_ptr;
-  size_t scratch_bytes_per_task;
 } kernel_t;
 
 void kernel_execute(kernel_t kernel);

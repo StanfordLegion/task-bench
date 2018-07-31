@@ -133,7 +133,6 @@ void leaf(const Task *task,
     }
   }
 
-  //add by Yuankun
   char *scratch_ptr;
   size_t scratch_bytes_per_task;
   if(graph.scratch_bytes_per_task != 0){
@@ -171,7 +170,7 @@ private:
   std::vector<LogicalRegionT<1> > regions;
   std::vector<LogicalRegionT<1> > scratch_regions;
   std::vector<LogicalPartitionT<1> > primary_partitions;
-  std::vector<LogicalPartitionT<1> > scratch_partitions; //add by Yuankun
+  std::vector<LogicalPartitionT<1> > scratch_partitions; 
   std::vector<std::vector<LogicalPartitionT<1> > > secondary_partitions;
 };
 
@@ -221,9 +220,9 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     IndexPartitionT<1> primary_ip = runtime->create_equal_partition(ctx, is, ts);
     LogicalPartitionT<1> primary_lp = runtime->get_logical_partition(result_lr, primary_ip);
 
-    // --- add by Yuankun
+    // allocate scratch space
     if(g.scratch_bytes_per_task != 0){
-      // Space of scarch output
+      // Space of scrath output
       IndexSpaceT<1> scratch_is = runtime->create_index_space(
         ctx, Rect<1>(0, g.max_width * g.scratch_bytes_per_task - 1));
       FieldSpace scratch_fs = runtime->create_field_space(ctx);
@@ -242,7 +241,6 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
       scratch_regions.push_back(scratch_result_lr);
       scratch_partitions.push_back(scratch_lp);
     }
-    // --- add by Yuankun
 
     // Next create secondary partitions for dependencies
     std::vector<LogicalPartitionT<1> >secondary_lps;
@@ -378,16 +376,15 @@ void LegionApp::execute_timestep(size_t idx, long t)
                         READ_ONLY, EXCLUSIVE, region, tag)
       .add_field(fin));
   }
-  // add by Yuankun
+  // add scratch_region_requirement 
   if(g.scratch_bytes_per_task != 0) {
-    const LogicalRegionT<1> &sratch_region = scratch_regions[idx]; //add by Yuankun
-    const LogicalPartitionT<1> &scratch = scratch_partitions[idx]; // add by Yuankun
+    const LogicalRegionT<1> &sratch_region = scratch_regions[idx]; 
+    const LogicalPartitionT<1> &scratch = scratch_partitions[idx]; 
     launcher.add_region_requirement(
       RegionRequirement(scratch, 0 /* default projection */,
                       WRITE_DISCARD, EXCLUSIVE, sratch_region, tag)
       .add_field(fout));
   }
-  // add by Yuankun
 
   runtime->execute_index_space(ctx, launcher);
 }

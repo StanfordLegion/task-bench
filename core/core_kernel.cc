@@ -31,15 +31,14 @@ long long execute_kernel_busy_wait(const Kernel &kernel)
   return acc;
 }
 
-// -- add by Yuankun
-void execute_kernel_memory(const Kernel &kernel)
+void execute_kernel_memory(const Kernel &kernel, size_t scratch_bytes_per_task)
 {
-    assert(kernel.scratch_bytes_per_task>0);
+    assert(scratch_bytes_per_task>0);
     assert(kernel.scratch_ptr != NULL);
 
     //currently use two src input
     long long jump = kernel.jump;
-    long long N = kernel.scratch_bytes_per_task / (3 * sizeof(double));
+    long long N = scratch_bytes_per_task / (3 * sizeof(double));
 
     double *A = reinterpret_cast<double *>(kernel.scratch_ptr);
     double *B = reinterpret_cast<double *>(kernel.scratch_ptr + N * sizeof(double));
@@ -95,4 +94,3 @@ void execute_kernel_imbalance(const Kernel &kernel)
 	execute_kernel_compute(k);
 }
 
-// -- add by Yuankun

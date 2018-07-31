@@ -33,7 +33,6 @@ void Kernel::execute() const
 void Kernel::execute(char *scratch_ptr, size_t scratch_bytes_per_task) const
 {
   (*(const_cast <Kernel*>(this))).scratch_ptr = scratch_ptr;
-  (*(const_cast <Kernel*>(this))).scratch_bytes_per_task = scratch_bytes_per_task;
 
   switch(type) {
   case KernelType::EMPTY:
@@ -43,7 +42,7 @@ void Kernel::execute(char *scratch_ptr, size_t scratch_bytes_per_task) const
     execute_kernel_busy_wait(*this);
     break;
   case KernelType::MEMORY_BOUND:
-    execute_kernel_memory(*this);
+    execute_kernel_memory(*this, scratch_bytes_per_task);
     break;
   case KernelType::COMPUTE_BOUND:
     execute_kernel_compute(*this);
