@@ -71,7 +71,7 @@ static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
   output->first = payload.i;
   output->second = payload.j;
   Kernel k(payload.graph.kernel);
-  k.execute();
+  k.execute(extra_local_memory[es->core_id], payload.graph.scratch_bytes_per_task);
 #else   
   *out = 0.0;
   printf("Graph %d, Task1, [%d, %d], rank %d, core %d, out %.2f, local_mem %p\n", 
@@ -99,7 +99,7 @@ static int test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
 #else
   *out = *in1 + 1.0;
   printf("Graph %d, Task2, [%d, %d], rank %d, core %d, in1 %.2f out %.2f, local_mem %p\n", 
@@ -129,7 +129,7 @@ static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                     input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                     input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
 
 #else    
   *out = *in1 + *in2 + 1.0;
@@ -162,7 +162,7 @@ static int test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
 #else
   *out = *in1 + *in2 + *in3 + 1.0;
   printf("Graph %d, Task4, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, out %.2f, local_mem %p\n", 
@@ -279,13 +279,10 @@ ParsecApp::ParsecApp(int argc, char **argv)
   
   debug_printf(0, "init parsec, pid %d\n", getpid());
   
-  extra_local_memory = (char**)malloc(sizeof(char*) * cores);
-  for (i = 0; i < cores; i++) {
-    extra_local_memory[i] = (char*)malloc(sizeof(char)*128);
-  }
-  
   /* Getting new parsec handle of dtd type */
   dtd_tp = parsec_dtd_taskpool_new();
+  
+  size_t max_scratch_bytes_per_task = 0;
   
   for (i = 0; i < graphs.size(); i++) {
     TaskGraph &graph = graphs[i];
@@ -325,8 +322,23 @@ ParsecApp::ParsecApp(int argc, char **argv)
 
     /* matrix generation */
     //dplasma_dplrnt( parsec, 0, (parsec_tiled_matrix_dc_t *)&dcC, Cseed);
+                            
+    if (graph.scratch_bytes_per_task > max_scratch_bytes_per_task) {
+      max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
+    }
   }
   
+  extra_local_memory = (char**)malloc(sizeof(char*) * cores);
+  assert(extra_local_memory != NULL);
+  for (i = 0; i < cores; i++) {
+    if (max_scratch_bytes_per_task > 0) {
+      extra_local_memory[i] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
+    } else {
+      extra_local_memory[i] = NULL;
+    }
+  }
+  
+  debug_printf(0, "max_scratch_bytes_per_task %lld\n", max_scratch_bytes_per_task);
 
   parsec_context_add_taskpool( parsec, dtd_tp );
 }

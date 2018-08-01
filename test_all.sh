@@ -32,6 +32,7 @@ if [[ $USE_STARPU -eq 1 ]]; then
         mpirun -np 4 ./starpu/main -steps 9 -type $t -p 1
         mpirun -np 4 ./starpu/main -steps 9 -type $t -p 2
         mpirun -np 4 ./starpu/main -steps 9 -type $t -p 4
+        mpirun -np 4 ./starpu/main -steps 9 -type $t -p 1 -kernel memory_bound -scratch 64
     done
 fi
 
@@ -41,6 +42,7 @@ if [[ $USE_PARSEC -eq 1 ]]; then
         mpirun -np 4 ./parsec/main -steps 9 -type $t -p 1
         mpirun -np 4 ./parsec/main -steps 9 -type $t -p 2
         mpirun -np 4 ./parsec/main -steps 9 -type $t -p 4
+        mpirun -np 4 ./parsec/main -steps 9 -type $t -p 1 -kernel memory_bound -scratch 64
     done
 fi
 
