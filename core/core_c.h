@@ -39,12 +39,16 @@ typedef enum kernel_type_t {
   BUSY_WAIT,
   MEMORY_BOUND,
   COMPUTE_BOUND,
+  IO_BOUND,
+  LOAD_IMBALANCE,
 } kernel_type_t;
 
 typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
-  // TODO: Add parameters for load imbalance, etc.
+
+  long max_power; // compute kernel parameter
+  long jump;      // memory kernel parameter
 } kernel_t;
 
 void kernel_execute(kernel_t kernel);
@@ -69,6 +73,7 @@ typedef struct task_graph_t {
   dependence_type_t dependence;
   kernel_t kernel;
   size_t output_bytes_per_task;
+  size_t scratch_bytes_per_task;
 } task_graph_t;
 
 long task_graph_offset_at_timestep(task_graph_t graph, long timestep);

@@ -39,7 +39,7 @@ static void task1(void *descr[], void *cl_arg)
   output->first = payload.i;
   output->second = payload.j;
   Kernel k(payload.graph.kernel);
-  k.execute();
+  k.execute(extra_local_memory[tid], payload.graph.scratch_bytes_per_task);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -69,7 +69,7 @@ static void task2(void *descr[], void *cl_arg)
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else  
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -102,7 +102,7 @@ static void task3(void *descr[], void *cl_arg)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -138,7 +138,7 @@ static void task4(void *descr[], void *cl_arg)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size());
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 
 #else
   int rank;
@@ -179,6 +179,8 @@ private:
   int Q;
   int MB;
   matrix_t mat_array[10];
+  int nb_fields;
+  int nb_fields_arg;
 };
 
 void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_data_handle_t> &args, std::vector<std::pair<long, long>> &args_loc)
@@ -275,6 +277,9 @@ void StarPUApp::parse_argument(int argc, char **argv)
     if (!strcmp(argv[i], "-p")) {
       P = atol(argv[++i]);
     }
+    if (!strcmp(argv[i], "-field")) {
+      nb_fields_arg = atol(argv[++i]);
+    }
   }
 }
 
@@ -306,6 +311,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   P = 1;
   MB = 2;
   nb_cores = 1;
+  nb_fields = 0;
   
   parse_argument(argc, argv);
   
@@ -316,11 +322,6 @@ StarPUApp::StarPUApp(int argc, char **argv)
   conf->ncuda = 0;
   conf->nopencl = 0;
   conf->sched_policy_name = "lws";
-  
-  extra_local_memory = (char**)malloc(sizeof(char*) * nb_cores);
-  for (i = 0; i < nb_cores; i++) {
-    extra_local_memory[i] = (char*)malloc(sizeof(char)*128);
-  }
   
   int ret;
   ret = starpu_init(conf);
@@ -333,6 +334,8 @@ StarPUApp::StarPUApp(int argc, char **argv)
   Q = world/P;
   assert(P*Q == world);  
   
+  size_t max_scratch_bytes_per_task = 0;
+  
   for (i = 0; i < graphs.size(); i++) {
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
@@ -343,7 +346,31 @@ StarPUApp::StarPUApp(int argc, char **argv)
     assert (graph.output_bytes_per_task <= sizeof(float) * MB * MB);
 
     mat.ddescA = create_and_distribute_data(rank, world, MB, MB, mat.MT, mat.NT, P, Q, i);
+    
+    if (graph.scratch_bytes_per_task > max_scratch_bytes_per_task) {
+      max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
+    }
+    
+    if (nb_fields < graph.timesteps) {
+      nb_fields = graph.timesteps;
+    }
   }
+  
+  if (nb_fields_arg > 0) {
+    nb_fields = nb_fields_arg;
+  }
+   
+  extra_local_memory = (char**)malloc(sizeof(char*) * nb_cores);
+  assert(extra_local_memory != NULL);
+  for (i = 0; i < nb_cores; i++) {
+    if (max_scratch_bytes_per_task > 0) {
+      extra_local_memory[i] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
+    } else {
+      extra_local_memory[i] = NULL;
+    }
+  }
+  
+  debug_printf(0, "max_scratch_bytes_per_task %lld, nb_fields %d\n", max_scratch_bytes_per_task, nb_fields);
 }
 
 StarPUApp::~StarPUApp()
@@ -422,24 +449,24 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     if (deps.size() == 0) {
       num_args = 1;
       debug_printf(1, "%d[%d] ", x, num_args);
-      args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
-      args_loc.push_back(std::make_pair(t, x));
+      args.push_back(starpu_desc_getaddr( mat.ddescA, t%nb_fields, x ));
+      args_loc.push_back(std::make_pair(t%nb_fields, x));
     } else {
       if (t == 0) {
         num_args = 1;
         debug_printf(1, "%d[%d] ", x, num_args);
-        args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
-        args_loc.push_back(std::make_pair(t, x));
+        args.push_back(starpu_desc_getaddr( mat.ddescA, t%nb_fields, x ));
+        args_loc.push_back(std::make_pair(t%nb_fields, x));
       } else {
         num_args = 1;
-        args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
-        args_loc.push_back(std::make_pair(t, x));
+        args.push_back(starpu_desc_getaddr( mat.ddescA, t%nb_fields, x ));
+        args_loc.push_back(std::make_pair(t%nb_fields, x));
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
           debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
-            args.push_back(starpu_desc_getaddr( mat.ddescA, t-1, i ));
-            args_loc.push_back(std::make_pair(t-1, i));
+            args.push_back(starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, i ));
+            args_loc.push_back(std::make_pair((t-1)%nb_fields, i));
           }
         }
       }
