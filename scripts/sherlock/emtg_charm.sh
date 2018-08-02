@@ -13,5 +13,5 @@ done < nodefile
 procs=`cat nodefile | wc -l`
 
 for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-	./charmrun ./benchmark +p$procs ++nodelist hostfile +setcpuaffinity ++mpiexec -kernel busy_wait -iter $(( 1 << (24-s) )) -type stencil_1d -steps 800 -width 80
+	../../charm++/charmrun ../../charm++/benchmark +p$procs ++nodelist hostfile +setcpuaffinity ++mpiexec -kernel busy_wait -iter $(( 1 << (24-s) )) -type stencil_1d -steps 1000 -width 80
 done
