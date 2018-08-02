@@ -1,4 +1,5 @@
 /alltoall
 /basic
 /bcast
+/buffered_send
 /nonblock

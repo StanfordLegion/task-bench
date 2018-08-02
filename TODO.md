@@ -6,6 +6,7 @@
       * Other dependence types
           * Random
           * W/V cycles
+          * K-nearest neighbors (as a way to measure overhead as a function of number of dependencies)
       * Other kernel types
           * Compute bound
           * Memory bound
