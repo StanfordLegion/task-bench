@@ -77,8 +77,18 @@ fi
 
 if [[ $USE_CHARM -eq 1 ]]; then
     pushd "$CHARM_DIR"
-    ./build charm++ $CHARM_VERSION --with-production
+    ./build charm++ $CHARM_VERSION --with-production -j$THREADS
+    popd
+    pushd "$CHARM_SMP_DIR"
+    ./build charm++ $CHARM_VERSION smp --with-production -j$THREADS
     popd
     make -C charm++ clean
     make -C charm++
+    (
+        export CHARM_DIR="$CHARM_SMP_DIR"
+        rm -rf charm++_smp
+        cp -r charm++ charm++_smp
+        make -C charm++_smp clean
+        make -C charm++_smp
+     )
 fi 
