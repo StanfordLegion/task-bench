@@ -22,7 +22,7 @@ config const numNeighbors = 3;
  // LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. ./task_benchmark -nl 1 -type trivial
  // bebug line:          compilerError( "tmp.type: ", (tmp.type : string ) );
 
-
+ 
   proc main(args: [] string) {
     var argc = args.numElements;
     var app = app_create(argc:int(32), convert_args_to_c_args(argc, args));
@@ -37,38 +37,44 @@ config const numNeighbors = 3;
     var tasksArray = find_tasks_per_node(graphs, totalWidth);
     //writeln("tasksArray: ", tasksArray);
 
-    var tasksGrid = init_env(totalWidth);
+    var tasksGrid = init_tasksGrid(totalWidth); // grid to send from
     // have an cube of atomic variables that are all set to 0
-    var atomicCube: [1..totalWidth][1..totalWidth][1..totalSteps] atomic int;
+    var atomicGrid = init_atomicGrid(totalWidth, totalSteps);
+    //var atomicCube: [1..totalWidth][1..totalWidth][1..totalSteps] atomic int;
     // a cube of all of the neighboring array
-    var depenCube: [1..dataSize][1..totalWidth][1..totalSteps] int;
+    var depenGrid = init_depenGrid(totalWidth, totalSteps); // grid to recieve from 
+    //var depenCube: [1..dataSize][1..totalWidth][1..totalSteps] int;
 
     //print_grid(tasksGrid, dataSize, totalWidth);
-    writeln(tasksGrid);
-    // writeln("rows in tasksGrid ", tasksGrid[3,7]);
+    // writeln("tasksGrid: ");
+    // writeln(tasksGrid);
 
     
     // loop over the vector of task graphs to execute
     for i in 0..task_graph_list_num_task_graphs(graphs) - 1 {
       // pass in the first graph to execute
-      execute_task_graph(task_graph_list_task_graph(graphs, i), depenCube, tasksGrid, 
-        atomicCube, tasksArray, totalWidth, totalSteps, app);
+      execute_task_graph(task_graph_list_task_graph(graphs, i), depenGrid, tasksGrid, 
+       atomicGrid, tasksArray, totalWidth, totalSteps, app);
     }
 
     // each slice is a tasks
-    print_cube(depenCube, dataSize, totalWidth, totalSteps);
-    print_atomic_cube(atomicCube, totalWidth, totalWidth, totalSteps);
+    //print_cube(depenCube, dataSize, totalWidth, totalSteps);
+    // writeln("atomic grid: ");
+    // writeln(atomicGrid);
+    // writeln("depen grid: ");
+    // writeln(depenGrid);
+    //print_atomic_cube(atomicCube, totalWidth, totalWidth, totalSteps);
   }
 
-  proc execute_task_graph(graph, depenCube, tasksGrird, 
-    atomicCube, tasksArray, totalWidth, totalSteps, app) {
+  proc execute_task_graph(graph, depenGrid, tasksGrid, 
+    atomicGrid, tasksArray, totalWidth, totalSteps, app) {
       //print_depenencies(graph, totalWidth); // where to receive 
       //print_reverse_depenencies(graph, totalWidth); // where to send
-      run_depenencies(graph, depenCube, tasksGrird, atomicCube, tasksArray, totalWidth, totalSteps, app);
+      run_depenencies(graph, depenGrid, tasksGrid, atomicGrid, tasksArray, totalWidth, totalSteps, app);
 
   }
   
-  proc run_depenencies(graph, depenCube, tasksGrid, atomicCube, tasksArray, totalWidth, totalSteps, app) {
+  proc run_depenencies(graph, depenGrid, tasksGrid, atomicGrid, tasksArray, totalWidth, totalSteps, app) {
     t.start();
     coforall loc in Locales { 
       on loc {
@@ -78,9 +84,8 @@ config const numNeighbors = 3;
           //writeln("Using locale ", here.id + 1, " of ", numLocales, " and task number ", i, " is running on node ", here.id + 1);
           for j in 1..totalSteps - 1 {
             //writeln("step number: ", j);
-            //var currArray = get_from_grid(tasksGrid, i);
-            var currArray = tasksGrid;
-            //writeln("currArray ", currArray);
+            // var currArray = get_from_grid(tasksGrid, i);
+            // writeln("currArray ", currArray);
             var depenSet = task_graph_dependence_set_at_timestep(graph, j - 1);
             if (j != 1) { // wait for stuff before sending
              // writeln("waiting on task: ", i);
@@ -90,10 +95,11 @@ config const numNeighbors = 3;
                 var interval = interval_list_interval(list, k);
                 //writeln("interval on location (", i, ",", j, ") is waiting on ", size, " location(s) at [", interval.start, ",", interval.end, "]");
                 for points in interval.start..interval.end {
-                  (atomicCube[i][points + 1][j - 1]).waitFor(1);
+                  // (atomicCube[i][points + 1][j - 1]).waitFor(1);
+                  (atomicGrid[(i,(points + 1 + totalWidth*(j-2)))]).waitFor(1);
                 }
               }
-              //writeln("done waiting on task: ", i);
+              // writeln("done waiting on task: ", i);
             }
             kernel_execute(graph.kernel);
             var revList = task_graph_reverse_dependencies(graph, depenSet, i - 1);
@@ -102,8 +108,9 @@ config const numNeighbors = 3;
               var interval = interval_list_interval(revList, k);
               //writeln("interval on location (", i, ",", j, ") is sending to ", size, " location(s) at [", interval.start, ",", interval.end, "]");
               for points in interval.start..interval.end {
-                add_to_cube(depenCube, currArray, dataSize, points + 1, j + 1);
-                (atomicCube[i][points + 1][j]).write(1);
+                add_to_depenGrid(depenGrid, tasksGrid, dataSize, points + 1, j, totalWidth);
+                // (atomicCube[i][points + 1][j]).write(1);
+                (atomicGrid[(i,(points + 1 + totalWidth*(j-1)))]).write(1);
               }
             }
           }
@@ -195,26 +202,43 @@ proc find_number_of_steps(graphs) {
   * Function: init_env this method will create a grid that stores the info for each node
   * Return: returns a grid of the inforamation
   */
-  proc init_env(totalWidth) {
-    // var tasksGrid: [1..totalWidth][1..dataSize] int; // x rows and y cols 
-    // for i in 1..totalWidth {
-    //   //init an array for this node 
-    //   var tmp = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    //   // assign tasksGrid[i] = array;
-    //   add_to_grid(tasksGrid, tmp, i);
-    // }
-    const Space = {1..totalWidth, 1..dataSize};
-    const LocalSpace = {1..numLocales, 1..1};
-    var targets: [LocalSpace] locale;
+  proc init_tasksGrid(totalWidth) {
+    const tasksSpace = {1..totalWidth, 1..dataSize};
+    const localTasksSpace = {1..numLocales, 1..1};
+    var targets: [localTasksSpace] locale;
     forall i in 1..numLocales {
       targets[(i,1)] = Locales[i - 1];
     }
-    const D: domain(2) dmapped Block(boundingBox=Space, targetLocales=targets) = Space;
+    const D: domain(2) dmapped Block(boundingBox=tasksSpace, targetLocales=targets) = tasksSpace;
     var tasksGrid: [D] int;
     forall a in tasksGrid {
-      a = here.id;
+      a = 1;
     }
     return tasksGrid;
+  }
+
+  proc init_atomicGrid(totalWidth, totalSteps) {
+    const atomicSpace = {1..totalWidth, 1..totalSteps*totalWidth};
+    const localAtomicSpace = {1..numLocales, 1..1};
+    var targets: [localAtomicSpace] locale;
+    forall i in 1..numLocales {
+      targets[(i,1)] = Locales[i - 1];
+    }
+    const D: domain(2) dmapped Block(boundingBox=atomicSpace, targetLocales=targets) = atomicSpace;
+    var atomicGrid: [D] atomic int;
+    return atomicGrid;
+  }
+
+  proc init_depenGrid(totalWidth, totalSteps) {
+    const depenSpace = {1..totalWidth*totalSteps, 1..dataSize};
+    const localDepenSpace = {1..numLocales, 1..1};
+    var targets: [localDepenSpace] locale;
+    forall i in 1..numLocales {
+      targets[(i,1)] = Locales[i - 1];
+    }
+    const D: domain(2) dmapped Block(boundingBox=depenSpace, targetLocales=targets) = depenSpace;
+    var depenGrid: [D] int;
+    return depenGrid;
   }
 
   /*
@@ -316,11 +340,10 @@ proc find_number_of_steps(graphs) {
  *                         updating the grid 
  * Param: grid the grid that we want information from 
  * Param: currIndex the cols of the grid we are looking at 
- * Param: sz the rows of the grid we are looking at 
  * Return: returns the array that was in the grid
  */
  proc get_from_grid(grid, currIndex) {
-  return grid[currIndex];
+  return grid[(1,currIndex)];
  }
 
 
@@ -349,10 +372,9 @@ proc find_number_of_steps(graphs) {
  * Function: add_to_cube this method adds three arrays/ grid/ slice of cube to a cube of ints 
  * Return: no return but the cube is updated
  */
- proc add_to_cube(cube, currArray, x, y, z) {
-  for i in 1..x {
-    cube[i][y][z] += currArray[(z,i)];
-    // cube[i][y][z] += 1;
+ proc add_to_depenGrid(depenGrid, currArray, dataSize, currWidth, currStep, totalWidth) {
+  forall i in 1..dataSize {
+    depenGrid[(currWidth + totalWidth*currStep,i)] += currArray[(currWidth,i)];
   }
  }
 
