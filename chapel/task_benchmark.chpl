@@ -57,7 +57,6 @@ config const numNeighbors = 3;
        atomicGrid, tasksArray, totalWidth, totalSteps, app);
     }
 
-    // each slice is a tasks
     // print_cube(depenCube, dataSize, totalWidth, totalSteps);
     writeln("atomic grid: ");
     writeln(atomicGrid);
