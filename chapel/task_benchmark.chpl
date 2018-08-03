@@ -43,9 +43,9 @@ config const numNeighbors = 3;
     //var atomicCube: [1..totalWidth][1..totalWidth][1..totalSteps] atomic int;
     // a cube of all of the neighboring array
     var depenGrid = init_depenGrid(totalWidth, totalSteps); // grid to recieve from 
-    //var depenCube: [1..dataSize][1..totalWidth][1..totalSteps] int;
+    // var depenCube: [1..dataSize][1..totalWidth][1..totalSteps] int;
 
-    //print_grid(tasksGrid, dataSize, totalWidth);
+    // print_grid(tasksGrid, dataSize, totalWidth);
     writeln("tasksGrid: ");
     writeln(tasksGrid);
 
