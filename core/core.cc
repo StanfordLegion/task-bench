@@ -631,8 +631,8 @@ void App::report_timing(double elapsed_seconds) const
       }
     }
 
-    flops += flops_per_task() * num_tasks;
-    bytes += bytes_per_task() * num_tasks;
+    flops += flops_per_task(g) * num_tasks;
+    bytes += bytes_per_task(g) * num_tasks;
   }
 
   printf("Total Tasks %lld\n", num_tasks);
