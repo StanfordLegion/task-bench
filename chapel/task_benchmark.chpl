@@ -46,8 +46,8 @@ config const numNeighbors = 3;
     //var depenCube: [1..dataSize][1..totalWidth][1..totalSteps] int;
 
     //print_grid(tasksGrid, dataSize, totalWidth);
-    // writeln("tasksGrid: ");
-    // writeln(tasksGrid);
+    writeln("tasksGrid: ");
+    writeln(tasksGrid);
 
     
     // loop over the vector of task graphs to execute
@@ -59,17 +59,17 @@ config const numNeighbors = 3;
 
     // each slice is a tasks
     //print_cube(depenCube, dataSize, totalWidth, totalSteps);
-    // writeln("atomic grid: ");
-    // writeln(atomicGrid);
-    // writeln("depen grid: ");
-    // writeln(depenGrid);
+    writeln("atomic grid: ");
+    writeln(atomicGrid);
+    writeln("depen grid: ");
+    writeln(depenGrid);
     //print_atomic_cube(atomicCube, totalWidth, totalWidth, totalSteps);
   }
 
   proc execute_task_graph(graph, depenGrid, tasksGrid, 
     atomicGrid, tasksArray, totalWidth, totalSteps, app) {
-      //print_depenencies(graph, totalWidth); // where to receive 
-      //print_reverse_depenencies(graph, totalWidth); // where to send
+      print_depenencies(graph, totalWidth); // where to receive 
+      print_reverse_depenencies(graph, totalWidth); // where to send
       run_depenencies(graph, depenGrid, tasksGrid, atomicGrid, tasksArray, totalWidth, totalSteps, app);
 
   }
@@ -83,17 +83,16 @@ config const numNeighbors = 3;
         coforall i in (1 + place)..(tasksArray[here.id] + place) {
           //writeln("Using locale ", here.id + 1, " of ", numLocales, " and task number ", i, " is running on node ", here.id + 1);
           for j in 1..totalSteps - 1 {
-            //writeln("step number: ", j);
-            // var currArray = get_from_grid(tasksGrid, i);
-            // writeln("currArray ", currArray);
-            var depenSet = task_graph_dependence_set_at_timestep(graph, j - 1);
+            writeln("step number: ", j);
+            
             if (j != 1) { // wait for stuff before sending
              // writeln("waiting on task: ", i);
-              var list = task_graph_dependencies(graph, depenSet, i - 1); // get interval list 
+              var depenSet = task_graph_dependence_set_at_timestep(graph, j - 2);
+              var list = task_graph_reverse_dependencies(graph, depenSet, i - 1); // get interval list 
               var size = interval_list_num_intervals(list);
               for k in 0..size - 1 {
                 var interval = interval_list_interval(list, k);
-                //writeln("interval on location (", i, ",", j, ") is waiting on ", size, " location(s) at [", interval.start, ",", interval.end, "]");
+                writeln("interval on location (", i - 1, ",", j - 1, ") is waiting on ", size, " location(s) at [", interval.start, ",", interval.end, "]");
                 for points in interval.start..interval.end {
                   // (atomicCube[i][points + 1][j - 1]).waitFor(1);
                   (atomicGrid[(i,(points + 1 + totalWidth*(j-2)))]).waitFor(1);
@@ -102,11 +101,12 @@ config const numNeighbors = 3;
               // writeln("done waiting on task: ", i);
             }
             kernel_execute(graph.kernel);
+            var depenSet = task_graph_dependence_set_at_timestep(graph, j - 1);
             var revList = task_graph_reverse_dependencies(graph, depenSet, i - 1);
             var revSize = interval_list_num_intervals(revList);
             for k in 0..revSize - 1 {
               var interval = interval_list_interval(revList, k);
-              //writeln("interval on location (", i, ",", j, ") is sending to ", size, " location(s) at [", interval.start, ",", interval.end, "]");
+              writeln("interval on location (", i - 1, ",", j - 1, ") is sending to ", revSize, " location(s) at [", interval.start, ",", interval.end, "]");
               for points in interval.start..interval.end {
                 add_to_depenGrid(depenGrid, tasksGrid, dataSize, points + 1, j, totalWidth);
                 // (atomicCube[i][points + 1][j]).write(1);
@@ -158,7 +158,7 @@ config const numNeighbors = 3;
         for i in 0..size - 1{
           var interval = interval_list_interval(list, i);
           write("interval on location (", tasks, ",", steps, ")");
-          writeln(" is replying on ", size, " location(s) at [", interval.start, ",", interval.end, "]");
+          writeln(" is sending to ", size, " location(s) at [", interval.start, ",", interval.end, "]");
         }
       }
     } 
