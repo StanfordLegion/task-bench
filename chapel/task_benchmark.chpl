@@ -58,12 +58,12 @@ config const numNeighbors = 3;
     }
 
     // each slice is a tasks
-    //print_cube(depenCube, dataSize, totalWidth, totalSteps);
+    // print_cube(depenCube, dataSize, totalWidth, totalSteps);
     writeln("atomic grid: ");
     writeln(atomicGrid);
     writeln("depen grid: ");
-    writeln(depenGrid);
-    //print_atomic_cube(atomicCube, totalWidth, totalWidth, totalSteps);
+    writeln(depenGrid);  
+    // print_atomic_cube(atomicCube, totalWidth, totalWidth, totalSteps);
   }
 
   proc execute_task_graph(graph, depenGrid, tasksGrid, 
