@@ -569,10 +569,52 @@ void App::display() const
   }
 }
 
+// IMPORTANT: Keep this up-to-date with kernel implementations
+static long long flops_per_task(const TaskGraph &g)
+{
+  switch(g.kernel.type) {
+  case KernelType::EMPTY:
+  case KernelType::BUSY_WAIT:
+  case KernelType::MEMORY_BOUND:
+    return 0;
+
+  case KernelType::COMPUTE_BOUND:
+    return 2 * g.kernel.max_power * 128 * g.kernel.iterations;
+
+  case KernelType::IO_BOUND:
+  case KernelType::LOAD_IMBALANCE:
+    return 0;
+  default:
+    assert(false && "unimplemented kernel type");
+  };
+}
+
+// IMPORTANT: Keep this up-to-date with kernel implementations
+static long long bytes_per_task(const TaskGraph &g)
+{
+  switch(g.kernel.type) {
+  case KernelType::EMPTY:
+  case KernelType::BUSY_WAIT:
+    return 0;
+
+  case KernelType::MEMORY_BOUND:
+    return g.scratch_bytes_per_task * g.kernel.iterations;
+
+  case KernelType::COMPUTE_BOUND:
+  case KernelType::IO_BOUND:
+  case KernelType::LOAD_IMBALANCE:
+    return 0;
+  default:
+    assert(false && "unimplemented kernel type");
+  };
+}
+
 void App::report_timing(double elapsed_seconds) const
 {
   long long num_tasks = 0;
   long long num_deps = 0;
+  long long flops = 0;
+  long long bytes = 0;
   for (auto g : graphs) {
     for (long t = 0; t < g.timesteps; ++t) {
       long offset = g.offset_at_timestep(t);
@@ -588,11 +630,16 @@ void App::report_timing(double elapsed_seconds) const
         }
       }
     }
+
+    flops += flops_per_task() * num_tasks;
+    bytes += bytes_per_task() * num_tasks;
   }
 
   printf("Total Tasks %lld\n", num_tasks);
   printf("Total Dependencies %lld\n", num_deps);
+  printf("Total FLOPs %lld\n", flops);
+  printf("Total Bytes %lld\n", bytes);
   printf("Elapsed Time %e seconds\n", elapsed_seconds);
-  printf("Time per Task %e seconds\n", elapsed_seconds/num_tasks);
-  printf("Time per Dependency %e seconds\n", elapsed_seconds/num_deps);
+  printf("FLOP/s %e\n", flops/elapsed_seconds);
+  printf("B/s %e\n", bytes/elapsed_seconds);
 }
