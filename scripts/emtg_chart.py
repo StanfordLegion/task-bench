@@ -34,6 +34,20 @@ _columns = collections.OrderedDict([
 def same(values):
     return all(value == values[0] for value in values)
 
+def group_by(keys, values):
+    last_key = None
+    last_group = None
+    for key, value in zip(keys, values):
+        if key != last_key:
+            if last_group is not None:
+                yield (last_key, last_group)
+            last_group = []
+        last_key = key
+        last_group.append(value)
+
+    if last_group is not None:
+        yield (last_key, last_group)
+
 def analyze(filename, nodes, cores, threshold):
     compute = collections.OrderedDict([
         ('scale_factor', lambda t: t['iterations'][0] / t['iterations']),
@@ -55,6 +69,15 @@ def analyze(filename, nodes, cores, threshold):
     assert same(table['tasks'])
     assert all(table['tasks'] == table['steps'] * table['width'])
 
+    # Group by iteration count and compute statistics:
+    table['iterations'], table['elapsed'], table['std'], table['reps'] = list(map(
+        numpy.asarray,
+        zip(*[(k, numpy.mean(v), numpy.std(v), len(v))
+              for k, v in group_by(table['iterations'], table['elapsed'])])))
+
+    for column in ('steps', 'width', 'tasks'):
+        table[column] = numpy.resize(table[column], table['iterations'].shape)
+
     # Compute derived columns:
     for k, f in compute.items():
         table[k] = f(table)
@@ -63,7 +86,7 @@ def analyze(filename, nodes, cores, threshold):
     min_i, min_efficiency = min(
         filter(lambda x: x[1] >= threshold,
                enumerate(table['efficiency'])),
-        key=lambda x: x[1])
+        key=lambda x: table['time_per_task'][x[0]])
 
     # Perform linear interpolation if subsequent data point is an improvment:
     min_time = table['time_per_task'][min_i]

@@ -4,6 +4,7 @@ set -e
 
 TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-1}
 USE_GASNET=${USE_GASNET:-0}
+USE_HWLOC_TMP=${USE_HWLOC_TMP:-1}
 USE_LEGION=${USE_LEGION:-1}
 USE_STARPU=${USE_STARPU:-1}
 USE_PARSEC=${USE_PARSEC:-1}
@@ -40,11 +41,25 @@ EOF
     git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
 fi
 
+if [[ $USE_HWLOC_TMP -eq 1 ]]; then
+    export HWLOC_DL_DIR="$PWD"/deps/hwloc
+    cat >>deps/env.sh <<EOF
+export USE_HWLOC_TMP=$USE_HWLOC_TMP
+export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
+export HWLOC_DIR=$HWLOC_DL_DIR
+EOF
+    wget https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
+    mkdir -p "$HWLOC_DL_DIR"
+    tar -zxf hwloc-1.11.10.tar.gz -C "$HWLOC_DL_DIR"
+    rm -rf hwloc-1.11.10.tar.gz
+fi
+
 if [[ $USE_LEGION -eq 1 ]]; then
     export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
 export USE_LEGION=$USE_LEGION
 export LG_RT_DIR="$LEGION_DIR"/runtime
+export USE_LIBDL=0
 EOF
     git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
@@ -74,12 +89,16 @@ fi
 
 if [[ $USE_CHARM -eq 1 ]]; then
     export CHARM_DIR="$PWD"/deps/charm++
+    export CHARM_SMP_DIR="$PWD"/deps/charm++_smp
     cat >>deps/env.sh <<EOF
 export CHARM_VERSION=${CHARM_VERSION:-netlrts-linux-x86_64}
 export USE_CHARM=$USE_CHARM
 export CHARM_DIR=$CHARM_DIR
+export CHARM_SMP_DIR=$CHARM_SMP_DIR
 EOF
+    wget http://charm.cs.illinois.edu/distrib/charm-6.8.2.tar.gz
     mkdir -p "$CHARM_DIR"
-    git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_DIR"
+    mkdir -p "$CHARM_SMP_DIR"
+    tar -zxf charm-6.8.2.tar.gz -C "$CHARM_DIR" --strip-components 1
+    tar -zxf charm-6.8.2.tar.gz -C "$CHARM_SMP_DIR" --strip-components 1
 fi
-

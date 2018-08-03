@@ -7,7 +7,7 @@
 cores=$(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1)
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../starpu/main "${@:2}" -width $(( $1 * cores )) -core $cores -p 1 -field 2
+    srun -n $(( $1 * cores )) -N $1 --ntasks-per-node=$cores --cpus-per-task=1 --cpu_bind cores ../../mpi/nonblock "${@:2}" -width $(( $1 * cores ))
 }
 
 function sweep {
@@ -20,6 +20,6 @@ function sweep {
 
 for n in $SLURM_JOB_NUM_NODES; do
     for t in stencil_1d; do
-        sweep launch $n $t > starpu_type_${t}_nodes_${n}.log
+        sweep launch $n $t > mpi_nonblock_type_${t}_nodes_${n}.log
     done
 done

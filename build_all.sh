@@ -31,14 +31,28 @@ if [[ $USE_GASNET -eq 1 ]]; then
     make -C "$GASNET_DIR"
 fi
 
+if [[ $USE_HWLOC_TMP -eq 1 ]]; then
+    pushd "$HWLOC_SRC_DIR"
+    ./configure --prefix=$HWLOC_DIR
+    make -j$THREADS
+    make install
+    popd
+fi
+
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion clean
     make -C legion -j$THREADS
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
+    STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples "
+    if [[ $USE_HWLOC_TMP -eq 1 ]]; then
+      STARPU_CONFIGURE_FLAG+="" 
+    else
+      STARPU_CONFIGURE_FLAG+="--without-hwloc"
+    fi 
     pushd "$STARPU_SRC_DIR"
-    ./configure --prefix=$STARPU_DIR --disable-cuda --disable-opencl --without-hwloc --disable-fortran --disable-build-tests --disable-build-examples
+    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ./configure --prefix=$STARPU_DIR $STARPU_CONFIGURE_FLAG
     make -j$THREADS
     make install
     popd
@@ -49,7 +63,11 @@ fi
 if [[ $USE_PARSEC -eq 1 ]]; then
     mkdir -p "$PARSEC_DIR"
     pushd "$PARSEC_DIR"
-    ../contrib/platforms/config.linux -DPARSEC_GPU_WITH_CUDA=OFF -DCMAKE_INSTALL_PREFIX=$PWD
+    if [[ $USE_HWLOC_TMP -eq 1 ]]; then
+      ../contrib/platforms/config.linux -DPARSEC_GPU_WITH_CUDA=OFF -DCMAKE_INSTALL_PREFIX=$PWD -DHWLOC_DIR=$HWLOC_DIR
+    else
+      ../contrib/platforms/config.linux -DPARSEC_GPU_WITH_CUDA=OFF -DCMAKE_INSTALL_PREFIX=$PWD
+    fi
     make -j$THREADS
     make install
     popd
@@ -59,8 +77,18 @@ fi
 
 if [[ $USE_CHARM -eq 1 ]]; then
     pushd "$CHARM_DIR"
-    ./build charm++ $CHARM_VERSION --with-production
+    ./build charm++ $CHARM_VERSION --with-production -j$THREADS
+    popd
+    pushd "$CHARM_SMP_DIR"
+    ./build charm++ $CHARM_VERSION smp --with-production -j$THREADS
     popd
     make -C charm++ clean
     make -C charm++
+    (
+        export CHARM_DIR="$CHARM_SMP_DIR"
+        rm -rf charm++_smp
+        cp -r charm++ charm++_smp
+        make -C charm++_smp clean
+        make -C charm++_smp
+     )
 fi 

@@ -1,5 +1,5 @@
-CHARM_DIR = ../deps/charm++
-CHARMC = $(CHARM_DIR)/bin/charmc 
+CHARM_DIR ?= ../deps/charm++
+CHARMC ?= $(CHARM_DIR)/bin/charmc
 
 default: all
 all: subchare

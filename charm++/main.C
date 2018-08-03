@@ -1,3 +1,18 @@
+/* Copyright 2018 Stanford University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "main.decl.h"
 
 #include "main.h"
@@ -11,7 +26,7 @@ CProxy_Main mainProxy;
  * Instantiates all of the child chares and invokes methods on them to initialize their
  * internal structures.
  */
-Main::Main(CkArgMsg* msg) : numFinished(0), numSubchares(0), numReady(0), totalTimeElapsed(0.0),
+Main::Main(CkArgMsg* msg) : numFinished(0), numChareArrays(0), numReady(0), totalTimeElapsed(0.0),
                             numRuns(1), numRunsDone(0), app(msg->argc, msg->argv) {
   app.display();
 
@@ -25,10 +40,10 @@ Main::Main(CkArgMsg* msg) : numFinished(0), numSubchares(0), numReady(0), totalT
 
   // Add a subchare proxy for each graph.
   for (TaskGraph graph : app.graphs) {
-    numSubchares += graph.max_width;
+    numChareArrays++;
     graphSubchareVec.push_back(CProxy_Subchare::ckNew(wrapper, graph.max_width));
   }
-	// Invoke initialization on each subchare.
+  // Invoke initialization on each subchare.
   for (size_t i = 0; i < graphSubchareVec.size(); i++) {
     CProxy_Subchare subchares = graphSubchareVec[i];
     subchares.initGraph(i);
@@ -44,7 +59,7 @@ Main::Main(CkMigrateMessage* msg) : app(0, (char **)NULL) { }
 void Main::workerReady() {
   numReady++;
   // If all subchares are ready, execute the task graph.
-  if (numReady == numSubchares) {
+  if (numReady == numChareArrays) {
     // TIMER ON!
     start = timer.get_cur_time();
     for (size_t i = 0; i < graphSubchareVec.size(); i++) {
@@ -61,22 +76,22 @@ void Main::workerReady() {
 void Main::finishedGraph() {
   numFinished++;
   // If all subchares have finished, exit.
-  if (numFinished == numSubchares) {
+  if (numFinished == numChareArrays) {
     // TIMER OFF!
     end = timer.get_cur_time();
-		numRunsDone++;
+    numRunsDone++;
     CkPrintf("Time for last run: %e\n", end - start);
-		if (numRunsDone > 1) totalTimeElapsed += (end - start);
+    if (numRunsDone > 1) totalTimeElapsed += (end - start);
     if (numRunsDone == numRuns + 1) {
-			app.report_timing(totalTimeElapsed / numRuns);
-			CkExit();
-		} else {
-			numFinished = 0;
-			numReady = 0;
-			for (size_t i = 0; i < graphSubchareVec.size(); i++) {
-				graphSubchareVec[i].reset();
+      app.report_timing(totalTimeElapsed / numRuns);
+      CkExit();
+    } else {
+      numFinished = 0;
+      numReady = 0;
+      for (size_t i = 0; i < graphSubchareVec.size(); i++) {
+        graphSubchareVec[i].reset();
       }
-		}
+    }
   }
 }
 
