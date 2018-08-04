@@ -101,6 +101,8 @@ static const std::map<std::string, DependenceType> &dtype_by_name()
     types["tree"] = DependenceType::TREE;
     types["fft"] = DependenceType::FFT;
     types["all_to_all"] = DependenceType::ALL_TO_ALL;
+    types["nearest"] = DependenceType::NEAREST;
+    types["spread"] = DependenceType::SPREAD;
   }
 
   return types;
@@ -133,6 +135,8 @@ long TaskGraph::offset_at_timestep(long timestep) const
   case DependenceType::TREE:
   case DependenceType::FFT:
   case DependenceType::ALL_TO_ALL:
+  case DependenceType::NEAREST:
+  case DependenceType::SPREAD:
     return 0;
   default:
     assert(false && "unexpected dependence type");
@@ -154,6 +158,8 @@ long TaskGraph::width_at_timestep(long timestep) const
     return std::min(max_width, 1L << std::min(timestep, 62L));
   case DependenceType::FFT:
   case DependenceType::ALL_TO_ALL:
+  case DependenceType::NEAREST:
+  case DependenceType::SPREAD:
     return max_width;
   default:
     assert(false && "unexpected dependence type");
@@ -173,6 +179,8 @@ long TaskGraph::max_dependence_sets() const
   case DependenceType::FFT:
     return (long)ceil(log2(max_width));
   case DependenceType::ALL_TO_ALL:
+  case DependenceType::NEAREST:
+  case DependenceType::SPREAD:
     return 1;
   default:
     assert(false && "unexpected dependence type");
@@ -199,6 +207,8 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::FFT:
     return (timestep + max_dependence_sets() - 1) % max_dependence_sets();
   case DependenceType::ALL_TO_ALL:
+  case DependenceType::NEAREST:
+  case DependenceType::SPREAD:
     return 0;
   default:
     assert(false && "unexpected dependence type");
@@ -210,20 +220,22 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
   std::vector<std::pair<long, long> > deps;
 
   switch (dependence) {
-  case DependenceType::TRIVIAL:                                                                                                                                           
+  case DependenceType::TRIVIAL:
     break;
-  case DependenceType::NO_COMM:                                                                                                                                           
+  case DependenceType::NO_COMM:
     deps.push_back(std::pair<long, long>(point, point));
     break;
-  case DependenceType::STENCIL_1D:                                                                                                                                        
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+  case DependenceType::STENCIL_1D:
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
+                                         std::min(point+1, max_width-1)));
     break;
-  case DependenceType::STENCIL_1D_PERIODIC:                                                                                                                              
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
-    if (point-1 < 0) { // Wrap around negative case                                                                                                                              
+  case DependenceType::STENCIL_1D_PERIODIC:
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
+                                         std::min(point+1, max_width-1)));
+    if (point-1 < 0) { // Wrap around negative case
       deps.push_back(std::pair<long, long>(max_width-1, max_width-1));
     }
-    if (point+1 >= max_width) { // Wrap around positive case                                                                                                                     
+    if (point+1 >= max_width) { // Wrap around positive case
       deps.push_back(std::pair<long, long>(0, 0));
     }
     break;
@@ -241,7 +253,7 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
 
     }
     break;
-    case DependenceType::FFT:                                                                                                                                               
+    case DependenceType::FFT:
     {
       long d1 = point - (1 << dset);
       long d2 = point + (1 << dset);
@@ -253,8 +265,13 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
       }
     }
     break;
-  case DependenceType::ALL_TO_ALL:                                                                                                                                        
+  case DependenceType::ALL_TO_ALL:
     deps.push_back(std::pair<long, long>(0, max_width-1));
+    break;
+  case DependenceType::NEAREST:
+    deps.push_back(std::pair<long, long>(std::max(0L, point - (radix+1)/2),
+                                         std::min(point + radix/2,
+                                                  max_width-1)));
     break;
   default:
     assert(false && "unexpected dependence type");
@@ -274,10 +291,12 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
     deps.push_back(std::pair<long, long>(point, point));
     break;
   case DependenceType::STENCIL_1D:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
+                                         std::min(point+1, max_width-1)));
     break;
   case DependenceType::STENCIL_1D_PERIODIC:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
+                                         std::min(point+1, max_width-1)));
     if (point-1 < 0) { // Wrap around negative case
       deps.push_back(std::pair<long, long>(max_width-1, max_width-1));
     }
@@ -308,6 +327,11 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
     break;
   case DependenceType::ALL_TO_ALL:
     deps.push_back(std::pair<long, long>(0, max_width-1));
+    break;
+  case DependenceType::NEAREST:
+    deps.push_back(std::pair<long, long>(std::max(0L, point - radix/2),
+                                         std::min(point + (radix+1)/2,
+                                                  max_width-1)));
     break;
   default:
     assert(false && "unexpected dependence type");
@@ -391,6 +415,7 @@ static TaskGraph default_graph()
   graph.timesteps = 4;
   graph.max_width = 4;
   graph.dependence = DependenceType::TRIVIAL;
+  graph.radix = 2;
   graph.kernel = {KernelType::EMPTY, 0, 0, 0};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
   graph.scratch_bytes_per_task = 0;
@@ -446,6 +471,16 @@ App::App(int argc, char **argv)
         abort();
       }
       graph.dependence = type->second;
+    }
+
+    if (!strcmp(argv[i], "-radix")) {
+      needs_argument(i, argc, "-radix");
+      long value = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-radix %ld\" must be >= 0\n", value);
+        abort();
+      }
+      graph.radix = value;
     }
 
     if (!strcmp(argv[i], "-kernel")) {
