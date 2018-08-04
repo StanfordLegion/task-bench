@@ -10,6 +10,8 @@ fi
 
 source deps/env.sh
 
+set -x
+
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     for t in no_comm stencil_1d stencil_1d_periodic fft nearest; do # FIXME: trivial, dom, tree are broken
         # mpirun -np 4 ./mpi/basic         -steps 9 -width 4 -type $t # FIXME: Freezes
