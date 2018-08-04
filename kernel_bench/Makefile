@@ -1,9 +1,9 @@
 DEBUG			 = 0
 
-CC         = mpic++
+CC         = g++
 
 CFLAGS     = -std=c++11
-LDFLAGS    = -m64 -std=c++11 -Wall
+LDFLAGS    = -m64 -std=c++11 -Wall -lpthread
 
 ifeq ($(strip $(DEBUG)),1)
 CFLAGS		 += -g -O0
