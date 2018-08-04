@@ -20,6 +20,7 @@
 #include <cstring>
 #include <algorithm>
 #include <map>
+#include <set>
 #include <string>
 
 #include "core.h"
@@ -559,6 +560,28 @@ void App::check() const
 
       long dset = g.dependence_set_at_timestep(t);
       assert(dset >= 0 && dset <= g.max_dependence_sets());
+    }
+    for (long dset = 0; dset < g.max_dependence_sets(); ++dset) {
+      std::map<long, std::set<long> > materialized_deps;
+      for (long point = 0; point < g.max_width; ++point) {
+        auto deps = g.dependencies(dset, point);
+        for (auto dep : deps) {
+          for (long dp = dep.first; dp <= dep.second; ++dp) {
+            assert(materialized_deps[point].count(dp) == 0); // No duplicates
+            materialized_deps[point].insert(dp);
+          }
+        }
+      }
+
+      // Reverse dependencies mirror dependencies
+      for (long point = 0; point < g.max_width; ++point) {
+        auto rdeps = g.reverse_dependencies(dset, point);
+        for (auto rdep : rdeps) {
+          for (long rdp = rdep.first; rdp <= rdep.second; ++rdp) {
+            assert(materialized_deps[rdp].count(point) == 1);
+          }
+        }
+      }
     }
   }
 }
