@@ -42,7 +42,12 @@ void *execute_task(void *tr)
   }
   *(task_arg->time_end) = Timer::get_cur_time();
   
-  printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms\n", task_arg->tid, task_arg->nb_tasks, task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3);
+  double flops = 2 * task_arg->graph.kernel.max_power * 128 * task_arg->graph.kernel.iterations * task_arg->nb_tasks;
+  
+  printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flop/s %e\n", 
+        task_arg->tid, task_arg->nb_tasks, 
+        task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
+        flops / (*(task_arg->time_end) - *(task_arg->time_start)));
 }
 
 struct KernelBenchApp : public App {
