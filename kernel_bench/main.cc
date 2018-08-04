@@ -7,6 +7,8 @@
 
 #define VERBOSE_LEVEL 0
 
+pthread_barrier_t mybarrier;
+
 typedef struct task_args_s {
   int tid;
   int nb_tasks;
@@ -22,14 +24,16 @@ void *execute_task(void *tr)
   
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
-  CPU_SET(task_arg->tid, &cpuset);
+  CPU_SET(task_arg->tid+1, &cpuset);
   
   pthread_t thread = pthread_self();
   
   int s = pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
   if (s != 0) {
      printf("pthread_setaffinity_np error %d\n", s);
-   }
+  }
+  
+  pthread_barrier_wait(&mybarrier);
   
   *(task_arg->time_start) = Timer::get_cur_time();
   Kernel k(task_arg->graph.kernel);
@@ -53,7 +57,7 @@ private:
   double *time_start;
   double *time_end;
   pthread_t *threads;
-  int nb_cores;
+  int nb_workers;
 };
 
 KernelBenchApp::KernelBenchApp(int argc, char **argv)
@@ -64,23 +68,24 @@ KernelBenchApp::KernelBenchApp(int argc, char **argv)
   
   assert(graph.dependence == TRIVIAL);
   
-  nb_cores = 1;
+  nb_workers = 1;
   
   int i;
   for (i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "-core")) {
-      nb_cores = atol(argv[++i]);
+    if (!strcmp(argv[i], "-worker")) {
+      nb_workers = atol(argv[++i]);
     }
   }
   
   nb_tasks = graph.max_width * graph.timesteps;
-  assert(nb_tasks % nb_cores == 0);
+  assert(nb_tasks % nb_workers == 0);
   
+  // init buffer for memory kernel
   local_buff = nullptr;
-  local_buff = (char**)malloc(sizeof(char*) * nb_cores);
+  local_buff = (char**)malloc(sizeof(char*) * nb_workers);
   assert(local_buff != nullptr);
   
-  for (i = 0; i < nb_cores; i++) {
+  for (i = 0; i < nb_workers; i++) {
     if (graph.kernel.type == MEMORY_BOUND) {
       local_buff[i] = (char*)malloc(sizeof(char) * graph.scratch_bytes_per_task);
       assert(local_buff[i] != nullptr);
@@ -89,22 +94,25 @@ KernelBenchApp::KernelBenchApp(int argc, char **argv)
     }
   }
   
+  // init timer array
   time_start = nullptr;
   time_end = nullptr;
-  time_start = (double*)malloc(sizeof(double) * nb_cores);
-  time_end = (double*)malloc(sizeof(double) * nb_cores);
+  time_start = (double*)malloc(sizeof(double) * nb_workers);
+  time_end = (double*)malloc(sizeof(double) * nb_workers);
   assert(time_start != nullptr);
   assert(time_end != nullptr);
   
   threads = nullptr;
-  threads = (pthread_t*)malloc(sizeof(pthread_t) * nb_cores);
+  threads = (pthread_t*)malloc(sizeof(pthread_t) * nb_workers);
   assert(threads != nullptr);
+  
+  pthread_barrier_init(&mybarrier, NULL, nb_workers);
 }
 
 KernelBenchApp::~KernelBenchApp()
 {
   if (local_buff != nullptr) {
-    for (int i = 0; i < nb_cores; i++) {
+    for (int i = 0; i < nb_workers; i++) {
       free(local_buff[i]);
       local_buff[i] = nullptr;
     }
@@ -128,16 +136,29 @@ void KernelBenchApp::execute_main_loop()
   
   display();
   
-  task_args_t *task_args = (task_args_t*)malloc(sizeof(task_args_t) * nb_cores);
+  task_args_t *task_args = (task_args_t*)malloc(sizeof(task_args_t) * nb_workers);
   assert(task_args != nullptr);
   
-  for (i = 0; i < nb_cores; i++) {
+  // map main thread to 0
+  cpu_set_t cpuset;
+  CPU_ZERO(&cpuset);
+  CPU_SET(0, &cpuset);
+  
+  pthread_t thread = pthread_self();
+  
+  int s = pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
+  if (s != 0) {
+     printf("pthread_setaffinity_np error %d\n", s);
+  }
+  
+  // create worker threads
+  for (i = 0; i < nb_workers; i++) {
     task_args[i].tid = i;
     task_args[i].time_start = &(time_start[i]);
     task_args[i].time_end = &(time_end[i]);
     task_args[i].thread_buff = local_buff[i];
     task_args[i].graph = graphs[0];
-    task_args[i].nb_tasks = nb_tasks/nb_cores;
+    task_args[i].nb_tasks = nb_tasks/nb_workers;
     rc = pthread_create(&threads[i], NULL, execute_task, (void *)&(task_args[i]));
     if (rc){
       debug_printf(0, "ERROR; return code from pthread_create() is %d\n", rc);
@@ -145,8 +166,9 @@ void KernelBenchApp::execute_main_loop()
     }
   }
   
+  // worker join
   void *status;
-  for (i = 0; i < nb_cores; i++) {
+  for (i = 0; i < nb_workers; i++) {
     rc = pthread_join(threads[i], &status);
     if (rc) {
       debug_printf(0, "ERROR; return code from pthread_join() is %d\n", rc);
@@ -157,8 +179,9 @@ void KernelBenchApp::execute_main_loop()
   free(task_args);
   task_args = nullptr;
   
-  double min_time_start = *std::min_element(time_start,time_start+nb_cores);
-  double max_time_end = *std::max_element(time_end,time_end+nb_cores);
+  // timing
+  double min_time_start = *std::min_element(time_start,time_start+nb_workers);
+  double max_time_end = *std::max_element(time_end,time_end+nb_workers);
   double time_elapsed = max_time_end - min_time_start;
   
   report_timing(time_elapsed);
