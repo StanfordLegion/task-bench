@@ -18,13 +18,11 @@ typedef struct task_args_s {
   TaskGraph graph;
 }task_args_t;
 
-void *execute_task(void *tr)
+static void bind_thread(int core_id)
 {
-  task_args_t *task_arg = (task_args_t *)tr;
-  
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
-  CPU_SET(task_arg->tid+1, &cpuset);
+  CPU_SET(core_id, &cpuset);
   
   pthread_t thread = pthread_self();
   
@@ -32,6 +30,29 @@ void *execute_task(void *tr)
   if (s != 0) {
      printf("pthread_setaffinity_np error %d\n", s);
   }
+  
+  cpu_set_t cpuset_valid;
+  CPU_ZERO(&cpuset_valid);
+  s = pthread_getaffinity_np(thread, sizeof(cpu_set_t), &cpuset_valid);
+  if (s != 0) {
+    printf("pthread_getaffinity_np error %d\n", s);
+  }
+  for (int i = 0; i < CPU_SETSIZE; i++) {
+    if (i == core_id) {
+      assert(CPU_ISSET(i, &cpuset_valid) == 1);
+    } else {
+      assert(CPU_ISSET(i, &cpuset_valid) == 0);
+    }
+  }
+  
+ // printf("thread %d set to %d\n", core_id-1, core_id);
+}
+
+void *execute_task(void *tr)
+{
+  task_args_t *task_arg = (task_args_t *)tr;
+  
+  bind_thread(task_arg->tid+1);
   
   pthread_barrier_wait(&mybarrier);
   
@@ -112,6 +133,9 @@ KernelBenchApp::KernelBenchApp(int argc, char **argv)
   assert(threads != nullptr);
   
   pthread_barrier_init(&mybarrier, NULL, nb_workers);
+  
+  // map main thread to 0
+  bind_thread(0);
 }
 
 KernelBenchApp::~KernelBenchApp()
@@ -143,18 +167,6 @@ void KernelBenchApp::execute_main_loop()
   
   task_args_t *task_args = (task_args_t*)malloc(sizeof(task_args_t) * nb_workers);
   assert(task_args != nullptr);
-  
-  // map main thread to 0
-  cpu_set_t cpuset;
-  CPU_ZERO(&cpuset);
-  CPU_SET(0, &cpuset);
-  
-  pthread_t thread = pthread_self();
-  
-  int s = pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
-  if (s != 0) {
-     printf("pthread_setaffinity_np error %d\n", s);
-  }
   
   // create worker threads
   for (i = 0; i < nb_workers; i++) {
