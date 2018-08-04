@@ -253,7 +253,7 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
 
     }
     break;
-    case DependenceType::FFT:
+  case DependenceType::FFT:
     {
       long d1 = point - (1 << dset);
       long d2 = point + (1 << dset);
