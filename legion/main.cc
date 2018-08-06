@@ -220,28 +220,6 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     IndexPartitionT<1> primary_ip = runtime->create_equal_partition(ctx, is, ts);
     LogicalPartitionT<1> primary_lp = runtime->get_logical_partition(result_lr, primary_ip);
 
-    // allocate scratch space
-    if(g.scratch_bytes_per_task != 0){
-      // Space of scrath output
-      IndexSpaceT<1> scratch_is = runtime->create_index_space(
-        ctx, Rect<1>(0, g.max_width * g.scratch_bytes_per_task - 1));
-      FieldSpace scratch_fs = runtime->create_field_space(ctx);
-      {
-        FieldAllocator allocator =
-          runtime->create_field_allocator(ctx, scratch_fs);
-        for (long i = 0; i < num_fields; ++i) {
-          allocator.allocate_field(sizeof(char), FID_FIRST+i);
-        }
-      }
-      LogicalRegionT<1> scratch_result_lr = runtime->create_logical_region(ctx, scratch_is, scratch_fs);
-
-      // Divide this first into one piece per task
-      IndexPartitionT<1> scratch_ip = runtime->create_equal_partition(ctx, scratch_is, ts);
-      LogicalPartitionT<1> scratch_lp = runtime->get_logical_partition(scratch_result_lr, scratch_ip);
-      scratch_regions.push_back(scratch_result_lr);
-      scratch_partitions.push_back(scratch_lp);
-    }
-
     // Next create secondary partitions for dependencies
     std::vector<LogicalPartitionT<1> >secondary_lps;
 
