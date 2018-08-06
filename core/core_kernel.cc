@@ -66,7 +66,7 @@ void execute_kernel_compute(const Kernel &kernel)
         temp *=temp;
         sum += temp;
       }
-      A[i] = sum;
+      // A[i] = sum;
     }
   }
   // printf("execute_kernel_memory! A[127]=%f, max_power=%lld\n", A[127], max_power);
