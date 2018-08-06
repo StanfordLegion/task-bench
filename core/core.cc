@@ -45,6 +45,11 @@ void Kernel::execute(char *scratch_ptr, size_t scratch_bytes) const
     assert(scratch_bytes > 0);
     execute_kernel_memory(*this, scratch_ptr, scratch_bytes);
     break;
+  case KernelType::DGEMM:
+    assert(scratch_ptr != NULL);
+    assert(scratch_bytes > 0);
+    execute_kernel_dgemm(*this, scratch_ptr, scratch_bytes);
+    break;  
   case KernelType::COMPUTE_BOUND:
     execute_kernel_compute(*this);
     break;
@@ -70,6 +75,7 @@ static const std::map<std::string, KernelType> &ktype_by_name()
     types["empty"] = KernelType::EMPTY;
     types["busy_wait"] = KernelType::BUSY_WAIT;
     types["memory_bound"] = KernelType::MEMORY_BOUND;
+    types["dgemm"] = KernelType::DGEMM;
     types["compute_bound"] = KernelType::COMPUTE_BOUND;
     types["compute_bound2"] = KernelType::COMPUTE_BOUND2;
     types["io_bound"] = KernelType::IO_BOUND;
