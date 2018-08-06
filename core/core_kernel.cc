@@ -80,16 +80,17 @@ void execute_kernel_compute(const Kernel &kernel)
 {
   long long max_power = kernel.max_power;
   double temp, sum;
-  int N = 32;
+  constexpr size_t N = 32;
+  double A[N] = {0};
 
-  temp = ((double) rand() / (RAND_MAX));
+  for (size_t i = 0; i < N; ++i) {
+    A[i] = ((double) rand() / (RAND_MAX));
+  }
 
   for (long iter = 0; iter < kernel.iterations; iter++) {
-    for (long i = 0; i < N; i++) {
-      sum = temp;
-      for (long j=0; j<max_power; j++) {
-        temp *=temp;
-        sum += temp;
+    for (long j=0; j<max_power; j++) {
+      for (long i = 0; i < N; i++) {
+        A[i] = A[i] + A[i] * A[i];
       }
     }
   }
