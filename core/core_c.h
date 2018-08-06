@@ -41,6 +41,7 @@ typedef enum kernel_type_t {
   BUSY_WAIT,
   MEMORY_BOUND,
   COMPUTE_BOUND,
+  COMPUTE_BOUND2,
   IO_BOUND,
   LOAD_IMBALANCE,
 } kernel_type_t;

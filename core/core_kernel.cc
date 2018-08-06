@@ -72,6 +72,31 @@ void execute_kernel_compute(const Kernel &kernel)
   // printf("execute_kernel_memory! A[127]=%f, max_power=%lld\n", A[127], max_power);
 }
 
+double execute_kernel_compute2(const Kernel &kernel)
+{
+  constexpr size_t N = 32;
+  double A[N] = {0};
+  double B[N] = {0};
+  double C[N] = {0};
+
+  for (size_t i = 0; i < N; ++i) {
+    A[i] = 1.2345;
+    B[i] = 1.010101;
+  }
+
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    for (size_t i = 0; i < N; ++i) {
+      C[i] = C[i] + (A[i] * B[i]);
+    }
+  }
+
+  double sum = 0;
+  for (size_t i = 0; i < N; ++i) {
+    sum += C[i];
+  }
+  return sum;
+}
+
 void execute_kernel_io(const Kernel &kernel)
 {
   assert(false);

@@ -27,6 +27,8 @@ void execute_kernel_memory(const Kernel &kernel,
 
 void execute_kernel_compute(const Kernel &kernel);
 
+double execute_kernel_compute2(const Kernel &kernel);
+
 void execute_kernel_io(const Kernel &kernel);
 
 void execute_kernel_imbalance(const Kernel &kernel);
