@@ -48,6 +48,9 @@ void Kernel::execute(char *scratch_ptr, size_t scratch_bytes) const
   case KernelType::COMPUTE_BOUND:
     execute_kernel_compute(*this);
     break;
+  case KernelType::COMPUTE_BOUND2:
+    execute_kernel_compute2(*this);
+    break;
   case KernelType::IO_BOUND:
     execute_kernel_io(*this);
     break;
@@ -68,6 +71,7 @@ static const std::map<std::string, KernelType> &ktype_by_name()
     types["busy_wait"] = KernelType::BUSY_WAIT;
     types["memory_bound"] = KernelType::MEMORY_BOUND;
     types["compute_bound"] = KernelType::COMPUTE_BOUND;
+    types["compute_bound2"] = KernelType::COMPUTE_BOUND2;
     types["io_bound"] = KernelType::IO_BOUND;
     types["load_imbalance"] = KernelType::LOAD_IMBALANCE;
   }
@@ -639,6 +643,9 @@ static long long flops_per_task(const TaskGraph &g)
   case KernelType::COMPUTE_BOUND:
     return 2 * g.kernel.max_power * 128 * g.kernel.iterations;
 
+  case KernelType::COMPUTE_BOUND2:
+    return 2 * 32 * g.kernel.iterations;
+
   case KernelType::IO_BOUND:
   case KernelType::LOAD_IMBALANCE:
     return 0;
@@ -659,6 +666,7 @@ static long long bytes_per_task(const TaskGraph &g)
     return g.scratch_bytes_per_task * g.kernel.iterations;
 
   case KernelType::COMPUTE_BOUND:
+  case KernelType::COMPUTE_BOUND2:
   case KernelType::IO_BOUND:
   case KernelType::LOAD_IMBALANCE:
     return 0;
