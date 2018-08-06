@@ -75,6 +75,8 @@ void *execute_task(void *tr)
         task_arg->tid, task_arg->nb_tasks, 
         task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
         flops / (*(task_arg->time_end) - *(task_arg->time_start)));
+
+  return NULL;
 }
 
 struct KernelBenchApp : public App {
