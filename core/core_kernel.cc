@@ -56,17 +56,17 @@ void execute_kernel_compute(const Kernel &kernel)
 {
   long long max_power = kernel.max_power;
   double temp, sum;
-  double A[128];
+  int N = 32;
+
+  temp = ((double) rand() / (RAND_MAX));
 
   for (long iter = 0; iter < kernel.iterations; iter++) {
-    for (long i = 0; i < 128; i++) {
-      temp = ((double) rand() / (RAND_MAX));
+    for (long i = 0; i < N; i++) {
       sum = temp;
       for (long j=0; j<max_power; j++) {
         temp *=temp;
         sum += temp;
       }
-      // A[i] = sum;
     }
   }
   // printf("execute_kernel_memory! A[127]=%f, max_power=%lld\n", A[127], max_power);
