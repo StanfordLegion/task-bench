@@ -22,6 +22,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <math.h>
 
 #include "core.h"
 #include "core_kernel.h"
@@ -45,7 +46,7 @@ void Kernel::execute(char *scratch_ptr, size_t scratch_bytes) const
     assert(scratch_bytes > 0);
     execute_kernel_memory(*this, scratch_ptr, scratch_bytes);
     break;
-  case KernelType::DGEMM:
+  case KernelType::COMPUTE_DGEMM:
     assert(scratch_ptr != NULL);
     assert(scratch_bytes > 0);
     execute_kernel_dgemm(*this, scratch_ptr, scratch_bytes);
@@ -75,7 +76,7 @@ static const std::map<std::string, KernelType> &ktype_by_name()
     types["empty"] = KernelType::EMPTY;
     types["busy_wait"] = KernelType::BUSY_WAIT;
     types["memory_bound"] = KernelType::MEMORY_BOUND;
-    types["dgemm"] = KernelType::DGEMM;
+    types["compute_dgemm"] = KernelType::COMPUTE_DGEMM;
     types["compute_bound"] = KernelType::COMPUTE_BOUND;
     types["compute_bound2"] = KernelType::COMPUTE_BOUND2;
     types["io_bound"] = KernelType::IO_BOUND;
@@ -645,9 +646,16 @@ static long long flops_per_task(const TaskGraph &g)
   case KernelType::BUSY_WAIT:
   case KernelType::MEMORY_BOUND:
     return 0;
+    
+  case KernelType::COMPUTE_DGEMM:
+  {
+    long N = sqrt(g.scratch_bytes_per_task / (3 * sizeof(double))); 
+    return 2 * pow(N, 3) * g.kernel.iterations;
+    //return 2 * pow(256,3)* g.kernel.iterations;
+  }
 
   case KernelType::COMPUTE_BOUND:
-    return 2 * g.kernel.max_power * 128 * g.kernel.iterations;
+    return 2 * g.kernel.max_power * 32 * g.kernel.iterations;
 
   case KernelType::COMPUTE_BOUND2:
     return 2 * 32 * g.kernel.iterations;
@@ -671,6 +679,7 @@ static long long bytes_per_task(const TaskGraph &g)
   case KernelType::MEMORY_BOUND:
     return g.scratch_bytes_per_task * g.kernel.iterations;
 
+  case KernelType::COMPUTE_DGEMM:
   case KernelType::COMPUTE_BOUND:
   case KernelType::COMPUTE_BOUND2:
   case KernelType::IO_BOUND:

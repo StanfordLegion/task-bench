@@ -17,6 +17,7 @@
 #include "core.h"
 #include "core_kernel.h"
 #include "mkl.h"
+#include <math.h>
 
 void execute_kernel_empty(const Kernel &kernel)
 {
@@ -57,12 +58,13 @@ void execute_kernel_dgemm(const Kernel &kernel,
                            char *scratch_ptr, size_t scratch_bytes)
 {
   long long N = scratch_bytes / (3 * sizeof(double));
-  long m, n, p;
+  int m, n, p;
   double alpha, beta;
 
-  m = n = p = N;
+  m = n = p = sqrt(N);
   alpha = 1.0; beta = 0.0;
 
+  //printf("N=%ld\n", N);
   double *A = reinterpret_cast<double *>(scratch_ptr);
   double *B = reinterpret_cast<double *>(scratch_ptr + N * sizeof(double));
   double *C = reinterpret_cast<double *>(scratch_ptr + 2 * N * sizeof(double));

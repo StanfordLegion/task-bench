@@ -7,10 +7,10 @@ LDFLAGS  = -std=c++11 -Wall -lpthread
 
 ifeq ($(strip $(DEBUG)),1)
 CXXFLAGS += -g -O0
-LDFLAGS  += -g -O0
+LDFLAGS  += -g -O0 -mkl
 else
 CXXFLAGS += -O3 -march=native
-LDFLAGS  += -O3 -march=native
+LDFLAGS  += -O3 -march=native -mkl
 endif
 
 # Include directories
