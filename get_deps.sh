@@ -89,12 +89,16 @@ fi
 
 if [[ $USE_CHARM -eq 1 ]]; then
     export CHARM_DIR="$PWD"/deps/charm++
+    export CHARM_SMP_DIR="$PWD"/deps/charm++_smp
     cat >>deps/env.sh <<EOF
 export CHARM_VERSION=${CHARM_VERSION:-netlrts-linux-x86_64}
 export USE_CHARM=$USE_CHARM
 export CHARM_DIR=$CHARM_DIR
+export CHARM_SMP_DIR=$CHARM_SMP_DIR
 EOF
+    wget http://charm.cs.illinois.edu/distrib/charm-6.8.2.tar.gz
     mkdir -p "$CHARM_DIR"
-    git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_DIR"
+    mkdir -p "$CHARM_SMP_DIR"
+    tar -zxf charm-6.8.2.tar.gz -C "$CHARM_DIR" --strip-components 1
+    tar -zxf charm-6.8.2.tar.gz -C "$CHARM_SMP_DIR" --strip-components 1
 fi
-

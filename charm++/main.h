@@ -30,15 +30,15 @@ class Main : public CBase_Main {
   /// Member Variables (Object State) ///
   std::vector<CProxy_Subchare> graphSubchareVec;
   int numFinished;
-  int numSubchares;
+  int numChareArrays;
   int numReady;
   Timer timer;
   App app;
   double start;
   double end;
-	double totalTimeElapsed;
-	int numRuns;
-	int numRunsDone;
+  double totalTimeElapsed;
+  int numRuns;
+  int numRunsDone;
 
  public:
 

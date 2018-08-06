@@ -49,3 +49,7 @@ CC_FLAGS += -std=c++11 -I../core
 
 include $(LG_RT_DIR)/runtime.mk
 
+# Make absolutely sure application code is compiled with -O3 (in non-debug mode)
+ifneq ($(strip $(DEBUG)),1)
+$(GEN_OBJS) : CC_FLAGS += -O3
+endif

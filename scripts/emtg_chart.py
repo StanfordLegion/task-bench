@@ -86,7 +86,7 @@ def analyze(filename, nodes, cores, threshold):
     min_i, min_efficiency = min(
         filter(lambda x: x[1] >= threshold,
                enumerate(table['efficiency'])),
-        key=lambda x: x[1])
+        key=lambda x: table['time_per_task'][x[0]])
 
     # Perform linear interpolation if subsequent data point is an improvment:
     min_time = table['time_per_task'][min_i]

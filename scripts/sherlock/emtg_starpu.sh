@@ -7,7 +7,7 @@
 cores=$(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1)
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../starpu/main "${@:2}" -width $(( $1 * cores )) -core $cores -p 1
+    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../starpu/main "${@:2}" -width $(( $1 * cores )) -core $cores -p 1 -field 2
 }
 
 function sweep {

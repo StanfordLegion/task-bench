@@ -179,6 +179,8 @@ private:
   int Q;
   int MB;
   matrix_t mat_array[10];
+  int nb_fields;
+  int nb_fields_arg;
 };
 
 void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_data_handle_t> &args, std::vector<std::pair<long, long>> &args_loc)
@@ -275,6 +277,9 @@ void StarPUApp::parse_argument(int argc, char **argv)
     if (!strcmp(argv[i], "-p")) {
       P = atol(argv[++i]);
     }
+    if (!strcmp(argv[i], "-field")) {
+      nb_fields_arg = atol(argv[++i]);
+    }
   }
 }
 
@@ -306,6 +311,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   P = 1;
   MB = 2;
   nb_cores = 1;
+  nb_fields = 0;
   
   parse_argument(argc, argv);
   
@@ -344,6 +350,14 @@ StarPUApp::StarPUApp(int argc, char **argv)
     if (graph.scratch_bytes_per_task > max_scratch_bytes_per_task) {
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
+    
+    if (nb_fields < graph.timesteps) {
+      nb_fields = graph.timesteps;
+    }
+  }
+  
+  if (nb_fields_arg > 0) {
+    nb_fields = nb_fields_arg;
   }
    
   extra_local_memory = (char**)malloc(sizeof(char*) * nb_cores);
@@ -356,7 +370,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
     }
   }
   
-  debug_printf(0, "max_scratch_bytes_per_task %lld\n", max_scratch_bytes_per_task);
+  debug_printf(0, "max_scratch_bytes_per_task %lld, nb_fields %d\n", max_scratch_bytes_per_task, nb_fields);
 }
 
 StarPUApp::~StarPUApp()
@@ -435,24 +449,24 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     if (deps.size() == 0) {
       num_args = 1;
       debug_printf(1, "%d[%d] ", x, num_args);
-      args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
-      args_loc.push_back(std::make_pair(t, x));
+      args.push_back(starpu_desc_getaddr( mat.ddescA, t%nb_fields, x ));
+      args_loc.push_back(std::make_pair(t%nb_fields, x));
     } else {
       if (t == 0) {
         num_args = 1;
         debug_printf(1, "%d[%d] ", x, num_args);
-        args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
-        args_loc.push_back(std::make_pair(t, x));
+        args.push_back(starpu_desc_getaddr( mat.ddescA, t%nb_fields, x ));
+        args_loc.push_back(std::make_pair(t%nb_fields, x));
       } else {
         num_args = 1;
-        args.push_back(starpu_desc_getaddr( mat.ddescA, t, x ));
-        args_loc.push_back(std::make_pair(t, x));
+        args.push_back(starpu_desc_getaddr( mat.ddescA, t%nb_fields, x ));
+        args_loc.push_back(std::make_pair(t%nb_fields, x));
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
           debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
-            args.push_back(starpu_desc_getaddr( mat.ddescA, t-1, i ));
-            args_loc.push_back(std::make_pair(t-1, i));
+            args.push_back(starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, i ));
+            args_loc.push_back(std::make_pair((t-1)%nb_fields, i));
           }
         }
       }
