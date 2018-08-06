@@ -57,23 +57,27 @@ void execute_kernel_memory(const Kernel &kernel,
 void execute_kernel_dgemm(const Kernel &kernel,
                            char *scratch_ptr, size_t scratch_bytes)
 {
+#if defined(USE_BLAS_KERNEL)
   long long N = scratch_bytes / (3 * sizeof(double));
   int m, n, p;
   double alpha, beta;
 
   m = n = p = sqrt(N);
-  alpha = 1.0; beta = 0.0;
+  alpha = 1.0; beta = 1.0;
 
-  //printf("N=%ld\n", N);
   double *A = reinterpret_cast<double *>(scratch_ptr);
   double *B = reinterpret_cast<double *>(scratch_ptr + N * sizeof(double));
   double *C = reinterpret_cast<double *>(scratch_ptr + 2 * N * sizeof(double));
 
   for (long iter = 0; iter < kernel.iterations; iter++) {
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 
-                        m, n, p, alpha, A, p, B, n, beta, C, n);
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
+                m, n, p, alpha, A, p, B, n, beta, C, n);
   }
   // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
+#else
+  printf("No BLAS is detected\n");
+  assert(0);
+#endif
 }
 
 void execute_kernel_compute(const Kernel &kernel)

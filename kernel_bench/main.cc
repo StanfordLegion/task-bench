@@ -120,7 +120,7 @@ KernelBenchApp::KernelBenchApp(int argc, char **argv)
   assert(local_buff != nullptr);
   
   for (i = 0; i < nb_workers; i++) {
-    if (graph.kernel.type == MEMORY_BOUND) {
+    if (graph.scratch_bytes_per_task > 0) {
       local_buff[i] = (char*)malloc(sizeof(char) * graph.scratch_bytes_per_task);
       assert(local_buff[i] != nullptr);
     } else {

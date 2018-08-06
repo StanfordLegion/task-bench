@@ -7,10 +7,10 @@ LDFLAGS  = -std=c++11 -Wall -lpthread
 
 ifeq ($(strip $(DEBUG)),1)
 CXXFLAGS += -g -O0
-LDFLAGS  += -g -O0 -mkl
+LDFLAGS  += -g -O0
 else
 CXXFLAGS += -O3 -march=native
-LDFLAGS  += -O3 -march=native -mkl
+LDFLAGS  += -O3 -march=native
 endif
 
 # Include directories
@@ -25,6 +25,8 @@ INC := $(INC) $(INC_EXT)
 LIB := $(LIB) $(LIB_EXT)
 
 CXXFLAGS += $(INC)
+
+include ../core/make_blas.mk
 
 TARGET = main
 all: $(TARGET)
