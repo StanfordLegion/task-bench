@@ -13,9 +13,10 @@ source deps/env.sh
 set -x
 
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
-    for t in no_comm stencil_1d stencil_1d_periodic fft all_to_all; do # FIXME: trivial, dom, tree, nearest are broken
-        # mpirun -np 4 ./mpi/basic         -steps 9 -width 4 -type $t # FIXME: Freezes
+    for t in no_comm stencil_1d stencil_1d_periodic dom tree fft nearest all_to_all; do # FIXME: trivial is broken
         mpirun -np 4 ./mpi/nonblock      -steps 9 -width 4 -type $t
+    done
+    for t in no_comm stencil_1d stencil_1d_periodic fft all_to_all; do # FIXME: trivial, dom, tree, nearest are broken
         mpirun -np 4 ./mpi/bcast         -steps 9 -width 4 -type $t
         mpirun -np 4 ./mpi/alltoall      -steps 9 -width 4 -type $t
         mpirun -np 4 ./mpi/buffered_send -steps 9 -width 4 -type $t
