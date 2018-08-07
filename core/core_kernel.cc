@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <immintrin.h>
 #include <cassert>
 #include "core.h"
 #include "core_kernel.h"
@@ -52,24 +53,46 @@ void execute_kernel_memory(const Kernel &kernel,
   // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
 }
 
-void execute_kernel_compute(const Kernel &kernel)
+double execute_kernel_compute(const Kernel &kernel)
 {
-  long long max_power = kernel.max_power;
-  double temp, sum;
-  double A[128];
-
+#if 0 
+  double A[32];
+  
+  for (int i = 0; i < 32; i++) {
+    A[i] = 1.2345;
+  }
+  
   for (long iter = 0; iter < kernel.iterations; iter++) {
-    for (long i = 0; i < 128; i++) {
-      temp = ((double) rand() / (RAND_MAX));
-      sum = temp;
-      for (long j=0; j<max_power; j++) {
-        temp *=temp;
-        sum += temp;
-      }
-      A[i] = sum;
+    for (int i = 0; i < 32; i++) {
+        A[i] *= A[i];
     }
   }
-  // printf("execute_kernel_memory! A[127]=%f, max_power=%lld\n", A[127], max_power);
+  
+  double dot = 1.0;
+  for (int i = 0; i < 32; i++) {
+    dot *= A[i];
+  }
+  return dot; 
+#else
+  __m256d A[8];
+  
+  for (int i = 0; i < 8; i++) {
+    A[i] = _mm256_set_pd(1.0f, 2.0f, 3.0f, 4.0f);
+  }
+  
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    for (int i = 0; i < 8; i++) {
+        A[i] = _mm256_mul_pd(A[i], A[i]);
+    }
+  }
+  
+  double *C = (double *)A;
+  double dot = 1.0;
+  for (int i = 0; i < 32; i++) {
+    dot *= C[i];
+  }
+  return dot; 
+#endif  
 }
 
 double execute_kernel_compute2(const Kernel &kernel)

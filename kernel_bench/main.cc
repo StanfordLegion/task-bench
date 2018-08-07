@@ -69,7 +69,7 @@ void *execute_task(void *tr)
   }
   *(task_arg->time_end) = Timer::get_cur_time();
   
-  double flops = 2 * task_arg->graph.kernel.max_power * 128 * task_arg->graph.kernel.iterations * task_arg->nb_tasks;
+  long long flops = flops_per_task(task_arg->graph) * task_arg->nb_tasks;
   
   printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flop/s %e\n", 
         task_arg->tid, task_arg->nb_tasks, 

@@ -6,10 +6,10 @@ CXXFLAGS = -std=c++11 -Wall
 LDFLAGS  = -std=c++11 -Wall -lpthread
 
 ifeq ($(strip $(DEBUG)),1)
-CXXFLAGS += -g -O0
+CXXFLAGS += -g -O0 -mavx
 LDFLAGS  += -g -O0
 else
-CXXFLAGS += -O3 -march=native
+CXXFLAGS += -O3 -march=native -mavx
 LDFLAGS  += -O3 -march=native
 endif
 
