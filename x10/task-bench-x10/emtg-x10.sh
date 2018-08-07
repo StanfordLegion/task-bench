@@ -1,15 +1,14 @@
 #!/bin/bash
 #SBATCH --partition=aaiken
-#SBATCH --nodes=1
-#SBATCH --cpus-per-task=20
+#SBATCH --nodes=4
+#SBATCH --cpus-per-task=1
 #SBATCH --exclusive
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
 
 function launch {
-    export X10_NPLACES=$(( 20 * $1 ))
-    srun -n $1 -N $1 ./a.out "${@:2}" -width $(( 20 * $1 ))
+    srun -n $(( 20 * $1 )) -N $1 ./a.out "${@:2}" -width $(( 20 * $1 ))
 }
 
 function sweep {
@@ -18,9 +17,8 @@ function sweep {
     done
 }
 
-for n in 1; do
+for n in 1 2 4; do
     for t in stencil_1d; do
         sweep launch $n $t > x10_type_${t}_nodes_${n}.log
     done
 done
-

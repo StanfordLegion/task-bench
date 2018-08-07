@@ -32,7 +32,7 @@ public class TaskBench {
 		public val neighborsRecvRails:Rail[Rail[Long]];
 
 		// Booleans updated when data is loaded into remoteSend
-		public val recvReadyRails:Rail[Rail[Boolean]];
+		// public val recvReadyRails:Rail[Rail[Boolean]];
 
 		// current timestep this place is on
 		public val timestep:Long;
@@ -62,12 +62,12 @@ public class TaskBench {
 			return -1;
 		}
 
-		public def allNeighborsReceived(timestep:Long):Boolean {
-			for (i in recvReadyRails(timestep).range()) {
-				if (!recvReadyRails(timestep)(i)) return false;
-			}
-			return true;
-		}
+		// public def allNeighborsReceived(timestep:Long):Boolean {
+		// 	for (i in recvReadyRails(timestep).range()) {
+		// 		if (!recvReadyRails(timestep)(i)) return false;
+		// 	}
+		// 	return true;
+		// }
 
 		protected def this(dependenceSets:Rail[Rail[Pair[Rail[Long], Rail[Long]]]], dsetForTimestep:Rail[Long], maxWidth:Long) {
 
@@ -78,7 +78,7 @@ public class TaskBench {
 			this.recvRails = new Rail[Rail[Rail[Double]]](timesteps);
 			this.sendRails = new Rail[Rail[Rail[Double]]](timesteps);
 			this.remoteSendRails = new Rail[Rail[GlobalRail[Double]]](timesteps);
-			this.recvReadyRails = new Rail[Rail[Boolean]](timesteps);
+			// this.recvReadyRails = new Rail[Rail[Boolean]](timesteps);
 
 
 			for (ts in 0..(timesteps-1)) {
@@ -90,13 +90,13 @@ public class TaskBench {
 				val send = new Rail[Rail[Double]](neighborsSend.size, (i:Long) => new Rail[Double](1, -1.0));
 				val plchldr = new GlobalRail[Double](new Rail[Double](0));
 				val remoteSend = new Rail[GlobalRail[Double]](neighborsRecv.size, plchldr);
-				val recvReady = new Rail[Boolean](neighborsRecv.size, false);
+				// val recvReady = new Rail[Boolean](neighborsRecv.size, false);
 				this.neighborsSendRails(ts) = neighborsSend;
 				this.neighborsRecvRails(ts) = neighborsRecv;
 				this.recvRails(ts) = recv;
 				this.sendRails(ts) = send;
 				this.remoteSendRails(ts) = remoteSend;
-				this.recvReadyRails(ts) = recvReady;
+				// this.recvReadyRails(ts) = recvReady;
 			}
 
 		}
@@ -173,7 +173,7 @@ public class TaskBench {
 			at (p) async {
 				val pi = plh();
 				for (ts in 0..(dsetForTimestep.size-1)) { // loop through timesteps
-					// Console.OUT.println(p + " AT TIMESTEP " + ts);
+					Console.OUT.println(p + " AT TIMESTEP " + ts);
 					// send data
 					if (ts < dsetForTimestep.size-1) { // only if not on last timestep
 						for (sendNeighbor in pi.neighborsSendRails(ts).range()) {
@@ -182,7 +182,7 @@ public class TaskBench {
 							at (Place(pi.neighborsSendRails(ts)(sendNeighbor))) {
 								val pi2 = plh();
 								val recvIndex = pi2.getRecvIndex(sendId, ts+1);
-								atomic pi2.recvReadyRails(ts+1)(recvIndex) = true;
+								// atomic pi2.recvReadyRails(ts+1)(recvIndex) = true;
 							}
 						}	
 					}
@@ -192,14 +192,14 @@ public class TaskBench {
 						finish for (i in pi.neighborsRecvRails(ts).range()) async {
 							if (pi.neighborsRecvRails(ts)(i) >= offsetForTimesteps(ts-1) && 
 								pi.neighborsRecvRails(ts)(i) < offsetForTimesteps(ts-1) + widthForTimesteps(ts-1)) {
-								when (pi.recvReadyRails(ts)(i)) {
+								// when (pi.recvReadyRails(ts)(i)) {
+									// Console.OUT.println(p + " " + ts + " " + pi.recvReadyRails(ts)(i)); // no op statement
 									Rail.asyncCopy(pi.remoteSendRails(ts)(i), 0, pi.recvRails(ts)(i), 0, pi.recvRails(ts)(i).size);
-								}
+								// }
 							}
 						}
-						// Console.OUT.println("KERNEL: TYPE " + kernel.first + " ITERATIONS: " + kernel.second);
-						kernelExecute(kernel.first, kernel.second);
 					}
+					kernelExecute(kernel.first, kernel.second);
 				}
 			}
 		}
@@ -382,18 +382,6 @@ public class TaskBench {
 			widthsOffsetsRail = new Rail[Pair[Rail[Long], Rail[Long]]]();
 			kernels = new Rail[Pair[Int, Long]]();
 		}
-		Console.OUT.println("TASK GRAPH DEPENDENCE SETS: " + taskGraphDependenceSets.toString());
-		Console.OUT.println("TIME STEP MAPS: " + timeStepMaps.toString());
-		Console.OUT.println("WIDTHS OFFSETS: " + widthsOffsetsRail.toString());
-		Console.OUT.println("KERNELS: " + kernels.toString());
-		for (tg in 0..(taskGraphDependenceSets.size-1)) {
-			val dsets = taskGraphDependenceSets(tg);
-			val dsetForTimestep = timeStepMaps(tg);
-			val widthsOffsets = widthsOffsetsRail(tg);
-			val kernel = kernels(tg);
-			val taskBench = new TaskBench(dsets, dsetForTimestep, widthsOffsets, kernel);
-			taskBench.executeTaskGraph();
-		}
 		val start = getTime();
 		for (tg in 0..(taskGraphDependenceSets.size-1)) {
 			val dsets = taskGraphDependenceSets(tg);
@@ -409,22 +397,23 @@ public class TaskBench {
 
 	private static def appReport(argc: Int, argRail: Rail[String], time: Double) {
 		@Native("c++", "
-			std::cout << \"APP REPORT\" << std::endl;
 			char **argv = new char *[argc];
 			for (int i = 0; i < argc; i++) {
 				x10::lang::String str = *((*argRail)[i]);
 				x10_int strSize = str.length();
-				char *result = new char[strSize];
+				char *result = new char[strSize+1];
 				for (int j = 0; j < strSize; j++) { 
 					x10_char c = (str).charAt(j);
 					char *ch = (char *)&c;
 					result[j] = *ch;
 				}
+				result[strSize] = \'\\0\';
 				argv[i] = result;
 			}
 			App app(argc, argv);
-			//app.display();
-			for (int i = 0; i < argc; i++) { // cleanup allocated arrays
+			// app.display();
+			// cleanup allocated arrays
+			for (int i = 0; i < argc; i++) {
 				delete [] argv[i];
 			}
 			delete [] argv;
