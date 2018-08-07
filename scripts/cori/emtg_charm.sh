@@ -8,6 +8,8 @@
 
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
+module load craype-hugepages8M
+
 function launch {
     srun -n $(( $1 * cores )) -N $1 --ntasks-per-node=$cores --cpus-per-task=1 --cpu_bind cores ../../charm++/benchmark "${@:2}" -width $(( $1 * cores ))
 }

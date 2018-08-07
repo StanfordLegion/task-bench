@@ -92,6 +92,11 @@ void task_graph_execute_point(task_graph_t graph, long timestep, long point,
                               char *output_ptr, size_t output_bytes,
                               const char **input_ptr, const size_t *input_bytes,
                               size_t n_inputs);
+void task_graph_execute_point_scratch(task_graph_t graph, long timestep, long point,
+                                      char *output_ptr, size_t output_bytes,
+                                      const char **input_ptr, const size_t *input_bytes,
+                                      size_t n_inputs,
+                                      char *scratch_ptr, size_t scratch_bytes);
 
 typedef struct task_graph_list_t {
   void *impl;

@@ -15,7 +15,7 @@ function launch {
 function sweep {
     for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
         for rep in 0 1 2 3 4; do
-            if [[ $rep <= $s ]]; then
+            if [[ $rep -le $s ]]; then
                 $1 $2 -kernel busy_wait -iter $(( 1 << (24-s) )) -type $3 -radix $4 -steps 1000
             fi
         done
