@@ -25,13 +25,10 @@
 #include <x10/xrx/Runtime__Profile.h>
 #include <x10/lang/CheckedThrowable.h>
 #include <x10/compiler/Native.h>
-#include <x10/compiler/Abort.h>
-#include <x10/compiler/CompilerFlags.h>
-#include <x10/compiler/Finalization.h>
-#include <x10/lang/String.h>
 #include <x10/io/Printer.h>
 #include <x10/io/Console.h>
 #include <x10/lang/Any.h>
+#include <x10/lang/String.h>
 #include <x10/compiler/Synthetic.h>
 #include <x10/compiler/NativeCPPInclude.h>
 #include <x10/compiler/NativeCPPCompilationUnit.h>
@@ -51,11 +48,11 @@ class TaskBench__closure__1 : public ::x10::lang::Closure {
     ::TaskBench__PlaceInstance* __apply(){
         
         //#line 131 "TaskBench.x10"
-        ::TaskBench__PlaceInstance* alloc__3518 =  (new (::x10aux::alloc_z< ::TaskBench__PlaceInstance>()) ::TaskBench__PlaceInstance());
-        (alloc__3518)->::TaskBench__PlaceInstance::_constructor(dsets, dsetForTimestep,
+        ::TaskBench__PlaceInstance* alloc__2977 =  (new (::x10aux::alloc_z< ::TaskBench__PlaceInstance>()) ::TaskBench__PlaceInstance());
+        (alloc__2977)->::TaskBench__PlaceInstance::_constructor(dsets, dsetForTimestep,
                                                                 (x10_long)(::x10aux::nullCheck(::x10aux::nullCheck(dsets)->x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >::__apply(
                                                                                                  ((x10_long)0ll)))->FMGL(size)));
-        return alloc__3518;
+        return alloc__2977;
         
     }
     
@@ -110,14 +107,14 @@ class TaskBench__closure__4 : public ::x10::lang::Closure {
     void __apply(){
         
         //#line 151 "TaskBench.x10"
-        rs__3528->x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> >::__apply()->x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >::__set(
-          i__3527, rsr__3522);
+        rs__2987->x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> >::__apply()->x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >::__set(
+          i__2986, rsr__2981);
     }
     
     // captured environment
-    ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > rs__3528;
-    x10_long i__3527;
-    ::x10::lang::GlobalRail<x10_double> rsr__3522;
+    ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > rs__2987;
+    x10_long i__2986;
+    ::x10::lang::GlobalRail<x10_double> rsr__2981;
     
     ::x10aux::serialization_id_t _get_serialization_id() {
         return _serialization_id;
@@ -128,22 +125,22 @@ class TaskBench__closure__4 : public ::x10::lang::Closure {
     }
     
     void _serialize_body(::x10aux::serialization_buffer &buf) {
-        buf.write(this->rs__3528);
-        buf.write(this->i__3527);
-        buf.write(this->rsr__3522);
+        buf.write(this->rs__2987);
+        buf.write(this->i__2986);
+        buf.write(this->rsr__2981);
     }
     
     static x10::lang::Reference* _deserialize(::x10aux::deserialization_buffer &buf) {
         TaskBench__closure__4* storage = ::x10aux::alloc_z<TaskBench__closure__4>();
         buf.record_reference(storage);
-        ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > that_rs__3528 = buf.read< ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > >();
-        x10_long that_i__3527 = buf.read<x10_long>();
-        ::x10::lang::GlobalRail<x10_double> that_rsr__3522 = buf.read< ::x10::lang::GlobalRail<x10_double> >();
-        TaskBench__closure__4* this_ = new (storage) TaskBench__closure__4(that_rs__3528, that_i__3527, that_rsr__3522);
+        ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > that_rs__2987 = buf.read< ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > >();
+        x10_long that_i__2986 = buf.read<x10_long>();
+        ::x10::lang::GlobalRail<x10_double> that_rsr__2981 = buf.read< ::x10::lang::GlobalRail<x10_double> >();
+        TaskBench__closure__4* this_ = new (storage) TaskBench__closure__4(that_rs__2987, that_i__2986, that_rsr__2981);
         return this_;
     }
     
-    TaskBench__closure__4(::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > rs__3528, x10_long i__3527, ::x10::lang::GlobalRail<x10_double> rsr__3522) : rs__3528(rs__3528), i__3527(i__3527), rsr__3522(rsr__3522) { }
+    TaskBench__closure__4(::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > rs__2987, x10_long i__2986, ::x10::lang::GlobalRail<x10_double> rsr__2981) : rs__2987(rs__2987), i__2986(i__2986), rsr__2981(rsr__2981) { }
     
     static const ::x10aux::serialization_id_t _serialization_id;
     
@@ -174,44 +171,44 @@ class TaskBench__closure__3 : public ::x10::lang::Closure {
     void __apply(){
         
         //#line 147 "TaskBench.x10"
-        ::TaskBench__PlaceInstance* pplh__3520 = pplh->x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*>::__apply();
+        ::TaskBench__PlaceInstance* pplh__2979 = pplh->x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*>::__apply();
         
         //#line 148 "TaskBench.x10"
-        x10_long sendIndex__3521 = ::x10aux::nullCheck(pplh__3520)->getSenderIndex(
-                                     recvId__3531, ((ts__3535) - (((x10_long)1ll))));
+        x10_long sendIndex__2980 = ::x10aux::nullCheck(pplh__2979)->getSenderIndex(
+                                     recvId__2990, ((ts__2994) - (((x10_long)1ll))));
         
         //#line 149 "TaskBench.x10"
-        ::x10::lang::GlobalRail<x10_double> rsr__3522 = (__extension__ ({
-            ::x10::lang::Rail< x10_double >* a__3523 = ::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pplh__3520)->FMGL(sendRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >::__apply(
-                                                                             ((ts__3535) - (((x10_long)1ll)))))->x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::__apply(
-                                                         sendIndex__3521);
-            if (!((!::x10aux::struct_equals(a__3523, reinterpret_cast< ::x10::lang::NullType*>(X10_NULL)))))
+        ::x10::lang::GlobalRail<x10_double> rsr__2981 = (__extension__ ({
+            ::x10::lang::Rail< x10_double >* a__2982 = ::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pplh__2979)->FMGL(sendRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >::__apply(
+                                                                             ((ts__2994) - (((x10_long)1ll)))))->x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::__apply(
+                                                         sendIndex__2980);
+            if (!((!::x10aux::struct_equals(a__2982, reinterpret_cast< ::x10::lang::NullType*>(X10_NULL)))))
             {
-                ::x10aux::throwException(::x10aux::nullCheck(::x10::lang::FailedDynamicCheckException::_make((&::TaskBench_Strings::sl__3631))));
+                ::x10aux::throwException(::x10aux::nullCheck(::x10::lang::FailedDynamicCheckException::_make((&::TaskBench_Strings::sl__3061))));
             }
             (__extension__ ({
-                ::x10::lang::GlobalRail<x10_double> alloc__3524 =
+                ::x10::lang::GlobalRail<x10_double> alloc__2983 =
                    ::x10::lang::GlobalRail<x10_double>::_alloc();
-                (alloc__3524)->::x10::lang::GlobalRail<x10_double>::_constructor(
-                  a__3523);
-                alloc__3524;
+                (alloc__2983)->::x10::lang::GlobalRail<x10_double>::_constructor(
+                  a__2982);
+                alloc__2983;
             }))
             ;
         }))
         ;
         
         //#line 150 "TaskBench.x10"
-        ::x10::xrx::Runtime::runAsync(::x10::lang::Place::_make((rs__3528->FMGL(rail))->location),
-                                      reinterpret_cast< ::x10::lang::VoidFun_0_0*>((new (::x10aux::alloc< ::x10::lang::VoidFun_0_0>(sizeof(TaskBench__closure__4)))TaskBench__closure__4(rs__3528, i__3527, rsr__3522))),
+        ::x10::xrx::Runtime::runAsync(::x10::lang::Place::_make((rs__2987->FMGL(rail))->location),
+                                      reinterpret_cast< ::x10::lang::VoidFun_0_0*>((new (::x10aux::alloc< ::x10::lang::VoidFun_0_0>(sizeof(TaskBench__closure__4)))TaskBench__closure__4(rs__2987, i__2986, rsr__2981))),
                                       ::x10aux::class_cast_unchecked< ::x10::xrx::Runtime__Profile*>(reinterpret_cast< ::x10::lang::NullType*>(X10_NULL)));
     }
     
     // captured environment
     ::x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*> pplh;
-    x10_long recvId__3531;
-    x10_long ts__3535;
-    ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > rs__3528;
-    x10_long i__3527;
+    x10_long recvId__2990;
+    x10_long ts__2994;
+    ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > rs__2987;
+    x10_long i__2986;
     
     ::x10aux::serialization_id_t _get_serialization_id() {
         return _serialization_id;
@@ -223,25 +220,25 @@ class TaskBench__closure__3 : public ::x10::lang::Closure {
     
     void _serialize_body(::x10aux::serialization_buffer &buf) {
         buf.write(this->pplh);
-        buf.write(this->recvId__3531);
-        buf.write(this->ts__3535);
-        buf.write(this->rs__3528);
-        buf.write(this->i__3527);
+        buf.write(this->recvId__2990);
+        buf.write(this->ts__2994);
+        buf.write(this->rs__2987);
+        buf.write(this->i__2986);
     }
     
     static x10::lang::Reference* _deserialize(::x10aux::deserialization_buffer &buf) {
         TaskBench__closure__3* storage = ::x10aux::alloc_z<TaskBench__closure__3>();
         buf.record_reference(storage);
         ::x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*> that_pplh = buf.read< ::x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*> >();
-        x10_long that_recvId__3531 = buf.read<x10_long>();
-        x10_long that_ts__3535 = buf.read<x10_long>();
-        ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > that_rs__3528 = buf.read< ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > >();
-        x10_long that_i__3527 = buf.read<x10_long>();
-        TaskBench__closure__3* this_ = new (storage) TaskBench__closure__3(that_pplh, that_recvId__3531, that_ts__3535, that_rs__3528, that_i__3527);
+        x10_long that_recvId__2990 = buf.read<x10_long>();
+        x10_long that_ts__2994 = buf.read<x10_long>();
+        ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > that_rs__2987 = buf.read< ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > >();
+        x10_long that_i__2986 = buf.read<x10_long>();
+        TaskBench__closure__3* this_ = new (storage) TaskBench__closure__3(that_pplh, that_recvId__2990, that_ts__2994, that_rs__2987, that_i__2986);
         return this_;
     }
     
-    TaskBench__closure__3(::x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*> pplh, x10_long recvId__3531, x10_long ts__3535, ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > rs__3528, x10_long i__3527) : pplh(pplh), recvId__3531(recvId__3531), ts__3535(ts__3535), rs__3528(rs__3528), i__3527(i__3527) { }
+    TaskBench__closure__3(::x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*> pplh, x10_long recvId__2990, x10_long ts__2994, ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > rs__2987, x10_long i__2986) : pplh(pplh), recvId__2990(recvId__2990), ts__2994(ts__2994), rs__2987(rs__2987), i__2986(i__2986) { }
     
     static const ::x10aux::serialization_id_t _serialization_id;
     
@@ -275,63 +272,63 @@ class TaskBench__closure__2 : public ::x10::lang::Closure {
         ::TaskBench__PlaceInstance* pplh1 = pplh->x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*>::__apply();
         
         //#line 139 "TaskBench.x10"
-        x10_long i__2138max__3533 = (((x10_long)(::x10aux::nullCheck(dsetForTimestep)->FMGL(size))) - (((x10_long)1ll)));
+        x10_long i__1620max__2992 = (((x10_long)(::x10aux::nullCheck(dsetForTimestep)->FMGL(size))) - (((x10_long)1ll)));
         {
-            x10_long i__3534;
-            for (i__3534 = ((x10_long)1ll); ((i__3534) <= (i__2138max__3533));
-                 i__3534 = ((i__3534) + (((x10_long)1ll)))) {
-                x10_long ts__3535 = i__3534;
+            x10_long i__2993;
+            for (i__2993 = ((x10_long)1ll); ((i__2993) <= (i__1620max__2992));
+                 i__2993 = ((i__2993) + (((x10_long)1ll)))) {
+                x10_long ts__2994 = i__2993;
                 
                 //#line 140 "TaskBench.x10"
-                ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > rs__3528 =
+                ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > rs__2987 =
                   (__extension__ ({
-                    ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* a__3529 =
+                    ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* a__2988 =
                       ::x10aux::nullCheck(::x10aux::nullCheck(pplh1)->FMGL(remoteSendRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* >::__apply(
-                        i__3534);
-                    if (!((!::x10aux::struct_equals(a__3529,
+                        i__2993);
+                    if (!((!::x10aux::struct_equals(a__2988,
                                                     reinterpret_cast< ::x10::lang::NullType*>(X10_NULL)))))
                     {
-                        ::x10aux::throwException(::x10aux::nullCheck(::x10::lang::FailedDynamicCheckException::_make((&::TaskBench_Strings::sl__3630))));
+                        ::x10aux::throwException(::x10aux::nullCheck(::x10::lang::FailedDynamicCheckException::_make((&::TaskBench_Strings::sl__3060))));
                     }
                     (__extension__ ({
-                        ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > alloc__3530 =
+                        ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> > alloc__2989 =
                            ::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> >::_alloc();
-                        (alloc__3530)->::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> >::_constructor(
-                          a__3529);
-                        alloc__3530;
+                        (alloc__2989)->::x10::lang::GlobalRail< ::x10::lang::GlobalRail<x10_double> >::_constructor(
+                          a__2988);
+                        alloc__2989;
                     }))
                     ;
                 }))
                 ;
                 
                 //#line 142 "TaskBench.x10"
-                x10_long recvId__3531 = ::x10::lang::Place::_make(::x10aux::here)->FMGL(id);
+                x10_long recvId__2990 = ::x10::lang::Place::_make(::x10aux::here)->FMGL(id);
                 
                 //#line 143 "TaskBench.x10"
-                ::x10::lang::Rail< x10_long >* neighborsRecv__3532 =
+                ::x10::lang::Rail< x10_long >* neighborsRecv__2991 =
                   ::x10aux::nullCheck(::x10aux::nullCheck(pplh1)->FMGL(neighborsRecvRails))->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__apply(
-                    i__3534);
+                    i__2993);
                 
                 //#line 145 "TaskBench.x10"
-                x10_long i__2120max__3525 = (((x10_long)(::x10aux::nullCheck(neighborsRecv__3532)->FMGL(size))) - (((x10_long)1ll)));
+                x10_long i__1602max__2984 = (((x10_long)(::x10aux::nullCheck(neighborsRecv__2991)->FMGL(size))) - (((x10_long)1ll)));
                 {
-                    x10_long i__3526;
-                    for (i__3526 = ((x10_long)0ll); ((i__3526) <= (i__2120max__3525));
-                         i__3526 = ((i__3526) + (((x10_long)1ll))))
+                    x10_long i__2985;
+                    for (i__2985 = ((x10_long)0ll); ((i__2985) <= (i__1602max__2984));
+                         i__2985 = ((i__2985) + (((x10_long)1ll))))
                     {
-                        x10_long i__3527 = i__3526;
+                        x10_long i__2986 = i__2985;
                         
                         //#line 146 "TaskBench.x10"
                         ::x10::xrx::Runtime::runAsync((__extension__ ({
-                                                          ::x10::lang::Place alloc__3519 =
+                                                          ::x10::lang::Place alloc__2978 =
                                                             
                                                           ::x10::lang::Place::_alloc();
-                                                          (alloc__3519)->::x10::lang::Place::_constructor(
-                                                            ::x10aux::nullCheck(neighborsRecv__3532)->x10::lang::Rail< x10_long >::__apply(
-                                                              i__3527));
-                                                          alloc__3519;
+                                                          (alloc__2978)->::x10::lang::Place::_constructor(
+                                                            ::x10aux::nullCheck(neighborsRecv__2991)->x10::lang::Rail< x10_long >::__apply(
+                                                              i__2986));
+                                                          alloc__2978;
                                                       }))
-                                                      , reinterpret_cast< ::x10::lang::VoidFun_0_0*>((new (::x10aux::alloc< ::x10::lang::VoidFun_0_0>(sizeof(TaskBench__closure__3)))TaskBench__closure__3(pplh, recvId__3531, ts__3535, rs__3528, i__3527))),
+                                                      , reinterpret_cast< ::x10::lang::VoidFun_0_0*>((new (::x10aux::alloc< ::x10::lang::VoidFun_0_0>(sizeof(TaskBench__closure__3)))TaskBench__closure__3(pplh, recvId__2990, ts__2994, rs__2987, i__2986))),
                                                       ::x10aux::class_cast_unchecked< ::x10::xrx::Runtime__Profile*>(reinterpret_cast< ::x10::lang::NullType*>(X10_NULL)));
                     }
                 }
@@ -398,63 +395,16 @@ class TaskBench__closure__6 : public ::x10::lang::Closure {
     void __apply(){
         
         //#line 183 "TaskBench.x10"
-        ::TaskBench__PlaceInstance* pi__3538 = saved_this->FMGL(plh)->x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*>::__apply();
+        ::TaskBench__PlaceInstance* pi__2997 = saved_this->FMGL(plh)->x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*>::__apply();
         
         //#line 184 "TaskBench.x10"
-        x10_long recvIndex__3539 = ::x10aux::nullCheck(pi__3538)->getRecvIndex(
-                                     sendId__3536, ((ts__3550) + (((x10_long)1ll))));
-        {
-            
-            //#line 185 "TaskBench.x10"
-            ::x10::lang::CheckedThrowable* throwable__3598 = ::x10aux::class_cast_unchecked< ::x10::lang::CheckedThrowable*>(reinterpret_cast< ::x10::lang::NullType*>(X10_NULL));
-            try {
-                {
-                    ::x10::xrx::Runtime::enterAtomic();
-                    {
-                        ::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi__3538)->FMGL(recvReadyRails))->x10::lang::Rail< ::x10::lang::Rail< x10_boolean >* >::__apply(
-                                              ((ts__3550) + (((x10_long)1ll)))))->x10::lang::Rail< x10_boolean >::__set(
-                          recvIndex__3539, true);
-                    }
-                }
-            }
-            catch (::x10::lang::CheckedThrowable* __exc3) {
-                {
-                    ::x10::lang::CheckedThrowable* formal__3599 =
-                      __exc3;
-                    {
-                        throwable__3598 = formal__3599;
-                    }
-                }
-            }
-            if ((!::x10aux::struct_equals(throwable__3598,
-                                          reinterpret_cast< ::x10::lang::CheckedThrowable*>(X10_NULL))))
-            {
-                if (::x10aux::instanceof< ::x10::compiler::Abort*>(throwable__3598))
-                {
-                    ::x10aux::throwException(::x10aux::nullCheck(throwable__3598));
-                }
-                
-            }
-            if (true) {
-                ::x10::xrx::Runtime::exitAtomic();
-            }
-            if ((!::x10aux::struct_equals(throwable__3598,
-                                          reinterpret_cast< ::x10::lang::CheckedThrowable*>(X10_NULL))))
-            {
-                if (!(::x10aux::instanceof< ::x10::compiler::Finalization*>(throwable__3598)))
-                {
-                    ::x10aux::throwException(::x10aux::nullCheck(throwable__3598));
-                }
-                
-            }
-            
-        }
+        ::x10aux::nullCheck(pi__2997)->getRecvIndex(sendId__2995, ((ts__3009) + (((x10_long)1ll))));
     }
     
     // captured environment
     ::TaskBench* saved_this;
-    x10_long sendId__3536;
-    x10_long ts__3550;
+    x10_long sendId__2995;
+    x10_long ts__3009;
     
     ::x10aux::serialization_id_t _get_serialization_id() {
         return _serialization_id;
@@ -462,21 +412,21 @@ class TaskBench__closure__6 : public ::x10::lang::Closure {
     
     void _serialize_body(::x10aux::serialization_buffer &buf) {
         buf.write(this->saved_this);
-        buf.write(this->sendId__3536);
-        buf.write(this->ts__3550);
+        buf.write(this->sendId__2995);
+        buf.write(this->ts__3009);
     }
     
     static x10::lang::Reference* _deserialize(::x10aux::deserialization_buffer &buf) {
         TaskBench__closure__6* storage = ::x10aux::alloc_z<TaskBench__closure__6>();
         buf.record_reference(storage);
         ::TaskBench* that_saved_this = buf.read< ::TaskBench*>();
-        x10_long that_sendId__3536 = buf.read<x10_long>();
-        x10_long that_ts__3550 = buf.read<x10_long>();
-        TaskBench__closure__6* this_ = new (storage) TaskBench__closure__6(that_saved_this, that_sendId__3536, that_ts__3550);
+        x10_long that_sendId__2995 = buf.read<x10_long>();
+        x10_long that_ts__3009 = buf.read<x10_long>();
+        TaskBench__closure__6* this_ = new (storage) TaskBench__closure__6(that_saved_this, that_sendId__2995, that_ts__3009);
         return this_;
     }
     
-    TaskBench__closure__6(::TaskBench* saved_this, x10_long sendId__3536, x10_long ts__3550) : saved_this(saved_this), sendId__3536(sendId__3536), ts__3550(ts__3550) { }
+    TaskBench__closure__6(::TaskBench* saved_this, x10_long sendId__2995, x10_long ts__3009) : saved_this(saved_this), sendId__2995(sendId__2995), ts__3009(ts__3009) { }
     
     static const ::x10aux::serialization_id_t _serialization_id;
     
@@ -506,91 +456,34 @@ class TaskBench__closure__7 : public ::x10::lang::Closure {
         
         //#line 193 "TaskBench.x10"
         if ((((::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(neighborsRecvRails))->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__apply(
-                                     ts__3550))->x10::lang::Rail< x10_long >::__apply(
-                 i__3547)) >= (::x10aux::nullCheck(saved_this->FMGL(offsetForTimesteps))->x10::lang::Rail< x10_long >::__apply(
-                                 ((ts__3550) - (((x10_long)1ll)))))) &&
+                                     ts__3009))->x10::lang::Rail< x10_long >::__apply(
+                 i__3006)) >= (::x10aux::nullCheck(saved_this->FMGL(offsetForTimesteps))->x10::lang::Rail< x10_long >::__apply(
+                                 ((ts__3009) - (((x10_long)1ll)))))) &&
             ((::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(neighborsRecvRails))->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__apply(
-                                    ts__3550))->x10::lang::Rail< x10_long >::__apply(
-                i__3547)) < (((::x10aux::nullCheck(saved_this->FMGL(offsetForTimesteps))->x10::lang::Rail< x10_long >::__apply(
-                                 ((ts__3550) - (((x10_long)1ll))))) + (::x10aux::nullCheck(saved_this->FMGL(widthForTimesteps))->x10::lang::Rail< x10_long >::__apply(
-                                                                         ((ts__3550) - (((x10_long)1ll))))))))))
+                                    ts__3009))->x10::lang::Rail< x10_long >::__apply(
+                i__3006)) < (((::x10aux::nullCheck(saved_this->FMGL(offsetForTimesteps))->x10::lang::Rail< x10_long >::__apply(
+                                 ((ts__3009) - (((x10_long)1ll))))) + (::x10aux::nullCheck(saved_this->FMGL(widthForTimesteps))->x10::lang::Rail< x10_long >::__apply(
+                                                                         ((ts__3009) - (((x10_long)1ll))))))))))
         {
-            {
-                
-                //#line 195 "TaskBench.x10"
-                ::x10::xrx::Runtime::ensureNotInAtomic();
-                {
-                    ::x10::lang::CheckedThrowable* throwable__3601 =
-                      ::x10aux::class_cast_unchecked< ::x10::lang::CheckedThrowable*>(reinterpret_cast< ::x10::lang::NullType*>(X10_NULL));
-                    try {
-                        {
-                            ::x10::xrx::Runtime::enterAtomic();
-                            while (true) {
-                                if (::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(recvReadyRails))->x10::lang::Rail< ::x10::lang::Rail< x10_boolean >* >::__apply(
-                                                          ts__3550))->x10::lang::Rail< x10_boolean >::__apply(
-                                      i__3547)) {
-                                    {
-                                        
-                                        //#line 196 "TaskBench.x10"
-                                        ::x10::lang::Rail< void >::asyncCopy< x10_double >(
-                                          ::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(remoteSendRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* >::__apply(
-                                                                ts__3550))->x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >::__apply(
-                                            i__3547), ((x10_long)0ll),
-                                          ::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(recvRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >::__apply(
-                                                                ts__3550))->x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::__apply(
-                                            i__3547), ((x10_long)0ll),
-                                          (x10_long)(::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(recvRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >::__apply(
-                                                                                               ts__3550))->x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::__apply(
-                                                                           i__3547))->FMGL(size)));
-                                    }
-                                    break;
-                                }
-                                ::x10::xrx::Runtime::awaitAtomic();
-                            }
-                            
-                        }
-                    }
-                    catch (::x10::lang::CheckedThrowable* __exc4) {
-                        {
-                            ::x10::lang::CheckedThrowable* formal__3602 =
-                              __exc4;
-                            {
-                                throwable__3601 = formal__3602;
-                            }
-                        }
-                    }
-                    if ((!::x10aux::struct_equals(throwable__3601,
-                                                  reinterpret_cast< ::x10::lang::CheckedThrowable*>(X10_NULL))))
-                    {
-                        if (::x10aux::instanceof< ::x10::compiler::Abort*>(throwable__3601))
-                        {
-                            ::x10aux::throwException(::x10aux::nullCheck(throwable__3601));
-                        }
-                        
-                    }
-                    if (true) {
-                        ::x10::xrx::Runtime::exitAtomic();
-                    }
-                    if ((!::x10aux::struct_equals(throwable__3601,
-                                                  reinterpret_cast< ::x10::lang::CheckedThrowable*>(X10_NULL))))
-                    {
-                        if (!(::x10aux::instanceof< ::x10::compiler::Finalization*>(throwable__3601)))
-                        {
-                            ::x10aux::throwException(::x10aux::nullCheck(throwable__3601));
-                        }
-                        
-                    }
-                    
-                }
-            }
+            
+            //#line 197 "TaskBench.x10"
+            ::x10::lang::Rail< void >::asyncCopy< x10_double >(
+              ::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(remoteSendRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* >::__apply(
+                                    ts__3009))->x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >::__apply(
+                i__3006), ((x10_long)0ll), ::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(recvRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >::__apply(
+                                                                 ts__3009))->x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::__apply(
+                                             i__3006), ((x10_long)0ll),
+              (x10_long)(::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(recvRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >::__apply(
+                                                                   ts__3009))->x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::__apply(
+                                               i__3006))->FMGL(size)));
         }
         
     }
     
     // captured environment
     ::TaskBench__PlaceInstance* pi;
-    x10_long ts__3550;
-    x10_long i__3547;
+    x10_long ts__3009;
+    x10_long i__3006;
     ::TaskBench* saved_this;
     
     ::x10aux::serialization_id_t _get_serialization_id() {
@@ -603,8 +496,8 @@ class TaskBench__closure__7 : public ::x10::lang::Closure {
     
     void _serialize_body(::x10aux::serialization_buffer &buf) {
         buf.write(this->pi);
-        buf.write(this->ts__3550);
-        buf.write(this->i__3547);
+        buf.write(this->ts__3009);
+        buf.write(this->i__3006);
         buf.write(this->saved_this);
     }
     
@@ -612,14 +505,14 @@ class TaskBench__closure__7 : public ::x10::lang::Closure {
         TaskBench__closure__7* storage = ::x10aux::alloc_z<TaskBench__closure__7>();
         buf.record_reference(storage);
         ::TaskBench__PlaceInstance* that_pi = buf.read< ::TaskBench__PlaceInstance*>();
-        x10_long that_ts__3550 = buf.read<x10_long>();
-        x10_long that_i__3547 = buf.read<x10_long>();
+        x10_long that_ts__3009 = buf.read<x10_long>();
+        x10_long that_i__3006 = buf.read<x10_long>();
         ::TaskBench* that_saved_this = buf.read< ::TaskBench*>();
-        TaskBench__closure__7* this_ = new (storage) TaskBench__closure__7(that_pi, that_ts__3550, that_i__3547, that_saved_this);
+        TaskBench__closure__7* this_ = new (storage) TaskBench__closure__7(that_pi, that_ts__3009, that_i__3006, that_saved_this);
         return this_;
     }
     
-    TaskBench__closure__7(::TaskBench__PlaceInstance* pi, x10_long ts__3550, x10_long i__3547, ::TaskBench* saved_this) : pi(pi), ts__3550(ts__3550), i__3547(i__3547), saved_this(saved_this) { }
+    TaskBench__closure__7(::TaskBench__PlaceInstance* pi, x10_long ts__3009, x10_long i__3006, ::TaskBench* saved_this) : pi(pi), ts__3009(ts__3009), i__3006(i__3006), saved_this(saved_this) { }
     
     static const ::x10aux::serialization_id_t _serialization_id;
     
@@ -629,7 +522,7 @@ class TaskBench__closure__7 : public ::x10::lang::Closure {
     virtual const ::x10aux::RuntimeType *_type() const { return ::x10aux::getRTT< ::x10::lang::VoidFun_0_0>(); }
     
     const char* toNativeString() {
-        return "TaskBench.x10:192-199";
+        return "TaskBench.x10:192-200";
     }
 
 };
@@ -653,51 +546,55 @@ class TaskBench__closure__5 : public ::x10::lang::Closure {
         ::TaskBench__PlaceInstance* pi = saved_this->FMGL(plh)->x10::lang::PlaceLocalHandle< ::TaskBench__PlaceInstance*>::__apply();
         
         //#line 175 "TaskBench.x10"
-        x10_long i__2198max__3548 = (((x10_long)(::x10aux::nullCheck(saved_this->FMGL(dsetForTimestep))->FMGL(size))) - (((x10_long)1ll)));
+        x10_long i__1680max__3007 = (((x10_long)(::x10aux::nullCheck(saved_this->FMGL(dsetForTimestep))->FMGL(size))) - (((x10_long)1ll)));
         {
-            x10_long i__3549;
-            for (i__3549 = ((x10_long)0ll); ((i__3549) <= (i__2198max__3548));
-                 i__3549 = ((i__3549) + (((x10_long)1ll)))) {
-                x10_long ts__3550 = i__3549;
+            x10_long i__3008;
+            for (i__3008 = ((x10_long)0ll); ((i__3008) <= (i__1680max__3007));
+                 i__3008 = ((i__3008) + (((x10_long)1ll)))) {
+                x10_long ts__3009 = i__3008;
+                
+                //#line 176 "TaskBench.x10"
+                ::x10::io::Console::FMGL(OUT__get)()->x10::io::Printer::println(
+                  reinterpret_cast< ::x10::lang::Any*>(::x10::lang::String::__plus(::x10::lang::String::__plus(p, (&::TaskBench_Strings::sl__3062)), i__3008)));
                 
                 //#line 178 "TaskBench.x10"
-                if (((i__3549) < ((((x10_long)(::x10aux::nullCheck(saved_this->FMGL(dsetForTimestep))->FMGL(size))) - (((x10_long)1ll))))))
+                if (((i__3008) < ((((x10_long)(::x10aux::nullCheck(saved_this->FMGL(dsetForTimestep))->FMGL(size))) - (((x10_long)1ll))))))
                 {
                     
                     //#line 179 "TaskBench.x10"
-                    ::x10::lang::Rail< x10_long >* rail__3540 = ::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(neighborsSendRails))->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__apply(
-                                                                  i__3549);
-                    x10_long i__2160max__3541 = (x10_long)(::x10aux::nullCheck(rail__3540)->FMGL(size));
+                    ::x10::lang::Rail< x10_long >* rail__2999 = ::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(neighborsSendRails))->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__apply(
+                                                                  i__3008);
+                    x10_long i__1642max__3000 = (x10_long)(::x10aux::nullCheck(rail__2999)->FMGL(size));
                     {
-                        x10_long i__3542;
-                        for (i__3542 = ((x10_long)0ll); ((i__3542) < (i__2160max__3541));
-                             i__3542 = ((i__3542) + (((x10_long)1ll))))
+                        x10_long i__3001;
+                        for (i__3001 = ((x10_long)0ll); ((i__3001) < (i__1642max__3000));
+                             i__3001 = ((i__3001) + (((x10_long)1ll))))
                         {
-                            x10_long sendNeighbor__3543 =
-                              i__3542;
+                            x10_long sendNeighbor__3002 =
+                              i__3001;
                             
                             //#line 180 "TaskBench.x10"
                             ::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(sendRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >::__apply(
-                                                                      ts__3550))->x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::__apply(
-                                                  i__3542))->x10::lang::Rail< x10_double >::__set(
-                              ((x10_long)0ll), ((x10_double) (ts__3550)));
+                                                                      ts__3009))->x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::__apply(
+                                                  i__3001))->x10::lang::Rail< x10_double >::__set(
+                              ((x10_long)0ll), ((x10_double) (ts__3009)));
                             
                             //#line 181 "TaskBench.x10"
-                            x10_long sendId__3536 = ::x10::lang::Place::_make(::x10aux::here)->FMGL(id);
+                            x10_long sendId__2995 = ::x10::lang::Place::_make(::x10aux::here)->FMGL(id);
                             {
                                 
                                 //#line 182 "TaskBench.x10"
                                 ::x10::xrx::Runtime::runAt(
                                   (__extension__ ({
-                                      ::x10::lang::Place alloc__3537 =
+                                      ::x10::lang::Place alloc__2996 =
                                          ::x10::lang::Place::_alloc();
-                                      (alloc__3537)->::x10::lang::Place::_constructor(
+                                      (alloc__2996)->::x10::lang::Place::_constructor(
                                         ::x10aux::nullCheck(::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(neighborsSendRails))->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__apply(
-                                                              ts__3550))->x10::lang::Rail< x10_long >::__apply(
-                                          sendNeighbor__3543));
-                                      alloc__3537;
+                                                              ts__3009))->x10::lang::Rail< x10_long >::__apply(
+                                          sendNeighbor__3002));
+                                      alloc__2996;
                                   }))
-                                  , reinterpret_cast< ::x10::lang::VoidFun_0_0*>((new (::x10aux::alloc< ::x10::lang::VoidFun_0_0>(sizeof(TaskBench__closure__6)))TaskBench__closure__6(saved_this, sendId__3536, ts__3550))),
+                                  , reinterpret_cast< ::x10::lang::VoidFun_0_0*>((new (::x10aux::alloc< ::x10::lang::VoidFun_0_0>(sizeof(TaskBench__closure__6)))TaskBench__closure__6(saved_this, sendId__2995, ts__3009))),
                                   ::x10aux::class_cast_unchecked< ::x10::xrx::Runtime__Profile*>(reinterpret_cast< ::x10::lang::NullType*>(X10_NULL)));
                             }
                         }
@@ -706,53 +603,52 @@ class TaskBench__closure__5 : public ::x10::lang::Closure {
                 }
                 
                 //#line 191 "TaskBench.x10"
-                if (((ts__3550) > (((x10_long)0ll)))) {
+                if (((ts__3009) > (((x10_long)0ll)))) {
                     {
                         
                         //#line 192 "TaskBench.x10"
                         ::x10::xrx::Runtime::ensureNotInAtomic();
-                        ::x10::xrx::FinishState* fs__3589 =
+                        ::x10::xrx::FinishState* fs__3040 =
                           ::x10::xrx::Runtime::startFinish();
                         try {
                             {
-                                ::x10::lang::Rail< x10_long >* rail__3544 =
+                                ::x10::lang::Rail< x10_long >* rail__3003 =
                                   ::x10aux::nullCheck(::x10aux::nullCheck(pi)->FMGL(neighborsRecvRails))->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__apply(
-                                    ts__3550);
-                                x10_long i__2179max__3545 =
-                                  (x10_long)(::x10aux::nullCheck(rail__3544)->FMGL(size));
+                                    ts__3009);
+                                x10_long i__1661max__3004 =
+                                  (x10_long)(::x10aux::nullCheck(rail__3003)->FMGL(size));
                                 {
-                                    x10_long i__3546;
-                                    for (i__3546 = ((x10_long)0ll);
-                                         ((i__3546) < (i__2179max__3545));
-                                         i__3546 = ((i__3546) + (((x10_long)1ll))))
+                                    x10_long i__3005;
+                                    for (i__3005 = ((x10_long)0ll);
+                                         ((i__3005) < (i__1661max__3004));
+                                         i__3005 = ((i__3005) + (((x10_long)1ll))))
                                     {
-                                        x10_long i__3547 =
-                                          i__3546;
+                                        x10_long i__3006 =
+                                          i__3005;
                                         ::x10::xrx::Runtime::runAsync(
-                                          reinterpret_cast< ::x10::lang::VoidFun_0_0*>((new (::x10aux::alloc< ::x10::lang::VoidFun_0_0>(sizeof(TaskBench__closure__7)))TaskBench__closure__7(pi, ts__3550, i__3547, saved_this))));
+                                          reinterpret_cast< ::x10::lang::VoidFun_0_0*>((new (::x10aux::alloc< ::x10::lang::VoidFun_0_0>(sizeof(TaskBench__closure__7)))TaskBench__closure__7(pi, ts__3009, i__3006, saved_this))));
                                     }
                                 }
                                 
                             }
                         }
-                        catch (::x10::lang::CheckedThrowable* __exc5) {
+                        catch (::x10::lang::CheckedThrowable* __exc3) {
                             {
-                                ::x10::lang::CheckedThrowable* ct__3587 =
-                                  __exc5;
+                                ::x10::lang::CheckedThrowable* ct__3038 =
+                                  __exc3;
                                 {
                                     ::x10::xrx::Runtime::pushException(
-                                      ct__3587);
+                                      ct__3038);
                                 }
                             }
                         }
-                        ::x10::xrx::Runtime::stopFinish(fs__3589);
+                        ::x10::xrx::Runtime::stopFinish(fs__3040);
                     }
-                    
-                    //#line 201 "TaskBench.x10"
-                    saved_this->kernelExecute(saved_this->FMGL(kernel)->FMGL(first),
-                                              saved_this->FMGL(kernel)->FMGL(second));
                 }
                 
+                //#line 202 "TaskBench.x10"
+                saved_this->kernelExecute(saved_this->FMGL(kernel)->FMGL(first),
+                                          saved_this->FMGL(kernel)->FMGL(second));
             }
         }
         
@@ -760,6 +656,7 @@ class TaskBench__closure__5 : public ::x10::lang::Closure {
     
     // captured environment
     ::TaskBench* saved_this;
+    ::x10::lang::Place p;
     
     ::x10aux::serialization_id_t _get_serialization_id() {
         return _serialization_id;
@@ -771,17 +668,19 @@ class TaskBench__closure__5 : public ::x10::lang::Closure {
     
     void _serialize_body(::x10aux::serialization_buffer &buf) {
         buf.write(this->saved_this);
+        buf.write(this->p);
     }
     
     static x10::lang::Reference* _deserialize(::x10aux::deserialization_buffer &buf) {
         TaskBench__closure__5* storage = ::x10aux::alloc_z<TaskBench__closure__5>();
         buf.record_reference(storage);
         ::TaskBench* that_saved_this = buf.read< ::TaskBench*>();
-        TaskBench__closure__5* this_ = new (storage) TaskBench__closure__5(that_saved_this);
+        ::x10::lang::Place that_p = buf.read< ::x10::lang::Place>();
+        TaskBench__closure__5* this_ = new (storage) TaskBench__closure__5(that_saved_this, that_p);
         return this_;
     }
     
-    TaskBench__closure__5(::TaskBench* saved_this) : saved_this(saved_this) { }
+    TaskBench__closure__5(::TaskBench* saved_this, ::x10::lang::Place p) : saved_this(saved_this), p(p) { }
     
     static const ::x10aux::serialization_id_t _serialization_id;
     
@@ -848,15 +747,15 @@ void TaskBench::_constructor(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::
         
         //#line 135 "TaskBench.x10"
         ::x10::xrx::Runtime::ensureNotInAtomic();
-        ::x10::xrx::FinishState* fs__3581 = ::x10::xrx::Runtime::startFinish();
+        ::x10::xrx::FinishState* fs__3032 = ::x10::xrx::Runtime::startFinish();
         try {
             {
                 {
-                    ::x10::lang::Iterator< ::x10::lang::Place>* p__2158;
-                    for (p__2158 = ::x10::lang::Place::places()->iterator();
-                         ::x10::lang::Iterator< ::x10::lang::Place>::hasNext(::x10aux::nullCheck(p__2158));
+                    ::x10::lang::Iterator< ::x10::lang::Place>* p__1640;
+                    for (p__1640 = ::x10::lang::Place::places()->iterator();
+                         ::x10::lang::Iterator< ::x10::lang::Place>::hasNext(::x10aux::nullCheck(p__1640));
                          ) {
-                        ::x10::lang::Place p = ::x10::lang::Iterator< ::x10::lang::Place>::next(::x10aux::nullCheck(p__2158));
+                        ::x10::lang::Place p = ::x10::lang::Iterator< ::x10::lang::Place>::next(::x10aux::nullCheck(p__1640));
                         
                         //#line 136 "TaskBench.x10"
                         ::x10::xrx::Runtime::runAsync(p, reinterpret_cast< ::x10::lang::VoidFun_0_0*>((new (::x10aux::alloc< ::x10::lang::VoidFun_0_0>(sizeof(TaskBench__closure__2)))TaskBench__closure__2(pplh, dsetForTimestep))),
@@ -868,14 +767,14 @@ void TaskBench::_constructor(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::
         }
         catch (::x10::lang::CheckedThrowable* __exc0) {
             {
-                ::x10::lang::CheckedThrowable* ct__3579 =
+                ::x10::lang::CheckedThrowable* ct__3030 =
                   __exc0;
                 {
-                    ::x10::xrx::Runtime::pushException(ct__3579);
+                    ::x10::xrx::Runtime::pushException(ct__3030);
                 }
             }
         }
-        ::x10::xrx::Runtime::stopFinish(fs__3581);
+        ::x10::xrx::Runtime::stopFinish(fs__3032);
     }
 }
 ::TaskBench* TaskBench::_make(::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dsets,
@@ -908,34 +807,34 @@ void TaskBench::executeTaskGraph() {
         
         //#line 172 "TaskBench.x10"
         ::x10::xrx::Runtime::ensureNotInAtomic();
-        ::x10::xrx::FinishState* fs__3596 = ::x10::xrx::Runtime::startFinish();
+        ::x10::xrx::FinishState* fs__3047 = ::x10::xrx::Runtime::startFinish();
         try {
             {
                 {
-                    ::x10::lang::Iterator< ::x10::lang::Place>* p__2216;
-                    for (p__2216 = ::x10::lang::Place::places()->iterator();
-                         ::x10::lang::Iterator< ::x10::lang::Place>::hasNext(::x10aux::nullCheck(p__2216));
+                    ::x10::lang::Iterator< ::x10::lang::Place>* p__1698;
+                    for (p__1698 = ::x10::lang::Place::places()->iterator();
+                         ::x10::lang::Iterator< ::x10::lang::Place>::hasNext(::x10aux::nullCheck(p__1698));
                          ) {
-                        ::x10::lang::Place p = ::x10::lang::Iterator< ::x10::lang::Place>::next(::x10aux::nullCheck(p__2216));
+                        ::x10::lang::Place p = ::x10::lang::Iterator< ::x10::lang::Place>::next(::x10aux::nullCheck(p__1698));
                         
                         //#line 173 "TaskBench.x10"
-                        ::x10::xrx::Runtime::runAsync(p, reinterpret_cast< ::x10::lang::VoidFun_0_0*>((new (::x10aux::alloc< ::x10::lang::VoidFun_0_0>(sizeof(TaskBench__closure__5)))TaskBench__closure__5(this))),
+                        ::x10::xrx::Runtime::runAsync(p, reinterpret_cast< ::x10::lang::VoidFun_0_0*>((new (::x10aux::alloc< ::x10::lang::VoidFun_0_0>(sizeof(TaskBench__closure__5)))TaskBench__closure__5(this, p))),
                                                       ::x10aux::class_cast_unchecked< ::x10::xrx::Runtime__Profile*>(reinterpret_cast< ::x10::lang::NullType*>(X10_NULL)));
                     }
                 }
                 
             }
         }
-        catch (::x10::lang::CheckedThrowable* __exc6) {
+        catch (::x10::lang::CheckedThrowable* __exc4) {
             {
-                ::x10::lang::CheckedThrowable* ct__3594 =
-                  __exc6;
+                ::x10::lang::CheckedThrowable* ct__3045 =
+                  __exc4;
                 {
-                    ::x10::xrx::Runtime::pushException(ct__3594);
+                    ::x10::xrx::Runtime::pushException(ct__3045);
                 }
             }
         }
-        ::x10::xrx::Runtime::stopFinish(fs__3596);
+        ::x10::xrx::Runtime::stopFinish(fs__3047);
     }
 }
 
@@ -1123,128 +1022,75 @@ x10_double TaskBench::executeTaskBench(x10_int argc, ::x10::lang::Rail< ::x10::l
 		
     
     //#line 385 "TaskBench.x10"
-    ::x10::io::Console::FMGL(OUT__get)()->x10::io::Printer::println(
-      reinterpret_cast< ::x10::lang::Any*>(::x10::lang::String::__plus((&::TaskBench_Strings::sl__3632), ::x10aux::nullCheck(taskGraphDependenceSets)->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >::toString())));
-    
-    //#line 386 "TaskBench.x10"
-    ::x10::io::Console::FMGL(OUT__get)()->x10::io::Printer::println(
-      reinterpret_cast< ::x10::lang::Any*>(::x10::lang::String::__plus((&::TaskBench_Strings::sl__3633), ::x10aux::nullCheck(timeStepMaps)->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::toString())));
-    
-    //#line 387 "TaskBench.x10"
-    ::x10::io::Console::FMGL(OUT__get)()->x10::io::Printer::println(
-      reinterpret_cast< ::x10::lang::Any*>(::x10::lang::String::__plus((&::TaskBench_Strings::sl__3634), ::x10aux::nullCheck(widthsOffsetsRail)->x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >::toString())));
-    
-    //#line 388 "TaskBench.x10"
-    ::x10::io::Console::FMGL(OUT__get)()->x10::io::Printer::println(
-      reinterpret_cast< ::x10::lang::Any*>(::x10::lang::String::__plus((&::TaskBench_Strings::sl__3635), ::x10aux::nullCheck(kernels)->x10::lang::Rail< ::x10::util::Pair<x10_int, x10_long> >::toString())));
-    
-    //#line 389 "TaskBench.x10"
-    x10_long i__2218max__3561 = (((x10_long)(::x10aux::nullCheck(taskGraphDependenceSets)->FMGL(size))) - (((x10_long)1ll)));
-    {
-        x10_long i__3562;
-        for (i__3562 = ((x10_long)0ll); ((i__3562) <= (i__2218max__3561));
-             i__3562 = ((i__3562) + (((x10_long)1ll)))) {
-            
-            //#line 390 "TaskBench.x10"
-            ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dsets__3551 =
-              ::x10aux::nullCheck(taskGraphDependenceSets)->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >::__apply(
-                i__3562);
-            
-            //#line 391 "TaskBench.x10"
-            ::x10::lang::Rail< x10_long >* dsetForTimestep__3552 =
-              ::x10aux::nullCheck(timeStepMaps)->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__apply(
-                i__3562);
-            
-            //#line 392 "TaskBench.x10"
-            ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> widthsOffsets__3553 =
-              ::x10aux::nullCheck(widthsOffsetsRail)->x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >::__apply(
-                i__3562);
-            
-            //#line 393 "TaskBench.x10"
-            ::x10::util::Pair<x10_int, x10_long> kernel__3554 =
-              ::x10aux::nullCheck(kernels)->x10::lang::Rail< ::x10::util::Pair<x10_int, x10_long> >::__apply(
-                i__3562);
-            
-            //#line 394 "TaskBench.x10"
-            ::TaskBench* taskBench__3555 =  (new (::x10aux::alloc_z< ::TaskBench>()) ::TaskBench());
-            (taskBench__3555)->::TaskBench::_constructor(
-              dsets__3551, dsetForTimestep__3552, widthsOffsets__3553,
-              kernel__3554);
-            
-            //#line 395 "TaskBench.x10"
-            taskBench__3555->executeTaskGraph();
-        }
-    }
-    
-    //#line 397 "TaskBench.x10"
     x10_double start = ::TaskBench::getTime();
     
-    //#line 398 "TaskBench.x10"
-    x10_long i__2236max__3564 = (((x10_long)(::x10aux::nullCheck(taskGraphDependenceSets)->FMGL(size))) - (((x10_long)1ll)));
+    //#line 386 "TaskBench.x10"
+    x10_long i__1700max__3015 = (((x10_long)(::x10aux::nullCheck(taskGraphDependenceSets)->FMGL(size))) - (((x10_long)1ll)));
     {
-        x10_long i__3565;
-        for (i__3565 = ((x10_long)0ll); ((i__3565) <= (i__2236max__3564));
-             i__3565 = ((i__3565) + (((x10_long)1ll)))) {
+        x10_long i__3016;
+        for (i__3016 = ((x10_long)0ll); ((i__3016) <= (i__1700max__3015));
+             i__3016 = ((i__3016) + (((x10_long)1ll)))) {
             
-            //#line 399 "TaskBench.x10"
-            ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dsets__3556 =
+            //#line 387 "TaskBench.x10"
+            ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* dsets__3010 =
               ::x10aux::nullCheck(taskGraphDependenceSets)->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >* >::__apply(
-                i__3565);
+                i__3016);
             
-            //#line 400 "TaskBench.x10"
-            ::x10::lang::Rail< x10_long >* dsetForTimestep__3557 =
+            //#line 388 "TaskBench.x10"
+            ::x10::lang::Rail< x10_long >* dsetForTimestep__3011 =
               ::x10aux::nullCheck(timeStepMaps)->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__apply(
-                i__3565);
+                i__3016);
             
-            //#line 401 "TaskBench.x10"
-            ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> widthsOffsets__3558 =
+            //#line 389 "TaskBench.x10"
+            ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> widthsOffsets__3012 =
               ::x10aux::nullCheck(widthsOffsetsRail)->x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >::__apply(
-                i__3565);
+                i__3016);
             
-            //#line 402 "TaskBench.x10"
-            ::x10::util::Pair<x10_int, x10_long> kernel__3559 =
+            //#line 390 "TaskBench.x10"
+            ::x10::util::Pair<x10_int, x10_long> kernel__3013 =
               ::x10aux::nullCheck(kernels)->x10::lang::Rail< ::x10::util::Pair<x10_int, x10_long> >::__apply(
-                i__3565);
+                i__3016);
             
-            //#line 403 "TaskBench.x10"
-            ::TaskBench* taskBench__3560 =  (new (::x10aux::alloc_z< ::TaskBench>()) ::TaskBench());
-            (taskBench__3560)->::TaskBench::_constructor(
-              dsets__3556, dsetForTimestep__3557, widthsOffsets__3558,
-              kernel__3559);
+            //#line 391 "TaskBench.x10"
+            ::TaskBench* taskBench__3014 =  (new (::x10aux::alloc_z< ::TaskBench>()) ::TaskBench());
+            (taskBench__3014)->::TaskBench::_constructor(
+              dsets__3010, dsetForTimestep__3011, widthsOffsets__3012,
+              kernel__3013);
             
-            //#line 404 "TaskBench.x10"
-            taskBench__3560->executeTaskGraph();
+            //#line 392 "TaskBench.x10"
+            taskBench__3014->executeTaskGraph();
         }
     }
     
-    //#line 406 "TaskBench.x10"
+    //#line 394 "TaskBench.x10"
     x10_double end = ::TaskBench::getTime();
     
-    //#line 407 "TaskBench.x10"
+    //#line 395 "TaskBench.x10"
     return ((end) - (start));
     
 }
 
-//#line 410 "TaskBench.x10"
+//#line 398 "TaskBench.x10"
 void TaskBench::appReport(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* >* argRail,
                           x10_double time) {
     
-			std::cout << "APP REPORT" << std::endl;
 			char **argv = new char *[argc];
 			for (int i = 0; i < argc; i++) {
 				x10::lang::String str = *((*argRail)[i]);
 				x10_int strSize = str.length();
-				char *result = new char[strSize];
+				char *result = new char[strSize+1];
 				for (int j = 0; j < strSize; j++) { 
 					x10_char c = (str).charAt(j);
 					char *ch = (char *)&c;
 					result[j] = *ch;
 				}
+				result[strSize] = '\0';
 				argv[i] = result;
 			}
 			App app(argc, argv);
-			//app.display();
-			for (int i = 0; i < argc; i++) { // cleanup allocated arrays
+			// app.display();
+			// cleanup allocated arrays
+			for (int i = 0; i < argc; i++) {
 				delete [] argv[i];
 			}
 			delete [] argv;
@@ -1253,51 +1099,51 @@ void TaskBench::appReport(x10_int argc, ::x10::lang::Rail< ::x10::lang::String* 
 		
 }
 
-//#line 436 "TaskBench.x10"
+//#line 425 "TaskBench.x10"
 ::x10::lang::Rail< ::x10::lang::String* >* TaskBench::constructCPPArgs(
   ::x10::lang::Rail< ::x10::lang::String* >* args) {
     
-    //#line 437 "TaskBench.x10"
+    //#line 426 "TaskBench.x10"
     ::x10::lang::Rail< ::x10::lang::String* >* argv = ::x10::lang::Rail< ::x10::lang::String* >::_make((((x10_long)(::x10aux::nullCheck(args)->FMGL(size))) + (((x10_long)1ll))));
     
-    //#line 438 "TaskBench.x10"
+    //#line 427 "TaskBench.x10"
     argv->x10::lang::Rail< ::x10::lang::String* >::__set(
-      ((x10_long)0ll), (&::TaskBench_Strings::sl__3636));
+      ((x10_long)0ll), (&::TaskBench_Strings::sl__3063));
     
-    //#line 439 "TaskBench.x10"
-    x10_long i__2254max__3567 = (x10_long)(::x10aux::nullCheck(args)->FMGL(size));
+    //#line 428 "TaskBench.x10"
+    x10_long i__1718max__3018 = (x10_long)(::x10aux::nullCheck(args)->FMGL(size));
     {
-        x10_long i__3568;
-        for (i__3568 = ((x10_long)1ll); ((i__3568) <= (i__2254max__3567));
-             i__3568 = ((i__3568) + (((x10_long)1ll)))) {
+        x10_long i__3019;
+        for (i__3019 = ((x10_long)1ll); ((i__3019) <= (i__1718max__3018));
+             i__3019 = ((i__3019) + (((x10_long)1ll)))) {
             
-            //#line 440 "TaskBench.x10"
+            //#line 429 "TaskBench.x10"
             argv->x10::lang::Rail< ::x10::lang::String* >::__set(
-              i__3568, ::x10aux::nullCheck(args)->x10::lang::Rail< ::x10::lang::String* >::__apply(
-                         ((i__3568) - (((x10_long)1ll)))));
+              i__3019, ::x10aux::nullCheck(args)->x10::lang::Rail< ::x10::lang::String* >::__apply(
+                         ((i__3019) - (((x10_long)1ll)))));
         }
     }
     
-    //#line 442 "TaskBench.x10"
+    //#line 431 "TaskBench.x10"
     return argv;
     
 }
 
-//#line 445 "TaskBench.x10"
+//#line 434 "TaskBench.x10"
 void TaskBench::main(::x10::lang::Rail< ::x10::lang::String* >* args) {
     
-    //#line 446 "TaskBench.x10"
+    //#line 435 "TaskBench.x10"
     x10_int argc = ((x10_int) ((((x10_long)(::x10aux::nullCheck(args)->FMGL(size))) + (((x10_long)1ll)))));
     
-    //#line 447 "TaskBench.x10"
+    //#line 436 "TaskBench.x10"
     ::x10::lang::Rail< ::x10::lang::String* >* argv = ::TaskBench::constructCPPArgs(
                                                         args);
     
-    //#line 448 "TaskBench.x10"
+    //#line 437 "TaskBench.x10"
     x10_double time = ::TaskBench::executeTaskBench(argc,
                                                     argv);
     
-    //#line 449 "TaskBench.x10"
+    //#line 438 "TaskBench.x10"
     ::TaskBench::appReport(argc, argv, time);
 }
 
@@ -1347,13 +1193,10 @@ void TaskBench::_initRTT() {
     rtt.initStageTwo("TaskBench",::x10aux::RuntimeType::class_kind, 0, parents, 0, NULL, NULL);
 }
 
-::x10::lang::String TaskBench_Strings::sl__3633("TIME STEP MAPS: ");
-::x10::lang::String TaskBench_Strings::sl__3636("");
-::x10::lang::String TaskBench_Strings::sl__3632("TASK GRAPH DEPENDENCE SETS: ");
-::x10::lang::String TaskBench_Strings::sl__3634("WIDTHS OFFSETS: ");
-::x10::lang::String TaskBench_Strings::sl__3630("!(a$1667 != null)");
-::x10::lang::String TaskBench_Strings::sl__3631("!(a$1693 != null)");
-::x10::lang::String TaskBench_Strings::sl__3635("KERNELS: ");
+::x10::lang::String TaskBench_Strings::sl__3063("");
+::x10::lang::String TaskBench_Strings::sl__3061("!(a$1362 != null)");
+::x10::lang::String TaskBench_Strings::sl__3060("!(a$1336 != null)");
+::x10::lang::String TaskBench_Strings::sl__3062(" AT TIMESTEP ");
 
 ::x10::lang::Fun_0_0< ::TaskBench__PlaceInstance*>::itable<TaskBench__closure__1>TaskBench__closure__1::_itable(&::x10::lang::Reference::equals, &::x10::lang::Closure::hashCode, &TaskBench__closure__1::__apply, &TaskBench__closure__1::toString, &::x10::lang::Closure::typeName);
 ::x10aux::itable_entry TaskBench__closure__1::_itables[2] = {::x10aux::itable_entry(&::x10aux::getRTT< ::x10::lang::Fun_0_0< ::TaskBench__PlaceInstance*> >, &TaskBench__closure__1::_itable),::x10aux::itable_entry(NULL, NULL)};
@@ -1416,8 +1259,8 @@ const ::x10aux::serialization_id_t TaskBench__closure__5::_network_id =
 #include <x10/lang/Double.h>
 #include <x10/lang/GlobalRail.h>
 #include <x10/lang/Long.h>
-#include <x10/lang/Boolean.h>
 #include <x10/lang/Rail.h>
+#include <x10/lang/Boolean.h>
 #include <x10/io/Printer.h>
 #include <x10/io/Console.h>
 #include <x10/lang/Any.h>
@@ -1440,7 +1283,7 @@ class TaskBench__PlaceInstance__closure__8 : public ::x10::lang::Closure {
     
     virtual ::x10aux::itable_entry* _getITables() { return _itables; }
     
-    ::x10::lang::Rail< x10_double >* __apply(x10_long i__3508){
+    ::x10::lang::Rail< x10_double >* __apply(x10_long i__2968){
         return ::x10::lang::Rail< x10_double >::_make(((x10_long)1ll));
         
     }
@@ -1488,7 +1331,7 @@ class TaskBench__PlaceInstance__closure__9 : public ::x10::lang::Closure {
     
     virtual ::x10aux::itable_entry* _getITables() { return _itables; }
     
-    ::x10::lang::Rail< x10_double >* __apply(x10_long i__3510){
+    ::x10::lang::Rail< x10_double >* __apply(x10_long i__2970){
         return ::x10::lang::Rail< x10_double >::_make(((x10_long)1ll), -1.0);
         
     }
@@ -1535,8 +1378,6 @@ class TaskBench__PlaceInstance__closure__9 : public ::x10::lang::Closure {
 
 //#line 32 "TaskBench.x10"
 
-//#line 35 "TaskBench.x10"
-
 //#line 38 "TaskBench.x10"
 
 //#line 43 "TaskBench.x10"
@@ -1548,19 +1389,19 @@ x10_long TaskBench__PlaceInstance::getSenderIndex(x10_long recvId, x10_long time
                                                      timestep);
     
     //#line 45 "TaskBench.x10"
-    x10_long i__2047max__3492 = (((x10_long)(::x10aux::nullCheck(neighborsSend)->FMGL(size))) - (((x10_long)1ll)));
+    x10_long i__1548max__2956 = (((x10_long)(::x10aux::nullCheck(neighborsSend)->FMGL(size))) - (((x10_long)1ll)));
     {
-        x10_long i__3493;
-        for (i__3493 = ((x10_long)0ll); ((i__3493) <= (i__2047max__3492));
-             i__3493 = ((i__3493) + (((x10_long)1ll)))) {
+        x10_long i__2957;
+        for (i__2957 = ((x10_long)0ll); ((i__2957) <= (i__1548max__2956));
+             i__2957 = ((i__2957) + (((x10_long)1ll)))) {
             
             //#line 46 "TaskBench.x10"
             if ((::x10aux::struct_equals(::x10aux::nullCheck(neighborsSend)->x10::lang::Rail< x10_long >::__apply(
-                                           i__3493), recvId)))
+                                           i__2957), recvId)))
             {
                 
                 //#line 47 "TaskBench.x10"
-                return i__3493;
+                return i__2957;
                 
             }
             
@@ -1569,7 +1410,7 @@ x10_long TaskBench__PlaceInstance::getSenderIndex(x10_long recvId, x10_long time
     
     //#line 50 "TaskBench.x10"
     ::x10::io::Console::FMGL(OUT__get)()->x10::io::Printer::println(
-      reinterpret_cast< ::x10::lang::Any*>(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus((&::TaskBench__PlaceInstance_Strings::sl__3675), recvId), (&::TaskBench__PlaceInstance_Strings::sl__3676)), ::x10::lang::Place::_make(::x10aux::here)->FMGL(id)), (&::TaskBench__PlaceInstance_Strings::sl__3677)), timestep)));
+      reinterpret_cast< ::x10::lang::Any*>(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus((&::TaskBench__PlaceInstance_Strings::sl__3095), recvId), (&::TaskBench__PlaceInstance_Strings::sl__3096)), ::x10::lang::Place::_make(::x10aux::here)->FMGL(id)), (&::TaskBench__PlaceInstance_Strings::sl__3097)), timestep)));
     
     //#line 51 "TaskBench.x10"
     return ((x10_long)-1ll);
@@ -1585,19 +1426,19 @@ x10_long TaskBench__PlaceInstance::getRecvIndex(x10_long sendId,
                                                      timestep);
     
     //#line 56 "TaskBench.x10"
-    x10_long i__2065max__3495 = (((x10_long)(::x10aux::nullCheck(neighborsRecv)->FMGL(size))) - (((x10_long)1ll)));
+    x10_long i__1566max__2959 = (((x10_long)(::x10aux::nullCheck(neighborsRecv)->FMGL(size))) - (((x10_long)1ll)));
     {
-        x10_long i__3496;
-        for (i__3496 = ((x10_long)0ll); ((i__3496) <= (i__2065max__3495));
-             i__3496 = ((i__3496) + (((x10_long)1ll)))) {
+        x10_long i__2960;
+        for (i__2960 = ((x10_long)0ll); ((i__2960) <= (i__1566max__2959));
+             i__2960 = ((i__2960) + (((x10_long)1ll)))) {
             
             //#line 57 "TaskBench.x10"
             if ((::x10aux::struct_equals(::x10aux::nullCheck(neighborsRecv)->x10::lang::Rail< x10_long >::__apply(
-                                           i__3496), sendId)))
+                                           i__2960), sendId)))
             {
                 
                 //#line 58 "TaskBench.x10"
-                return i__3496;
+                return i__2960;
                 
             }
             
@@ -1606,39 +1447,10 @@ x10_long TaskBench__PlaceInstance::getRecvIndex(x10_long sendId,
     
     //#line 61 "TaskBench.x10"
     ::x10::io::Console::FMGL(OUT__get)()->x10::io::Printer::println(
-      reinterpret_cast< ::x10::lang::Any*>(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus((&::TaskBench__PlaceInstance_Strings::sl__3678), sendId), (&::TaskBench__PlaceInstance_Strings::sl__3676)), ::x10::lang::Place::_make(::x10aux::here)->FMGL(id)), (&::TaskBench__PlaceInstance_Strings::sl__3677)), timestep)));
+      reinterpret_cast< ::x10::lang::Any*>(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus(::x10::lang::String::__plus((&::TaskBench__PlaceInstance_Strings::sl__3098), sendId), (&::TaskBench__PlaceInstance_Strings::sl__3096)), ::x10::lang::Place::_make(::x10aux::here)->FMGL(id)), (&::TaskBench__PlaceInstance_Strings::sl__3097)), timestep)));
     
     //#line 62 "TaskBench.x10"
     return ((x10_long)-1ll);
-    
-}
-
-//#line 65 "TaskBench.x10"
-x10_boolean TaskBench__PlaceInstance::allNeighborsReceived(
-  x10_long timestep) {
-    
-    //#line 66 "TaskBench.x10"
-    ::x10::lang::Rail< x10_boolean >* rail__3498 = ::x10aux::nullCheck(this->FMGL(recvReadyRails))->x10::lang::Rail< ::x10::lang::Rail< x10_boolean >* >::__apply(
-                                                     timestep);
-    x10_long i__2083max__3499 = (x10_long)(::x10aux::nullCheck(rail__3498)->FMGL(size));
-    {
-        x10_long i__3500;
-        for (i__3500 = ((x10_long)0ll); ((i__3500) < (i__2083max__3499));
-             i__3500 = ((i__3500) + (((x10_long)1ll)))) {
-            
-            //#line 67 "TaskBench.x10"
-            if (!(::x10aux::nullCheck(::x10aux::nullCheck(this->FMGL(recvReadyRails))->x10::lang::Rail< ::x10::lang::Rail< x10_boolean >* >::__apply(
-                                        timestep))->x10::lang::Rail< x10_boolean >::__apply(
-                    i__3500))) {
-                return false;
-                
-            }
-            
-        }
-    }
-    
-    //#line 69 "TaskBench.x10"
-    return true;
     
 }
 
@@ -1668,84 +1480,72 @@ void TaskBench__PlaceInstance::_constructor(::x10::lang::Rail< ::x10::lang::Rail
     //#line 80 "TaskBench.x10"
     this->FMGL(remoteSendRails) = ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* >::_make(timesteps);
     
-    //#line 81 "TaskBench.x10"
-    this->FMGL(recvReadyRails) = ::x10::lang::Rail< ::x10::lang::Rail< x10_boolean >* >::_make(timesteps);
-    
     //#line 84 "TaskBench.x10"
-    x10_long i__2102max__3514 = ((timesteps) - (((x10_long)1ll)));
+    x10_long i__1584max__2973 = ((timesteps) - (((x10_long)1ll)));
     {
-        x10_long i__3515;
-        for (i__3515 = ((x10_long)0ll); ((i__3515) <= (i__2102max__3514));
-             i__3515 = ((i__3515) + (((x10_long)1ll)))) {
-            x10_long ts__3516 = i__3515;
+        x10_long i__2974;
+        for (i__2974 = ((x10_long)0ll); ((i__2974) <= (i__1584max__2973));
+             i__2974 = ((i__2974) + (((x10_long)1ll)))) {
+            x10_long ts__2975 = i__2974;
             
             //#line 85 "TaskBench.x10"
-            x10_long dset__3503 = ::x10aux::nullCheck(dsetForTimestep)->x10::lang::Rail< x10_long >::__apply(
-                                    i__3515);
+            x10_long dset__2963 = ::x10aux::nullCheck(dsetForTimestep)->x10::lang::Rail< x10_long >::__apply(
+                                    i__2974);
             
             //#line 86 "TaskBench.x10"
-            ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> dependencePair__3504 =
+            ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> dependencePair__2964 =
               ::x10aux::nullCheck(::x10aux::nullCheck(dependenceSets)->x10::lang::Rail< ::x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >* >::__apply(
-                                    dset__3503))->x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >::__apply(
+                                    dset__2963))->x10::lang::Rail< ::x10::util::Pair< ::x10::lang::Rail< x10_long >*, ::x10::lang::Rail< x10_long >*> >::__apply(
                 ::x10::lang::Place::_make(::x10aux::here)->FMGL(id));
             
             //#line 87 "TaskBench.x10"
-            ::x10::lang::Rail< x10_long >* neighborsSend__3505 =
-              dependencePair__3504->FMGL(first);
+            ::x10::lang::Rail< x10_long >* neighborsSend__2965 =
+              dependencePair__2964->FMGL(first);
             
             //#line 88 "TaskBench.x10"
-            ::x10::lang::Rail< x10_long >* neighborsRecv__3506 =
-              dependencePair__3504->FMGL(second);
+            ::x10::lang::Rail< x10_long >* neighborsRecv__2966 =
+              dependencePair__2964->FMGL(second);
             
             //#line 89 "TaskBench.x10"
-            ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* recv__3507 =
-              ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::_make((x10_long)(::x10aux::nullCheck(neighborsRecv__3506)->FMGL(size)),
+            ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* recv__2967 =
+              ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::_make((x10_long)(::x10aux::nullCheck(neighborsRecv__2966)->FMGL(size)),
                                                                            reinterpret_cast< ::x10::lang::Fun_0_1<x10_long, ::x10::lang::Rail< x10_double >*>*>((new (::x10aux::alloc< ::x10::lang::Fun_0_1<x10_long, ::x10::lang::Rail< x10_double >*> >(sizeof(TaskBench__PlaceInstance__closure__8)))TaskBench__PlaceInstance__closure__8())));
             
             //#line 90 "TaskBench.x10"
-            ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* send__3509 =
-              ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::_make((x10_long)(::x10aux::nullCheck(neighborsSend__3505)->FMGL(size)),
+            ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* send__2969 =
+              ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >::_make((x10_long)(::x10aux::nullCheck(neighborsSend__2965)->FMGL(size)),
                                                                            reinterpret_cast< ::x10::lang::Fun_0_1<x10_long, ::x10::lang::Rail< x10_double >*>*>((new (::x10aux::alloc< ::x10::lang::Fun_0_1<x10_long, ::x10::lang::Rail< x10_double >*> >(sizeof(TaskBench__PlaceInstance__closure__9)))TaskBench__PlaceInstance__closure__9())));
             
             //#line 91 "TaskBench.x10"
-            ::x10::lang::GlobalRail<x10_double> plchldr__3511 =
+            ::x10::lang::GlobalRail<x10_double> plchldr__2971 =
                ::x10::lang::GlobalRail<x10_double>::_alloc();
-            (plchldr__3511)->::x10::lang::GlobalRail<x10_double>::_constructor(
+            (plchldr__2971)->::x10::lang::GlobalRail<x10_double>::_constructor(
               ::x10::lang::Rail< x10_double >::_make(((x10_long)0ll)));
             
             //#line 92 "TaskBench.x10"
-            ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* remoteSend__3512 =
-              ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >::_make((x10_long)(::x10aux::nullCheck(neighborsRecv__3506)->FMGL(size)),
-                                                                              plchldr__3511);
-            
-            //#line 93 "TaskBench.x10"
-            ::x10::lang::Rail< x10_boolean >* recvReady__3513 =
-              ::x10::lang::Rail< x10_boolean >::_make((x10_long)(::x10aux::nullCheck(neighborsRecv__3506)->FMGL(size)),
-                                                      false);
+            ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* remoteSend__2972 =
+              ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >::_make((x10_long)(::x10aux::nullCheck(neighborsRecv__2966)->FMGL(size)),
+                                                                              plchldr__2971);
             
             //#line 94 "TaskBench.x10"
             ::x10aux::nullCheck(this->FMGL(neighborsSendRails))->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__set(
-              ts__3516, neighborsSend__3505);
+              ts__2975, neighborsSend__2965);
             
             //#line 95 "TaskBench.x10"
             ::x10aux::nullCheck(this->FMGL(neighborsRecvRails))->x10::lang::Rail< ::x10::lang::Rail< x10_long >* >::__set(
-              ts__3516, neighborsRecv__3506);
+              ts__2975, neighborsRecv__2966);
             
             //#line 96 "TaskBench.x10"
             ::x10aux::nullCheck(this->FMGL(recvRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >::__set(
-              ts__3516, recv__3507);
+              ts__2975, recv__2967);
             
             //#line 97 "TaskBench.x10"
             ::x10aux::nullCheck(this->FMGL(sendRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::Rail< x10_double >* >* >::__set(
-              ts__3516, send__3509);
+              ts__2975, send__2969);
             
             //#line 98 "TaskBench.x10"
             ::x10aux::nullCheck(this->FMGL(remoteSendRails))->x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* >::__set(
-              ts__3516, remoteSend__3512);
-            
-            //#line 99 "TaskBench.x10"
-            ::x10aux::nullCheck(this->FMGL(recvReadyRails))->x10::lang::Rail< ::x10::lang::Rail< x10_boolean >* >::__set(
-              ts__3516, recvReady__3513);
+              ts__2975, remoteSend__2972);
         }
     }
     
@@ -1780,7 +1580,6 @@ void TaskBench__PlaceInstance::_serialize_body(::x10aux::serialization_buffer& b
     buf.write(this->FMGL(remoteSendRails));
     buf.write(this->FMGL(neighborsSendRails));
     buf.write(this->FMGL(neighborsRecvRails));
-    buf.write(this->FMGL(recvReadyRails));
     buf.write(this->FMGL(timestep));
     
 }
@@ -1798,7 +1597,6 @@ void TaskBench__PlaceInstance::_deserialize_body(::x10aux::deserialization_buffe
     FMGL(remoteSendRails) = buf.read< ::x10::lang::Rail< ::x10::lang::Rail< ::x10::lang::GlobalRail<x10_double> >* >*>();
     FMGL(neighborsSendRails) = buf.read< ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >*>();
     FMGL(neighborsRecvRails) = buf.read< ::x10::lang::Rail< ::x10::lang::Rail< x10_long >* >*>();
-    FMGL(recvReadyRails) = buf.read< ::x10::lang::Rail< ::x10::lang::Rail< x10_boolean >* >*>();
     FMGL(timestep) = buf.read<x10_long>();
 }
 
@@ -1809,10 +1607,10 @@ void TaskBench__PlaceInstance::_initRTT() {
     rtt.initStageTwo("TaskBench.PlaceInstance",::x10aux::RuntimeType::class_kind, 0, parents, 0, NULL, NULL);
 }
 
-::x10::lang::String TaskBench__PlaceInstance_Strings::sl__3676(" FOR ");
-::x10::lang::String TaskBench__PlaceInstance_Strings::sl__3675("UNABLE TO FIND RECEIVER: ");
-::x10::lang::String TaskBench__PlaceInstance_Strings::sl__3678("UNABLE TO FIND SENDER: ");
-::x10::lang::String TaskBench__PlaceInstance_Strings::sl__3677(" AT TIMESTEP ");
+::x10::lang::String TaskBench__PlaceInstance_Strings::sl__3096(" FOR ");
+::x10::lang::String TaskBench__PlaceInstance_Strings::sl__3095("UNABLE TO FIND RECEIVER: ");
+::x10::lang::String TaskBench__PlaceInstance_Strings::sl__3098("UNABLE TO FIND SENDER: ");
+::x10::lang::String TaskBench__PlaceInstance_Strings::sl__3097(" AT TIMESTEP ");
 
 ::x10::lang::Fun_0_1<x10_long, ::x10::lang::Rail< x10_double >*>::itable<TaskBench__PlaceInstance__closure__8>TaskBench__PlaceInstance__closure__8::_itable(&::x10::lang::Reference::equals, &::x10::lang::Closure::hashCode, &TaskBench__PlaceInstance__closure__8::__apply, &TaskBench__PlaceInstance__closure__8::toString, &::x10::lang::Closure::typeName);
 ::x10aux::itable_entry TaskBench__PlaceInstance__closure__8::_itables[2] = {::x10aux::itable_entry(&::x10aux::getRTT< ::x10::lang::Fun_0_1<x10_long, ::x10::lang::Rail< x10_double >*> >, &TaskBench__PlaceInstance__closure__8::_itable),::x10aux::itable_entry(NULL, NULL)};

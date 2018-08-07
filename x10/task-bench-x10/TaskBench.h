@@ -80,18 +80,6 @@ class CheckedThrowable;
 namespace x10 { namespace compiler { 
 class Native;
 } } 
-namespace x10 { namespace compiler { 
-class Abort;
-} } 
-namespace x10 { namespace compiler { 
-class CompilerFlags;
-} } 
-namespace x10 { namespace compiler { 
-class Finalization;
-} } 
-namespace x10 { namespace lang { 
-class String;
-} } 
 namespace x10 { namespace io { 
 class Printer;
 } } 
@@ -100,6 +88,9 @@ class Console;
 } } 
 namespace x10 { namespace lang { 
 class Any;
+} } 
+namespace x10 { namespace lang { 
+class String;
 } } 
 namespace x10 { namespace compiler { 
 class Synthetic;
@@ -113,13 +104,10 @@ class NativeCPPCompilationUnit;
 
 class TaskBench_Strings {
   public:
-    static ::x10::lang::String sl__3633;
-    static ::x10::lang::String sl__3636;
-    static ::x10::lang::String sl__3632;
-    static ::x10::lang::String sl__3634;
-    static ::x10::lang::String sl__3630;
-    static ::x10::lang::String sl__3631;
-    static ::x10::lang::String sl__3635;
+    static ::x10::lang::String sl__3063;
+    static ::x10::lang::String sl__3061;
+    static ::x10::lang::String sl__3060;
+    static ::x10::lang::String sl__3062;
 };
 
 class TaskBench : public ::x10::lang::X10Class   {
