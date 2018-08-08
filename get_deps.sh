@@ -9,6 +9,7 @@ USE_LEGION=${USE_LEGION:-1}
 USE_STARPU=${USE_STARPU:-1}
 USE_PARSEC=${USE_PARSEC:-1}
 USE_CHARM=${USE_CHARM:-1}
+USE_OPENMP=${USE_OPENMP:-1}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -101,4 +102,11 @@ EOF
     mkdir -p "$CHARM_SMP_DIR"
     tar -zxf charm-6.8.2.tar.gz -C "$CHARM_DIR" --strip-components 1
     tar -zxf charm-6.8.2.tar.gz -C "$CHARM_SMP_DIR" --strip-components 1
+fi
+
+if [[ $USE_OPENMP -eq 1 ]]; then
+    cat >>deps/env.sh <<EOF
+export USE_OPENMP=$USE_OPENMP
+EOF
+    source deps/env.sh
 fi

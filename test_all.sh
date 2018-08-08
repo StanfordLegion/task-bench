@@ -58,3 +58,10 @@ if [[ $USE_CHARM -eq 1 ]]; then
     done
     rm charmrun.*
 fi
+
+if [[ $USE_OPENMP -eq 1 ]]; then
+    for t in $basic_types; do
+        ./openmp/main -steps 9 -type $t
+        ./openmp/main -steps 9 -type $t -kernel memory_bound -scratch 64
+    done
+fi
