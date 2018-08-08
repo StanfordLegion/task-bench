@@ -186,7 +186,7 @@ static void task5(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   *out = *in1 + *in2 + *in3 + *in4 + 1.0;
-  printf("Graph %d, Task4, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, out %.2f, local_mem %p\n", payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *out, extra_local_memory[tid]);
+  printf("Graph %d, Task5, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, out %.2f, local_mem %p\n", payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *out, extra_local_memory[tid]);
 #endif
 }
 
@@ -230,7 +230,7 @@ static void task6(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + 1.0;
-  printf("Graph %d, Task4, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, out %.2f, local_mem %p\n", payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *out, extra_local_memory[tid]);
+  printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, out %.2f, local_mem %p\n", payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *out, extra_local_memory[tid]);
 #endif
 }
 

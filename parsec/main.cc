@@ -227,7 +227,7 @@ static int test_task5(parsec_execution_stream_t *es, parsec_task_t *this_task)
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
 #else
   *out = *in1 + *in2 + *in3 + *in4 + 1.0;
-  printf("Graph %d, Task4, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, out %.2f, local_mem %p\n", 
+  printf("Graph %d, Task5, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, out %.2f, local_mem %p\n", 
         payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *in4, *out, extra_local_memory[es->core_id]);                   
 #endif
 
@@ -267,7 +267,7 @@ static int test_task6(parsec_execution_stream_t *es, parsec_task_t *this_task)
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
 #else
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + 1.0;
-  printf("Graph %d, Task4, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, out %.2f, local_mem %p\n", 
+  printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, out %.2f, local_mem %p\n", 
         payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *in4, *in5, *out, extra_local_memory[es->core_id]);                   
 #endif
 
