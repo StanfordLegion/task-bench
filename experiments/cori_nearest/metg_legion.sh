@@ -39,8 +39,7 @@ function sweep {
     for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
-                # $1 $2 -kernel busy_wait -iter $(( 1 << (24-s) )) -type $3 -radix $4 -steps 1000
-                $1 $2 -kernel busy_wait -iter $(( 1 << (28-s) )) -type $3 -radix $4 -steps 100
+                $1 $2 -kernel busy_wait -iter $(( 1 << (24-s) )) -type $3 -radix $4 -steps 1000
             fi
         done
     done
@@ -49,9 +48,9 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for t in nearest; do
         for r in 0 1 2 3 4 5 6 7 8 9; do
-            sweep launch_util_0 $n $t > legion_util_0_type_${t}_radix_${r}_nodes_${n}.log
-            # sweep launch_util_1 $n $t > legion_util_1_type_${t}_radix_${r}_nodes_${n}.log
-            # sweep launch_util_2 $n $t > legion_util_2_type_${t}_radix_${r}_nodes_${n}.log
+            sweep launch_util_0 $n $t $r > legion_util_0_type_${t}_radix_${r}_nodes_${n}.log
+            # sweep launch_util_1 $n $t $r > legion_util_1_type_${t}_radix_${r}_nodes_${n}.log
+            # sweep launch_util_2 $n $t $r > legion_util_2_type_${t}_radix_${r}_nodes_${n}.log
         done
     done
 done
