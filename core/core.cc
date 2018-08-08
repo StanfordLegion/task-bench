@@ -639,7 +639,7 @@ void App::display() const
 }
 
 // IMPORTANT: Keep this up-to-date with kernel implementations
-static long long flops_per_task(const TaskGraph &g)
+long long flops_per_task(const TaskGraph &g)
 {
   switch(g.kernel.type) {
   case KernelType::EMPTY:
@@ -654,7 +654,7 @@ static long long flops_per_task(const TaskGraph &g)
   }
 
   case KernelType::COMPUTE_BOUND:
-    return 2 * g.kernel.max_power * 32 * g.kernel.iterations;
+    return 2 * 32 * g.kernel.iterations + 32*2;
 
   case KernelType::COMPUTE_BOUND2:
     return 2 * 32 * g.kernel.iterations;
@@ -668,7 +668,7 @@ static long long flops_per_task(const TaskGraph &g)
 }
 
 // IMPORTANT: Keep this up-to-date with kernel implementations
-static long long bytes_per_task(const TaskGraph &g)
+long long bytes_per_task(const TaskGraph &g)
 {
   switch(g.kernel.type) {
   case KernelType::EMPTY:

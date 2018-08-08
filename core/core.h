@@ -74,4 +74,7 @@ struct App {
 static_assert(std::is_pod<Kernel>::value, "Kernel must be POD");
 static_assert(std::is_pod<TaskGraph>::value, "TaskGraph must be POD");
 
+long long flops_per_task(const TaskGraph &g);
+long long bytes_per_task(const TaskGraph &g);
+
 #endif

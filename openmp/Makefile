@@ -1,9 +1,9 @@
-DEBUG ?= 0
+DEBUG ?= 1
 
 CXX ?= g++
 
-CXXFLAGS = -std=c++11 -Wall
-LDFLAGS  = -std=c++11 -Wall -lpthread
+CXXFLAGS = -std=c++11 -Wall -fopenmp
+LDFLAGS  = -std=c++11 -Wall -fopenmp
 
 ifeq ($(strip $(DEBUG)),1)
 CXXFLAGS += -g -O0 -mavx
@@ -25,8 +25,6 @@ INC := $(INC) $(INC_EXT)
 LIB := $(LIB) $(LIB_EXT)
 
 CXXFLAGS += $(INC)
-
-include ../core/make_blas.mk
 
 TARGET = main
 all: $(TARGET)
