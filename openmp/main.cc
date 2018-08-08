@@ -176,7 +176,7 @@ struct OpenMPApp : public App {
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
 private:
-  void insert_task(std::vector<task_args_t> args, payload_t payload, size_t &graph_id);
+  void insert_task(std::vector<task_args_t> args, payload_t payload, size_t graph_id);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
   int nb_workers;
@@ -341,7 +341,7 @@ void OpenMPApp::execute_timestep(size_t idx, long t)
   }
 }
 
-void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, size_t &graph_id)
+void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, size_t graph_id)
 {
   int num_args = args.size();
   tile_t *mat = matrix[graph_id].data;
