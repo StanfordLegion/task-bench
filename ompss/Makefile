@@ -1,9 +1,9 @@
-DEBUG ?= 1
+DEBUG ?= 0
 
 CXX = mcxx
 
-CXXFLAGS = --ompss -std=c++11 -Wall -fopenmp
-LDFLAGS  = -std=c++11 -Wall -fopenmp
+CXXFLAGS = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large
+LDFLAGS  = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large
 
 ifeq ($(strip $(DEBUG)),1)
 CXXFLAGS += -g -O0 -mavx
