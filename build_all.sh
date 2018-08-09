@@ -95,3 +95,8 @@ fi
         make -C charm++_smp
      )
 fi)
+  
+if [[ $USE_OPENMP -eq 1 ]]; then
+    make -C openmp clean
+    make -C openmp -j$THREADS
+fi
