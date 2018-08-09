@@ -36,9 +36,9 @@ parallel_dgemm.o: parallel_dgemm.c
 parallel_dgemm: parallel_dgemm.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 
+
 clean:
 	rm -f *.o
 	rm -f $(TARGET)
 
 .PHONY: all clean
-
