@@ -1,6 +1,6 @@
 DEBUG ?= 0
 
-CXX = g++
+CXX ?= g++
 
 CXXFLAGS = -std=c++11 -Wall
 LDFLAGS  = -std=c++11 -Wall -lpthread

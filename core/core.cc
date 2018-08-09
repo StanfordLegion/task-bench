@@ -650,7 +650,7 @@ long long flops_per_task(const TaskGraph &g)
   case KernelType::COMPUTE_DGEMM:
   {
     long N = sqrt(g.scratch_bytes_per_task / (3 * sizeof(double))); 
-    return 2 * pow(N, 3) * g.kernel.iterations;
+    return 2 * N * N * N * g.kernel.iterations;
   }
 
   case KernelType::COMPUTE_BOUND:
