@@ -116,9 +116,9 @@ void task4(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
 #endif
 }
 
-struct OpenMPApp : public App {
-  OpenMPApp(int argc, char **argv);
-  ~OpenMPApp();
+struct OmpSs : public App {
+  OmpSs(int argc, char **argv);
+  ~OmpSs();
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
 private:
@@ -130,7 +130,7 @@ private:
   matrix_t *matrix;
 };
 
-OpenMPApp::OpenMPApp(int argc, char **argv)
+OmpSs::OmpSs(int argc, char **argv)
   : App(argc, argv)
 { 
   nb_workers = 1;
@@ -186,7 +186,7 @@ OpenMPApp::OpenMPApp(int argc, char **argv)
 
 }
 
-OpenMPApp::~OpenMPApp()
+OmpSs::~OmpSs()
 {
   for (unsigned i = 0; i < graphs.size(); i++) {
     for (int j = 0; j < matrix[i].M * matrix[i].N; j++) {
@@ -210,7 +210,7 @@ OpenMPApp::~OpenMPApp()
   extra_local_memory = NULL;
 }
 
-void OpenMPApp::execute_main_loop()
+void OmpSs::execute_main_loop()
 { 
   display();
   
@@ -229,7 +229,7 @@ void OpenMPApp::execute_main_loop()
   //}
 }
 
-void OpenMPApp::execute_timestep(size_t idx, long t)
+void OmpSs::execute_timestep(size_t idx, long t)
 {
   const TaskGraph &g = graphs[idx];
   long offset = g.offset_at_timestep(t);
@@ -282,7 +282,7 @@ void OpenMPApp::execute_timestep(size_t idx, long t)
   }
 }
 
-void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, size_t &graph_id)
+void OmpSs::insert_task(std::vector<task_args_t> args, payload_t payload, size_t &graph_id)
 {
   int num_args = args.size();
   tile_t *mat = matrix[graph_id].data;
@@ -341,7 +341,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
   };
 }
 
-void OpenMPApp::debug_printf(int verbose_level, const char *format, ...)
+void OmpSs::debug_printf(int verbose_level, const char *format, ...)
 {
   if (verbose_level > VERBOSE_LEVEL) {
     return;
@@ -354,7 +354,7 @@ void OpenMPApp::debug_printf(int verbose_level, const char *format, ...)
 
 int main(int argc, char ** argv)
 {
-  OpenMPApp app(argc, argv);
+  OmpSs app(argc, argv);
   app.execute_main_loop();
 
   return 0;
