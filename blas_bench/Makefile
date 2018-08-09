@@ -22,7 +22,7 @@ ifndef MKLROOT
 $(error MKLROOT variable is not defined, aborting build)
 endif
 
-CC := gcc 
+CC := gcc
 CFLAGS := -fopenmp -O3 -DMKL_ILP64 -m64 -I${MKLROOT}/include
 LDFLAGS := -fopenmp -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
 
@@ -39,5 +39,6 @@ parallel_dgemm: parallel_dgemm.o
 clean:
 	rm -f *.o
 	rm -f $(TARGET)
+
 
 .PHONY: all clean
