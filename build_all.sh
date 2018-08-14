@@ -75,10 +75,28 @@ if [[ $USE_PARSEC -eq 1 ]]; then
     make -C parsec -j$THREADS
 fi
 
-if [[ $USE_CHARM -eq 1 ]]; then
+(if [[ $USE_CHARM -eq 1 ]]; then
+    if [[ -n $CRAYPE_VERSION ]]; then
+        module load craype-hugepages8M
+    fi
     pushd "$CHARM_DIR"
-    ./build charm++ $CHARM_VERSION --with-production
+    ./build charm++ $CHARM_VERSION --with-production -j$THREADS
+    popd
+    pushd "$CHARM_SMP_DIR"
+    ./build charm++ $CHARM_VERSION smp --with-production -j$THREADS
     popd
     make -C charm++ clean
     make -C charm++
-fi 
+    (
+        export CHARM_DIR="$CHARM_SMP_DIR"
+        rm -rf charm++_smp
+        cp -r charm++ charm++_smp
+        make -C charm++_smp clean
+        make -C charm++_smp
+     )
+fi)
+  
+if [[ $USE_OPENMP -eq 1 ]]; then
+    make -C openmp clean
+    make -C openmp -j$THREADS
+fi

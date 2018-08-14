@@ -6,14 +6,13 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-module unload PrgEnv-intel
-module load PrgEnv-gnu
-#module load openmpi
+total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+cores=$(( $total_cores - 2 ))
 
-cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+module load craype-hugepages8M
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../parsec/main "${@:2}" -width $(( $1 * cores )) -field 2 -c $cores -p 1 -S $cores
+    srun -n $1 -N $1 --ntasks-per-node=1 --cpus-per-task=$total_cores --cpu_bind none ../../charm++_smp/benchmark +ppn $cores +setcpuaffinity "${@:2}" -width $(( $1 * cores ))
 }
 
 function sweep {
@@ -26,6 +25,6 @@ function sweep {
 
 for n in $SLURM_JOB_NUM_NODES; do
     for t in stencil_1d; do
-        sweep launch $n $t > parsec_type_${t}_nodes_${n}.log
+        sweep launch $n $t > charm_smp_type_${t}_nodes_${n}.log
     done
 done
