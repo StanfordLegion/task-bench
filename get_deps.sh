@@ -116,6 +116,7 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     export OMPSS_DL_DIR="$PWD"/deps/ompss
     cat >>deps/env.sh <<EOF
 export USE_OMPSS=$USE_OMPSS
+export OMPSS_DL_DIR=$OMPSS_DL_DIR
 export LIBUNWIND_SRC_DIR=$OMPSS_DL_DIR/libunwind-1.2.1
 export LIBUNWIND_BUILD=$OMPSS_DL_DIR/libunwind
 export EXTRAE_SRC_DIR=$OMPSS_DL_DIR/extrae-3.5.4
