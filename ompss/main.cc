@@ -236,7 +236,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
     }
   }
   
-  omp_set_dynamic(1);
+  // omp_set_dynamic(1);
   omp_set_num_threads(nb_workers);
   
 
