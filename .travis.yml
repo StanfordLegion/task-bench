@@ -19,6 +19,7 @@ before_install:
       sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
       sudo apt-get update -qq
       sudo apt-get install -qq g++-5 mpich2 libmpich-dev
+      sudo apt-get install binutils
     fi
   - if [[ "$(uname)" = "Linux" && "$CXX" = "g++" ]]; then export CXX="g++-5" CC="gcc-5"; fi
 install:
