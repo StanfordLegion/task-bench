@@ -4,10 +4,11 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-cores=$(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1)
+total_cores=$(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1)
+cores=$(( $total_cores - 1 ))
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../starpu/main "${@:2}" -width $(( $1 * cores )) -worker $cores -field 2
+    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../openmp/main "${@:2}" -width $(( $1 * cores )) -worker $total_cores -field 2
 }
 
 function sweep {
