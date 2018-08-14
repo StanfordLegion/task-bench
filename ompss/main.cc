@@ -9,7 +9,7 @@
 
 #define VERBOSE_LEVEL 0
 
-//#define USE_CORE_VERIFICATION
+#define USE_CORE_VERIFICATION
 
 typedef struct tile_s {
   float dep;
