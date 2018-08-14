@@ -102,33 +102,36 @@ if [[ $USE_OPENMP -eq 1 ]]; then
 fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then
-    pushd "$OMPSS_DL_DIR"
     mkdir -p "$LIBUNWIND_BUILD"
     pushd "$LIBUNWIND_SRC_DIR"
     ./configure prefix=$LIBUNWIND_BUILD
     make -j$THREADS
     make install prefix=$LIBUNWIND_BUILD
     popd
+
     mkdir -p "$EXTRAE_BUILD"
     pushd "$EXTRAE_SRC_DIR"
     ./configure --prefix=$EXTRAE_BUILD --with-unwind=$LIBUNWIND_BUILD --without-dyninst --without-papi --without-mpi
     make -j$THREADS
     make install    
     popd
+
     mkdir -p "$NANOS_BUILD"
     pushd "$NANOS_SRC_DIR"
     ./configure --prefix=$NANOS_BUILD --with-extrae=$EXTRAE_BUILD
     make -j$THREADS
     make install
     popd
+
     mkdir -p "$MERCURIUM_BUILD"
     pushd "$MERCURIUM_SRC_DIR"
     ./configure --prefix=$MERCURIUM_BUILD --enable-ompss --with-nanox=$NANOS_BUILD
     make -j$THREADS
     make install
     popd
-    source env.sh
-    popd
+
+    source deps/env.sh
+
     make -C ompss clean
     make -C core -j$THREADS
     make -C ompss -j$THREADS
