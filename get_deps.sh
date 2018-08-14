@@ -2,14 +2,15 @@
 
 set -e
 
-TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-1}
+TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-0}
 USE_GASNET=${USE_GASNET:-0}
-USE_HWLOC_TMP=${USE_HWLOC_TMP:-1}
-USE_LEGION=${USE_LEGION:-1}
-USE_STARPU=${USE_STARPU:-1}
-USE_PARSEC=${USE_PARSEC:-1}
-USE_CHARM=${USE_CHARM:-1}
-USE_OPENMP=${USE_OPENMP:-1}
+USE_HWLOC_TMP=${USE_HWLOC_TMP:-0}
+USE_LEGION=${USE_LEGION:-0}
+USE_STARPU=${USE_STARPU:-0}
+USE_PARSEC=${USE_PARSEC:-0}
+USE_CHARM=${USE_CHARM:-0}
+USE_OPENMP=${USE_OPENMP:-0}
+USE_OMPSS=${USE_OMPSS:-1}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -108,5 +109,35 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export USE_OPENMP=$USE_OPENMP
 EOF
+    source deps/env.sh
+fi
+
+if [[ $USE_OMPSS -eq 1 ]]; then
+    export OMPSS_DL_DIR="$PWD"/deps/ompss
+    cat >>deps/env.sh <<EOF
+export USE_OMPSS=$USE_OMPSS
+export LIBUNWIND_SRC_DIR=$OMPSS_DL_DIR/libunwind-1.2.1
+export LIBUNWIND_BUILD=$OMPSS_DL_DIR/libunwind
+export EXTRAE_SRC_DIR=$OMPSS_DL_DIR/extrae-3.5.4
+export EXTRAE_BUILD=$OMPSS_DL_DIR/extrae
+export NANOS_SRC_DIR=$OMPSS_DL_DIR/nanox-0.14.1
+export NANOS_BUILD=$OMPSS_DL_DIR/nanos
+export MERCURIUM_SRC_DIR=$OMPSS_DL_DIR/mcxx-2.1.0
+export MERCURIUM_BUILD=$OMPSS_DL_DIR/mercurium
+
+export PATH=$LIBUNWIND_BUILD/include:$LIBUNWIND_BUILD/bin:$EXTRAE_BUILD/include:$EXTRAE_BUILD/bin:$NANOS_BUILD/include:$NANOS_BUILD/bin:$MERCURIUM_BUILD/include:$MERCURIUM_BUILD/bin:$PATH
+export LD_LIBRARY_PATH=$LIBUNWIND_BUILD/lib:$EXTRAE_BUILD/lib:$NANOS_BUILD/lib:$MERCURIUM_BUILD/lib:$LD_LIBRARY_PATH
+
+EOF
+    mkdir -p "$OMPSS_DL_DIR"
+    wget http://download.savannah.nongnu.org/releases/libunwind/libunwind-1.2.1.tar.gz
+    tar -zxf libunwind-1.2.1.tar.gz -C "$OMPSS_DL_DIR" 
+    rm -rf libunwind-1.2.1.tar.gz
+    wget https://ftp.tools.bsc.es/extrae/extrae-3.5.4-src.tar.bz2
+    tar -xjf extrae-3.5.4-src.tar.bz2 -C "$OMPSS_DL_DIR"
+    rm -rf extrae-3.5.4-src.tar.bz2
+    wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
+    tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
+    rm -rf ompss-17.12.1.tar.gz
     source deps/env.sh
 fi
