@@ -1,5 +1,5 @@
-LG_RT_DIR ?= $(HOME)/legion/runtime
+LEGION_DIR ?= ../deps/legion
 SHARD_SIZE ?= 20
 
 main: main.rg
-	SAVEOBJ=1 STANDALONE=1 INCLUDE_PATH=../core $(LG_RT_DIR)/../language/regent.py main.rg -fflow-spmd 1 -fflow-spmd-shardsize $(SHARD_SIZE)
+	SAVEOBJ=1 STANDALONE=1 INCLUDE_PATH=../core $(LEGION_DIR)/language/regent.py main.rg -fflow-spmd 1 -fflow-spmd-shardsize $(SHARD_SIZE)
