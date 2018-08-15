@@ -131,12 +131,12 @@ export LD_LIBRARY_PATH=$LIBUNWIND_BUILD/lib:$EXTRAE_BUILD/lib:$NANOS_BUILD/lib:$
 
 EOF
     mkdir -p "$OMPSS_DL_DIR"
-    wget http://download.savannah.nongnu.org/releases/libunwind/libunwind-1.2.1.tar.gz
-    tar -zxf libunwind-1.2.1.tar.gz -C "$OMPSS_DL_DIR" 
-    rm -rf libunwind-1.2.1.tar.gz
-    wget https://ftp.tools.bsc.es/extrae/extrae-3.5.4-src.tar.bz2
-    tar -xjf extrae-3.5.4-src.tar.bz2 -C "$OMPSS_DL_DIR"
-    rm -rf extrae-3.5.4-src.tar.bz2
+    #wget http://download.savannah.nongnu.org/releases/libunwind/libunwind-1.2.1.tar.gz
+    #tar -zxf libunwind-1.2.1.tar.gz -C "$OMPSS_DL_DIR" 
+    #rm -rf libunwind-1.2.1.tar.gz
+    #wget https://ftp.tools.bsc.es/extrae/extrae-3.5.4-src.tar.bz2
+    #tar -xjf extrae-3.5.4-src.tar.bz2 -C "$OMPSS_DL_DIR"
+    #rm -rf extrae-3.5.4-src.tar.bz2
     wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
     tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
     rm -rf ompss-17.12.1.tar.gz
