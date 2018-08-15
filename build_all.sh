@@ -116,19 +116,19 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     #popd
     mkdir -p "$NANOS_BUILD"
     pushd "$NANOS_SRC_DIR"
-    ./configure --prefix=$NANOS_BUILD --disable-instrumentation --disable-debug 
+    ./configure --prefix=$NANOS_BUILD --disable-instrumentation --disable-debug --disable-gpu-arch --disable-opencl-arch
     make -j$THREADS
     make install
     popd
 
     mkdir -p "$MERCURIUM_BUILD"
     pushd "$MERCURIUM_SRC_DIR"
-    ./configure --prefix=$MERCURIUM_BUILD --enable-ompss --with-nanox=$NANOS_BUILD --with-hwloc=$HWLOC_DIR
-    make -j$THREADS
+    ./configure --prefix=$MERCURIUM_BUILD --enable-ompss --with-nanox=$NANOS_BUILD --disable-icc --disable-ifort --disable-nanox-cuda-device --disable-nanox-opencl-device
+    make
     make install
     popd
     #source deps/env.sh
     make -C ompss clean
-    make -C core -j$THREADS
+    #make -C core -j$THREADS
     make -C ompss -j$THREADS
 fi
