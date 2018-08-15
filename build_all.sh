@@ -114,6 +114,7 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     #make -j$THREADS
     #make install    
     #popd
+    
     mkdir -p "$NANOS_BUILD"
     pushd "$NANOS_SRC_DIR"
     ./configure --prefix=$NANOS_BUILD --disable-instrumentation --disable-debug 
@@ -127,6 +128,9 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     make -j$THREADS
     make install
     popd
+    
+    export PATH=$NANOS_BUILD/bin:$MERCURIUM_BUILD/bin:$PATH
+    export LD_LIBRARY_PATH=$NANOS_BUILD/lib:$MERCURIUM_BUILD/lib:$LD_LIBRARY_PATH
     make -C ompss clean
     #make -C core -j$THREADS
     make -C ompss -j$THREADS

@@ -129,9 +129,6 @@ export MERCURIUM_BUILD=$OMPSS_DL_DIR/mercurium
 #export PATH=$LIBUNWIND_BUILD/include:$LIBUNWIND_BUILD/bin:$EXTRAE_BUILD/include:$EXTRAE_BUILD/bin:$NANOS_BUILD/include:$NANOS_BUILD/bin:$MERCURIUM_BUILD/include:$MERCURIUM_BUILD/bin:$PATH
 #export LD_LIBRARY_PATH=$LIBUNWIND_BUILD/lib:$EXTRAE_BUILD/lib:$NANOS_BUILD/lib:$MERCURIUM_BUILD/lib:$LD_LIBRARY_PATH
 
-export PATH=$NANOS_BUILD/bin:$MERCURIUM_BUILD/bin:$PATH
-export LD_LIBRARY_PATH=$NANOS_BUILD/lib:$MERCURIUM_BUILD/lib:$LD_LIBRARY_PATH
-
 EOF
     mkdir -p "$OMPSS_DL_DIR"
     #wget http://download.savannah.nongnu.org/releases/libunwind/libunwind-1.2.1.tar.gz
