@@ -25,5 +25,5 @@ install:
   - export CCACHE_BASEDIR=$PWD
   - ./get_deps.sh
 script:
-  - travis_wait 40 ./build_all.sh
+  - ./build_all.sh
   - ./test_all.sh
