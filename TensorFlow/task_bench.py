@@ -1,17 +1,31 @@
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 
 import sys
 import os
+import cffi
+import subprocess
 
 import tensorflow as tf
 import numpy as np
-from tensor_flow_slurm_config import tf_config_from_slurm
 
-cluster, job_name, task_index = tf_config_from_slurm(ps_number=1)
-cluster_spec = tf.train.ClusterSpec(cluster)
-server = tf.train.Server(cluster_spec, job_name=job_name, task_index=task_index)
+def task_graph_from_core():
+	header = subprocess.check_output(['gcc', '-E', '-P', '../core/core_c.h']).decode('utf-8')
 
-with tf.device(tf.train.replica_device_setter(cluster_spec)):
-	v1 = tf.get_variable("v1", [1])
+	ffi = cffi.FFI()
+	ffi.cdef(header)
+	c = ffi.dlopen("../core/libcore.so")
+
+	argv_elements = []
+	for _, arg in enumerate(sys.argv):
+		argv_elements = argv_elements + [ffi.new("char[]", arg)]
+
+	argv = ffi.new("char *[]", argv_elements)
+
+	app = c.app_create(len(argv_elements), argv)
+	c.app_display(app)
+
+def execute_task_bench():
+	task_graph_from_core()
+
+if __name__ == "__main__":
+	execute_task_bench()

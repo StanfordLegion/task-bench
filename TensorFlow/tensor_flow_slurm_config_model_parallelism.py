@@ -6,13 +6,12 @@ import tensorflow as tf
 import re
 import os
 
-def tf_config_from_slurm(ps_number, port_number=2222):
+def tf_config_from_slurm(port_number=2222):
     """
     Creates configuration for a distributed tensorflow session 
     from environment variables  provided by the Slurm cluster
     management system.
     
-    @param: ps_number number of parameter servers to run
     @param: port_number port number to be used for communication
     @return: a tuple containing cluster with fields cluster_spec,
              task_name and task_id 
@@ -29,19 +28,14 @@ def tf_config_from_slurm(ps_number, port_number=2222):
     if nodename not in nodelist:
         raise ValueError("Nodename({}) not in nodelist({}). This should not happen! ".format(nodename,nodelist))
     
-    ps_nodes = [node for i, node in enumerate(nodelist) if i < ps_number]
-    worker_nodes = [node for i, node in enumerate(nodelist) if i >= ps_number]
+    worker_nodes = [node for i, node in enumerate(nodelist)]
     
-    if nodename in ps_nodes:
-        my_job_name = "ps"
-        my_task_index = ps_nodes.index(nodename)
-    else:
-        my_job_name = "worker"
-        my_task_index = worker_nodes.index(nodename)
+    
+    my_job_name = "worker"
+    my_task_index = worker_nodes.index(nodename)
     
     worker_sockets = [":".join([node, str(port_number)]) for node in worker_nodes]
-    ps_sockets = [":".join([node, str(port_number)]) for node in ps_nodes]
-    cluster = {"ps" : ps_sockets, "worker": worker_sockets}
+    cluster = {"worker": worker_sockets}
     
     return cluster, my_job_name, my_task_index
 
