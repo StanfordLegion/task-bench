@@ -127,7 +127,6 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     make -j$THREADS
     make install
     popd
-    source deps/env.sh
     make -C ompss clean
     #make -C core -j$THREADS
     make -C ompss -j$THREADS
