@@ -120,6 +120,7 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     make -j$THREADS
     make install
     popd
+
     mkdir -p "$MERCURIUM_BUILD"
     pushd "$MERCURIUM_SRC_DIR"
     ./configure --prefix=$MERCURIUM_BUILD --enable-ompss --with-nanox=$NANOS_BUILD --with-hwloc=$HWLOC_DIR

@@ -9,7 +9,7 @@
 
 #define VERBOSE_LEVEL 0
 
-//#define USE_CORE_VERIFICATION
+#define USE_CORE_VERIFICATION
 
 typedef struct tile_s {
   float dep;
@@ -236,7 +236,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
     }
   }
   
-  omp_set_dynamic(1);
+  // omp_set_dynamic(1);
   omp_set_num_threads(nb_workers);
   
 
