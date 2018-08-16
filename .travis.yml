@@ -13,6 +13,15 @@ env:
     - REALM_SYNTHETIC_CORE_MAP=""
     - REALM_BACKTRACE=1
     - CC_FLAGS="-Wno-unused-command-line-argument"
+    # Disable features by default, specify explicit what to use in each build
+    - DEFAULT_FEATURES=0
+  matrix:
+    - TASKBENCH_USE_MPI=1
+    - USE_LEGION=1
+    - USE_STARPU=1 TASKBENCH_USE_HWLOC=1
+    - USE_PARSEC=1 TASKBENCH_USE_HWLOC=1
+    - USE_CHARM=1
+    - USE_OPENMP=1
 before_install:
   - |
     if [[ "$(uname)" = "Linux" ]]; then
