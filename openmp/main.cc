@@ -209,7 +209,7 @@ OpenMPApp::OpenMPApp(int argc, char **argv)
     TaskGraph &graph = graphs[i];
     
     if (nb_fields == 0) {
-      nb_fields = graph.max_width;
+      nb_fields = graph.timesteps;
     }
     matrix[i].M = nb_fields;
     matrix[i].N = graph.max_width;
