@@ -31,7 +31,7 @@ if [[ $USE_GASNET -eq 1 ]]; then
     make -C "$GASNET_DIR"
 fi
 
-if [[ $USE_HWLOC_TMP -eq 1 ]]; then
+if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     pushd "$HWLOC_SRC_DIR"
     ./configure --prefix=$HWLOC_DIR
     make -j$THREADS
@@ -46,7 +46,7 @@ fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
     STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples "
-    if [[ $USE_HWLOC_TMP -eq 1 ]]; then
+    if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
       STARPU_CONFIGURE_FLAG+="" 
     else
       STARPU_CONFIGURE_FLAG+="--without-hwloc"
@@ -63,7 +63,7 @@ fi
 if [[ $USE_PARSEC -eq 1 ]]; then
     mkdir -p "$PARSEC_DIR"
     pushd "$PARSEC_DIR"
-    if [[ $USE_HWLOC_TMP -eq 1 ]]; then
+    if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
       ../contrib/platforms/config.linux -DPARSEC_GPU_WITH_CUDA=OFF -DCMAKE_INSTALL_PREFIX=$PWD -DHWLOC_DIR=$HWLOC_DIR
     else
       ../contrib/platforms/config.linux -DPARSEC_GPU_WITH_CUDA=OFF -DCMAKE_INSTALL_PREFIX=$PWD
