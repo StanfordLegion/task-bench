@@ -15,10 +15,12 @@
 
 #include <immintrin.h>
 #include <cassert>
+#include <math.h>
 #include "core.h"
 #include "core_kernel.h"
-#include "mkl.h"
-#include <math.h>
+#if defined(USE_BLAS_KERNEL)
+#include <mkl.h>
+#endif
 
 void execute_kernel_empty(const Kernel &kernel)
 {
