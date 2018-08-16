@@ -2,7 +2,7 @@
 
 set -e
 
-DEFAULT_FEATURES=${DEFAULT_FEATURES:-1}
+DEFAULT_FEATURES=${DEFAULT_FEATURES:-0}
 
 TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 USE_GASNET=${USE_GASNET:-0}
@@ -14,13 +14,13 @@ USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
 USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
 USE_OMPSS=${USE_OMPSS:-2}
 
-if [[ -e deps ]]; then
-    echo "The directory deps already exists, nothing to do."
-    echo "Delete deps and run again if you want to re-download dependencies."
-    false
-fi
+#if [[ -e deps ]]; then
+    #echo "The directory deps already exists, nothing to do."
+    #echo "Delete deps and run again if you want to re-download dependencies."
+    #false
+#fi
 
-mkdir deps
+#mkdir deps
 
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
@@ -141,7 +141,7 @@ export MCXX_SRC_DIR=$OMPSS_DL_DIR/mcxx
 export MCXX_BUILD=$MCXX_SRC_DIR/build
 EOF
     mkdir -p "$OMPSS_DL_DIR"
-    git clone https://github.com/bsc-pm/nanos6.git "$NANOS6_SRC_DIR"
-    git clone https://github.com/bsc-pm/mcxx.git "MERCURIUM_SRC_DIR"
+    #git clone https://github.com/bsc-pm/nanos6.git "$NANOS6_SRC_DIR"
+    git clone https://github.com/bsc-pm/mcxx.git "$MCXX_SRC_DIR"
 fi
 

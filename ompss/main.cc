@@ -209,7 +209,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
     TaskGraph &graph = graphs[i];
     
     if (nb_fields == 0) {
-      nb_fields = graph.max_width;
+      nb_fields = graph.timesteps;
     }
     matrix[i].M = nb_fields;
     matrix[i].N = graph.max_width;
@@ -282,9 +282,9 @@ void OmpSsApp::execute_main_loop()
         for (int y = 0; y < g.timesteps; y++) {
           execute_timestep(i, y);
         }
-/*      }*/
-    //}
-  }
+      }
+/*    }*/
+  //}
 
 #pragma omp taskwait  
   
