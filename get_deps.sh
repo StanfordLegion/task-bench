@@ -134,9 +134,9 @@ if [[ $USE_OMPSS -eq 2 ]]; then
 export USE_OMPSS=$USE_OMPSS
 export OMPSS_DL_DIR=$OMPSS_DL_DIR
 export NANOS6_SRC_DIR=$OMPSS_DL_DIR/nanos6
-export NANOS_BUILD=$OMPSS_DL_DIR/nanos6
-export MERCURIUM_SRC_DIR=$OMPSS_DL_DIR/mcxx
-export MERCURIUM_BUILD=$OMPSS_DL_DIR/mercurium
+export NANOS6_BUILD=$NANOS6_SRC_DIR/build
+export MCXX_SRC_DIR=$OMPSS_DL_DIR/mcxx
+export MCXX_BUILD=$MCXX_SRC_DIR/build
 EOF
     mkdir -p "$OMPSS_DL_DIR"
     git clone https://github.com/bsc-pm/nanos6.git "$NANOS6_SRC_DIR"

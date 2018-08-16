@@ -121,3 +121,24 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     make -C ompss clean
     make -C ompss -j$THREADS
 fi
+
+if [[ $USE_OMPSS -eq 2 ]]; then
+    mkdir -p "$MCXX_BUILD"
+    pushd "$MCXX_SRC_DIR"
+    ./configure --prefix=$MCXX_BUILD --enable-ompss-2 --enable-nanos6-bootstrap
+    make -j$THREADS
+    make install
+    popd
+
+    mkdir -p "$NANOS6_BUILD"
+    pushd "$NANOS6_SRC_DIR"
+    ./configure --prefix=$NANOS_BUILD --with-nanos6-mercurium=prefix --with-boost=prefix --with-libnuma=prefix
+    make -j$THREADS
+    make install
+    popd
+    
+    export PATH=$NANOS6_BUILD/bin:$MCXX_BUILD/bin:$PATH
+    export LD_LIBRARY_PATH=$NANOS6_BUILD/lib:$MCXX_BUILD/lib:$LD_LIBRARY_PATH
+    make -C ompss clean
+    make -C ompss -j$THREADS
+fi
