@@ -101,20 +101,7 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     make -C openmp -j$THREADS
 fi
 
-if [[ $USE_OMPSS -eq 1 ]]; then
-    #mkdir -p "$LIBUNWIND_BUILD"
-    #pushd "$LIBUNWIND_SRC_DIR"
-    #./configure prefix=$LIBUNWIND_BUILD
-    #make -j$THREADS
-    #make install prefix=$LIBUNWIND_BUILD
-    #popd
-    #mkdir -p "$EXTRAE_BUILD"
-    #pushd "$EXTRAE_SRC_DIR"
-    #./configure --prefix=$EXTRAE_BUILD --with-unwind=$LIBUNWIND_BUILD --without-dyninst --without-papi --without-mpi
-    #make -j$THREADS
-    #make install    
-    #popd
-    
+if [[ $USE_OMPSS -eq 1 ]]; then    
     mkdir -p "$NANOS_BUILD"
     pushd "$NANOS_SRC_DIR"
     ./configure --prefix=$NANOS_BUILD --disable-instrumentation --disable-debug 
@@ -132,6 +119,5 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     export PATH=$NANOS_BUILD/bin:$MERCURIUM_BUILD/bin:$PATH
     export LD_LIBRARY_PATH=$NANOS_BUILD/lib:$MERCURIUM_BUILD/lib:$LD_LIBRARY_PATH
     make -C ompss clean
-    #make -C core -j$THREADS
     make -C ompss -j$THREADS
 fi
