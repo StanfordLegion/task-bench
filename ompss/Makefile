@@ -1,9 +1,14 @@
-DEBUG ?= 0
-
+DEBUG = 0
+OMPSS_VERSION ?=1
 MCXX = mcxx
 
+ifeq ($(strip $(OMPSS_VERSION)),1)
 CXXFLAGS = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large
 LDFLAGS  = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large
+else
+CXXFLAGS = --ompss2 -std=c++11 -Wall -Wno-unused -mcmodel=large
+LDFLAGS  = --ompss2 -std=c++11 -Wall -Wno-unused -mcmodel=large
+endif
 
 ifeq ($(strip $(DEBUG)),1)
 CXXFLAGS += -g -O0 -mavx
