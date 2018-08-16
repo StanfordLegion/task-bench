@@ -2,15 +2,15 @@
 
 set -e
 
-TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-1}
+TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-0}
 USE_GASNET=${USE_GASNET:-0}
-USE_HWLOC_TMP=${USE_HWLOC_TMP:-1}
-USE_LEGION=${USE_LEGION:-1}
-USE_STARPU=${USE_STARPU:-1}
-USE_PARSEC=${USE_PARSEC:-1}
-USE_CHARM=${USE_CHARM:-1}
-USE_OPENMP=${USE_OPENMP:-1}
-USE_OMPSS=${USE_OMPSS:-1}
+USE_HWLOC_TMP=${USE_HWLOC_TMP:-0}
+USE_LEGION=${USE_LEGION:-0}
+USE_STARPU=${USE_STARPU:-0}
+USE_PARSEC=${USE_PARSEC:-0}
+USE_CHARM=${USE_CHARM:-0}
+USE_OPENMP=${USE_OPENMP:-0}
+USE_OMPSS=${USE_OMPSS:-2}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -128,4 +128,18 @@ EOF
     rm -rf ompss-17.12.1.tar.gz
 fi
 
+if [[ $USE_OMPSS -eq 2 ]]; then
+    export OMPSS_DL_DIR="$PWD"/deps/ompss2
+    cat >>deps/env.sh <<EOF
+export USE_OMPSS=$USE_OMPSS
+export OMPSS_DL_DIR=$OMPSS_DL_DIR
+export NANOS6_SRC_DIR=$OMPSS_DL_DIR/nanos6
+export NANOS_BUILD=$OMPSS_DL_DIR/nanos6
+export MERCURIUM_SRC_DIR=$OMPSS_DL_DIR/mcxx
+export MERCURIUM_BUILD=$OMPSS_DL_DIR/mercurium
+EOF
+    mkdir -p "$OMPSS_DL_DIR"
+    git clone https://github.com/bsc-pm/nanos6.git "$NANOS6_SRC_DIR"
+    git clone https://github.com/bsc-pm/mcxx.git "MERCURIUM_SRC_DIR"
+fi
 
