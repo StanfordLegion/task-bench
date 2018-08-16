@@ -17,8 +17,8 @@ import "regent"
 local c = terralib.includec("stdio.h")
 local d = terralib.includec("stdlib.h")
 local t = terralib.includec("time.h")
-local z = terralib.includec("./task-bench/core/core_c.h")
-terralib.linklibrary("./task-bench/core/libcore.so")
+local z = terralib.includec("core_c.h")
+terralib.linklibrary("../core/libcore.so")
 
 fspace fs {
   x : double,
@@ -36,7 +36,6 @@ end
 task f1(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t)
 where reads writes(primary.{x}), reads(primary.{y}, secondary.{y}) do
   for i in primary do
-    c.printf("%d\n", i)
     primary[i].x = secondary[i].y + 1
     --primary[i].y += 1
   end
@@ -47,7 +46,6 @@ end
 task f2(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t)
 where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}) do
   for i in primary do
-    c.printf("%d\n", i)
     --primary[i].x += 1
     primary[i].y = secondary[i].x + 1
   end
@@ -80,9 +78,9 @@ task main()
   
   -- lays all the dependencies out consecutively, 3*num_tasks-2 of them for simple pattern
   for i = 0, num_tasks do
-  	var s = max(3*i - 1, 0)
-  	var e = min(3*i - 1 +3, 3*num_tasks -2) - 1
-  	r1[i] = rect1d{s,e}
+        var s = max(3*i - 1, 0)
+        var e = min(3*i - 1 +3, 3*num_tasks -2) - 1
+        r1[i] = rect1d{s,e}
   end
 
   var r2 = region(ispace(int1d, 3*num_tasks-2, 0), rect1d)
@@ -92,9 +90,9 @@ task main()
   var primary = partition(equal, r3, ispace(int1d, num_tasks))
   -- 
   for i = 0, 3*num_tasks-2 do
-  	var tasks = (i+1)/3
-  	var dep = (i+1) - 3*tasks
-  	r2[i] = primary[tasks + dep - 1].bounds
+        var tasks = (i+1)/3
+        var dep = (i+1) - 3*tasks
+        r2[i] = primary[tasks + dep - 1].bounds
   end
 
   var secondary = image(r3, q, r2)
@@ -108,17 +106,33 @@ task main()
   --for i = 0, num_tasks do
     --print(primary[i])
   --end
-  
-  __demand(__spmd)
-  for i = 0, max_timesteps, 2 do
-    for j = 0, num_tasks do
-  	  f1(primary[j], secondary[j], task_graph)  
-  	end
 
-  	for j = 0, num_tasks do
-  	  f2(primary[j], secondary[j], task_graph)
-  	end
+  var start_time : uint64 = 0
+  var end_time : uint64 = 0
+  for rep = 0, 2 do
+    if rep == 1 then
+      __fence(__execution, __block)
+      start_time = regentlib.c.legion_get_current_time_in_nanos()
+    end
+
+    __demand(__spmd, __trace)
+    for i = 0, max_timesteps, 2 do
+      for j = 0, num_tasks do
+          f1(primary[j], secondary[j], task_graph)
+        end
+
+        for j = 0, num_tasks do
+          f2(primary[j], secondary[j], task_graph)
+        end
+    end
+
+    if rep == 1 then
+      __fence(__execution, __block)
+      end_time = regentlib.c.legion_get_current_time_in_nanos()
+    end
   end
+
+  z.app_report_timing(app, double(end_time - start_time)/1e9)
 
   --__demand(__parallel)
   --for i = 0, num_tasks do
@@ -134,4 +148,19 @@ task main()
   --c.printf("%f", end_time - start_time)
 end
 
-regentlib.start(main)
+if os.getenv('SAVEOBJ') == '1' then
+  local root_dir = arg[0]:match(".*/") or "./"
+  local core_dir = root_dir .. "../core/"
+  local out_dir = (os.getenv('OBJNAME') and os.getenv('OBJNAME'):match('.*/')) or root_dir
+  local link_flags = terralib.newlist({"-L" .. core_dir, "-lcore"})
+
+  if os.getenv('STANDALONE') == '1' then
+    os.execute('cp ' .. core_dir .. 'libcore.so ' .. out_dir)
+    os.execute('cp ' .. os.getenv('LG_RT_DIR') .. '/../bindings/regent/libregent.so ' .. out_dir)
+  end
+
+  local exe = os.getenv('OBJNAME') or "main"
+  regentlib.saveobj(main, exe, "executable", nil, link_flags)
+else
+  regentlib.start(main)
+end
