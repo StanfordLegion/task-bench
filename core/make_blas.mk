@@ -1,4 +1,4 @@
-ENABLE_BLAS ?= 1
+ENABLE_BLAS ?= 0
 
 ifeq ($(strip $(ENABLE_BLAS)),1)
 ifndef MKLROOT
