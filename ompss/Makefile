@@ -3,11 +3,11 @@ USE_OMPSS ?=1
 MCXX = mcxx
 
 ifeq ($(strip $(USE_OMPSS)),1)
-CXXFLAGS = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
+CXXFLAGS = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps -DOMPSS
 LDFLAGS  = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 else
-CXXFLAGS = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps --openmp-compatibility
-LDFLAGS  = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps --openmp-compatibility
+CXXFLAGS = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps -DOMPSS2 
+LDFLAGS  = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps 
 endif
 
 ifeq ($(strip $(DEBUG)),1)
