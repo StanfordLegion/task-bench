@@ -135,19 +135,20 @@ if [[ $USE_OMPSS -eq 2 ]]; then
     cat >>deps/env.sh <<EOF
 export USE_OMPSS=$USE_OMPSS
 export OMPSS_DL_DIR=$OMPSS_DL_DIR
-export GPERF_SRC=$OMPSS_DL_DIR/gperf-3.0.4
+export GPERF_SRC_DIR=$OMPSS_DL_DIR/gperf-3.0.4
 export GPERF_BUILD=$OMPSS_DL_DIR/gperf
 export NANOS6_SRC_DIR=$OMPSS_DL_DIR/nanos6
-export NANOS6_BUILD=$NANOS6_SRC_DIR/build
+export NANOS6_BUILD=$OMPSS_DL_DIR/nanos6_build
 export MCXX_SRC_DIR=$OMPSS_DL_DIR/mcxx
-export MCXX_BUILD=$MCXX_SRC_DIR/build
+export MCXX_BUILD=$OMPSS_DL_DIR/mcxx_build
 EOF
     mkdir -p "$OMPSS_DL_DIR"
     wget http://ftp.gnu.org/gnu/gperf/gperf-3.0.4.tar.gz
     tar -zxf gperf-3.0.4.tar.gz -C "$OMPSS_DL_DIR"
+    rm -rf gperf-3.0.4.tar.gz
     export NANOS6_SRC_DIR=$OMPSS_DL_DIR/nanos6
     git clone https://github.com/bsc-pm/nanos6.git "$NANOS6_SRC_DIR"
-    export MCXX_SRC_DIR=$OMPSS_DL_DIR/mcxx
+    export MCXX_BUILD=$OMPSS_DL_DIR/mcxx_build
     git clone https://github.com/bsc-pm/mcxx.git "$MCXX_SRC_DIR"
 fi
 

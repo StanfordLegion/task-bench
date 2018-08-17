@@ -124,14 +124,16 @@ fi
 
 if [[ $USE_OMPSS -eq 2 ]]; then
     mkdir -p "$GPERF_BUILD"
-    pushd "$GPERF_BUILD"
-    ./configure --prefix=$GPERF_BUILD--docdir=$GPERF_BUILD/doc
+    pushd "$GPERF_SRC_DIR"
+    ./configure --prefix=$GPERF_BUILD --docdir=$GPERF_BUILD/doc
     make -j$THREADS
     make install
+    export PATH=$GPERF_BUILD/bin:$PATH
     popd
 
     mkdir -p "$MCXX_BUILD"
     pushd "$MCXX_SRC_DIR"
+    autoreconf -fiv
     ./configure --prefix=$MCXX_BUILD --enable-ompss-2 --enable-nanos6-bootstrap
     make -j$THREADS
     make install
@@ -139,8 +141,10 @@ if [[ $USE_OMPSS -eq 2 ]]; then
 
     mkdir -p "$NANOS6_BUILD"
     pushd "$NANOS6_SRC_DIR"
-    ./configure --prefix=$NANOS_BUILD --with-nanos6-mercurium=prefix --with-boost=prefix --with-libnuma=prefix
-    make -j$THREADS
+    autoreconf -f -i -v
+    ./configure --prefix=$NANOS_BUILD --with-nanos6-mercurium=$MCXX_BUILD --with-boost=$BOOST_ROOT --with-libnuma=/bin
+    make all -j$THREADS
+    make check -j$THREADS
     make install
     popd
     
