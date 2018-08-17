@@ -157,8 +157,8 @@ if [[ $USE_OMPSS -eq 2 ]]; then
     make install
     popd
  
-    export PATH=$NANOS6_BUILD/include:$MCXX_BUILD/bin:$PATH
-    export LD_LIBRARY_PATH=$NANOS6_BUILD/lib:$NANOS6_BUILD/include:$MCXX_BUILD/lib:$LD_LIBRARY_PATH
+    export PATH=$MCXX_BUILD/bin:$PATH
+    export LD_LIBRARY_PATH=$NANOS6_BUILD/lib:$MCXX_BUILD/lib:$LD_LIBRARY_PATH
     make -C ompss clean
     make -C ompss -j$THREADS
 fi
