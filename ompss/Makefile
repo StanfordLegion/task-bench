@@ -6,8 +6,8 @@ ifeq ($(strip $(USE_OMPSS)),1)
 CXXFLAGS = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 LDFLAGS  = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 else
-CXXFLAGS = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
-LDFLAGS  = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
+CXXFLAGS = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps --openmp-compatibility
+LDFLAGS  = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps --openmp-compatibility
 endif
 
 ifeq ($(strip $(DEBUG)),1)

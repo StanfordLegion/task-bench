@@ -7,6 +7,7 @@
 #include "core.h"
 #include "timer.h"
 
+
 #define VERBOSE_LEVEL 0
 
 #define USE_CORE_VERIFICATION
@@ -32,6 +33,11 @@ typedef struct matrix_s {
   int M;
   int N;
 }matrix_t;
+
+int omp_get_thread_num()
+{
+  return 1;
+}
 
 char **extra_local_memory;
 
@@ -237,7 +243,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   }
   
   // omp_set_dynamic(1);
-  omp_set_num_threads(nb_workers);
+  //omp_set_num_threads(nb_workers);
   
 
 }
