@@ -10,6 +10,8 @@ endif
 
 CORE       = ../core/core.cc ../core/core_kernel.cc
 
+include ../core/make_blas.mk
+
 all: nonblock basic bcast alltoall buffered_send
 
 nonblock: nonblocking.cc $(CORE) ../core/core.h ../core/core_kernel.h
