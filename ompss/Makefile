@@ -1,13 +1,13 @@
 DEBUG = 0
-OMPSS_VERSION ?=1
+USE_OMPSS ?=1
 MCXX = mcxx
 
-ifeq ($(strip $(OMPSS_VERSION)),1)
+ifeq ($(strip $(USE_OMPSS)),1)
 CXXFLAGS = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 LDFLAGS  = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 else
-CXXFLAGS = --ompss2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
-LDFLAGS  = --ompss2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
+CXXFLAGS = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
+LDFLAGS  = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 endif
 
 ifeq ($(strip $(DEBUG)),1)
@@ -19,7 +19,7 @@ LDFLAGS  += -O3 -march=native
 endif
 
 # Include directories
-INC        = -I../core
+INC        = -I../core -I$(NANOS6_BUILD)/include
 INC_EXT    =  
 
 # Location of the libraries.
