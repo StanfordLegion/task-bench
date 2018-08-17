@@ -22,6 +22,7 @@ env:
     - USE_PARSEC=1 TASKBENCH_USE_HWLOC=1
     - USE_CHARM=1
     - USE_OPENMP=1
+    - USE_OMPSS=1
 before_install:
   - |
     if [[ "$(uname)" = "Linux" ]]; then
