@@ -82,7 +82,9 @@ double execute_kernel_compute(const Kernel &kernel)
   
   for (long iter = 0; iter < kernel.iterations; iter++) {
     for (int i = 0; i < 8; i++) {
-        A[i] = _mm256_mul_pd(A[i], A[i]);
+      A[i] = _mm256_mul_pd(A[i], A[i]);
+       //A[i] = _mm256_fmadd_pd(A[i], A[i], A[i]);
+       //  A[i] = _mm256_add_pd(A[i], A[i]);
     }
   }
   
@@ -125,15 +127,14 @@ void execute_kernel_io(const Kernel &kernel)
   assert(false);
 }
 
-void execute_kernel_imbalance(const Kernel &kernel)
+double execute_kernel_imbalance(const Kernel &kernel)
 {
-  //random pick one task to be compute bound
-
   // Use current time as seed for random generator
   // srand(Timer::get_cur_time());
 
-  long long max_power = rand() % kernel.max_power;
+  long iterations = rand() % kernel.iterations;
   Kernel k(kernel);
-  k.max_power = max_power;
-  execute_kernel_compute(k);
+  k.iterations = iterations;
+  //printf("iteration %d\n", iterations);
+  return execute_kernel_compute(k);
 }
