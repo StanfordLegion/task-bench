@@ -19,7 +19,7 @@ LDFLAGS  += -O3 -march=native
 endif
 
 # Include directories
-INC        = -I../core -I$(NANOS6_BUILD)/include
+INC        = -I../core 
 INC_EXT    =  
 
 # Location of the libraries.

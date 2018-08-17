@@ -134,7 +134,7 @@ if [[ $USE_OMPSS -eq 2 ]]; then
     mkdir -p "$MCXX_BUILD"
     pushd "$MCXX_SRC_DIR"
     autoreconf -fiv
-    ./configure --prefix=$MCXX_BUILD --enable-ompss-2 --enable-nanos6-bootstrap
+    ./configure --prefix=$MCXX_BUILD --enable-ompss-2 --enable-nanos6-bootstrap 
     make -j$THREADS
     make install
     popd
@@ -143,11 +143,20 @@ if [[ $USE_OMPSS -eq 2 ]]; then
     pushd "$NANOS6_SRC_DIR"
     autoreconf -f -i -v
     ./configure --prefix=$NANOS6_BUILD --with-nanos6-mercurium=$MCXX_BUILD --with-boost=$BOOST_ROOT 
+    #./configure --prefix=$NANOS6_BUILD --with-boost=$BOOST_ROOT 
     make all -j$THREADS
     make check -j$THREADS
     make install
     popd
     
+    #mkdir -p "$MCXX_BUILD"
+    pushd "$MCXX_SRC_DIR"
+    autoreconf -fiv
+    ./configure --prefix=$MCXX_BUILD --enable-ompss-2 --with-nanos6=$NANOS6_BUILD
+    make -j$THREADS
+    make install
+    popd
+ 
     export PATH=$NANOS6_BUILD/include:$MCXX_BUILD/bin:$PATH
     export LD_LIBRARY_PATH=$NANOS6_BUILD/lib:$NANOS6_BUILD/include:$MCXX_BUILD/lib:$LD_LIBRARY_PATH
     make -C ompss clean
