@@ -2,7 +2,7 @@
 
 set -e
 
-DEFAULT_FEATURES=${DEFAULT_FEATURES:-1}
+DEFAULT_FEATURES=${DEFAULT_FEATURES:-0}
 
 TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 USE_GASNET=${USE_GASNET:-0}
@@ -148,7 +148,7 @@ EOF
     rm -rf gperf-3.0.4.tar.gz
     export NANOS6_SRC_DIR=$OMPSS_DL_DIR/nanos6
     git clone https://github.com/bsc-pm/nanos6.git "$NANOS6_SRC_DIR"
-    export MCXX_BUILD=$OMPSS_DL_DIR/mcxx_build
+    export MCXX_SRC_DIR=$OMPSS_DL_DIR/mcxx
     git clone https://github.com/bsc-pm/mcxx.git "$MCXX_SRC_DIR"
 fi
 
