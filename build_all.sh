@@ -123,6 +123,13 @@ if [[ $USE_OMPSS -eq 1 ]]; then
 fi
 
 if [[ $USE_OMPSS -eq 2 ]]; then
+    mkdir -p "$GPERF_BUILD"
+    pushd "$GPERF_BUILD"
+    ./configure --prefix=$GPERF_BUILD--docdir=$GPERF_BUILD/doc
+    make -j$THREADS
+    make install
+    popd
+
     mkdir -p "$MCXX_BUILD"
     pushd "$MCXX_SRC_DIR"
     ./configure --prefix=$MCXX_BUILD --enable-ompss-2 --enable-nanos6-bootstrap
