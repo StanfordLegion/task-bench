@@ -15,6 +15,7 @@
 
 #include <immintrin.h>
 #include <cassert>
+#include <sys/time.h>
 #include "core.h"
 #include "core_kernel.h"
 
@@ -130,7 +131,10 @@ void execute_kernel_io(const Kernel &kernel)
 double execute_kernel_imbalance(const Kernel &kernel)
 {
   // Use current time as seed for random generator
-  // srand(Timer::get_cur_time());
+  //struct timeval tv;
+  //gettimeofday(&tv,NULL);
+  //long t = tv.tv_sec *1e6 + tv.tv_usec;
+  //srand(t);
 
   long iterations = rand() % kernel.iterations;
   Kernel k(kernel);
