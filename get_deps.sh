@@ -8,6 +8,7 @@ TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 USE_GASNET=${USE_GASNET:-0}
 TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
 USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
+USE_REALM=${USE_LEGION:-$DEFAULT_FEATURES}
 USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
 USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
@@ -111,4 +112,14 @@ if [[ $USE_OPENMP -eq 1 ]]; then
 export USE_OPENMP=$USE_OPENMP
 EOF
     source deps/env.sh
+fi
+
+if [[ $USE_REALM -eq 1 ]]; then
+    export LEGION_DIR="$PWD"/deps/legion
+    cat >>deps/env.sh <<EOF
+export USE_REALM=$USE_REALM
+export LG_RT_DIR="$LEGION_DIR"/runtime
+export USE_LIBDL=0
+EOF
+    git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
