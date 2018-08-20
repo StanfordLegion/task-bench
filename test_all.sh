@@ -32,6 +32,10 @@ if [[ $USE_LEGION -eq 1 ]]; then
     done
 fi
 
+if [[ $USE_REALM -eq 1 ]]; then
+    ./realm/realm_bench -steps 4 -type stencil_1d
+fi
+
 if [[ $USE_STARPU -eq 1 ]]; then
     for t in $basic_types; do
         mpirun -np 1 ./starpu/main -steps 9 -type $t
