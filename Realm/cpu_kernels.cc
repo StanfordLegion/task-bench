@@ -39,6 +39,7 @@ void stencil(DTYPE* RESTRICT inputPtr,
 #undef WEIGHT
 }
 
+
 void increment(DTYPE* RESTRICT inputPtr,
                coord_t haloX, coord_t startX, coord_t endX,
                coord_t startY, coord_t endY)
