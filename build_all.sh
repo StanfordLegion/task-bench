@@ -44,6 +44,11 @@ if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j$THREADS
 fi
 
+if [[ $USE_LEGION -eq 1 ]]; then
+    make -C realm clean
+    make -C realm -j$THREADS
+fi
+
 if [[ $USE_STARPU -eq 1 ]]; then
     STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples "
     if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
