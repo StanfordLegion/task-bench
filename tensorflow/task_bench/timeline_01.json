@@ -1,0 +1,637 @@
+{
+    "traceEvents": [
+        {
+            "ph": "M",
+            "args": {
+                "name": "Allocators"
+            },
+            "pid": 0,
+            "name": "process_name"
+        },
+        {
+            "ph": "M",
+            "args": {
+                "name": "/job:localhost/replica:0/task:0/device:CPU:2 Compute"
+            },
+            "pid": 1,
+            "name": "process_name"
+        },
+        {
+            "ph": "M",
+            "args": {
+                "name": "/job:localhost/replica:0/task:0/device:CPU:2 Tensors"
+            },
+            "pid": 2,
+            "name": "process_name"
+        },
+        {
+            "ph": "M",
+            "args": {
+                "name": "/job:localhost/replica:0/task:0/device:CPU:0 Compute"
+            },
+            "pid": 3,
+            "name": "process_name"
+        },
+        {
+            "ph": "M",
+            "args": {
+                "name": "/job:localhost/replica:0/task:0/device:CPU:0 Tensors"
+            },
+            "pid": 4,
+            "name": "process_name"
+        },
+        {
+            "ph": "M",
+            "args": {
+                "name": "/job:localhost/replica:0/task:0/device:CPU:3 Compute"
+            },
+            "pid": 5,
+            "name": "process_name"
+        },
+        {
+            "ph": "M",
+            "args": {
+                "name": "/job:localhost/replica:0/task:0/device:CPU:3 Tensors"
+            },
+            "pid": 6,
+            "name": "process_name"
+        },
+        {
+            "ph": "M",
+            "args": {
+                "name": "/job:localhost/replica:0/task:0/device:CPU:1 Compute"
+            },
+            "pid": 7,
+            "name": "process_name"
+        },
+        {
+            "ph": "M",
+            "args": {
+                "name": "/job:localhost/replica:0/task:0/device:CPU:1 Tensors"
+            },
+            "pid": 8,
+            "name": "process_name"
+        },
+        {
+            "name": "NoOp",
+            "args": {
+                "name": "_SOURCE",
+                "op": "NoOp"
+            },
+            "pid": 1,
+            "ts": 1534870191369437,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 3
+        },
+        {
+            "name": "VariableV2",
+            "args": {
+                "name": "Variable_2",
+                "op": "VariableV2"
+            },
+            "pid": 1,
+            "ts": 1534870191369442,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 4
+        },
+        {
+            "name": "Identity",
+            "args": {
+                "input0": "Variable_2",
+                "name": "Variable_2/read",
+                "op": "Identity"
+            },
+            "pid": 1,
+            "ts": 1534870191369448,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 2
+        },
+        {
+            "name": "AddN",
+            "args": {
+                "input2": "Variable_3/read/_21",
+                "input0": "Variable_1/read/_19",
+                "input1": "Variable_2/read",
+                "name": "AddN_2",
+                "op": "AddN"
+            },
+            "pid": 1,
+            "ts": 1534870191369464,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 18
+        },
+        {
+            "name": "Variable_1/read",
+            "pid": 7,
+            "ts": 1534870191369336,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 0
+        },
+        {
+            "name": "Variable_1/read",
+            "pid": 1,
+            "ts": 1534870191369464,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 0
+        },
+        {
+            "name": "Variable_3/read",
+            "pid": 5,
+            "ts": 1534870191369335,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 1
+        },
+        {
+            "name": "Variable_3/read",
+            "pid": 1,
+            "ts": 1534870191369464,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 1
+        },
+        {
+            "name": "NoOp",
+            "args": {
+                "name": "_SOURCE",
+                "op": "NoOp"
+            },
+            "pid": 3,
+            "ts": 1534870191369363,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 3
+        },
+        {
+            "name": "VariableV2",
+            "args": {
+                "name": "Variable",
+                "op": "VariableV2"
+            },
+            "pid": 3,
+            "ts": 1534870191369369,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 6
+        },
+        {
+            "name": "Identity",
+            "args": {
+                "input0": "Variable",
+                "name": "Variable/read",
+                "op": "Identity"
+            },
+            "pid": 3,
+            "ts": 1534870191369376,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 2
+        },
+        {
+            "name": "AddN",
+            "args": {
+                "input0": "Variable/read",
+                "input1": "Variable_1/read/_13",
+                "name": "AddN",
+                "op": "AddN"
+            },
+            "pid": 3,
+            "ts": 1534870191369397,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 23
+        },
+        {
+            "name": "Variable_1/read",
+            "pid": 7,
+            "ts": 1534870191369336,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 2
+        },
+        {
+            "name": "Variable_1/read",
+            "pid": 3,
+            "ts": 1534870191369397,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 2
+        },
+        {
+            "name": "_Retval",
+            "args": {
+                "input0": "AddN",
+                "name": "_retval_AddN_0_0",
+                "op": "_Retval"
+            },
+            "pid": 3,
+            "ts": 1534870191369425,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 3
+        },
+        {
+            "name": "_Retval",
+            "args": {
+                "input0": "AddN_2/_27",
+                "name": "_retval_AddN_2_0_2",
+                "op": "_Retval"
+            },
+            "pid": 3,
+            "ts": 1534870191369491,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 2
+        },
+        {
+            "name": "AddN_2",
+            "pid": 1,
+            "ts": 1534870191369482,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 3
+        },
+        {
+            "name": "AddN_2",
+            "pid": 3,
+            "ts": 1534870191369491,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 3
+        },
+        {
+            "name": "_Retval",
+            "args": {
+                "input0": "AddN_1/_25",
+                "name": "_retval_AddN_1_0_1",
+                "op": "_Retval"
+            },
+            "pid": 3,
+            "ts": 1534870191369512,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 0
+        },
+        {
+            "name": "AddN_1",
+            "pid": 7,
+            "ts": 1534870191369505,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 4
+        },
+        {
+            "name": "AddN_1",
+            "pid": 3,
+            "ts": 1534870191369512,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 4
+        },
+        {
+            "name": "_Retval",
+            "args": {
+                "input0": "AddN_3/_29",
+                "name": "_retval_AddN_3_0_3",
+                "op": "_Retval"
+            },
+            "pid": 3,
+            "ts": 1534870191369587,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 1
+        },
+        {
+            "name": "AddN_3",
+            "pid": 5,
+            "ts": 1534870191369573,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 5
+        },
+        {
+            "name": "AddN_3",
+            "pid": 3,
+            "ts": 1534870191369587,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 5
+        },
+        {
+            "name": "AddN",
+            "args": {
+                "input2": "AddN_2/_27",
+                "input3": "AddN_3/_29",
+                "input0": "AddN",
+                "input1": "AddN_1/_25",
+                "name": "AddN_4",
+                "op": "AddN"
+            },
+            "pid": 3,
+            "ts": 1534870191369586,
+            "cat": "Op",
+            "tid": 1,
+            "ph": "X",
+            "dur": 8
+        },
+        {
+            "name": "AddN",
+            "pid": 3,
+            "ts": 1534870191369420,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 6
+        },
+        {
+            "name": "AddN",
+            "pid": 3,
+            "ts": 1534870191369586,
+            "cat": "DataFlow",
+            "tid": 1,
+            "ph": "t",
+            "id": 6
+        },
+        {
+            "name": "AddN_1",
+            "pid": 7,
+            "ts": 1534870191369505,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 7
+        },
+        {
+            "name": "AddN_1",
+            "pid": 3,
+            "ts": 1534870191369586,
+            "cat": "DataFlow",
+            "tid": 1,
+            "ph": "t",
+            "id": 7
+        },
+        {
+            "name": "AddN_2",
+            "pid": 1,
+            "ts": 1534870191369482,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 8
+        },
+        {
+            "name": "AddN_2",
+            "pid": 3,
+            "ts": 1534870191369586,
+            "cat": "DataFlow",
+            "tid": 1,
+            "ph": "t",
+            "id": 8
+        },
+        {
+            "name": "AddN_3",
+            "pid": 5,
+            "ts": 1534870191369573,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 9
+        },
+        {
+            "name": "AddN_3",
+            "pid": 3,
+            "ts": 1534870191369586,
+            "cat": "DataFlow",
+            "tid": 1,
+            "ph": "t",
+            "id": 9
+        },
+        {
+            "name": "_Retval",
+            "args": {
+                "input0": "AddN_4",
+                "name": "_retval_AddN_4_0_4",
+                "op": "_Retval"
+            },
+            "pid": 3,
+            "ts": 1534870191369596,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 2
+        },
+        {
+            "name": "AddN_4",
+            "pid": 3,
+            "ts": 1534870191369594,
+            "cat": "DataFlow",
+            "tid": 1,
+            "ph": "s",
+            "id": 10
+        },
+        {
+            "name": "AddN_4",
+            "pid": 3,
+            "ts": 1534870191369596,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 10
+        },
+        {
+            "name": "NoOp",
+            "args": {
+                "name": "_SOURCE",
+                "op": "NoOp"
+            },
+            "pid": 5,
+            "ts": 1534870191369286,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 3
+        },
+        {
+            "name": "VariableV2",
+            "args": {
+                "name": "Variable_3",
+                "op": "VariableV2"
+            },
+            "pid": 5,
+            "ts": 1534870191369320,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 11
+        },
+        {
+            "name": "Identity",
+            "args": {
+                "input0": "Variable_3",
+                "name": "Variable_3/read",
+                "op": "Identity"
+            },
+            "pid": 5,
+            "ts": 1534870191369332,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 3
+        },
+        {
+            "name": "AddN",
+            "args": {
+                "input0": "Variable_2/read/_23",
+                "input1": "Variable_3/read",
+                "name": "AddN_3",
+                "op": "AddN"
+            },
+            "pid": 5,
+            "ts": 1534870191369465,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 108
+        },
+        {
+            "name": "Variable_2/read",
+            "pid": 1,
+            "ts": 1534870191369450,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 11
+        },
+        {
+            "name": "Variable_2/read",
+            "pid": 5,
+            "ts": 1534870191369465,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 11
+        },
+        {
+            "name": "NoOp",
+            "args": {
+                "name": "_SOURCE",
+                "op": "NoOp"
+            },
+            "pid": 7,
+            "ts": 1534870191369282,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 7
+        },
+        {
+            "name": "VariableV2",
+            "args": {
+                "name": "Variable_1",
+                "op": "VariableV2"
+            },
+            "pid": 7,
+            "ts": 1534870191369328,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 5
+        },
+        {
+            "name": "Identity",
+            "args": {
+                "input0": "Variable_1",
+                "name": "Variable_1/read",
+                "op": "Identity"
+            },
+            "pid": 7,
+            "ts": 1534870191369334,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 2
+        },
+        {
+            "name": "AddN",
+            "args": {
+                "input2": "Variable_2/read/_17",
+                "input0": "Variable/read/_15",
+                "input1": "Variable_1/read",
+                "name": "AddN_1",
+                "op": "AddN"
+            },
+            "pid": 7,
+            "ts": 1534870191369502,
+            "cat": "Op",
+            "tid": 0,
+            "ph": "X",
+            "dur": 3
+        },
+        {
+            "name": "Variable/read",
+            "pid": 3,
+            "ts": 1534870191369378,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 12
+        },
+        {
+            "name": "Variable/read",
+            "pid": 7,
+            "ts": 1534870191369502,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 12
+        },
+        {
+            "name": "Variable_2/read",
+            "pid": 1,
+            "ts": 1534870191369450,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "s",
+            "id": 13
+        },
+        {
+            "name": "Variable_2/read",
+            "pid": 7,
+            "ts": 1534870191369502,
+            "cat": "DataFlow",
+            "tid": 0,
+            "ph": "t",
+            "id": 13
+        }
+    ]
+}

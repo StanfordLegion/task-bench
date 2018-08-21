@@ -1,6 +1,6 @@
-#include "/usr/common/software/tensorflow/intel-tensorflow/1.8.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/op.h"
-#include "/usr/common/software/tensorflow/intel-tensorflow/1.8.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/op_kernel.h"
-#include "/usr/common/software/tensorflow/intel-tensorflow/1.8.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/shape_inference.h"
+#include "/usr/common/software/tensorflow/intel-tensorflow/1.9.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/op.h"
+#include "/usr/common/software/tensorflow/intel-tensorflow/1.9.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/op_kernel.h"
+#include "/usr/common/software/tensorflow/intel-tensorflow/1.9.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/shape_inference.h"
 
 using namespace tensorflow;
 
@@ -8,6 +8,7 @@ REGISTER_OP("ThreeInput")
 	.Input("middle_input: int32")
 	.Input("left_input: int32")
 	.Input("right_input: int32")
+	.Input("task_graph: string")
 	.Output("summed: int32")
 	.SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
 		c->set_output(0, c->input(0));
@@ -24,9 +25,11 @@ public:
 		const Tensor& middle_input_tensor = context->input(0);
 		const Tensor& left_input_tensor = context->input(1);
 		const Tensor& right_input_tensor = context->input(2);
+		const Tensor& task_graph_tensor = context->input(3);
 		auto middle_input = middle_input_tensor.flat<int32>();
 		auto left_input = left_input_tensor.flat<int32>();
 		auto right_input = right_input_tensor.flat<int32>();
+		auto task_graph = task_graph_tensor.flat<string>();
 
 		Tensor* output_tensor = NULL;
 		OP_REQUIRES_OK(context, context->allocate_output(0, middle_input_tensor.shape(), &output_tensor));

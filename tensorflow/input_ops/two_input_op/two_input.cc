@@ -1,12 +1,15 @@
-#include "/usr/common/software/tensorflow/intel-tensorflow/1.8.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/op.h"
-#include "/usr/common/software/tensorflow/intel-tensorflow/1.8.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/op_kernel.h"
-#include "/usr/common/software/tensorflow/intel-tensorflow/1.8.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/shape_inference.h"
+#include "/usr/common/software/tensorflow/intel-tensorflow/1.9.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/op.h"
+#include "/usr/common/software/tensorflow/intel-tensorflow/1.9.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/op_kernel.h"
+#include "/usr/common/software/tensorflow/intel-tensorflow/1.9.0-py27/lib/python2.7/site-packages/tensorflow/include/tensorflow/core/framework/shape_inference.h"
+
+#include "../../../core/core_c.h"
 
 using namespace tensorflow;
 
 REGISTER_OP("TwoInput")
 	.Input("middle_input: int32")
 	.Input("outer_input: int32")
+	//.Input("task_graph: string")
 	.Output("summed: int32")
 	.SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
 		c->set_output(0, c->input(0));
@@ -22,8 +25,10 @@ public:
 		// get input tensors
 		const Tensor& middle_input_tensor = context->input(0);
 		const Tensor& outer_input_tensor = context->input(1);
+		//const Tensor& task_graph_tensor = context->input(2);
 		auto middle_input = middle_input_tensor.flat<int32>();
 		auto outer_input = outer_input_tensor.flat<int32>();
+		//auto task_graph = task_graph_tensor.flat<string>();
 
 		Tensor* output_tensor = NULL;
 		OP_REQUIRES_OK(context, context->allocate_output(0, middle_input_tensor.shape(), &output_tensor));
