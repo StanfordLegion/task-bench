@@ -2,13 +2,16 @@
 
 set -e
 
-TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-1}
+DEFAULT_FEATURES=${DEFAULT_FEATURES:-1}
+
+TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 USE_GASNET=${USE_GASNET:-0}
-USE_HWLOC_TMP=${USE_HWLOC_TMP:-1}
-USE_LEGION=${USE_LEGION:-1}
-USE_STARPU=${USE_STARPU:-1}
-USE_PARSEC=${USE_PARSEC:-1}
-USE_CHARM=${USE_CHARM:-1}
+TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
+USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
+USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
+USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
+USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
+USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -97,4 +100,48 @@ EOF
     mkdir -p "$CHARM_DIR"
     git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_DIR"
 fi
+
+if [[ $USE_SPARK -eq 1 ]]; then
+    set -x
+    export SPARK_DIR="$PWD"/deps/spark
+    export SWIG_DIR=$SPARK_DIR/swig-3.0.12
+    cat >>deps/env.sh <<EOF
+export USE_SPARK=$USE_SPARK
+export SPARK_DIR=$SPARK_DIR
+export SPARK_SRC_DIR=$SPARK_DIR/spark-2.3.0-bin-hadoop2.7  
+export SPARK_SBT_DIR=$SPARK_DIR/sbt/bin 
+export SPARK_SWIG_DIR=$SWIG_DIR
+export SPARK_PROJ_DIR="$PWD"/spark
+EOF
+    mkdir -p "$SPARK_DIR" #make deps/spark #TODO: SRC_DIR maybe not needed?
+    #don’t install Scala--use 2.11.8 that comes with Spark 2.3.0
+
+    #Spark 2.3.0   
+    wget https://archive.apache.org/dist/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn’t work without hadoop
+    tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn’t add to path—put full paths in emtg script
+    rm -rf spark-2.3.0-bin-hadoop2.7.tgz
+
+    #SWIG 3.0.12
+    module load java
+    module load cmake
+    module load pcre
+    wget https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
+    ##mkdir -p "$SPARK_SWIG_DIR"
+    tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
+    rm -rf swig-3.0.12.tar.gz
+    pushd "$SWIG_DIR"  
+    ./configure --prefix="$PWD" #must be absolute path not starting with ~; not found messages are ok
+    make
+    make install
+    #make -k check #can run this on a compute node and pass -j$THREADS to make this faster
+    popd
+
+    #SBT 1.1.6
+    wget https://sbt-downloads.cdnedge.bluemix.net/releases/v1.1.6/sbt-1.1.6.tgz
+    ##mkdir -p "$SPARK_SBT_DIR"
+    tar -zxf sbt-1.1.6.tgz -C "$SPARK_DIR"
+    rm -rf swig-3.0.12.tar.gz    
+fi
+
+
 

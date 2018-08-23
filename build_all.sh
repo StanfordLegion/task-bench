@@ -81,4 +81,24 @@ if [[ $USE_CHARM -eq 1 ]]; then
     popd
     make -C charm++ clean
     make -C charm++
+fi
+
+if [[ $USE_SPARK -eq 1 ]]; then
+    module load java #to get correct JAVA_HOME for JNI
+    set -x #TODO: remove
+    CORE_DIR="$PWD"/core
+
+    #put .cxx in swig dir, java files in /src/main/java
+    pushd "$SPARK_SWIG_DIR"
+    ./swig -c++ -java -outcurrentdir -outdir "$SPARK_PROJ_DIR"/src/main/java "$SPARK_PROJ_DIR"/core_c.i #core_c.i has full path to core_c.h, typemaps 
+
+    #make *.so in swig dir
+    g++ -fpic -c -O3 -std=c++11 -I"$JAVA_HOME"/include -I"$JAVA_HOME"/include/linux core_c_wrap.cxx 
+    g++ -shared -O3 -z noexecstack -std=c++11 "$CORE_DIR"/core_c.o core_c_wrap.o -L"$CORE_DIR" -lcore -o libcore_c.so #LEFT OFF: check this, then test (get new core API, try with main.java)
+    popd
+    
+    #make jar in sbt dir
+    pushd "$SPARK_PROJ_DIR" #task-bench/spark
+    "$SPARK_SBT_DIR"/sbt assembly
+    popd
 fi 
