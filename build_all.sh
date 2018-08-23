@@ -86,7 +86,6 @@ fi
 if [[ $USE_SPARK -eq 1 ]]; then
     module load java #to get correct JAVA_HOME for JNI
     set -x #TODO: remove
-    CORE_DIR="$PWD"/core
 
     #put .cxx in swig dir, java files in /src/main/java
     pushd "$SPARK_SWIG_DIR"

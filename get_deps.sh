@@ -12,6 +12,7 @@ USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
 USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
 USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
+USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -102,7 +103,6 @@ EOF
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
-    set -x
     export SPARK_DIR="$PWD"/deps/spark
     export SWIG_DIR=$SPARK_DIR/swig-3.0.12
     cat >>deps/env.sh <<EOF
@@ -112,8 +112,9 @@ export SPARK_SRC_DIR=$SPARK_DIR/spark-2.3.0-bin-hadoop2.7
 export SPARK_SBT_DIR=$SPARK_DIR/sbt/bin 
 export SPARK_SWIG_DIR=$SWIG_DIR
 export SPARK_PROJ_DIR="$PWD"/spark
+export CORE_DIR="$PWD"/core
 EOF
-    mkdir -p "$SPARK_DIR" #make deps/spark #TODO: SRC_DIR maybe not needed?
+    mkdir -p "$SPARK_DIR" #make deps/spark 
     #don’t install Scala--use 2.11.8 that comes with Spark 2.3.0
 
     #Spark 2.3.0   
@@ -126,7 +127,6 @@ EOF
     module load cmake
     module load pcre
     wget https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
-    ##mkdir -p "$SPARK_SWIG_DIR"
     tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
     rm -rf swig-3.0.12.tar.gz
     pushd "$SWIG_DIR"  
@@ -138,7 +138,6 @@ EOF
 
     #SBT 1.1.6
     wget https://sbt-downloads.cdnedge.bluemix.net/releases/v1.1.6/sbt-1.1.6.tgz
-    ##mkdir -p "$SPARK_SBT_DIR"
     tar -zxf sbt-1.1.6.tgz -C "$SPARK_DIR"
     rm -rf swig-3.0.12.tar.gz    
 fi
