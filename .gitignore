@@ -6,6 +6,7 @@
 *.a
 *.o
 *.so
+*.dSYM
 
 *.csv
 *.out
@@ -20,3 +21,4 @@
 legion_prof
 
 /deps
+/charm++_smp

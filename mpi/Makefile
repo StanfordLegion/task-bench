@@ -3,9 +3,9 @@ MPICXX ?= mpicxx
 CXXFLAGS ?=
 CXXFLAGS += -std=c++11 -I../core
 ifeq ($(strip $(DEBUG)),0)
-	CXXFLAGS += -O3
+	CXXFLAGS += -O3 -mavx
 else
-	CXXFLAGS += -O0 -ggdb
+	CXXFLAGS += -O0 -ggdb -mavx
 endif
 
 CORE       = ../core/core.cc ../core/core_kernel.cc

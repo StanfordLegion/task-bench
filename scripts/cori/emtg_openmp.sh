@@ -8,12 +8,12 @@
 
 module unload PrgEnv-intel
 module load PrgEnv-gnu
-#module load openmpi
 
-cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+cores=$(( $total_cores - 1 ))
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../parsec/main "${@:2}" -width $(( $1 * cores )) -field 2 -c $cores -p 1 -S $cores
+    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../openmp/main "${@:2}" -width $(( $1 * cores )) -worker $total_cores -field 2
 }
 
 function sweep {
@@ -26,6 +26,6 @@ function sweep {
 
 for n in $SLURM_JOB_NUM_NODES; do
     for t in stencil_1d; do
-        sweep launch $n $t > parsec_type_${t}_nodes_${n}.log
+        sweep launch $n $t > openmp_type_${t}_nodes_${n}.log
     done
 done

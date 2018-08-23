@@ -20,7 +20,7 @@ mainmodule main {
 
   mainchare Main {
     entry Main(CkArgMsg* msg);
-    entry void finishedGraph();
-    entry void workerReady();
+    entry [expedited, reductiontarget] void finishedGraph();
+    entry [expedited, reductiontarget] void workerReady();
   };
 };

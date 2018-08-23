@@ -13,11 +13,11 @@ LDFLAGS    = -Wall -std=c++11
 #MPI_DIR    = /sw/openmpi/2.1.1
 
 ifeq ($(strip $(DEBUG)),1)
-CFLAGS		 += -g -O0
+CFLAGS		 += -g -O0 -mavx
 LDFLAGS		 += -g -O0
 else
-CFLAGS		 += -O2
-LDFLAGS		 += -O2
+CFLAGS		 += -O3 -mavx
+LDFLAGS		 += -O3
 endif
 
 # Include directories
