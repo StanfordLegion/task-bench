@@ -135,9 +135,9 @@ EOF
     rm -rf spark-2.3.0-bin-hadoop2.7.tgz
 
     #SWIG 3.0.12
-    module load java
-    module load cmake
-    module load pcre
+    #module load java
+    #module load cmake
+    #module load pcre
     wget https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
     tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
     rm -rf swig-3.0.12.tar.gz

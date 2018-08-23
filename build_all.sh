@@ -102,7 +102,7 @@ if [[ $USE_OPENMP -eq 1 ]]; then
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
-    module load java #to get correct JAVA_HOME for JNI
+    #module load java #to get correct JAVA_HOME for JNI
     set -x #TODO: remove
 
     #put .cxx in swig dir, java files in /src/main/java
