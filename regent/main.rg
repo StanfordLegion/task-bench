@@ -26,8 +26,8 @@ fspace fs {
 }
 
 fspace times {
-  start : uint64,
-  end : uint64,
+  start_t : uint64,
+  end_t : uint64,
 }
 
 task init(primary : region(ispace(int1d), fs))
@@ -41,9 +41,9 @@ end
 task f1(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, j : int, timing_region : region(ispace(int1d), times))
 where reads writes(primary.{x}), reads(primary.{y}, secondary.{y}), writes(timing_region) do
   if i == 0 then
-    timing_region[j].start = regentlib.c.legion_get_current_time_in_nanos()
+    timing_region[j].start_t = regentlib.c.legion_get_current_time_in_nanos()
   else
-    timing_region[j].end = regentlib.c.legion_get_current_time_in_nanos()
+    timing_region[j].end_t = regentlib.c.legion_get_current_time_in_nanos()
   end
 
   for i in primary do
@@ -58,7 +58,7 @@ where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}), writes(timin
   if i == 0 then
     c.printf("%s", "this should not happen")
   else
-    timing_region[j].end = regentlib.c.legion_get_current_time_in_nanos()
+    timing_region[j].end_t = regentlib.c.legion_get_current_time_in_nanos()
   end
 
   for i in primary do
@@ -149,11 +149,11 @@ task main()
   var true_start_time = math.huge
   var true_end_time = -math.huge
   for i = 0, num_tasks do
-    if timing_region[i].start < true_start_time then
-      true_start_time = timing_region[i].start
+    if timing_region[i].start_t < true_start_time then
+      true_start_time = timing_region[i].start_t
     end
-    if timing_region[i].end > true_end_time then
-      true_end_time = timing_region[i].end
+    if timing_region[i].end_t > true_end_time then
+      true_end_time = timing_region[i].end_t
     end
   end
 
