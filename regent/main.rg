@@ -41,9 +41,9 @@ end
 task f1(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, j : int, timing_region : region(ispace(int1d), times))
 where reads writes(primary.{x}), reads(primary.{y}, secondary.{y}), writes(timing_region) do
   if i == 0 then
-    timing_region.start_t = regentlib.c.legion_get_current_time_in_nanos()
+    timing_region[0].start_t = regentlib.c.legion_get_current_time_in_nanos()
   else
-    timing_region.end_t = regentlib.c.legion_get_current_time_in_nanos()
+    timing_region[0].end_t = regentlib.c.legion_get_current_time_in_nanos()
   end
 
   for i in primary do
@@ -58,7 +58,7 @@ where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}), writes(timin
   if i == 0 then
     c.printf("%s", "this should not happen")
   else
-    timing_region.end_t = regentlib.c.legion_get_current_time_in_nanos()
+    timing_region[0].end_t = regentlib.c.legion_get_current_time_in_nanos()
   end
 
   for i in primary do
@@ -94,9 +94,9 @@ task main()
   
   -- lays all the dependencies out consecutively, 3*num_tasks-2 of them for simple pattern
   for i = 0, num_tasks do
-        var s = max(3*i - 1, 0)
-        var e = min(3*i - 1 +3, 3*num_tasks -2) - 1
-        r1[i] = rect1d{s,e}
+    var s = max(3*i - 1, 0)
+    var e = min(3*i - 1 +3, 3*num_tasks -2) - 1
+    r1[i] = rect1d{s,e}
   end
 
   var r2 = region(ispace(int1d, 3*num_tasks-2, 0), rect1d)
@@ -106,9 +106,9 @@ task main()
   var primary = partition(equal, r3, ispace(int1d, num_tasks))
   -- 
   for i = 0, 3*num_tasks-2 do
-        var tasks = (i+1)/3
-        var dep = (i+1) - 3*tasks
-        r2[i] = primary[tasks + dep - 1].bounds
+    var tasks = (i+1)/3
+    var dep = (i+1) - 3*tasks
+    r2[i] = primary[tasks + dep - 1].bounds
   end
 
   var secondary = image(r3, q, r2)
