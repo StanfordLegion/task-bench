@@ -69,7 +69,7 @@ fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
     #service ssh status #ssh start/running, process 1372
-    mkdir $HOME/.ssh #may need to create this first...
+    #mkdir $HOME/.ssh #may need to create this first...no it already exists
     ssh-keygen -N "" -f $HOME/.ssh/id_rsa 
     cat $HOME/.ssh/id_rsa.pub>>$HOME/.ssh/authorized_keys
     echo "id_rsa.pub:"
