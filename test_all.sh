@@ -73,7 +73,7 @@ if [[ $USE_SPARK -eq 1 ]]; then
     ssh-keygen -N "" -f $HOME/.ssh/id_rsa 
     cat $HOME/.ssh/id_rsa.pub>>$HOME/.ssh/authorized_keys
     echo "id_rsa.pub:"
-    cat .ssh/id_rsa.pub
+    cat $HOME/.ssh/id_rsa.pub
     echo "authorized_keys:"
     cat $HOME/.ssh/authorized_keys 
     export LD_LIBRARY_PATH=$SPARK_SWIG_DIR:$CORE_DIR:$LD_LIBRARY_PATH
