@@ -25,6 +25,11 @@ fspace fs {
   y : double,
 }
 
+fspace times {
+  start : uint64
+  end : uint64
+}
+
 task init(primary : region(ispace(int1d), fs))
 where writes(primary.{x, y}) do
   for i in primary do
@@ -33,20 +38,30 @@ where writes(primary.{x, y}) do
   end
 end
 
-task f1(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t)
-where reads writes(primary.{x}), reads(primary.{y}, secondary.{y}) do
+task f1(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, j : int, timing_region : region(ispace(int1d), times))
+where reads writes(primary.{x}), reads(primary.{y}, secondary.{y}), writes(timing_region) do
+  if i == 0 then
+    timing_region[j].start = regentlib.c.legion_get_current_time_in_nanos()
+  else
+    timing_region[j].end = regentlib.c.legion_get_current_time_in_nanos()
+  end
+
   for i in primary do
     primary[i].x = secondary[i].y + 1
-    --primary[i].y += 1
   end
 
   z.kernel_execute(task_graph.kernel)
 end
 
-task f2(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t)
-where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}) do
+task f2(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, j : int, timing_region : region(ispace(int1d), times))
+where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}), writes(timing_region) do
+  if i == 0 then
+    c.printf("%s", "this should not happen")
+  else
+    timing_region[j].end = regentlib.c.legion_get_current_time_in_nanos()
+  end
+
   for i in primary do
-    --primary[i].x += 1
     primary[i].y = secondary[i].x + 1
   end
 
@@ -63,16 +78,17 @@ end
 
 
 task main()
+  -- 1. initialization of constants
   var args = regentlib.c.legion_runtime_get_input_args()
   var app = z.app_create(args.argc, args.argv)
   z.app_display(app)
   var task_graphs = z.app_task_graphs(app)
   var task_graph = z.task_graph_list_task_graph(task_graphs, 0)
-  --var start_time = t.clock()
   var max_timesteps = task_graph.timesteps
   var num_tasks = task_graph.max_width
   var output_per_task = task_graph.output_bytes_per_task
 
+  -- 2. creating the dependence graph
   var r1 = region(ispace(int1d, num_tasks, 0), rect1d) 
   var p = partition(equal, r1, ispace(int1d, num_tasks))
   
@@ -102,13 +118,10 @@ task main()
     init(primary[i])
   end
 
-  --__demand(__parallel)
-  --for i = 0, num_tasks do
-    --print(primary[i])
-  --end
-
+  -- 3. timing the performance
   var start_time : uint64 = 0
   var end_time : uint64 = 0
+  var timing_region = region(ispace(int1d, num_tasks, 0), times)
   for rep = 0, 2 do
     if rep == 1 then
       __fence(__execution, __block)
@@ -118,12 +131,12 @@ task main()
     __demand(__spmd, __trace)
     for i = 0, max_timesteps, 2 do
       for j = 0, num_tasks do
-          f1(primary[j], secondary[j], task_graph)
-        end
+        f1(primary[j], secondary[j], task_graph, i, j, timing_region)
+      end
 
-        for j = 0, num_tasks do
-          f2(primary[j], secondary[j], task_graph)
-        end
+      for j = 0, num_tasks do
+        f2(primary[j], secondary[j], task_graph, i, j, timing_region)
+      end
     end
 
     if rep == 1 then
@@ -132,20 +145,19 @@ task main()
     end
   end
 
-  z.app_report_timing(app, double(end_time - start_time)/1e9)
+  -- 4. determining the actual start and end times
+  var true_start_time = math.huge
+  var true_end_time = -math.huge
+  for i = 0, num_tasks do
+    if timing_region[i].start < true_start_time then
+      true_start_time = timing_region[i].start
+    end
+    if timing_region[i].end > true_end_time then
+      true_end_time = timing_region[i].end
+    end
+  end
 
-  --__demand(__parallel)
-  --for i = 0, num_tasks do
-    --print(primary[i])
-  --end
-
-  --__demand(__parallel)
-  --for i = 0, num_tasks do
-    --print(secondary[i])
-  --end
-
-  --var end_time = t.clock()
-  --c.printf("%f", end_time - start_time)
+  z.app_report_timing(app, double(true_end_time - true_start_time)/1e9)
 end
 
 if os.getenv('SAVEOBJ') == '1' then
