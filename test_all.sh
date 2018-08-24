@@ -71,7 +71,7 @@ if [[ $USE_SPARK -eq 1 ]]; then
     #service ssh status #ssh start/running, process 1372
     mkdir .ssh #may need to create this first...
     ssh-keygen -N "" -f .ssh/id_rsa 
-    cat .ssh/id_rsa.pub >> $HOME/.ssh/authorized_keys
+    cat .ssh/id_rsa.pub>>$HOME/.ssh/authorized_keys
     export LD_LIBRARY_PATH=$SPARK_SWIG_DIR:$CORE_DIR:$LD_LIBRARY_PATH
     $SPARK_SRC_DIR/sbin/start-all.sh 
     #should probably run standalone cluster, not local
