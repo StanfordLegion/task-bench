@@ -68,6 +68,15 @@ where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}), writes(timin
   z.kernel_execute(task_graph.kernel)
 end
 
+--task print(primary : region(ispace(int1d), fs))
+--where reads(primary.{x, y}) do
+--  for i in primary do
+--    c.printf("x %f\n", primary[i].x)
+--    c.printf("y %f\n", primary[i].y)
+--  end
+--end
+
+
 task main()
   -- 1. initialization of constants
   var args = regentlib.c.legion_runtime_get_input_args()
