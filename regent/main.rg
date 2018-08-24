@@ -26,8 +26,8 @@ fspace fs {
 }
 
 fspace times {
-  start : uint64
-  end : uint64
+  start : uint64,
+  end : uint64,
 }
 
 task init(primary : region(ispace(int1d), fs))
