@@ -68,10 +68,10 @@ if [[ $USE_OPENMP -eq 1 ]]; then
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
-    service ssh status
-    : '
-    ssh-keygen -N "" -f $HOME/.ssh/id_rsa.pub 
-    cat $HOME/.ssh/id_rsa.pub >> $HOME/.ssh/authorized_keys
+    #service ssh status #ssh start/running, process 1372
+    
+    ssh-keygen -N "" -f .ssh/id_rsa.pub 
+    cat .ssh/id_rsa.pub >> $HOME/.ssh/authorized_keys
     export LD_LIBRARY_PATH=$SPARK_SWIG_DIR:$CORE_DIR:$LD_LIBRARY_PATH
     $SPARK_SRC_DIR/sbin/start-all.sh 
     #should probably run standalone cluster, not local
@@ -87,5 +87,6 @@ if [[ $USE_SPARK -eq 1 ]]; then
     done
 
     $SPARK_SRC_DIR/sbin/stop-all.sh 
-    '
+    rm .ssh/id_rsa.pub
+    
 fi
