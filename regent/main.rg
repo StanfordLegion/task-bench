@@ -42,8 +42,6 @@ task f1(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), f
 where reads writes(primary.{x}), reads(primary.{y}, secondary.{y}), writes(timing_region) do
   if i == 0 then
     timing_region[0].start_t = regentlib.c.legion_get_current_time_in_nanos()
-  else
-    timing_region[0].end_t = regentlib.c.legion_get_current_time_in_nanos()
   end
 
   for i in primary do
@@ -51,14 +49,13 @@ where reads writes(primary.{x}), reads(primary.{y}, secondary.{y}), writes(timin
   end
 
   z.kernel_execute(task_graph.kernel)
+  timing_region[0].end_t = regentlib.c.legion_get_current_time_in_nanos()
 end
 
 task f2(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, j : int, timing_region : region(ispace(int1d), times))
 where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}), writes(timing_region) do
   if i == 0 then
     c.printf("%s", "this should not happen")
-  else
-    timing_region[0].end_t = regentlib.c.legion_get_current_time_in_nanos()
   end
 
   for i in primary do
@@ -66,6 +63,7 @@ where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}), writes(timin
   end
 
   z.kernel_execute(task_graph.kernel)
+  timing_region[0].end_t = regentlib.c.legion_get_current_time_in_nanos()
 end
 
 --task print(primary : region(ispace(int1d), fs))
@@ -132,11 +130,11 @@ task main()
     __demand(__spmd, __trace)
     for i = 0, max_timesteps, 2 do
       for j = 0, num_tasks do
-        f1(primary[j], secondary[j], task_graph, i, j, timing_region[j])
+        f1(primary[j], secondary[j], task_graph, i, j, equal_partition[j])
       end
 
       for j = 0, num_tasks do
-        f2(primary[j], secondary[j], task_graph, i, j, timing_region[j])
+        f2(primary[j], secondary[j], task_graph, i, j, equal_partition[j])
       end
     end
 
