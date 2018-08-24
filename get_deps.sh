@@ -151,5 +151,5 @@ EOF
     #SBT 1.1.6
     wget https://sbt-downloads.cdnedge.bluemix.net/releases/v1.1.6/sbt-1.1.6.tgz
     tar -zxf sbt-1.1.6.tgz -C "$SPARK_DIR"
-    rm -rf swig-3.0.12.tar.gz    
+    rm -rf sbt-1.1.6.tar.gz    
 fi

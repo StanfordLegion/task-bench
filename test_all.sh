@@ -66,3 +66,21 @@ if [[ $USE_OPENMP -eq 1 ]]; then
         ./openmp/main -steps 9 -type $t -kernel memory_bound -scratch 64
     done
 fi
+
+if [[ $USE_SPARK -eq 1 ]]; then
+    export LD_LIBRARY_PATH=$SPARK_SWIG_DIR:$CORE_DIR:$LD_LIBRARY_PATH
+    $SPARK_SRC_DIR/sbin/start-all.sh 
+    #should probably run standalone cluster, not local
+    MASTER_URL=spark://localhost:7077
+    
+    for t in $extended_types; do
+       $SPARK_SRC_DIR/bin/spark-submit --class "Main" \
+            --master ${MASTER_URL} \
+            --files $SPARK_SWIG_DIR/libcore_c.so \
+            --conf spark.scheduler.listenerbus.eventqueue.capacity=20000 \
+            $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar \
+            -steps 9 -type $t #logging is off...
+    done
+
+    $SPARK_SRC_DIR/sbin/stop-all.sh 
+fi
