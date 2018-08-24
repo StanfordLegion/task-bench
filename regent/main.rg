@@ -54,10 +54,6 @@ end
 
 task f2(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, j : int, timing_region : region(ispace(int1d), times))
 where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}), writes(timing_region) do
-  if i == 0 then
-    c.printf("%s", "this should not happen")
-  end
-
   for i in primary do
     primary[i].y = secondary[i].x + 1
   end
