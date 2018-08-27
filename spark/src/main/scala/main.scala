@@ -63,6 +63,8 @@ object Main {
         println("Num partitions: " +  NUM_PARTITIONS);
         spark.sparkContext.setLogLevel("ERROR");
         System.loadLibrary("core_c");
+        System.out.println("library path in main:");
+        System.out.println(System.getProperty("java.library.path")); //TODO: remove 
         var argsToPass = new Array[String](args.length + 1);
         argsToPass(0) = "dummy";
         var i = 0;
@@ -131,8 +133,7 @@ object Main {
     }
 
     def call_execute_point (SERtaskGraph: SERtask_graph_t, ts: Int, point:Int, inputsOrVal: Any, simple: Boolean):Array[Byte] = { 
-        System.out.println("library path:");
-        System.out.println(System.getProperty("java.library.path")); 
+
         LibraryLoader.load;
         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
         val depType = taskGraph.getDependence().toString(); 
