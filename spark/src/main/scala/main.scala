@@ -47,7 +47,8 @@ object Main {
     }
 
     object LibraryLoader {
-        lazy val load = System.load(SparkFiles.get("libcore_c.so"))
+        //lazy val load = System.load(SparkFiles.get("libcore_c.so"))
+        lazy val load = System.loadLibrary("core_c");
     }
 
     def main(args: Array[String]) {  
@@ -130,6 +131,8 @@ object Main {
     }
 
     def call_execute_point (SERtaskGraph: SERtask_graph_t, ts: Int, point:Int, inputsOrVal: Any, simple: Boolean):Array[Byte] = { 
+        System.out.println("library path:");
+        System.out.println(System.getProperty("java.library.path")); 
         LibraryLoader.load;
         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
         val depType = taskGraph.getDependence().toString(); 
@@ -153,8 +156,7 @@ object Main {
         for (b <- 0 until input_bytes.length) {
             input_bytes(b) = input_ptr(b).length;
         }
-        System.out.println("library path:");
-        System.out.println(System.getProperty("java.library.path")); 
+
         val scratchBytesPerTask = taskGraph.getScratch_bytes_per_task();
         if (scratchBytesPerTask > 0) { //memory-bound
             val scratch_ptr = new Array[Byte](scratchBytesPerTask.asInstanceOf[Int]);
