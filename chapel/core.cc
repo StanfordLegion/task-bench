@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <map>
 #include <string>
+ #include <iostream>
 
 #include "core.h"
 #include "core_kernel.h"
@@ -300,7 +301,7 @@ void TaskGraph::execute_point(long timestep, long point,
                               const char **input_ptr, const size_t *input_bytes,
                               size_t n_inputs) const
 {
-  // Validate timestep and point
+  // printf("timestep: %d and point: %d \n\n", timestep, point);    // Validate timestep and point
   assert(0 <= timestep && timestep < timesteps);
 
   long offset = offset_at_timestep(timestep);
@@ -323,6 +324,9 @@ void TaskGraph::execute_point(long timestep, long point,
         assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
         const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
         if (last_offset <= dep && dep < last_offset + last_width) {
+          // printf("timestep2: %d and point2: %d \n", timestep, point);    // Validate timestep and point
+          // printf("Input.first: %d vs timestep-1: %d \n", input.first, timestep-1);  
+          // printf("Input.second: %d vs dep: %d \n\n", input.second, dep);      
           assert(input.first == timestep - 1);
           assert(timestep == 0 || input.second == dep);
         }

@@ -79,9 +79,9 @@ long task_graph_dependence_set_at_timestep(task_graph_t graph, long timestep);
 interval_list_t task_graph_reverse_dependencies(task_graph_t graph, long dset, long point);
 interval_list_t task_graph_dependencies(task_graph_t graph, long dset, long point);
 void task_graph_execute_point(task_graph_t graph, long timestep, long point,
-                              char *output_ptr, size_t output_bytes,
-                              const char **input_ptr, const size_t *input_bytes,
-                              size_t n_inputs);
+                              char *output_ptr, /* pointer to a row in a  2d array that we just inputed */ size_t output_bytes, // output bytes is from the graph
+                              char **input_ptr,/* array of pointers to the inputs of the tasks. one per depencides */ const size_t *input_bytes, // array where each elememt in array is a bytes per tasks in order of dependencies
+                              size_t n_inputs);// num of depencncies 
 
 typedef struct task_graph_list_t {
   void *impl;
