@@ -88,6 +88,7 @@ if [[ $USE_SPARK -eq 1 ]]; then
        $SPARK_SRC_DIR/bin/spark-submit --class "Main" \
             --master ${MASTER_URL} \
             --files $SPARK_SWIG_DIR/libcore_c.so \
+            --conf "spark.executor.extraJavaOptions=-Djava.library.path=$CORE_DIR:$SPARK_SWIG_DIR" \
             --conf spark.scheduler.listenerbus.eventqueue.capacity=20000 \
             $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar \
             -steps 9 -type $t #logging is off...
