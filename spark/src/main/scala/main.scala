@@ -47,8 +47,8 @@ object Main {
     }
 
     object LibraryLoader {
-        //lazy val load = System.load(SparkFiles.get("libcore_c.so"))
-        lazy val load = System.loadLibrary("core_c");
+        lazy val load = System.load(SparkFiles.get("libcore_c.so"))
+        //lazy val load = System.loadLibrary("core_c");
     }
 
     def main(args: Array[String]) {  
@@ -133,7 +133,6 @@ object Main {
     }
 
     def call_execute_point (SERtaskGraph: SERtask_graph_t, ts: Int, point:Int, inputsOrVal: Any, simple: Boolean):Array[Byte] = { 
-
         LibraryLoader.load;
         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
         val depType = taskGraph.getDependence().toString(); 
