@@ -65,7 +65,6 @@ function sweep {
        $SPARK_SRC_DIR/bin/spark-submit --class "Main" \
                     --master ${MASTER_URL} \
                     --total-executor-cores $(((SLURM_NTASKS - 2) * SLURM_CPUS_PER_TASK)) \
-                    --conf "spark.executor.extraJavaOptions=-Djava.library.path=$CORE_DIR" \
                     --files $SPARK_SWIG_DIR/libcore_c.so \
                     --conf spark.scheduler.listenerbus.eventqueue.capacity=20000 \
                     $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar -kernel busy_wait -iter $(( 1 << (26-s) )) -type $1 -steps 1000 -width 20
