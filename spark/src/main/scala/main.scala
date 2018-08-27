@@ -20,7 +20,7 @@ import org.apache.spark.SparkFiles
 
 object Main {
     //globals 
-    var NUM_PARTITIONS = 0;  
+    var NUM_PARTITIONS = 10;  
     val oldPartitioner = new HashPartitioner(NUM_PARTITIONS);
     val CHECKPOINT_INTERVAL = 5;
     val MATERIALIZE_INTERVAL = 90;
@@ -50,11 +50,15 @@ object Main {
         lazy val load = System.load(SparkFiles.get("libcore_c.so"))
     }
 
-    def main(args: Array[String]) {
+    def main(args: Array[String]) {  
         val spark = SparkSession.builder.appName("SimpleApplication").getOrCreate();
-        val numWorkerNodes = sys.env("SLURM_JOB_NUM_NODES").toInt - 1;
-        val numWorkerCores = spark.sparkContext.getConf.get("spark.cores.max").toInt;
-        NUM_PARTITIONS = numWorkerCores - 2 * numWorkerNodes;
+        val numSlurmNodes = sys.env.get("SLURM_JOB_NUM_NODES");
+        if (numSlurmNodes != None) {    //otherwise, in CI, presumably
+            val numWorkerNodes = numSlurmNodes.get.toInt - 1; //NOTE: this only works for SLURM; assumes separate node for master
+            val numWorkerCores = sys.env("SLURM_CPUS_ON_NODE").toInt * numWorkerNodes;
+            //val numWorkerCores = spark.sparkContext.getConf.get("spark.cores.max").toInt;
+            NUM_PARTITIONS = numWorkerCores - 2 * numWorkerNodes; 
+        }
         println("Num partitions: " +  NUM_PARTITIONS);
         spark.sparkContext.setLogLevel("ERROR");
         System.loadLibrary("core_c");
@@ -150,7 +154,16 @@ object Main {
             input_bytes(b) = input_ptr(b).length;
         }
         
-        core_c.task_graph_execute_point(taskGraph, ts, point, output_ptr, output_bytes, input_ptr, input_bytes, n_inputs);
+        val scratchBytesPerTask = taskGraph.getScratch_bytes_per_task();
+        if (scratchBytesPerTask > 0) { //memory-bound
+            val scratch_ptr = new Array[Byte](scratchBytesPerTask.asInstanceOf[Int]);
+            core_c.task_graph_execute_point_scratch(taskGraph, ts, point, output_ptr, output_bytes, 
+                input_ptr, input_bytes, n_inputs, scratch_ptr, scratchBytesPerTask);
+        }
+        else {
+            core_c.task_graph_execute_point(taskGraph, ts, point, output_ptr, output_bytes, 
+                input_ptr, input_bytes, n_inputs);
+        }
         output_ptr;
     }
 
@@ -179,7 +192,7 @@ object Main {
         if (ts == 0) inputsRDDUngrouped = relevantValsRDD.mapValues( v=>fakearr); 
 
         /*------CREATE INPUT DATA, NO JOIN: send prev ts values to cur ts to get cur ts inputs-------*/
-        if (depType != "NO_COMM" && depType != "TRIVIAL") { //only send if ts != 0
+        if (depType != "NO_COMM" && depType != "TRIVIAL" && !(depType == "NEAREST" && taskGraph.getRadix() == 0)) { //only send if ts != 0
             if (ts != 0) {
                 inputsRDDUngrouped = relevantValsRDD.flatMap { 
                     case (point, oldVal) =>
@@ -216,7 +229,7 @@ object Main {
             } }, preservesPartitioning = true); 
         }
                     
-        else { //trivial or no comm
+        else { //trivial or no comm, or nearest with radix = 0
             if (ts % MATERIALIZE_INTERVAL == 0) {
                 relevantValsRDD.count(); //materialize to avoid stack overflow
             }
@@ -237,7 +250,8 @@ object Main {
         println("printing vals in new valsRDD");
         valsRDD.collect().foreach(v=>println("point: " + v._1 +  " value: " + v._2.toList)); */ //for large # points, change collect to take 
         
-        if ((depType == "NO_COMM" || depType == "TRIVIAL") && ts % MATERIALIZE_INTERVAL == 0) { //leave this after cache/checkpoint
+        if ((depType == "NO_COMM" || depType == "TRIVIAL" || (depType == "NEAREST" && taskGraph.getRadix() == 0) ) 
+            && ts % MATERIALIZE_INTERVAL == 0) { //leave this after cache/checkpoint
             valsRDD.count();
         }
         global_valsRDDList(g) = valsRDD;
