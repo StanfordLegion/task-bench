@@ -150,7 +150,7 @@ var t: Timer;
     var array: [0..maxDepen - 1] uint;
     var count = 0;
     for points in interval.start..interval.end {
-      // get the acutual size of the input and assigne that to the array instead 
+      // get the acutual size of the input and assigne that to the array instead  
       array[count] = graph.output_bytes_per_task;
       count += 1;
     }
@@ -319,7 +319,6 @@ proc find_number_of_steps(graphs) {
  proc add_to_tasksGrid(tasksGrid, tmpArray, depenGrid, dataSize, currWidth, step) {
   forall i in 1..dataSize {
     tasksGrid[(currWidth,i + (dataSize:int*(step)))] = depenGrid[(currWidth,i + (dataSize:int*(step)))];
-
   } 
  }
 
