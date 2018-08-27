@@ -37,7 +37,7 @@ mkdir -p $SPARK_LOG_DIR $SPARK_WORKER_DIR
 ## --------------------------------------
 set -x 
 $SPARK_SRC_DIR/sbin/start-master.sh
-sleep 30 #changed to hopefully prevent issue with empty master URL
+sleep 60 #hopefully will prevent issue with empty master URL, which I've only seen on Sherlock
 MASTER_URL=$(grep -Po '(?=spark://).*' \
                     $SPARK_LOG_DIR/spark-${SPARK_IDENT_STRING}-org.*master*.out)
 echo "master url:"
@@ -65,6 +65,7 @@ function sweep {
        $SPARK_SRC_DIR/bin/spark-submit --class "Main" \
                     --master ${MASTER_URL} \
                     --total-executor-cores $(((SLURM_NTASKS - 2) * SLURM_CPUS_PER_TASK)) \
+                    --conf "spark.executor.extraJavaOptions=-Djava.library.path=$CORE_DIR" \
                     --files $SPARK_SWIG_DIR/libcore_c.so \
                     --conf spark.scheduler.listenerbus.eventqueue.capacity=20000 \
                     $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar -kernel busy_wait -iter $(( 1 << (26-s) )) -type $1 -steps 1000 -width 20
