@@ -153,7 +153,8 @@ object Main {
         for (b <- 0 until input_bytes.length) {
             input_bytes(b) = input_ptr(b).length;
         }
-        
+        System.out.println("library path:");
+        System.out.println(System.getProperty("java.library.path")); 
         val scratchBytesPerTask = taskGraph.getScratch_bytes_per_task();
         if (scratchBytesPerTask > 0) { //memory-bound
             val scratch_ptr = new Array[Byte](scratchBytesPerTask.asInstanceOf[Int]);
