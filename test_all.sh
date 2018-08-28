@@ -79,7 +79,7 @@ if [[ $USE_SPARK -eq 1 ]]; then
     cat $HOME/.ssh/id_rsa.pub
     echo "authorized_keys:"
     cat $HOME/.ssh/authorized_keys 
-    export LD_LIBRARY_PATH=$SPARK_SWIG_DIR:$CORE_DIR
+    export LD_LIBRARY_PATH=$CORE_DIR:$SPARK_SWIG_DIR
     $SPARK_SRC_DIR/sbin/start-all.sh 
     #should probably run standalone cluster, not local
     MASTER_URL=spark://localhost:7077
