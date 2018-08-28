@@ -65,6 +65,9 @@ object Main {
         System.loadLibrary("core_c");
         System.out.println("library path in main:");
         System.out.println(System.getProperty("java.library.path")); //TODO: remove 
+        System.out.println("JAVA_HOME in main:");
+        System.out.println(sys.env.get("JAVA_HOME").get); 
+
         var argsToPass = new Array[String](args.length + 1);
         argsToPass(0) = "dummy";
         var i = 0;
@@ -128,7 +131,13 @@ object Main {
         //force computation
         var v = 0;
         for (v <- global_valsRDDList) {
-            v.count();
+            val numVals = v.count();
+            if (numVals == 0) {
+                System.out.println("yikes, execute_point section skipped");
+            }
+            else {
+                System.out.println("OK, execute_point section executed");
+            }
         }
     }
 
