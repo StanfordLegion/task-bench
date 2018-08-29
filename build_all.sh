@@ -101,7 +101,7 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     make -C openmp -j$THREADS
 fi
 
-if [[ $USE_SPARK -eq 1 ]]; then
+if [[ $USE_SPARK -eq 1 ]]; then #TODO: commit yml
     #module load java #to get correct JAVA_HOME for JNI
     set -x #TODO: remove
 

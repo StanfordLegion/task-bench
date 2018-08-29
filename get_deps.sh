@@ -126,9 +126,16 @@ export SPARK_SBT_DIR=$SPARK_DIR/sbt/bin
 export SPARK_SWIG_DIR=$SWIG_DIR
 export SPARK_PROJ_DIR="$PWD"/spark
 export CORE_DIR="$PWD"/core
+export JAVA_HOME="$SPARK_DIR"/jdk1.8.0_131
+export PATH="$JAVA_HOME"/bin:"$PATH"
 EOF
     mkdir -p "$SPARK_DIR" #make deps/spark 
     #don’t install Scala--use 2.11.8 that comes with Spark 2.3.0
+
+    #Java
+    wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
+    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$SPARK_DIR" 
+    rm -rf jdk-8u131-linux-x64.tar.gz
 
     #Spark 2.3.0   
     wget https://archive.apache.org/dist/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn’t work without hadoop

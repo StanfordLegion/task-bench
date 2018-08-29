@@ -79,7 +79,7 @@ if [[ $USE_SPARK -eq 1 ]]; then
     cat $HOME/.ssh/id_rsa.pub
     echo "authorized_keys:"
     cat $HOME/.ssh/authorized_keys 
-    export LD_LIBRARY_PATH=$CORE_DIR:$SPARK_SWIG_DIR
+    export LD_LIBRARY_PATH=$CORE_DIR:$SPARK_SWIG_DIR:$LD_LIBRARY_PATH
     $SPARK_SRC_DIR/sbin/start-all.sh 
     #should probably run standalone cluster, not local
     MASTER_URL=spark://localhost:7077
@@ -87,8 +87,7 @@ if [[ $USE_SPARK -eq 1 ]]; then
     for t in $extended_types; do
        $SPARK_SRC_DIR/bin/spark-submit --class "Main" \
             --master ${MASTER_URL} \
-            --files $SPARK_SWIG_DIR/libcore_c.so,$CORE_DIR/libcore.so \
-            --conf "spark.executor.extraJavaOptions=-Djava.library.path=$CORE_DIR:$SPARK_SWIG_DIR" \
+            --files $SPARK_SWIG_DIR/libcore_c.so \
             --conf spark.scheduler.listenerbus.eventqueue.capacity=20000 \
             $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar \
             -steps 9 -type $t #logging is off...
@@ -96,5 +95,6 @@ if [[ $USE_SPARK -eq 1 ]]; then
 
     $SPARK_SRC_DIR/sbin/stop-all.sh 
     rm .ssh/id_rsa.pub
-    
+   # --conf "spark.executor.extraJavaOptions=-Djava.library.path=$CORE_DIR:$SPARK_SWIG_DIR" \
+#--files $SPARK_SWIG_DIR/libcore_c.so,$CORE_DIR/libcore.so \
 fi

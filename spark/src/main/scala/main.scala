@@ -105,16 +105,19 @@ object Main {
         println("Starting timing");
         val start = System.nanoTime;
 
-        timing( spark, maxNumTimesteps, numGraphs, taskGraphList, fakeValsRDD ); 
-        val elapsed = (System.nanoTime - start) / 1e9d;
+        val end = timing( spark, maxNumTimesteps, numGraphs, taskGraphList, fakeValsRDD ); 
+        val elapsed = (end - start) / 1e9d;
+        // MOVED TO TIMING val elapsed = (System.nanoTime - start) / 1e9d;
+        
         core_c.app_report_timing(app, elapsed); //prints elapsed
         core_c.task_graph_list_destroy(taskGraphList);
         core_c.app_destroy(app);
         spark.stop();
+
     } //end of main
 
     /*------FUNCTIONS-------*/
-    def timing( spark: SparkSession, maxNumTimesteps: Int, numGraphs:Int, taskGraphList:task_graph_list_t , fakeValsRDD: org.apache.spark.rdd.RDD[(Int, Array[Byte])] )  {  
+    def timing( spark: SparkSession, maxNumTimesteps: Int, numGraphs:Int, taskGraphList:task_graph_list_t , fakeValsRDD: org.apache.spark.rdd.RDD[(Int, Array[Byte])] ) : Long = {  
         var ts = 0;
         var global_valsRDDList = new Array[org.apache.spark.rdd.RDD[(Int, Array[Byte])]](numGraphs); 
         for (ts <- 0 until maxNumTimesteps) { //start at ts ZERO
@@ -123,28 +126,38 @@ object Main {
                 val taskGraph = core_c.task_graph_list_task_graph(taskGraphList, g);//need #ts for graph 
                 val SERtaskGraph = new SERtask_graph_t(taskGraph);
                 if (ts <= taskGraph.getTimesteps() - 1) {
-                    execute_timestep(spark, SERtaskGraph, g,ts, global_valsRDDList, fakeValsRDD); 
+                    execute_timestep(spark, SERtaskGraph, g, ts, global_valsRDDList, fakeValsRDD); 
                     //execute_timestep does joining etc, and task_graph_execute_timestep to get new valsRDD
                 }
             }
         }
         //force computation
         var v = 0;
+        var end = 0L;
         for (v <- global_valsRDDList) {
             val numVals = v.count();
+            end = System.nanoTime;
             if (numVals == 0) {
                 println("yikes, execute_point section skipped");
             }
             else {
                 println("OK, execute_point section executed");
             }
+        //print last valsRDD -- don't time this part
+        println("printing vals in new valsRDD");
+        v.collect().foreach(v=>println("point: " + v._1 +  " value: " + v._2.toList)); //for large # points, change collect to take
         }
+
+        
+         
+        
+        end; 
     }
 
-    def call_execute_point (SERtaskGraph: SERtask_graph_t, ts: Int, point:Int, inputsOrVal: Any, simple: Boolean):Array[Byte] = { 
-        //LibraryLoader.load;
-        System.loadLibrary("core");
-        System.loadLibrary("core_c");
+    def call_execute_point (SERtaskGraph: SERtask_graph_t, ts: Int, point:Int, inputsOrVal: Any, simple: Boolean) : Array[Byte] = { 
+        LibraryLoader.load;
+        //System.loadLibrary("core");
+        //System.loadLibrary("core_c");
         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
         val depType = taskGraph.getDependence().toString(); 
         val outputBytesPerTask = taskGraph.getOutput_bytes_per_task();
@@ -169,14 +182,10 @@ object Main {
         }
 
         val scratchBytesPerTask = taskGraph.getScratch_bytes_per_task();
-        println("scratch bytes per task: "+ scratchBytesPerTask); //TODO
         if (scratchBytesPerTask > 0) { //memory-bound
             val scratch_ptr = new Array[Byte](scratchBytesPerTask.asInstanceOf[Int]);
-            println("len of scratch_ptr, should = scratch: "+scratch_ptr.length);//TODO: remove
-            var c = 0;
-            for (c <- 0 until scratch_ptr.length) { //scratch_ptr will be null otherwise
+            for (c <- 0 until scratch_ptr.length) { //TEST: scratch_ptr will be null otherwise
                 scratch_ptr(c) = 1;
-                println("value of scratch ptr at index "+c+ ": "+scratch_ptr(c)); //TODO
             }
 
             core_c.task_graph_execute_point_scratch(taskGraph, ts, point, output_ptr, output_bytes, 
@@ -218,9 +227,9 @@ object Main {
             if (ts != 0) {
                 inputsRDDUngrouped = relevantValsRDD.flatMap { 
                     case (point, oldVal) =>
-                        System.loadLibrary("core");
-                        System.loadLibrary("core_c");
-                        //LibraryLoader.load;
+                        //System.loadLibrary("core");
+                        //System.loadLibrary("core_c");
+                        LibraryLoader.load;
                         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
                         val intervalList = core_c.task_graph_reverse_dependencies(taskGraph, curDset, point); //where to send from prev ts
                         val numIntervals = core_c.interval_list_num_intervals(intervalList);
