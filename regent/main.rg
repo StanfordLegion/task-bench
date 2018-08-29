@@ -38,7 +38,7 @@ where writes(primary.{x, y}) do
   end
 end
 
-task f1(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, j : int, timing_region : region(ispace(int1d), times))
+task f1(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, timing_region : region(ispace(int1d), times))
 where reads writes(primary.{x}), reads(primary.{y}, secondary.{y}), writes(timing_region) do
   if i == 0 then
     timing_region[0].start_t = regentlib.c.legion_get_current_time_in_nanos()
@@ -52,7 +52,7 @@ where reads writes(primary.{x}), reads(primary.{y}, secondary.{y}), writes(timin
   timing_region[0].end_t = regentlib.c.legion_get_current_time_in_nanos()
 end
 
-task f2(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, j : int, timing_region : region(ispace(int1d), times))
+task f2(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, timing_region : region(ispace(int1d), times))
 where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}), writes(timing_region) do
   for i in primary do
     primary[i].y = secondary[i].x + 1
@@ -126,11 +126,11 @@ task main()
     __demand(__spmd, __trace)
     for i = 0, max_timesteps, 2 do
       for j = 0, num_tasks do
-        f1(primary[j], secondary[j], task_graph, i, j, equal_partition[j])
+        f1(primary[j], secondary[j], task_graph, i, equal_partition[j])
       end
 
       for j = 0, num_tasks do
-        f2(primary[j], secondary[j], task_graph, i, j, equal_partition[j])
+        f2(primary[j], secondary[j], task_graph, i, equal_partition[j])
       end
     end
 
