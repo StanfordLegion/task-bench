@@ -41,6 +41,7 @@ LD_FLAGS	?=
 
 CC_FLAGS += -std=c++11 -I../core
 
+include ../core/make_blas.mk
 ###########################################################################
 #
 #   Don't change anything below here
