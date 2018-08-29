@@ -19,7 +19,7 @@
 #include <sys/time.h>
 #include "core.h"
 #include "core_kernel.h"
-#if defined(USE_BLAS_KERNEL)
+#ifdef USE_BLAS_KERNEL
 #include <mkl.h>
 #endif
 
@@ -61,7 +61,7 @@ void execute_kernel_memory(const Kernel &kernel,
 void execute_kernel_dgemm(const Kernel &kernel,
                            char *scratch_ptr, size_t scratch_bytes)
 {
-#if defined(USE_BLAS_KERNEL)
+#ifdef USE_BLAS_KERNEL
   long long N = scratch_bytes / (3 * sizeof(double));
   int m, n, p;
   double alpha, beta;
@@ -79,8 +79,9 @@ void execute_kernel_dgemm(const Kernel &kernel,
   }
   // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
 #else
-  printf("No BLAS is detected\n");
-  assert(0);
+  fprintf(stderr, "No BLAS is detected\n");
+  fflush(stderr);
+  abort();
 #endif
 }
 
