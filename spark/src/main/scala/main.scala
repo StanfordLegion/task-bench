@@ -133,16 +133,17 @@ object Main {
         for (v <- global_valsRDDList) {
             val numVals = v.count();
             if (numVals == 0) {
-                System.out.println("yikes, execute_point section skipped");
+                println("yikes, execute_point section skipped");
             }
             else {
-                System.out.println("OK, execute_point section executed");
+                println("OK, execute_point section executed");
             }
         }
     }
 
     def call_execute_point (SERtaskGraph: SERtask_graph_t, ts: Int, point:Int, inputsOrVal: Any, simple: Boolean):Array[Byte] = { 
-        LibraryLoader.load;
+        //LibraryLoader.load;
+        System.loadLibrary("core_c");
         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
         val depType = taskGraph.getDependence().toString(); 
         val outputBytesPerTask = taskGraph.getOutput_bytes_per_task();
@@ -167,8 +168,16 @@ object Main {
         }
 
         val scratchBytesPerTask = taskGraph.getScratch_bytes_per_task();
+        println("scratch bytes per task: "+ scratchBytesPerTask); //TODO
         if (scratchBytesPerTask > 0) { //memory-bound
             val scratch_ptr = new Array[Byte](scratchBytesPerTask.asInstanceOf[Int]);
+            println("len of scratch_ptr, should = scratch: "+scratch_ptr.length);//TODO: remove
+            var c = 0;
+            for (c <- 0 until scratch_ptr.length) { //scratch_ptr will be null otherwise
+                scratch_ptr(c) = 1;
+                println("value of scratch ptr at index "+c+ ": "+scratch_ptr(c)); //TODO
+            }
+
             core_c.task_graph_execute_point_scratch(taskGraph, ts, point, output_ptr, output_bytes, 
                 input_ptr, input_bytes, n_inputs, scratch_ptr, scratchBytesPerTask);
         }
@@ -208,7 +217,8 @@ object Main {
             if (ts != 0) {
                 inputsRDDUngrouped = relevantValsRDD.flatMap { 
                     case (point, oldVal) =>
-                        LibraryLoader.load;
+                        System.loadLibrary("core_c");
+                        //LibraryLoader.load;
                         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
                         val intervalList = core_c.task_graph_reverse_dependencies(taskGraph, curDset, point); //where to send from prev ts
                         val numIntervals = core_c.interval_list_num_intervals(intervalList);
