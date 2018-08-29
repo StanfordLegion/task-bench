@@ -428,7 +428,7 @@ static TaskGraph default_graph()
   graph.max_width = 4;
   graph.dependence = DependenceType::TRIVIAL;
   graph.radix = 2;
-  graph.kernel = {KernelType::EMPTY, 0, 0, 0};
+  graph.kernel = {KernelType::EMPTY, 0, 0};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
   graph.scratch_bytes_per_task = 0;
 
@@ -525,16 +525,6 @@ App::App(int argc, char **argv)
         abort();
       }
       graph.scratch_bytes_per_task = value;
-    }
-
-    if (!strcmp(argv[i], "-max_power")) {
-      needs_argument(i, argc, "-max_power");
-      long value  = atol(argv[++i]);
-      if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-max_power %ld\" must be >= 0\n", value);
-        abort();
-      }
-      graph.kernel.max_power = value;
     }
 
     if (!strcmp(argv[i], "-jump")) {
