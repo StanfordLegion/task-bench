@@ -14,6 +14,7 @@ cd task-bench
 ./task_bench -steps 4 -type fft -width 4 -kernel compute_bound -max_power 200 -iter 20
 ./task_bench -steps 4 -type fft -width 4 -kernel memory_bound -scratch 8192 -jump 256 -iter 20
 ./task_bench -steps 4 -type fft -width 4 -kernel load_imbalance -max_power 200 -iter 20
+./task_bench -steps 4 -type fft -width 4 -kernel compute_dgemm -scratch $((3*256*256*8)) -iter 10
 ```
 
 ### Sherlock
