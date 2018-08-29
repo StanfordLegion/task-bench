@@ -143,6 +143,7 @@ object Main {
 
     def call_execute_point (SERtaskGraph: SERtask_graph_t, ts: Int, point:Int, inputsOrVal: Any, simple: Boolean):Array[Byte] = { 
         //LibraryLoader.load;
+        System.loadLibrary("core");
         System.loadLibrary("core_c");
         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
         val depType = taskGraph.getDependence().toString(); 
@@ -217,6 +218,7 @@ object Main {
             if (ts != 0) {
                 inputsRDDUngrouped = relevantValsRDD.flatMap { 
                     case (point, oldVal) =>
+                        System.loadLibrary("core");
                         System.loadLibrary("core_c");
                         //LibraryLoader.load;
                         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
