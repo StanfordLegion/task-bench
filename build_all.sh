@@ -33,9 +33,13 @@ fi
 
 if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     pushd "$HWLOC_SRC_DIR"
-    ./configure --prefix=$HWLOC_DIR
-    make -j$THREADS
-    make install
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../configure --prefix=$HWLOC_DIR
+        make -j$THREADS
+        make install
+    fi
     popd
 fi
 
@@ -103,19 +107,23 @@ fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then    
     pushd "$NANOS_SRC_DIR"
-    mkdir build
-    cd build
-    ../configure --prefix=$NANOS_PREFIX --disable-instrumentation --disable-debug 
-    make -j$THREADS
-    make install
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../configure --prefix=$NANOS_PREFIX --disable-instrumentation --disable-debug
+        make -j$THREADS
+        make install
+    fi
     popd
 
     pushd "$MERCURIUM_SRC_DIR"
-    mkdir build
-    cd build
-    ../configure --prefix=$MERCURIUM_PREFIX --enable-ompss --with-nanox=$NANOS_PREFIX
-    make -j$THREADS
-    make install
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../configure --prefix=$MERCURIUM_PREFIX --enable-ompss --with-nanox=$NANOS_PREFIX
+        make -j$THREADS
+        make install
+    fi
     popd
     
     export PATH=$NANOS_PREFIX/bin:$MERCURIUM_PREFIX/bin:$PATH

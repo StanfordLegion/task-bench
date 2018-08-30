@@ -50,7 +50,7 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export TASKBENCH_USE_HWLOC=$TASKBENCH_USE_HWLOC
 export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
-export HWLOC_DIR=$HWLOC_DL_DIR
+export HWLOC_DIR=$HWLOC_DL_DIR/install
 EOF
     wget https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
     mkdir -p "$HWLOC_DL_DIR"
