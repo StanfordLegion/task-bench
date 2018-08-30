@@ -50,7 +50,7 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export TASKBENCH_USE_HWLOC=$TASKBENCH_USE_HWLOC
 export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
-export HWLOC_DIR=$HWLOC_DL_DIR
+export HWLOC_DIR=$HWLOC_DL_DIR/install
 EOF
     wget https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
     mkdir -p "$HWLOC_DL_DIR"
@@ -114,6 +114,22 @@ EOF
     source deps/env.sh
 fi
 
+if [[ $USE_OMPSS -eq 1 ]]; then
+    export OMPSS_DL_DIR="$PWD"/deps/ompss
+    cat >>deps/env.sh <<EOF
+export USE_OMPSS=$USE_OMPSS
+export OMPSS_DL_DIR=$OMPSS_DL_DIR
+export NANOS_SRC_DIR=$OMPSS_DL_DIR/nanox-0.14.1
+export NANOS_PREFIX=$OMPSS_DL_DIR/nanox-0.14.1/install
+export MERCURIUM_SRC_DIR=$OMPSS_DL_DIR/mcxx-2.1.0
+export MERCURIUM_PREFIX=$OMPSS_DL_DIR/mcxx-2.1.0/install
+EOF
+    mkdir -p "$OMPSS_DL_DIR"
+    wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
+    tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
+    rm -rf ompss-17.12.1.tar.gz
+fi
+
 if [[ $USE_OMPSS -eq 2 ]]; then
     export OMPSS_DL_DIR="$PWD"/deps/ompss2
     cat >>deps/env.sh <<EOF
@@ -135,4 +151,3 @@ EOF
     export MCXX_SRC_DIR=$OMPSS_DL_DIR/mcxx
     git clone https://github.com/bsc-pm/mcxx.git "$MCXX_SRC_DIR"
 fi
-

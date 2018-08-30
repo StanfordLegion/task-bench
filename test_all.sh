@@ -68,7 +68,6 @@ if [[ $USE_OPENMP -eq 1 ]]; then
 fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then
-    export LD_LIBRARY_PATH=/usr/local/clang/lib:$LD_LIBRARY_PATH
     for t in $basic_types; do
         ./ompss/main -steps 9 -type $t
         ./ompss/main -steps 9 -type $t -kernel memory_bound -scratch 64
@@ -76,7 +75,6 @@ if [[ $USE_OMPSS -eq 1 ]]; then
 fi
 
 if [[ $USE_OMPSS -eq 2 ]]; then
-    export LD_LIBRARY_PATH=/usr/local/clang/lib:$LD_LIBRARY_PATH
     for t in $basic_types; do
         ./ompss/main -steps 9 -type $t
         ./ompss/main -steps 9 -type $t -kernel memory_bound -scratch 64

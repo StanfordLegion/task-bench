@@ -7,7 +7,6 @@
 #include "core.h"
 #include "timer.h"
 
-
 #define VERBOSE_LEVEL 0
 
 #define USE_CORE_VERIFICATION
@@ -244,8 +243,6 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   
   // omp_set_dynamic(1);
   //omp_set_num_threads(nb_workers);
-  
-
 }
 
 OmpSsApp::~OmpSsApp()
