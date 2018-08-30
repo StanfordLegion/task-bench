@@ -17,8 +17,6 @@ import scala.collection.mutable.ListBuffer //keep depsRDD as int, list[Int] for 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.HashPartitioner
 import org.apache.spark.SparkFiles
-import java.io._ //for travis libload debug
-import sys.process._
 
 object Main {
     //globals 
@@ -47,11 +45,7 @@ object Main {
             }
         }
     }
-    val toWrite = sys.env.get("SPARK_DIR").get + "/workerlibraryInfo.txt";
-        val fw = new FileWriter(toWrite, true);
-        val bw = new BufferedWriter(fw);
-        val out = new PrintWriter(bw);
-
+    
     object LibraryLoader {
         lazy val load = System.load(SparkFiles.get("libcore_c.so"))
         //lazy val load = System.loadLibrary("core_c");
@@ -75,15 +69,6 @@ object Main {
         System.out.println("JAVA_HOME in main:");
         System.out.println(sys.env.get("JAVA_HOME").get);
        
-        var libPath = sys.env.get("SPARK_SWIG_DIR").get + "/" + "libcore_c.so";
-        var lddResult = Seq("ldd","-v", libPath).!! //TODO: test this in Zeppelin; may need to make this a Seq
-        println("ldd in main, libcore_c from swigdir: " + lddResult)
-        libPath = SparkFiles.get("libcore_c.so");
-        lddResult = Seq("ldd","-v", libPath).!!
-        println("ldd in main, libcore_c from SparkFiles: " + lddResult)
-        println("LD_LIBRARY_PATH in main: " + sys.env.get("LD_LIBRARY_PATH").get)
-        var whichJava = "which java".!! 
-        println("which java in main: " + whichJava)
 
         var argsToPass = new Array[String](args.length + 1);
         argsToPass(0) = "dummy";
@@ -129,7 +114,6 @@ object Main {
         core_c.app_report_timing(app, elapsed); //prints elapsed
         core_c.task_graph_list_destroy(taskGraphList);
         core_c.app_destroy(app);
-        out.close(); //flush TODO: remove
         spark.stop();
 
     } //end of main
@@ -170,16 +154,7 @@ object Main {
     }
 
     def call_execute_point (SERtaskGraph: SERtask_graph_t, ts: Int, point:Int, inputsOrVal: Any, simple: Boolean) : Array[Byte] = { 
-        var libPath = sys.env.get("SPARK_SWIG_DIR").get + "/" + "libcore_c.so";
-        var lddResult = Seq("ldd","-v", libPath).!! //TODO: test this in Zeppelin; may need to make this a Seq
-        out.println("ldd in call_execute_point, libcore_c from swigdir: " + lddResult)
-        libPath = SparkFiles.get("libcore_c.so");
-        lddResult = Seq("ldd","-v", libPath).!!
-        out.println("ldd in call_execute_point, libcore_c from SparkFiles: " + lddResult)
-        out.println("LD_LIBRARY_PATH in call_execute_point: " + sys.env.get("LD_LIBRARY_PATH").get)
-        var whichJava = "which java".!! 
-        out.println("which java in call_execute_point: " + whichJava)
-        LibraryLoader.load;
+         LibraryLoader.load;
         //System.loadLibrary("core");
         //System.loadLibrary("core_c");
         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
@@ -253,15 +228,6 @@ object Main {
                     case (point, oldVal) =>
                         //System.loadLibrary("core");
                         //System.loadLibrary("core_c");
-                                var libPath = sys.env.get("SPARK_SWIG_DIR").get + "/" + "libcore_c.so";
-        var lddResult = Seq("ldd","-v", libPath).!! //TODO: test this in Zeppelin; may need to make this a Seq
-        out.println("ldd in execute_timestep, libcore_c from swigdir: " + lddResult)
-        libPath = SparkFiles.get("libcore_c.so");
-        lddResult = Seq("ldd","-v", libPath).!!
-        out.println("ldd in execute_timestep, libcore_c from SparkFiles: " + lddResult)
-        out.println("LD_LIBRARY_PATH in execute_timestep: " + sys.env.get("LD_LIBRARY_PATH").get)
-        var whichJava = "which java".!! 
-        out.println("which java in execute_timestep: " + whichJava)
                         LibraryLoader.load;
                         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
                         val intervalList = core_c.task_graph_reverse_dependencies(taskGraph, curDset, point); //where to send from prev ts
