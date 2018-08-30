@@ -101,55 +101,37 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     make -C openmp -j$THREADS
 fi
 
-if [[ $USE_OMPSS -eq 1 ]]; then    
-    mkdir -p "$NANOS_BUILD"
-    pushd "$NANOS_SRC_DIR"
-    ./configure --prefix=$NANOS_BUILD --disable-instrumentation --disable-debug 
-    make -j$THREADS
-    make install
-    popd
-
-    mkdir -p "$MERCURIUM_BUILD"
-    pushd "$MERCURIUM_SRC_DIR"
-    ./configure --prefix=$MERCURIUM_BUILD --enable-ompss --with-nanox=$NANOS_BUILD
-    make -j$THREADS
-    make install
-    popd
-    
-    export PATH=$NANOS_BUILD/bin:$MERCURIUM_BUILD/bin:$PATH
-    export LD_LIBRARY_PATH=$NANOS_BUILD/lib:$MERCURIUM_BUILD/lib:$LD_LIBRARY_PATH
-    make -C ompss clean
-    make -C ompss -j$THREADS
-fi
-
 if [[ $USE_OMPSS -eq 2 ]]; then
-    mkdir -p "$GPERF_BUILD"
     pushd "$GPERF_SRC_DIR"
-    ./configure --prefix=$GPERF_BUILD --docdir=$GPERF_BUILD/doc
+    mkdir build
+    cd build
+    ../configure --prefix=$GPERF_PREFIX --docdir=$GPERF_PREFIX/doc
     make -j$THREADS
     make install
-    export PATH=$GPERF_BUILD/bin:$PATH
+    export PATH=$GPERF_PREFIX/bin:$PATH
     popd
 
-    mkdir -p "$NANOS6_BUILD"
     pushd "$NANOS6_SRC_DIR"
-    autoreconf -f -i -v
-    ./configure --prefix=$NANOS6_BUILD --with-boost=$BOOST_ROOT --without-nanos6-mercurium
+    autoreconf -fiv
+    mkdir build
+    cd build
+    ../configure --prefix=$NANOS6_PREFIX --with-boost=$BOOST_ROOT --without-nanos6-mercurium
     make all -j$THREADS
     make check -j$THREADS
     make install
     popd
     
-    mkdir -p "$MCXX_BUILD"
     pushd "$MCXX_SRC_DIR"
     autoreconf -fiv
-    ./configure --prefix=$MCXX_BUILD --enable-ompss-2 --with-nanos6=$NANOS6_BUILD
+    mkdir build
+    cd build
+    ../configure --prefix=$MCXX_PREFIX --enable-ompss-2 --with-nanos6=$NANOS6_PREFIX
     make -j$THREADS
     make install
     popd
- 
-    export PATH=$MCXX_BUILD/bin:$PATH
-    export LD_LIBRARY_PATH=$NANOS6_BUILD/lib:$MCXX_BUILD/lib:$LD_LIBRARY_PATH
+
+    export PATH=$MCXX_PREFIX/bin:$PATH
+    export LD_LIBRARY_PATH=$NANOS6_PREFIX/lib:$MCXX_PREFIX/lib:$LD_LIBRARY_PATH
     make -C ompss clean
     make -C ompss -j$THREADS
 fi

@@ -1,4 +1,4 @@
-DEBUG = 0
+DEBUG ?= 0
 USE_OMPSS ?=1
 MCXX = mcxx
 

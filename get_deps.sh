@@ -114,33 +114,17 @@ EOF
     source deps/env.sh
 fi
 
-if [[ $USE_OMPSS -eq 1 ]]; then
-    export OMPSS_DL_DIR="$PWD"/deps/ompss
-    cat >>deps/env.sh <<EOF
-export USE_OMPSS=$USE_OMPSS
-export OMPSS_DL_DIR=$OMPSS_DL_DIR
-export NANOS_SRC_DIR=$OMPSS_DL_DIR/nanox-0.14.1
-export NANOS_BUILD=$OMPSS_DL_DIR/nanos
-export MERCURIUM_SRC_DIR=$OMPSS_DL_DIR/mcxx-2.1.0
-export MERCURIUM_BUILD=$OMPSS_DL_DIR/mercurium
-EOF
-    mkdir -p "$OMPSS_DL_DIR"
-    wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
-    tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
-    rm -rf ompss-17.12.1.tar.gz
-fi
-
 if [[ $USE_OMPSS -eq 2 ]]; then
     export OMPSS_DL_DIR="$PWD"/deps/ompss2
     cat >>deps/env.sh <<EOF
 export USE_OMPSS=$USE_OMPSS
 export OMPSS_DL_DIR=$OMPSS_DL_DIR
 export GPERF_SRC_DIR=$OMPSS_DL_DIR/gperf-3.0.4
-export GPERF_BUILD=$OMPSS_DL_DIR/gperf
+export GPERF_PREFIX=$OMPSS_DL_DIR/gperf-3.0.4/build
 export NANOS6_SRC_DIR=$OMPSS_DL_DIR/nanos6
-export NANOS6_BUILD=$OMPSS_DL_DIR/nanos6_build
+export NANOS6_PREFIX=$OMPSS_DL_DIR/nanos6/build
 export MCXX_SRC_DIR=$OMPSS_DL_DIR/mcxx
-export MCXX_BUILD=$OMPSS_DL_DIR/mcxx_build
+export MCXX_PREFIX=$OMPSS_DL_DIR/mcxx/build
 EOF
     mkdir -p "$OMPSS_DL_DIR"
     wget http://ftp.gnu.org/gnu/gperf/gperf-3.0.4.tar.gz
