@@ -34,10 +34,24 @@ _columns = collections.OrderedDict([
 def same(values):
     return all(value == values[0] for value in values)
 
-def analyze(filename, cores, threshold):
+def group_by(keys, values):
+    last_key = None
+    last_group = None
+    for key, value in zip(keys, values):
+        if key != last_key:
+            if last_group is not None:
+                yield (last_key, last_group)
+            last_group = []
+        last_key = key
+        last_group.append(value)
+
+    if last_group is not None:
+        yield (last_key, last_group)
+
+def analyze(filename, nodes, cores, threshold):
     compute = collections.OrderedDict([
         ('scale_factor', lambda t: t['iterations'][0] / t['iterations']),
-        ('time_per_task', lambda t: t['elapsed'] / t['tasks'] * cores * 1000),
+        ('time_per_task', lambda t: t['elapsed'] / t['tasks'] * nodes * cores * 1000),
         ('efficiency', lambda t: t['elapsed'][0] / (t['elapsed'] * t['scale_factor'])),
     ])
 
@@ -55,6 +69,15 @@ def analyze(filename, cores, threshold):
     assert same(table['tasks'])
     assert all(table['tasks'] == table['steps'] * table['width'])
 
+    # Group by iteration count and compute statistics:
+    table['iterations'], table['elapsed'], table['std'], table['reps'] = list(map(
+        numpy.asarray,
+        zip(*[(k, numpy.mean(v), numpy.std(v), len(v))
+              for k, v in group_by(table['iterations'], table['elapsed'])])))
+
+    for column in ('steps', 'width', 'tasks'):
+        table[column] = numpy.resize(table[column], table['iterations'].shape)
+
     # Compute derived columns:
     for k, f in compute.items():
         table[k] = f(table)
@@ -63,7 +86,7 @@ def analyze(filename, cores, threshold):
     min_i, min_efficiency = min(
         filter(lambda x: x[1] >= threshold,
                enumerate(table['efficiency'])),
-        key=lambda x: x[1])
+        key=lambda x: table['time_per_task'][x[0]])
 
     # Perform linear interpolation if subsequent data point is an improvment:
     min_time = table['time_per_task'][min_i]
@@ -86,10 +109,10 @@ def analyze(filename, cores, threshold):
 
     return min_time
 
-def driver(inputs, summary, cores, threshold):
+def driver(inputs, summary, nodes, cores, threshold):
     min_times = []
     for filename in inputs:
-        min_times.append(analyze(filename, cores, threshold))
+        min_times.append(analyze(filename, nodes, cores, threshold))
     if summary:
         with open(summary, 'w') as f:
             out = csv.writer(f)
@@ -101,6 +124,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('inputs', nargs='+')
     parser.add_argument('-c', '--cores', type=int, required=True)
+    parser.add_argument('-n', '--nodes', type=int, required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('-s', '--summary')
     args = parser.parse_args()

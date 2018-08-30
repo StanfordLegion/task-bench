@@ -10,11 +10,11 @@ CFLAGS     = -std=c++11 -D_GNU_SOURCE
 LDFLAGS    = -m64 -std=c++11 -Wall -D_GNU_SOURCE
 
 ifeq ($(strip $(DEBUG)),1)
-CFLAGS		 += -g -O0
+CFLAGS		 += -g -O0 -mavx
 LDFLAGS		 += -g -O0
 else
-CFLAGS		 += -O2
-LDFLAGS		 += -O2
+CFLAGS		 += -O3 -mavx
+LDFLAGS		 += -O3
 endif
 
 #PARSEC_DIR = /home/wwu12/parsec-master/install
@@ -23,7 +23,7 @@ endif
 
 # Include directories
 INC        = -I$(PARSEC_DIR)/include -I$(PARSEC_DIR)/include/parsec -I../core
-INC_EXT    = 
+INC_EXT    = -I$(HWLOC_DIR)/include 
 
 # Location of the libraries.
 LIB        = -Wl,-rpath,$(PARSEC_DIR)/lib $(PARSEC_DIR)/lib/libparsec.so

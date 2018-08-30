@@ -55,9 +55,6 @@ enum iparam_t {
   IPARAM_M,            /* Number of rows of the matrix      */
   IPARAM_N,            /* Number of columns of the matrix   */
   IPARAM_K,            /* RHS or K                          */
-  IPARAM_LDA,          /* Leading dimension of A            */
-  IPARAM_LDB,          /* Leading dimension of B            */
-  IPARAM_LDC,          /* Leading dimension of C            */
   IPARAM_IB,           /* Inner-blocking size               */
   IPARAM_NB,           /* Number of columns in a tile       */
   IPARAM_MB,           /* Number of rows in a tile          */
@@ -91,30 +88,30 @@ void iparam_default_ibnbmb(int* iparam, int ib, int nb, int mb);
     gpus  = iparam[IPARAM_NGPUS];                                   \
     P     = iparam[IPARAM_P];                                       \
     Q     = iparam[IPARAM_Q];                                       \
-    M     = iparam[IPARAM_M];                                       \
-    N     = iparam[IPARAM_N];                                       \
-    K     = iparam[IPARAM_K];                                       \
-    NRHS  = K;                                                      \
-    LDA   = max(M, iparam[IPARAM_LDA]);                             \
-    LDB   = max(N, iparam[IPARAM_LDB]);                             \
-    LDC   = max(K, iparam[IPARAM_LDC]);                             \
-    IB    = iparam[IPARAM_IB];                                      \
-    MB    = iparam[IPARAM_MB];                                      \
-    NB    = iparam[IPARAM_NB];                                      \
-    SMB   = iparam[IPARAM_SMB];                                     \
-    SNB   = iparam[IPARAM_SNB];                                     \
-    HMB   = iparam[IPARAM_HMB];                                     \
-    HNB   = iparam[IPARAM_HNB];                                     \
-    MT    = (M%MB==0) ? (M/MB) : (M/MB+1);                          \
-    NT    = (N%NB==0) ? (N/NB) : (N/NB+1);                          \
-    KT    = (K%MB==0) ? (K/MB) : (K/MB+1);                          \
     check = iparam[IPARAM_CHECK];                                   \
     loud  = iparam[IPARAM_VERBOSE];                                 \
     scheduler = iparam[IPARAM_SCHEDULER];                           \
-    (void)rank;(void)nodes;(void)cores;(void)gpus;(void)P;(void)Q;(void)M;(void)N;(void)K;(void)NRHS; \
-    (void)LDA;(void)LDB;(void)LDC;(void)IB;(void)MB;(void)NB;(void)MT;(void)NT;(void)KT; \
-    (void)SMB;(void)SNB;(void)HMB;(void)HNB;(void)check;(void)loud; \
+    (void)rank;(void)nodes;(void)cores;(void)gpus;(void)P;(void)Q;(void)check;(void)loud; \
     (void)scheduler;
+    
+#define PASTE_CODE_IPARAM_LOCALS_MAT(iparam)                                \
+    mat.M     = iparam[IPARAM_M];                                       \
+    mat.N     = iparam[IPARAM_N];                                       \
+    mat.K     = iparam[IPARAM_K];                                       \
+    mat.NRHS  = mat.K;                                                      \
+    mat.IB    = iparam[IPARAM_IB];                                      \
+    mat.MB    = iparam[IPARAM_MB];                                      \
+    mat.NB    = iparam[IPARAM_NB];                                      \
+    mat.SMB   = iparam[IPARAM_SMB];                                     \
+    mat.SNB   = iparam[IPARAM_SNB];                                     \
+    mat.HMB   = iparam[IPARAM_HMB];                                     \
+    mat.HNB   = iparam[IPARAM_HNB];                                     \
+    mat.MT    = (mat.M%mat.MB==0) ? (mat.M/mat.MB) : (mat.M/mat.MB+1);                          \
+    mat.NT    = (mat.N%mat.NB==0) ? (mat.N/mat.NB) : (mat.N/mat.NB+1);                          \
+    mat.KT    = (mat.K%mat.MB==0) ? (mat.K/mat.MB) : (mat.K/mat.MB+1);                          \
+    (void)mat.M;(void)mat.N;(void)mat.K;(void)mat.NRHS; \
+    (void)mat.IB;(void)mat.MB;(void)mat.NB;(void)mat.MT;(void)mat.NT;(void)mat.KT; \
+    (void)mat.SMB;(void)mat.SNB;(void)mat.HMB;(void)mat.HNB;
 
 /*******************************
  * globals values
@@ -126,6 +123,7 @@ extern MPI_Datatype SYNCHRO;
 
 void print_usage(void);
 void print_arguments(int* iparam);
+void parse_arguments(int *_argc, char*** _argv, int* iparam);
 
 parsec_context_t *setup_parsec(int argc, char* argv[], int *iparam);
 void cleanup_parsec(parsec_context_t* parsec, int *iparam);
@@ -149,6 +147,8 @@ static inline int min(int a, int b) { return a < b ? a : b; }
         parsec_data_collection_set_key((parsec_data_collection_t*)&DC, #DC);          \
     }
 
+#define TILE_OF_MAT(DC, I, J) \
+    parsec_dtd_tile_of(&(mat.__dc##DC->super.super), (&(mat.__dc##DC->super.super))->data_key(&(mat.__dc##DC->super.super), I, J))
 
 #ifdef __cplusplus
 }

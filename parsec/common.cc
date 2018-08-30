@@ -73,9 +73,6 @@ void print_usage(void)
             " -M                : dimension (M) of the matrices (default: N)\n"
             " -K --NRHS C<-A*B+C: dimension (K) of the matrices (default: N)\n"
             "           AX=B    : columns in the right hand side (default: 1)\n"
-            " -A --LDA          : leading dimension of the matrix A (default: full)\n"
-            " -B --LDB          : leading dimension of the matrix B (default: full)\n"
-            " -C --LDC          : leading dimension of the matrix C (default: full)\n"
             " -i --IB           : inner blocking     (default: autotuned)\n"
             " -t --MB           : rows in a tile     (default: autotuned)\n"
             " -T --NB           : columns in a tile  (default: autotuned)\n"
@@ -163,12 +160,6 @@ static struct option long_options[] =
     {"M",           required_argument,  0, 'M'},
     {"K",           required_argument,  0, 'K'},
     {"NRHS",        required_argument,  0, 'K'},
-    {"LDA",         required_argument,  0, 'A'},
-    {"A",           required_argument,  0, 'A'},
-    {"LDB",         required_argument,  0, 'B'},
-    {"B",           required_argument,  0, 'B'},
-    {"LDC",         required_argument,  0, 'C'},
-    {"C",           required_argument,  0, 'C'},
     {"IB",          required_argument,  0, 'i'},
     {"i",           required_argument,  0, 'i'},
     {"MB",          required_argument,  0, 't'},
@@ -196,7 +187,7 @@ static struct option long_options[] =
 };
 #endif  /* defined(PARSEC_HAVE_GETOPT_LONG) */
 
-static void parse_arguments(int *_argc, char*** _argv, int* iparam)
+void parse_arguments(int *_argc, char*** _argv, int* iparam)
 {
     extern char **environ;
     int opt = 0;
@@ -262,9 +253,6 @@ static void parse_arguments(int *_argc, char*** _argv, int* iparam)
             case 'N': iparam[IPARAM_N] = atoi(optarg); break;
             case 'M': iparam[IPARAM_M] = atoi(optarg); break;
             case 'K': iparam[IPARAM_K] = atoi(optarg); break;
-            case 'A': iparam[IPARAM_LDA] = atoi(optarg); break;
-            case 'B': iparam[IPARAM_LDB] = atoi(optarg); break;
-            case 'C': iparam[IPARAM_LDC] = atoi(optarg); break;
 
             case 'i': iparam[IPARAM_IB] = atoi(optarg); break;
             case 't': iparam[IPARAM_MB] = atoi(optarg); break;
@@ -379,17 +367,6 @@ static void parse_arguments(int *_argc, char*** _argv, int* iparam)
     if(0 == iparam[IPARAM_M]) iparam[IPARAM_M] = iparam[IPARAM_N];
     if(0 == iparam[IPARAM_K]) iparam[IPARAM_K] = iparam[IPARAM_N];
 
-    /* Set some sensible defaults for the leading dimensions */
-    if(-'m' == iparam[IPARAM_LDA]) iparam[IPARAM_LDA] = iparam[IPARAM_M];
-    if(-'n' == iparam[IPARAM_LDA]) iparam[IPARAM_LDA] = iparam[IPARAM_N];
-    if(-'k' == iparam[IPARAM_LDA]) iparam[IPARAM_LDA] = iparam[IPARAM_K];
-    if(-'m' == iparam[IPARAM_LDB]) iparam[IPARAM_LDB] = iparam[IPARAM_M];
-    if(-'n' == iparam[IPARAM_LDB]) iparam[IPARAM_LDB] = iparam[IPARAM_N];
-    if(-'k' == iparam[IPARAM_LDB]) iparam[IPARAM_LDB] = iparam[IPARAM_K];
-    if(-'m' == iparam[IPARAM_LDC]) iparam[IPARAM_LDC] = iparam[IPARAM_M];
-    if(-'n' == iparam[IPARAM_LDC]) iparam[IPARAM_LDC] = iparam[IPARAM_N];
-    if(-'k' == iparam[IPARAM_LDC]) iparam[IPARAM_LDC] = iparam[IPARAM_K];
-
     /* Set no defaults for IB, NB, MB, the algorithm have to do it */
     assert(iparam[IPARAM_IB]); /* check that defaults have been set */
     if(iparam[IPARAM_NB] <= 0 && iparam[IPARAM_MB] > 0) iparam[IPARAM_NB] = iparam[IPARAM_MB];
@@ -431,20 +408,7 @@ void print_arguments(int* iparam)
     {
         fprintf(stderr, "#+++++ M x N x K|NRHS       : %d x %d x %d\n",
                 iparam[IPARAM_M], iparam[IPARAM_N], iparam[IPARAM_K]);
-    }
 
-    if(verbose > 2)
-    {
-        if(iparam[IPARAM_LDB] && iparam[IPARAM_LDC])
-            fprintf(stderr, "#+++++ LDA , LDB , LDC      : %d , %d , %d\n", iparam[IPARAM_LDA], iparam[IPARAM_LDB], iparam[IPARAM_LDC]);
-        else if(iparam[IPARAM_LDB])
-            fprintf(stderr, "#+++++ LDA , LDB            : %d , %d\n", iparam[IPARAM_LDA], iparam[IPARAM_LDB]);
-        else
-            fprintf(stderr, "#+++++ LDA                  : %d\n", iparam[IPARAM_LDA]);
-    }
-
-    if(verbose)
-    {
         if(iparam[IPARAM_IB] > 0)
             fprintf(stderr, "#+++++ MB x NB , IB         : %d x %d , %d\n",
                             iparam[IPARAM_MB], iparam[IPARAM_NB], iparam[IPARAM_IB]);
@@ -481,9 +445,6 @@ void iparam_default_gemm(int* iparam)
     iparam_default(iparam);
     iparam[IPARAM_K] = 0;
     /* no support for transpose yet */
-    iparam[IPARAM_LDA] = -'m';
-    iparam[IPARAM_LDB] = -'k';
-    iparam[IPARAM_LDC] = -'m';
 }
 
 #ifdef PARSEC_PROF_TRACE
