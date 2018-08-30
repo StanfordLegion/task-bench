@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+#set -e
 
 if [[ ! -d deps ]]; then
     echo "The directory deps does not exist."
@@ -95,6 +95,7 @@ if [[ $USE_SPARK -eq 1 ]]; then
 
     $SPARK_SRC_DIR/sbin/stop-all.sh 
     rm .ssh/id_rsa.pub
+    cat $SPARK_DIR/workerlibraryInfo.txt
    # --conf "spark.executor.extraJavaOptions=-Djava.library.path=$CORE_DIR:$SPARK_SWIG_DIR" \
 #--files $SPARK_SWIG_DIR/libcore_c.so,$CORE_DIR/libcore.so \
 fi
