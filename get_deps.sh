@@ -120,9 +120,9 @@ if [[ $USE_OMPSS -eq 1 ]]; then
 export USE_OMPSS=$USE_OMPSS
 export OMPSS_DL_DIR=$OMPSS_DL_DIR
 export NANOS_SRC_DIR=$OMPSS_DL_DIR/nanox-0.14.1
-export NANOS_PREFIX=$OMPSS_DL_DIR/nanox-0.14.1/build
+export NANOS_PREFIX=$OMPSS_DL_DIR/nanox-0.14.1/install
 export MERCURIUM_SRC_DIR=$OMPSS_DL_DIR/mcxx-2.1.0
-export MERCURIUM_PREFIX=$OMPSS_DL_DIR/mcxx-2.1.0/build
+export MERCURIUM_PREFIX=$OMPSS_DL_DIR/mcxx-2.1.0/install
 EOF
     mkdir -p "$OMPSS_DL_DIR"
     wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz

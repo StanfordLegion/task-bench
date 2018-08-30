@@ -20,7 +20,7 @@ fi
 THREADS=${THREADS:-$DEFAULT_THREADS}
 
 make -C core clean
-DEBUG=0 make -C core -j$THREADS
+make -C core -j$THREADS
 
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     make -C mpi clean
@@ -121,5 +121,5 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     export PATH=$NANOS_PREFIX/bin:$MERCURIUM_PREFIX/bin:$PATH
     export LD_LIBRARY_PATH=$NANOS_PREFIX/lib:$MERCURIUM_PREFIX/lib:$LD_LIBRARY_PATH
     make -C ompss clean
-    DEBUG=0 make -C ompss -j$THREADS
+    make -C ompss -j$THREADS
 fi
