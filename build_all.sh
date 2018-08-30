@@ -20,7 +20,7 @@ fi
 THREADS=${THREADS:-$DEFAULT_THREADS}
 
 make -C core clean
-make -C core -j$THREADS
+DEBUG=0 make -C core -j$THREADS
 
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     make -C mpi clean
@@ -102,22 +102,24 @@ if [[ $USE_OPENMP -eq 1 ]]; then
 fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then    
-    mkdir -p "$NANOS_BUILD"
     pushd "$NANOS_SRC_DIR"
-    ./configure --prefix=$NANOS_BUILD --disable-instrumentation --disable-debug 
+    mkdir build
+    cd build
+    ../configure --prefix=$NANOS_PREFIX --disable-instrumentation --disable-debug 
     make -j$THREADS
     make install
     popd
 
-    mkdir -p "$MERCURIUM_BUILD"
     pushd "$MERCURIUM_SRC_DIR"
-    ./configure --prefix=$MERCURIUM_BUILD --enable-ompss --with-nanox=$NANOS_BUILD
+    mkdir build
+    cd build
+    ../configure --prefix=$MERCURIUM_PREFIX --enable-ompss --with-nanox=$NANOS_PREFIX
     make -j$THREADS
     make install
     popd
     
-    export PATH=$NANOS_BUILD/bin:$MERCURIUM_BUILD/bin:$PATH
-    export LD_LIBRARY_PATH=$NANOS_BUILD/lib:$MERCURIUM_BUILD/lib:$LD_LIBRARY_PATH
+    export PATH=$NANOS_PREFIX/bin:$MERCURIUM_PREFIX/bin:$PATH
+    export LD_LIBRARY_PATH=$NANOS_PREFIX/lib:$MERCURIUM_PREFIX/lib:$LD_LIBRARY_PATH
     make -C ompss clean
-    make -C ompss -j$THREADS
+    DEBUG=0 make -C ompss -j$THREADS
 fi
