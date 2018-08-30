@@ -22,12 +22,13 @@ env:
     - USE_PARSEC=1 TASKBENCH_USE_HWLOC=1
     - USE_CHARM=1
     - USE_OPENMP=1
+    - USE_OMPSS=1
 before_install:
   - |
     if [[ "$(uname)" = "Linux" ]]; then
       sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
       sudo apt-get update -qq
-      sudo apt-get install -qq g++-5 mpich2 libmpich-dev
+      sudo apt-get install -qq g++-5 mpich2 libmpich-dev binutils-dev
     fi
   - if [[ "$(uname)" = "Linux" && "$CXX" = "g++" ]]; then export CXX="g++-5" CC="gcc-5"; fi
 install:
