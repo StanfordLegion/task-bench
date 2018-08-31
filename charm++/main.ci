@@ -19,7 +19,7 @@ mainmodule main {
   extern module subchare;
 
   mainchare Main {
-    entry Main(CkArgMsg* msg);
+    entry [nokeep] Main(CkArgMsg* msg);
     entry [expedited, reductiontarget] void finishedGraph();
     entry [expedited, reductiontarget] void workerReady();
   };

@@ -24,6 +24,7 @@ env:
     - USE_OPENMP=1
     - USE_SPARK=1
     - USE_OMPSS=1
+    - USE_SWIFT=1
 before_install:
   - |
     if [[ "$(uname)" = "Linux" ]]; then
