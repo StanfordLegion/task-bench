@@ -136,11 +136,11 @@ if [[ $USE_OMPSS -eq 2 ]]; then
 export USE_OMPSS=$USE_OMPSS
 export OMPSS_DL_DIR=$OMPSS_DL_DIR
 export GPERF_SRC_DIR=$OMPSS_DL_DIR/gperf-3.0.4
-export GPERF_PREFIX=$OMPSS_DL_DIR/gperf-3.0.4/build
+export GPERF_PREFIX=$OMPSS_DL_DIR/gperf-3.0.4/install
 export NANOS6_SRC_DIR=$OMPSS_DL_DIR/nanos6
-export NANOS6_PREFIX=$OMPSS_DL_DIR/nanos6/build
+export NANOS6_PREFIX=$OMPSS_DL_DIR/nanos6/install
 export MCXX_SRC_DIR=$OMPSS_DL_DIR/mcxx
-export MCXX_PREFIX=$OMPSS_DL_DIR/mcxx/build
+export MCXX_PREFIX=$OMPSS_DL_DIR/mcxx/install
 EOF
     mkdir -p "$OMPSS_DL_DIR"
     wget http://ftp.gnu.org/gnu/gperf/gperf-3.0.4.tar.gz

@@ -23,7 +23,6 @@ env:
     - USE_CHARM=1
     - USE_OPENMP=1
     - USE_OMPSS=2
-    - USE_OMPSS=1
 before_install:
   - |
     if [[ "$(uname)" = "Linux" ]]; then
