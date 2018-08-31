@@ -36,7 +36,7 @@ mkdir -p $SPARK_LOG_DIR $SPARK_WORKER_DIR
 ## --------------------------------------
 set -x 
 $SPARK_SRC_DIR/sbin/start-master.sh
-sleep 30 #changed to hopefully prevent issue with empty master URL
+sleep 60 #changed to hopefully prevent issue with empty master URL
 MASTER_URL=$(grep -Po '(?=spark://).*' \
     $SPARK_LOG_DIR/spark-${SPARK_IDENT_STRING}-org.*master*.out)
 echo "master url:"
@@ -65,13 +65,16 @@ function sweep {
             --master ${MASTER_URL} \
             --total-executor-cores $(((SLURM_NTASKS - 2) * SLURM_CPUS_PER_TASK)) \
             --files $SPARK_SWIG_DIR/libcore_c.so \
+            --conf "spark.executor.heartbeatInterval=360000" \
+            --conf "spark.network.timeout=420000" \
             --conf spark.scheduler.listenerbus.eventqueue.capacity=20000 \
-            $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar -kernel busy_wait -iter $(( 1 << (28-s) )) -type $1 -steps 1000 -width 20
+            $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar \
+            -kernel busy_wait -iter $(( 1 << (26-s) )) -type $1 -steps 1000 -width 20
     done
 }
 
 for n in $SLURM_JOB_NUM_NODES; do
-    for t in stencil_1d no_comm; do
+    for t in stencil_1d; do
         realNodeCount=$(($n - 1))
         sweep $t > CORIspark_type_${t}_nodes_${realNodeCount}.log
     done
@@ -87,4 +90,3 @@ scancel ${SLURM_JOBID}.0
 # stop the master
 $SPARK_SRC_DIR/sbin/stop-master.sh
 
-#TODO: change # of nodes for multi; add reps if desired (change time limit); remove set -x

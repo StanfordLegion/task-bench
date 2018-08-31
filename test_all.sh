@@ -69,7 +69,6 @@ fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
     #service ssh status #ssh start/running, process 1372
-    #mkdir $HOME/.ssh #may need to create this first...no it already exists
     export SPARK_LOCAL_IP=localhost
     export SPARK_MASTER_IP=localhost
     export SPARK_MASTER_HOST=localhost
@@ -80,8 +79,9 @@ if [[ $USE_SPARK -eq 1 ]]; then
     echo "authorized_keys:"
     cat $HOME/.ssh/authorized_keys 
     export LD_LIBRARY_PATH=$CORE_DIR:$SPARK_SWIG_DIR:$LD_LIBRARY_PATH
+
     $SPARK_SRC_DIR/sbin/start-all.sh 
-    #should probably run standalone cluster, not local
+    #run standalone cluster, not local
     MASTER_URL=spark://localhost:7077
     
     for t in $extended_types; do
@@ -95,8 +95,4 @@ if [[ $USE_SPARK -eq 1 ]]; then
     done
 
     $SPARK_SRC_DIR/sbin/stop-all.sh 
-    rm .ssh/id_rsa.pub
-    cat $SPARK_DIR/workerlibraryInfo.txt
-   # --conf "spark.executor.extraJavaOptions=-Djava.library.path=$CORE_DIR:$SPARK_SWIG_DIR" \
-#--files $SPARK_SWIG_DIR/libcore_c.so,$CORE_DIR/libcore.so \
 fi

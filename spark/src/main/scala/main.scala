@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import scala.collection.mutable.ListBuffer //keep depsRDD as int, list[Int] for now (no random access needed)
+import scala.collection.mutable.ListBuffer 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.HashPartitioner
 import org.apache.spark.SparkFiles
@@ -64,12 +64,7 @@ object Main {
         spark.sparkContext.setLogLevel("ERROR");
 
         System.loadLibrary("core_c");
-        System.out.println("library path in main:");
-        System.out.println(System.getProperty("java.library.path")); //TODO: remove 
-        System.out.println("JAVA_HOME in main:");
-        System.out.println(sys.env.get("JAVA_HOME").get);
-       
-
+        
         var argsToPass = new Array[String](args.length + 1);
         argsToPass(0) = "dummy";
         var i = 0;
@@ -102,14 +97,11 @@ object Main {
               
         /*------WARMUP AND TIMING-------*/
         println("Starting warmup");
-
         timing( spark, maxNumTimesteps, numGraphs, taskGraphList,  fakeValsRDD ); //warmup
         println("Starting timing");
         val start = System.nanoTime;
-
         val end = timing( spark, maxNumTimesteps, numGraphs, taskGraphList, fakeValsRDD ); 
         val elapsed = (end - start) / 1e9d;
-        // MOVED TO TIMING val elapsed = (System.nanoTime - start) / 1e9d;
         
         core_c.app_report_timing(app, elapsed); //prints elapsed
         core_c.task_graph_list_destroy(taskGraphList);
@@ -140,23 +132,18 @@ object Main {
             val numVals = v.count();
             end = System.nanoTime;
             if (numVals == 0) {
-                println("yikes, execute_point section skipped");
+                println("ERROR: No values in valsRDD -- execute_point section skipped");
             }
-            else {
-                println("OK, execute_point section executed");
-            }
-        //print last valsRDD -- don't time this part
-        println("printing vals in new valsRDD");
-        v.collect().foreach(v=>println("point: " + v._1 +  " value: " + v._2.toList)); //for large # points, change collect to take
+        //DEBUG: print last valsRDD -- don't time this part
+        //println("printing 5 random vals in final valsRDD for last graph");
+        //v.take(5).foreach(v=>println("point: " + v._1 +  " value: " + v._2.toList)); //for large # points, change collect to take
         }
 
         end; 
     }
 
     def call_execute_point (SERtaskGraph: SERtask_graph_t, ts: Int, point:Int, inputsOrVal: Any, simple: Boolean) : Array[Byte] = { 
-         LibraryLoader.load;
-        //System.loadLibrary("core");
-        //System.loadLibrary("core_c");
+        LibraryLoader.load;
         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
         val depType = taskGraph.getDependence().toString(); 
         val outputBytesPerTask = taskGraph.getOutput_bytes_per_task();
@@ -174,7 +161,7 @@ object Main {
             } //PERIODIC: move input from 0th point to front if needed (array)
         }
         val n_inputs = input_ptr.length;
-        val input_bytes = new Array[Long](n_inputs);  //make array where each elem is sizeof(inputptr array at that index)
+        val input_bytes = new Array[Long](n_inputs);  
         var b = 0;
         for (b <- 0 until input_bytes.length) {
             input_bytes(b) = input_ptr(b).length;
@@ -183,7 +170,7 @@ object Main {
         val scratchBytesPerTask = taskGraph.getScratch_bytes_per_task();
         if (scratchBytesPerTask > 0) { //memory-bound
             val scratch_ptr = new Array[Byte](scratchBytesPerTask.asInstanceOf[Int]);
-            for (c <- 0 until scratch_ptr.length) { //TEST: scratch_ptr will be null otherwise
+            for (c <- 0 until scratch_ptr.length) { //this may be needed for typemap
                 scratch_ptr(c) = 1;
             }
 
@@ -226,14 +213,12 @@ object Main {
             if (ts != 0) {
                 inputsRDDUngrouped = relevantValsRDD.flatMap { 
                     case (point, oldVal) =>
-                        //System.loadLibrary("core");
-                        //System.loadLibrary("core_c");
                         LibraryLoader.load;
                         val taskGraph = SERtaskGraph.toTaskGraph(); //create on each worker
                         val intervalList = core_c.task_graph_reverse_dependencies(taskGraph, curDset, point); //where to send from prev ts
                         val numIntervals = core_c.interval_list_num_intervals(intervalList);
                         var toReturn = ListBuffer.empty[(Int,Array[Byte])]; 
-                        var i = 0; //map returns a new collections
+                        var i = 0; //map returns a new collection
                         for (i <- 0 until numIntervals) {
                             val interval = core_c.interval_list_interval(intervalList, i);
                             var expandedInterval = (interval.getStart() to interval.getEnd()).toList; //interval is inclusive

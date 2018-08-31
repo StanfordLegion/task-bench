@@ -14,7 +14,8 @@
  */
 
 /* 
-* Applies to all (int argc, char** argv) signatures 
+* Applies to all (int argc, char** argv) signatures
+* Calculates argc from argv
 */
 %typemap(in) (int argc, char **argv) {
     int i = 0;
@@ -48,7 +49,6 @@
 
 /*
 * Copy version of byte[] => char*
-* Can be used for output_ptr via %apply in interface file
 */
 %typemap(jni) char *BYTE "jbyteArray"
 %typemap(jtype) char *BYTE "byte[]"
@@ -68,7 +68,6 @@
 
 /*
 * Non-copy version of byte[] => char*
-* Can be used for output_ptr via %apply in interface file
 */
 %typemap(jni) char *NOCOPYBYTE "jbyteArray"
 %typemap(jtype) char *NOCOPYBYTE "byte[]"
