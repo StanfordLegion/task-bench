@@ -44,7 +44,7 @@ if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j$THREADS
 fi
 
-if [[ $USE_LEGION -eq 1 ]]; then
+if [[ $USE_REALM -eq 1 ]]; then
     make -C realm clean
     make -C realm -j$THREADS
 fi
