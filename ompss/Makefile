@@ -19,7 +19,7 @@ LDFLAGS  += -O3 -march=native
 endif
 
 # Include directories
-INC        = -I../core 
+INC        = -I../core
 INC_EXT    =  
 
 # Location of the libraries.
