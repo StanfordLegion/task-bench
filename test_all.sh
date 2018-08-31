@@ -70,3 +70,10 @@ if [[ $USE_OPENMP -eq 1 ]]; then
         ./openmp/main -steps 9 -type $t -kernel memory_bound -scratch 64
     done
 fi
+
+if [[ $USE_OMPSS -eq 1 ]]; then
+    for t in $basic_types; do
+        ./ompss/main -steps 9 -type $t
+        ./ompss/main -steps 9 -type $t -kernel memory_bound -scratch 64
+    done
+fi

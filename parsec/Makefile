@@ -34,6 +34,8 @@ LIB := $(LIB) $(LIB_EXT)
 
 CFLAGS += $(INC)
 
+include ../core/make_blas.mk
+
 TARGET = main
 all: $(TARGET)
 

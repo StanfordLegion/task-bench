@@ -1,9 +1,9 @@
 DEBUG ?= 0
 
-CXX ?= g++
+MCXX = mcxx
 
-CXXFLAGS = -std=c++11 -Wall -fopenmp
-LDFLAGS  = -std=c++11 -Wall -fopenmp
+CXXFLAGS = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
+LDFLAGS  = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 
 ifeq ($(strip $(DEBUG)),1)
 CXXFLAGS += -g -O0 -mavx
@@ -26,24 +26,16 @@ LIB := $(LIB) $(LIB_EXT)
 
 CXXFLAGS += $(INC)
 
-include ../core/make_blas.mk
-
 TARGET = main
 all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
 
-core.o: ../core/core.cc ../core/core.h ../core/core_kernel.h
-	$(CXX) -c $(CXXFLAGS) $<
-
-core_kernel.o: ../core/core_kernel.cc ../core/core_kernel.h
-	$(CXX) -c $(CXXFLAGS) $<
-
 main.o: main.cc ../core/timer.h
-	$(CXX) -c $(CXXFLAGS) $<
+	$(MCXX) $(CXXFLAGS) -c $<
 
-main: main.o core.o core_kernel.o
-	$(CXX) $^ $(LIB) $(LDFLAGS) -o $@ 
+main: main.o ../core/libcore.a
+	$(MCXX) $^ $(LIB) $(LDFLAGS) -o $@ 
 
 
 clean:

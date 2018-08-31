@@ -15,9 +15,13 @@
 
 #include <immintrin.h>
 #include <cassert>
+#include <math.h>
 #include <sys/time.h>
 #include "core.h"
 #include "core_kernel.h"
+#ifdef USE_BLAS_KERNEL
+#include <mkl.h>
+#endif
 
 void execute_kernel_empty(const Kernel &kernel)
 {
@@ -52,6 +56,33 @@ void execute_kernel_memory(const Kernel &kernel,
     }
   }
   // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
+}
+
+void execute_kernel_dgemm(const Kernel &kernel,
+                           char *scratch_ptr, size_t scratch_bytes)
+{
+#ifdef USE_BLAS_KERNEL
+  long long N = scratch_bytes / (3 * sizeof(double));
+  int m, n, p;
+  double alpha, beta;
+
+  m = n = p = sqrt(N);
+  alpha = 1.0; beta = 1.0;
+
+  double *A = reinterpret_cast<double *>(scratch_ptr);
+  double *B = reinterpret_cast<double *>(scratch_ptr + N * sizeof(double));
+  double *C = reinterpret_cast<double *>(scratch_ptr + 2 * N * sizeof(double));
+
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
+                m, n, p, alpha, A, p, B, n, beta, C, n);
+  }
+  // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
+#else
+  fprintf(stderr, "No BLAS is detected\n");
+  fflush(stderr);
+  abort();
+#endif
 }
 
 double execute_kernel_compute(const Kernel &kernel)

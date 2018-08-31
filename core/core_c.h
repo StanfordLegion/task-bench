@@ -40,6 +40,7 @@ typedef enum kernel_type_t {
   EMPTY,
   BUSY_WAIT,
   MEMORY_BOUND,
+  COMPUTE_DGEMM,
   COMPUTE_BOUND,
   COMPUTE_BOUND2,
   IO_BOUND,
