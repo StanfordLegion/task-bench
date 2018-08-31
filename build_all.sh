@@ -208,7 +208,7 @@ fi
     )
 
     # swift-t
-    pushd ../swift-t-1.4
+    pushd swift-t-1.4
     ./dev/build/init-settings.sh
     sed -i 's@SWIFT_T_PREFIX=/tmp/swift-t-install@SWIFT_T_PREFIX='"$SWIFT_PREFIX"'@g' ./dev/build/swift-t-settings.sh
     sed -i 's@# TCLSH_LOCAL=/usr/bin/tclsh@TCLSH_LOCAL='"$SWIFT_PREFIX"'/bin/tclsh8.6@g' ./dev/build/swift-t-settings.sh
