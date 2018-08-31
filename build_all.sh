@@ -49,8 +49,8 @@ if [[ $USE_LEGION -eq 1 ]]; then
 fi
 
 if [[ $USE_REALM -eq 1 ]]; then
-    make -C realm clean
-    make -C realm -j$THREADS
+    make -C Realm clean
+    make -C Realm -j$THREADS
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
