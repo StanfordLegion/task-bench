@@ -46,8 +46,10 @@ struct ShardArgs {
 public:
   int taskid;
   Realm::Barrier sync;
-  Realm::Barrier most_time_bar;
-  Realm::Barrier least_time_bar;
+  Realm::Barrier first_start;
+  Realm::Barrier last_start;
+  Realm::Barrier first_stop;
+  Realm::Barrier last_stop;
 };
 
 struct CommArgs {
