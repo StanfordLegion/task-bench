@@ -136,7 +136,7 @@ if [[ $USE_SPARK -eq 1 ]]; then
     pushd "$SPARK_SWIG_DIR"
     mkdir build
     cd build
-    ./configure --prefix="$PWD/.."
+    ../configure --prefix="$PWD/.."
     make
     make install
     #make -k check #can run this on a compute node and pass -j$THREADS to make this faster
