@@ -51,10 +51,10 @@ fi
 if [[ $USE_STARPU -eq 1 ]]; then
     STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples "
     if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
-      STARPU_CONFIGURE_FLAG+="" 
+      STARPU_CONFIGURE_FLAG+=""
     else
       STARPU_CONFIGURE_FLAG+="--without-hwloc"
-    fi 
+    fi
     pushd "$STARPU_SRC_DIR"
     PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ./configure --prefix=$STARPU_DIR $STARPU_CONFIGURE_FLAG
     make -j$THREADS
@@ -99,13 +99,13 @@ fi
         make -C charm++_smp
      )
 fi)
-  
+
 if [[ $USE_OPENMP -eq 1 ]]; then
     make -C openmp clean
     make -C openmp -j$THREADS
 fi
 
-if [[ $USE_OMPSS -eq 1 ]]; then    
+if [[ $USE_OMPSS -eq 1 ]]; then
     pushd "$NANOS_SRC_DIR"
     if [[ ! -d build ]]; then
         mkdir build
@@ -125,11 +125,34 @@ if [[ $USE_OMPSS -eq 1 ]]; then
         make install
     fi
     popd
-    
+
     export PATH=$NANOS_PREFIX/bin:$MERCURIUM_PREFIX/bin:$PATH
     export LD_LIBRARY_PATH=$NANOS_PREFIX/lib:$MERCURIUM_PREFIX/lib:$LD_LIBRARY_PATH
     make -C ompss clean
     make -C ompss -j$THREADS
+fi
+
+if [[ $USE_SPARK -eq 1 ]]; then
+    pushd "$SPARK_SWIG_DIR"
+    ./configure --prefix="$PWD"
+    make
+    make install
+    #make -k check #can run this on a compute node and pass -j$THREADS to make this faster
+    popd
+
+    #put .cxx in swig dir, java files in /src/main/java
+    pushd "$SPARK_SWIG_DIR"
+    ./swig -c++ -java -outcurrentdir -outdir "$SPARK_PROJ_DIR"/src/main/java "$SPARK_PROJ_DIR"/core_c.i #core_c.i has full path to core_c.h, typemaps
+
+    #make *.so in swig dir
+    g++ -fpic -c -O3 -std=c++11 -I"$JAVA_HOME"/include -I"$JAVA_HOME"/include/linux core_c_wrap.cxx
+    g++ -shared -O3 -z noexecstack -std=c++11 "$CORE_DIR"/core_c.o core_c_wrap.o -L"$CORE_DIR" -lcore -o libcore_c.so
+    popd
+
+    #make jar in sbt dir
+    pushd "$SPARK_PROJ_DIR" #task-bench/spark
+    "$SPARK_SBT_DIR"/sbt assembly
+    popd
 fi
 
 (if [[ $USE_SWIFT -eq 1 ]]; then

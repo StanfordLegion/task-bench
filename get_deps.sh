@@ -13,6 +13,7 @@ USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
 USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
 USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
 USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
+USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 
 if [[ -e deps ]]; then
@@ -126,6 +127,46 @@ EOF
     wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
     tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
     rm -rf ompss-17.12.1.tar.gz
+fi
+
+if [[ $USE_SPARK -eq 1 ]]; then
+    export SPARK_DIR="$PWD"/deps/spark
+    export SPARK_SWIG_DIR=$SPARK_DIR/swig-3.0.12
+    export JAVA_HOME="$SPARK_DIR"/jdk1.8.0_131
+    export PATH="$JAVA_HOME"/bin:"$PATH"
+    cat >>deps/env.sh <<EOF
+export USE_SPARK=$USE_SPARK
+export SPARK_DIR=$SPARK_DIR
+export SPARK_SRC_DIR=$SPARK_DIR/spark-2.3.0-bin-hadoop2.7  
+export SPARK_SBT_DIR=$SPARK_DIR/sbt/bin 
+export SPARK_SWIG_DIR=$SPARK_SWIG_DIR
+export SPARK_PROJ_DIR="$PWD"/spark
+export CORE_DIR="$PWD"/core
+export JAVA_HOME=$JAVA_HOME
+export PATH=$PATH
+EOF
+    mkdir -p "$SPARK_DIR" #make deps/spark 
+    #don’t install Scala--use 2.11.8 that comes with Spark 2.3.0
+
+    #Java
+    wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
+    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$SPARK_DIR" 
+    rm jdk-8u131-linux-x64.tar.gz
+
+    #Spark 2.3.0   
+    wget https://archive.apache.org/dist/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn’t work without hadoop
+    tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn’t add to path—put full paths in emtg script
+    rm spark-2.3.0-bin-hadoop2.7.tgz
+
+    #SWIG 3.0.12
+    wget https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
+    tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
+    rm swig-3.0.12.tar.gz
+
+    #SBT 1.1.6
+    wget https://sbt-downloads.cdnedge.bluemix.net/releases/v1.1.6/sbt-1.1.6.tgz
+    tar -zxf sbt-1.1.6.tgz -C "$SPARK_DIR"
+    rm -rf sbt-1.1.6.tar.gz    
 fi
 
 if [[ $USE_SWIFT -eq 1 ]]; then
