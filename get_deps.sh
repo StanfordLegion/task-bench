@@ -58,7 +58,7 @@ EOF
     rm -rf hwloc-1.11.10.tar.gz
 fi
 
-if [[ $USE_LEGION -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 ]] || [[ $USE_REALM -eq 1 ]]; then
     export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
 export USE_LEGION=$USE_LEGION
@@ -112,14 +112,4 @@ if [[ $USE_OPENMP -eq 1 ]]; then
 export USE_OPENMP=$USE_OPENMP
 EOF
     source deps/env.sh
-fi
-
-if [[ $USE_REALM -eq 1 ]]; then
-    export LEGION_DIR="$PWD"/deps/legion
-    cat >>deps/env.sh <<EOF
-export USE_REALM=$USE_REALM
-export LG_RT_DIR="$LEGION_DIR"/runtime
-export USE_LIBDL=0
-EOF
-    git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
