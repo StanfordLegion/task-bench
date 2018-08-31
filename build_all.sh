@@ -148,18 +148,14 @@ fi
 
     # tcl
     pushd tcl8.6.8/unix
-    mkdir build
-    cd build
-    ../configure --enable-shared --prefix="$SWIFT_PREFIX"
+    ./configure --enable-shared --prefix="$SWIFT_PREFIX"
     make
     make install
     popd
 
     # tk
     pushd tk8.6.8/unix
-    mkdir build
-    cd build
-    ../configure --enable-shared --prefix="$SWIFT_PREFIX" --with-tcl="$SWIFT_DIR"/tcl8.6.8/unix --x-includes="$SWIFT_PREFIX"/include --x-libraries="$SWIFT_PREFIX"/lib
+    ./configure --enable-shared --prefix="$SWIFT_PREFIX" --with-tcl="$SWIFT_DIR"/tcl8.6.8/unix --x-includes="$SWIFT_PREFIX"/include --x-libraries="$SWIFT_PREFIX"/lib
     make
     make install
     popd
