@@ -43,7 +43,7 @@ sbatch --nodes 1 emtg_legion.sh
 
 ### Cori
 
-Place the following into `~/.profile.ext`:
+Place the following into `~/.bashrc.ext`:
 
 ```
 module unload PrgEnv-intel

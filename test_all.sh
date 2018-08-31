@@ -67,18 +67,24 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     done
 fi
 
+if [[ $USE_OMPSS -eq 1 ]]; then
+    for t in $basic_types; do
+        ./ompss/main -steps 9 -type $t
+        ./ompss/main -steps 9 -type $t -kernel memory_bound -scratch 64
+    done
+fi
+
 if [[ $USE_SPARK -eq 1 ]]; then
-    #service ssh status #ssh start/running, process 1372
     export SPARK_LOCAL_IP=localhost
     export SPARK_MASTER_IP=localhost
     export SPARK_MASTER_HOST=localhost
-    ssh-keygen -N "" -f $HOME/.ssh/id_rsa 
-    cat $HOME/.ssh/id_rsa.pub>>$HOME/.ssh/authorized_keys
+    ssh-keygen -N "" -f "$HOME/.ssh/id_rsa"
+    cat $HOME/.ssh/id_rsa.pub >> "$HOME/.ssh/authorized_keys"
     echo "id_rsa.pub:"
     cat $HOME/.ssh/id_rsa.pub
     echo "authorized_keys:"
     cat $HOME/.ssh/authorized_keys 
-    export LD_LIBRARY_PATH=$CORE_DIR:$SPARK_SWIG_DIR:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH="$CORE_DIR:$SPARK_SWIG_DIR:$LD_LIBRARY_PATH"
 
     $SPARK_SRC_DIR/sbin/start-all.sh 
     #run standalone cluster, not local
@@ -95,11 +101,4 @@ if [[ $USE_SPARK -eq 1 ]]; then
     done
 
     $SPARK_SRC_DIR/sbin/stop-all.sh 
-fi
-
-if [[ $USE_OMPSS -eq 1 ]]; then
-    for t in $basic_types; do
-        ./ompss/main -steps 9 -type $t
-        ./ompss/main -steps 9 -type $t -kernel memory_bound -scratch 64
-    done
 fi

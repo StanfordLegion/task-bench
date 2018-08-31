@@ -2,7 +2,7 @@
 
 set -e
 
-DEFAULT_FEATURES=${DEFAULT_FEATURES:-0}
+DEFAULT_FEATURES=${DEFAULT_FEATURES:-1}
 
 TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 USE_GASNET=${USE_GASNET:-0}
@@ -12,8 +12,8 @@ USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
 USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
 USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
-USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
+USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -115,55 +115,6 @@ EOF
     source deps/env.sh
 fi
 
-if [[ $USE_SPARK -eq 1 ]]; then
-    export SPARK_DIR="$PWD"/deps/spark
-    export SWIG_DIR=$SPARK_DIR/swig-3.0.12
-    export JAVA_HOME="$SPARK_DIR"/jdk1.8.0_131
-    export PATH="$JAVA_HOME"/bin:"$PATH"
-    cat >>deps/env.sh <<EOF
-export USE_SPARK=$USE_SPARK
-export SPARK_DIR=$SPARK_DIR
-export SPARK_SRC_DIR=$SPARK_DIR/spark-2.3.0-bin-hadoop2.7  
-export SPARK_SBT_DIR=$SPARK_DIR/sbt/bin 
-export SPARK_SWIG_DIR=$SWIG_DIR
-export SPARK_PROJ_DIR="$PWD"/spark
-export CORE_DIR="$PWD"/core
-export JAVA_HOME=$JAVA_HOME
-export PATH=$PATH
-EOF
-    mkdir -p "$SPARK_DIR" #make deps/spark 
-    #don’t install Scala--use 2.11.8 that comes with Spark 2.3.0
-
-    #Java
-    wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
-    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$SPARK_DIR" 
-    rm -rf jdk-8u131-linux-x64.tar.gz
-
-    #Spark 2.3.0   
-    wget https://archive.apache.org/dist/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn’t work without hadoop
-    tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn’t add to path—put full paths in emtg script
-    rm -rf spark-2.3.0-bin-hadoop2.7.tgz
-
-    #SWIG 3.0.12
-    #module load java
-    #module load cmake
-    #module load pcre
-    wget https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
-    tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
-    rm -rf swig-3.0.12.tar.gz
-    pushd "$SWIG_DIR"  
-    ./configure --prefix="$PWD" #must be absolute path not starting with ~; not found messages are ok
-    make
-    make install
-    #make -k check #can run this on a compute node and pass -j$THREADS to make this faster
-    popd
-
-    #SBT 1.1.6
-    wget https://sbt-downloads.cdnedge.bluemix.net/releases/v1.1.6/sbt-1.1.6.tgz
-    tar -zxf sbt-1.1.6.tgz -C "$SPARK_DIR"
-    rm -rf sbt-1.1.6.tar.gz    
-fi
-
 if [[ $USE_OMPSS -eq 1 ]]; then
     export OMPSS_DL_DIR="$PWD"/deps/ompss
     cat >>deps/env.sh <<EOF
@@ -178,4 +129,44 @@ EOF
     wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
     tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
     rm -rf ompss-17.12.1.tar.gz
+fi
+
+if [[ $USE_SPARK -eq 1 ]]; then
+    export SPARK_DIR="$PWD"/deps/spark
+    export SPARK_SWIG_DIR=$SPARK_DIR/swig-3.0.12
+    export JAVA_HOME="$SPARK_DIR"/jdk1.8.0_131
+    export PATH="$JAVA_HOME"/bin:"$PATH"
+    cat >>deps/env.sh <<EOF
+export USE_SPARK=$USE_SPARK
+export SPARK_DIR=$SPARK_DIR
+export SPARK_SRC_DIR=$SPARK_DIR/spark-2.3.0-bin-hadoop2.7  
+export SPARK_SBT_DIR=$SPARK_DIR/sbt/bin 
+export SPARK_SWIG_DIR=$SPARK_SWIG_DIR
+export SPARK_PROJ_DIR="$PWD"/spark
+export CORE_DIR="$PWD"/core
+export JAVA_HOME=$JAVA_HOME
+export PATH=$PATH
+EOF
+    mkdir -p "$SPARK_DIR" #make deps/spark 
+    #don’t install Scala--use 2.11.8 that comes with Spark 2.3.0
+
+    #Java
+    wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
+    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$SPARK_DIR" 
+    rm jdk-8u131-linux-x64.tar.gz
+
+    #Spark 2.3.0   
+    wget https://archive.apache.org/dist/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn’t work without hadoop
+    tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn’t add to path—put full paths in emtg script
+    rm spark-2.3.0-bin-hadoop2.7.tgz
+
+    #SWIG 3.0.12
+    wget https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
+    tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
+    rm swig-3.0.12.tar.gz
+
+    #SBT 1.1.6
+    wget https://sbt-downloads.cdnedge.bluemix.net/releases/v1.1.6/sbt-1.1.6.tgz
+    tar -zxf sbt-1.1.6.tgz -C "$SPARK_DIR"
+    rm -rf sbt-1.1.6.tar.gz    
 fi
