@@ -31,11 +31,15 @@ if [[ $USE_GASNET -eq 1 ]]; then
     make -C "$GASNET_DIR"
 fi
 
-if [[ $USE_HWLOC_TMP -eq 1 ]]; then
+if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     pushd "$HWLOC_SRC_DIR"
-    ./configure --prefix=$HWLOC_DIR
-    make -j$THREADS
-    make install
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../configure --prefix=$HWLOC_DIR
+        make -j$THREADS
+        make install
+    fi
     popd
 fi
 
@@ -46,7 +50,7 @@ fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
     STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples "
-    if [[ $USE_HWLOC_TMP -eq 1 ]]; then
+    if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
       STARPU_CONFIGURE_FLAG+="" 
     else
       STARPU_CONFIGURE_FLAG+="--without-hwloc"
@@ -63,7 +67,7 @@ fi
 if [[ $USE_PARSEC -eq 1 ]]; then
     mkdir -p "$PARSEC_DIR"
     pushd "$PARSEC_DIR"
-    if [[ $USE_HWLOC_TMP -eq 1 ]]; then
+    if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
       ../contrib/platforms/config.linux -DPARSEC_GPU_WITH_CUDA=OFF -DCMAKE_INSTALL_PREFIX=$PWD -DHWLOC_DIR=$HWLOC_DIR
     else
       ../contrib/platforms/config.linux -DPARSEC_GPU_WITH_CUDA=OFF -DCMAKE_INSTALL_PREFIX=$PWD
@@ -101,72 +105,128 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     make -C openmp -j$THREADS
 fi
 
-if [[ $USE_SWIFT -eq 1 ]]; then
-    export PATH="$SWIFT_INSTALL"/bin:"$PATH"
-    export LD_LIBRARY_PATH="$SWIFT_INSTALL"/lib:"$LD_LIBRARY_PATH"
-    module load openmpi/3.0.1
+if [[ $USE_OMPSS -eq 1 ]]; then    
+    pushd "$NANOS_SRC_DIR"
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../configure --prefix=$NANOS_PREFIX --disable-instrumentation --disable-debug
+        make -j$THREADS
+        make install
+    fi
+    popd
+
+    pushd "$MERCURIUM_SRC_DIR"
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../configure --prefix=$MERCURIUM_PREFIX --enable-ompss --with-nanox=$NANOS_PREFIX
+        make -j$THREADS
+        make install
+    fi
+    popd
+    
+    export PATH=$NANOS_PREFIX/bin:$MERCURIUM_PREFIX/bin:$PATH
+    export LD_LIBRARY_PATH=$NANOS_PREFIX/lib:$MERCURIUM_PREFIX/lib:$LD_LIBRARY_PATH
+    make -C ompss clean
+    make -C ompss -j$THREADS
+fi
+
+(if [[ $USE_SWIFT -eq 1 ]]; then
+    export PATH="$SWIFT_PREFIX"/bin:"$PATH"
+    export LD_LIBRARY_PATH="$SWIFT_PREFIX"/lib:"$LD_LIBRARY_PATH"
     pushd "$SWIFT_DIR"
+
     # x11
-    pushd "$SWIFT_INSTALL"/src
+    pushd "$SWIFT_PREFIX"/src
     echo -e "util/macros \nfont/util \ndoc/xorg-sgml-doctools \ndoc/xorg-docs \nproto/xorgproto \nxcb/proto \nlib/libxtrans" > modulefile
     echo -e "lib/libXau \nlib/libXdmcp \nxcb/pthread-stubs \nxcb/libxcb \nxcb/util \nxcb/util-image \nxcb/util-keysyms" >> modulefile
     echo -e "xcb/util-renderutil \nxcb/util-wm \nlib/libX11" >> modulefile
-    ./util/modular/build.sh --clone --modfile modulefile "$SWIFT_INSTALL"
+    ./util/modular/build.sh --clone --modfile modulefile "$SWIFT_PREFIX"
     rm modulefile
     popd
+
     # tcl
-    cd tcl8.6.8/unix
-    ./configure --enable-shared --prefix="$SWIFT_INSTALL"
+    pushd tcl8.6.8/unix
+    mkdir build
+    cd build
+    ../configure --enable-shared --prefix="$SWIFT_PREFIX"
     make
     make install
+    popd
+
     # tk
-    cd ../../tk8.6.8/unix
-    ./configure --enable-shared --prefix="$SWIFT_INSTALL" --with-tcl="$SWIFT_DIR"/tcl8.6.8/unix --x-includes="$SWIFT_INSTALL"/include --x-libraries="$SWIFT_INSTALL"/lib
+    pushd tk8.6.8/unix
+    mkdir build
+    cd build
+    ../configure --enable-shared --prefix="$SWIFT_PREFIX" --with-tcl="$SWIFT_DIR"/tcl8.6.8/unix --x-includes="$SWIFT_PREFIX"/include --x-libraries="$SWIFT_PREFIX"/lib
     make
     make install
+    popd
+
     # swig
-    cd ../../swig-3.0.12
-    export LDFLAGS=-L"$SWIFT_INSTALL"/lib
-    export CPPFLAGS=-I"$SWIFT_INSTALL"/include
-    ./configure --enable-shared --prefix="$SWIFT_INSTALL"
-    make
-    make install
-    cd ..
+    (
+        pushd swig-3.0.12
+        export LDFLAGS=-L"$SWIFT_PREFIX"/lib
+        export CPPFLAGS=-I"$SWIFT_PREFIX"/include
+        mkdir build
+        cd build
+        ../configure --enable-shared --prefix="$SWIFT_PREFIX"
+        make
+        make install
+        popd
+    )
+
     # jdk
     export JAVA_HOME="$SWIFT_DIR"/jdk-10.0.2
     export PATH="$JAVA_HOME"/bin:"$PATH"
+
     # ant
-    cd apache-ant-1.10.5
+    pushd apache-ant-1.10.5
     export ANT_HOME="$PWD"
     export PATH="$ANT_HOME"/bin:"$PATH"
+    popd
+
     # ncurses
-    cd ../ncurses-6.1
-    export CXXFLAGS=" -fPIC"
-    export CFLAGS=" -fPIC"
-    ./configure --prefix="$SWIFT_INSTALL" --enable-shared
-    make
-    make install
+    (
+        pushd ncurses-6.1
+        export CXXFLAGS=" -fPIC"
+        export CFLAGS=" -fPIC"
+        mkdir build
+        cd build
+        ../configure --prefix="$SWIFT_PREFIX" --enable-shared
+        make
+        make install
+        popd
+    )
+
     # zsh
-    cd ../zsh-5.5.1
-    export CPPFLAGS="-I$SWIFT_INSTALL/include"
-    export LDFLAGS="-L$SWIFT_INSTALL/lib"
-    ./configure --prefix="$SWIFT_INSTALL"
-    make
-    make install
+    (
+        pushd zsh-5.5.1
+        export CPPFLAGS="-I$SWIFT_PREFIX/include"
+        export LDFLAGS="-L$SWIFT_PREFIX/lib"
+        ./configure --prefix="$SWIFT_PREFIX"
+        make
+        make install
+        popd
+    )
+
     # swift-t
-    cd ../swift-t-1.4
+    pushd ../swift-t-1.4
     ./dev/build/init-settings.sh
-    sed -i 's@SWIFT_T_PREFIX=/tmp/swift-t-install@SWIFT_T_PREFIX='"$SWIFT_INSTALL"'@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCLSH_LOCAL=/usr/bin/tclsh@TCLSH_LOCAL='"$SWIFT_INSTALL"'/bin/tclsh8.6@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCL_LIB_DIR=/path/to/tcl/lib@TCL_LIB_DIR='"$SWIFT_INSTALL"'/lib@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCL_INCLUDE_DIR=/path/to/tcl/include@TCL_INCLUDE_DIR='"$SWIFT_INSTALL"'/include@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCL_SYSLIB_DIR=/path/to/tcl/lib@TCL_SYSLIB_DIR='"$SWIFT_INSTALL"'/lib@g' ./dev/build/swift-t-settings.sh
+    sed -i 's@SWIFT_T_PREFIX=/tmp/swift-t-install@SWIFT_T_PREFIX='"$SWIFT_PREFIX"'@g' ./dev/build/swift-t-settings.sh
+    sed -i 's@# TCLSH_LOCAL=/usr/bin/tclsh@TCLSH_LOCAL='"$SWIFT_PREFIX"'/bin/tclsh8.6@g' ./dev/build/swift-t-settings.sh
+    sed -i 's@# TCL_LIB_DIR=/path/to/tcl/lib@TCL_LIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
+    sed -i 's@# TCL_INCLUDE_DIR=/path/to/tcl/include@TCL_INCLUDE_DIR='"$SWIFT_PREFIX"'/include@g' ./dev/build/swift-t-settings.sh
+    sed -i 's@# TCL_SYSLIB_DIR=/path/to/tcl/lib@TCL_SYSLIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
     sed -i 's@# export JAVA_HOME=@export JAVA_HOME='"$SWIFT_DIR"'/jdk-10.0.2@g' ./dev/build/swift-t-settings.sh
     sed -i 's@# export ANT_HOME=@export ANT_HOME='"$SWIFT_DIR"'/apache-ant-1.10.5@g' ./dev/build/swift-t-settings.sh
 
     ./dev/build/build-all.sh
-    export PATH="$SWIFT_INSTALL"/stc/bin:"$SWIFT_INSTALL"/turbine/bin:$PATH
-    find "$SWIFT_INSTALL"/stc -type f -exec sed -i 's@/bin/zsh@'"$SWIFT_INSTALL"'/bin/zsh@g' {} +
-    find "$SWIFT_INSTALL"/turbine -type f -exec sed -i 's@/bin/zsh@'"$SWIFT_INSTALL"'/bin/zsh@g' {} +
+    export PATH="$SWIFT_PREFIX"/stc/bin:"$SWIFT_PREFIX"/turbine/bin:$PATH
+    find "$SWIFT_PREFIX"/stc -type f -exec sed -i 's@/bin/zsh@'"$SWIFT_PREFIX"'/bin/zsh@g' {} +
+    find "$SWIFT_PREFIX"/turbine -type f -exec sed -i 's@/bin/zsh@'"$SWIFT_PREFIX"'/bin/zsh@g' {} +
     popd
-fi
+
+    popd
+fi)

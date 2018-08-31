@@ -170,9 +170,9 @@ void task6(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
 #endif
 }
 
-struct OpenMPApp : public App {
-  OpenMPApp(int argc, char **argv);
-  ~OpenMPApp();
+struct OmpSsApp : public App {
+  OmpSsApp(int argc, char **argv);
+  ~OmpSsApp();
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
 private:
@@ -181,12 +181,12 @@ private:
 private:
   int nb_workers;
   int nb_fields;
-//  matrix_t *matrix;
+  //matrix_t *matrix;
 };
 
 matrix_t *matrix = NULL;
 
-OpenMPApp::OpenMPApp(int argc, char **argv)
+OmpSsApp::OmpSsApp(int argc, char **argv)
   : App(argc, argv)
 { 
   nb_workers = 1;
@@ -209,7 +209,7 @@ OpenMPApp::OpenMPApp(int argc, char **argv)
     TaskGraph &graph = graphs[i];
     
     if (nb_fields == 0) {
-      nb_fields = graph.timesteps;
+      nb_fields = graph.max_width;
     }
     matrix[i].M = nb_fields;
     matrix[i].N = graph.max_width;
@@ -223,7 +223,7 @@ OpenMPApp::OpenMPApp(int argc, char **argv)
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
     
-    printf("graph id %d, M = %d, N = %d, data %p\n", i, matrix[i].M, matrix[i].N, matrix[i].data);
+    printf("graph id %d, M = %d, N = %d\n", i, matrix[i].M, matrix[i].N);
   }
   
   extra_local_memory = (char**)malloc(sizeof(char*) * nb_workers);
@@ -236,13 +236,13 @@ OpenMPApp::OpenMPApp(int argc, char **argv)
     }
   }
   
- // omp_set_dynamic(1);
+  // omp_set_dynamic(1);
   omp_set_num_threads(nb_workers);
   
 
 }
 
-OpenMPApp::~OpenMPApp()
+OmpSsApp::~OmpSsApp()
 {
   for (unsigned i = 0; i < graphs.size(); i++) {
     for (int j = 0; j < matrix[i].M * matrix[i].N; j++) {
@@ -266,33 +266,33 @@ OpenMPApp::~OpenMPApp()
   extra_local_memory = NULL;
 }
 
-void OpenMPApp::execute_main_loop()
+void OmpSsApp::execute_main_loop()
 { 
   display();
   
   Timer::time_start();
   
-  #pragma omp parallel
-  {
-    #pragma omp master
-    {
-      for (unsigned i = 0; i < graphs.size(); i++) {
-        const TaskGraph &g = graphs[i];
+  for (unsigned i = 0; i < graphs.size(); i++) {
+    const TaskGraph &g = graphs[i];
+  
+/*#pragma omp parallel*/
+    //{
+//#pragma omp master
+      /*{*/
         for (int y = 0; y < g.timesteps; y++) {
           execute_timestep(i, y);
         }
-        
-      }
-      #pragma omp taskwait
-    }
-    #pragma omp barrier
+/*      }*/
+    //}
   }
+
+#pragma omp taskwait  
   
   double elapsed = Timer::time_end();
   report_timing(elapsed);
 }
 
-void OpenMPApp::execute_timestep(size_t idx, long t)
+void OmpSsApp::execute_timestep(size_t idx, long t)
 {
   const TaskGraph &g = graphs[idx];
   long offset = g.offset_at_timestep(t);
@@ -345,17 +345,17 @@ void OpenMPApp::execute_timestep(size_t idx, long t)
   }
 }
 
-void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, size_t graph_id)
+void OmpSsApp::insert_task(std::vector<task_args_t> args, payload_t payload, size_t graph_id)
 {
   int num_args = args.size();
   tile_t *mat = matrix[graph_id].data;
   int x0 = args[0].x;
   int y0 = args[0].y;
-//  printf("x %d, y %d, mat %p\n", x0, y0, mat);
+ // printf("x %d, y %d\n", x0, y0);
   switch(num_args) {
   case 1:
   {
-    #pragma omp task depend(inout: mat[y0 * matrix[graph_id].N + x0])
+#pragma omp task depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task1(&mat[y0 * matrix[graph_id].N + x0], payload);
     break;
   }
@@ -364,7 +364,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
   {
     int x1 = args[1].x;
     int y1 = args[1].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task2(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], payload);
     break;
@@ -376,7 +376,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
     int y1 = args[1].y;
     int x2 = args[2].x;
     int y2 = args[2].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task3(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], payload);
@@ -391,7 +391,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
     int y2 = args[2].y;
     int x3 = args[3].x;
     int y3 = args[3].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task4(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -409,7 +409,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
     int y3 = args[3].y;
     int x4 = args[4].x;
     int y4 = args[4].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task5(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -430,7 +430,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
     int y4 = args[4].y;
     int x5 = args[5].x;
     int y5 = args[5].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task6(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -445,7 +445,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
   };
 }
 
-void OpenMPApp::debug_printf(int verbose_level, const char *format, ...)
+void OmpSsApp::debug_printf(int verbose_level, const char *format, ...)
 {
   if (verbose_level > VERBOSE_LEVEL) {
     return;
@@ -458,7 +458,7 @@ void OpenMPApp::debug_printf(int verbose_level, const char *format, ...)
 
 int main(int argc, char ** argv)
 {
-  OpenMPApp app(argc, argv);
+  OmpSsApp app(argc, argv);
   app.execute_main_loop();
 
   return 0;

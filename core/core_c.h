@@ -40,6 +40,7 @@ typedef enum kernel_type_t {
   EMPTY,
   BUSY_WAIT,
   MEMORY_BOUND,
+  COMPUTE_DGEMM,
   COMPUTE_BOUND,
   COMPUTE_BOUND2,
   IO_BOUND,
@@ -49,8 +50,6 @@ typedef enum kernel_type_t {
 typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
-
-  long max_power; // compute kernel parameter
   long jump;      // memory kernel parameter
 } kernel_t;
 

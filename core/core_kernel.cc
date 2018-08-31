@@ -15,8 +15,13 @@
 
 #include <immintrin.h>
 #include <cassert>
+#include <math.h>
+#include <sys/time.h>
 #include "core.h"
 #include "core_kernel.h"
+#ifdef USE_BLAS_KERNEL
+#include <mkl.h>
+#endif
 
 void execute_kernel_empty(const Kernel &kernel)
 {
@@ -53,6 +58,33 @@ void execute_kernel_memory(const Kernel &kernel,
   // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
 }
 
+void execute_kernel_dgemm(const Kernel &kernel,
+                           char *scratch_ptr, size_t scratch_bytes)
+{
+#ifdef USE_BLAS_KERNEL
+  long long N = scratch_bytes / (3 * sizeof(double));
+  int m, n, p;
+  double alpha, beta;
+
+  m = n = p = sqrt(N);
+  alpha = 1.0; beta = 1.0;
+
+  double *A = reinterpret_cast<double *>(scratch_ptr);
+  double *B = reinterpret_cast<double *>(scratch_ptr + N * sizeof(double));
+  double *C = reinterpret_cast<double *>(scratch_ptr + 2 * N * sizeof(double));
+
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
+                m, n, p, alpha, A, p, B, n, beta, C, n);
+  }
+  // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
+#else
+  fprintf(stderr, "No BLAS is detected\n");
+  fflush(stderr);
+  abort();
+#endif
+}
+
 double execute_kernel_compute(const Kernel &kernel)
 {
 #if 0 
@@ -82,7 +114,9 @@ double execute_kernel_compute(const Kernel &kernel)
   
   for (long iter = 0; iter < kernel.iterations; iter++) {
     for (int i = 0; i < 8; i++) {
-        A[i] = _mm256_mul_pd(A[i], A[i]);
+      A[i] = _mm256_mul_pd(A[i], A[i]);
+       //A[i] = _mm256_fmadd_pd(A[i], A[i], A[i]);
+       //  A[i] = _mm256_add_pd(A[i], A[i]);
     }
   }
   
@@ -125,15 +159,17 @@ void execute_kernel_io(const Kernel &kernel)
   assert(false);
 }
 
-void execute_kernel_imbalance(const Kernel &kernel)
+double execute_kernel_imbalance(const Kernel &kernel)
 {
-  //random pick one task to be compute bound
-
   // Use current time as seed for random generator
-  // srand(Timer::get_cur_time());
+  //struct timeval tv;
+  //gettimeofday(&tv,NULL);
+  //long t = tv.tv_sec *1e6 + tv.tv_usec;
+  //srand(t);
 
-  long long max_power = rand() % kernel.max_power;
+  long iterations = rand() % kernel.iterations;
   Kernel k(kernel);
-  k.max_power = max_power;
-  execute_kernel_compute(k);
+  k.iterations = iterations;
+  //printf("iteration %d\n", iterations);
+  return execute_kernel_compute(k);
 }

@@ -2,15 +2,18 @@
 
 set -e
 
-TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-1}
+DEFAULT_FEATURES=${DEFAULT_FEATURES:-1}
+
+TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 USE_GASNET=${USE_GASNET:-0}
-USE_HWLOC_TMP=${USE_HWLOC_TMP:-1}
-USE_LEGION=${USE_LEGION:-1}
-USE_STARPU=${USE_STARPU:-1}
-USE_PARSEC=${USE_PARSEC:-1}
-USE_CHARM=${USE_CHARM:-1}
-USE_OPENMP=${USE_OPENMP:-1}
-USE_SWIFT=${USE_SWIFT:-1}
+TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
+USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
+USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
+USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
+USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
+USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
+USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
+USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -43,12 +46,12 @@ EOF
     git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
 fi
 
-if [[ $USE_HWLOC_TMP -eq 1 ]]; then
+if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     export HWLOC_DL_DIR="$PWD"/deps/hwloc
     cat >>deps/env.sh <<EOF
-export USE_HWLOC_TMP=$USE_HWLOC_TMP
+export TASKBENCH_USE_HWLOC=$TASKBENCH_USE_HWLOC
 export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
-export HWLOC_DIR=$HWLOC_DL_DIR
+export HWLOC_DIR=$HWLOC_DL_DIR/install
 EOF
     wget https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
     mkdir -p "$HWLOC_DL_DIR"
@@ -109,19 +112,35 @@ EOF
     source deps/env.sh
 fi
 
+if [[ $USE_OMPSS -eq 1 ]]; then
+    export OMPSS_DL_DIR="$PWD"/deps/ompss
+    cat >>deps/env.sh <<EOF
+export USE_OMPSS=$USE_OMPSS
+export OMPSS_DL_DIR=$OMPSS_DL_DIR
+export NANOS_SRC_DIR=$OMPSS_DL_DIR/nanox-0.14.1
+export NANOS_PREFIX=$OMPSS_DL_DIR/nanox-0.14.1/install
+export MERCURIUM_SRC_DIR=$OMPSS_DL_DIR/mcxx-2.1.0
+export MERCURIUM_PREFIX=$OMPSS_DL_DIR/mcxx-2.1.0/install
+EOF
+    mkdir -p "$OMPSS_DL_DIR"
+    wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
+    tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
+    rm -rf ompss-17.12.1.tar.gz
+fi
+
 if [[ $USE_SWIFT -eq 1 ]]; then
     export SWIFT_DIR="$PWD"/deps/swift
-    export SWIFT_INSTALL="$SWIFT_DIR"/install
+    export SWIFT_PREFIX="$SWIFT_DIR"/install
     cat >>deps/env.sh <<EOF
 export USE_SWIFT=$USE_SWIFT
 export SWIFT_DIR=$SWIFT_DIR
-export SWIFT_INSTALL=$SWIFT_INSTALL
+export SWIFT_PREFIX=$SWIFT_PREFIX
 EOF
     mkdir -p "$SWIFT_DIR"
-    mkdir -p "$SWIFT_INSTALL"
-    mkdir -p "$SWIFT_INSTALL"/src
+    mkdir -p "$SWIFT_PREFIX"
+    mkdir -p "$SWIFT_PREFIX"/src
 
-    pushd "$SWIFT_INSTALL"/src
+    pushd "$SWIFT_PREFIX"/src
     git clone git://anongit.freedesktop.org/git/xorg/util/modular util/modular
     popd
 
