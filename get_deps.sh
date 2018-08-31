@@ -59,7 +59,7 @@ EOF
     rm -rf hwloc-1.11.10.tar.gz
 fi
 
-if [[ $USE_LEGION -eq 1 ]] || [[ $USE_REALM -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 || $USE_REALM -eq 1 ]]; then
     export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
 export USE_LEGION=$USE_LEGION
