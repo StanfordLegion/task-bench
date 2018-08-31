@@ -63,6 +63,7 @@ if [[ $USE_LEGION -eq 1 || $USE_REALM -eq 1 ]]; then
     export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
 export USE_LEGION=$USE_LEGION
+export USE_REALM=$USE_REALM
 export LG_RT_DIR="$LEGION_DIR"/runtime
 export USE_LIBDL=0
 EOF
