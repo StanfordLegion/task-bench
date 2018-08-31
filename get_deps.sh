@@ -152,7 +152,7 @@ EOF
     tar xfz tk8.6.8-src.tar.gz -C "$SWIFT_DIR"
     rm tk8.6.8-src.tar.gz
 
-    wget http://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz
+    wget https://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz
     tar xfz swig-3.0.12.tar.gz -C "$SWIFT_DIR"
     rm swig-3.0.12.tar.gz
 
@@ -164,7 +164,7 @@ EOF
     tar xfz apache-ant-1.10.5-bin.tar.gz -C "$SWIFT_DIR"
     rm apache-ant-1.10.5-bin.tar.gz
 
-    wget ftp://ftp.invisible-island.net/ncurses/ncurses-6.1.tar.gz
+    wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz
     tar xfz ncurses-6.1.tar.gz -C "$SWIFT_DIR"
     rm ncurses-6.1.tar.gz
 
