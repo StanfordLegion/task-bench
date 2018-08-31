@@ -15,6 +15,7 @@
 
 #include <vector>
 #include <string>
+#include "charm++.h"
 #include "pup_stl.h"
 
 class VectorWrapper {
@@ -27,7 +28,7 @@ class VectorWrapper {
   std::vector<std::string> vec;
 
   VectorWrapper();
-  VectorWrapper(std::vector<std::string> vec);
+  VectorWrapper(CkArgMsg* msg);
   ~VectorWrapper();
 
   char** toArgv();
