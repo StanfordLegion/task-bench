@@ -62,14 +62,6 @@ where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}), writes(timin
   timing_region[0].end_t = regentlib.c.legion_get_current_time_in_nanos()
 end
 
---task print(primary : region(ispace(int1d), fs))
---where reads(primary.{x, y}) do
---  for i in primary do
---    c.printf("x %f\n", primary[i].x)
---    c.printf("y %f\n", primary[i].y)
---  end
---end
-
 
 task main()
   -- 1. initialization of constants
@@ -117,26 +109,15 @@ task main()
   var end_time : uint64 = 0
   var timing_region = region(ispace(int1d, num_tasks, 0), times)
   var equal_partition = partition(equal, timing_region, ispace(int1d, num_tasks))
-  for rep = 0, 2 do
-    if rep == 1 then
-      __fence(__execution, __block)
-      start_time = regentlib.c.legion_get_current_time_in_nanos()
+
+  __demand(__spmd, __trace)
+  for i = 0, max_timesteps, 2 do
+    for j = 0, num_tasks do
+      f1(primary[j], secondary[j], task_graph, i, equal_partition[j])
     end
 
-    __demand(__spmd, __trace)
-    for i = 0, max_timesteps, 2 do
-      for j = 0, num_tasks do
-        f1(primary[j], secondary[j], task_graph, i, equal_partition[j])
-      end
-
-      for j = 0, num_tasks do
-        f2(primary[j], secondary[j], task_graph, i, equal_partition[j])
-      end
-    end
-
-    if rep == 1 then
-      __fence(__execution, __block)
-      end_time = regentlib.c.legion_get_current_time_in_nanos()
+    for j = 0, num_tasks do
+      f2(primary[j], secondary[j], task_graph, i, equal_partition[j])
     end
   end
 
