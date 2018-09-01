@@ -13,24 +13,15 @@
  * limitations under the License.
  */
 
-#include "vectorWrapper.h"
+name := "Taskbench"
 
-VectorWrapper::VectorWrapper(CkArgMsg *msg) : vec(msg->argc), live(false) {
-  for (int i = 0; i < vec.size(); i++)
-    vec[i] = msg->argv[i];
-}
-VectorWrapper::VectorWrapper() : live(false) { }
+version := "1.0"
 
-char** VectorWrapper::toArgv() {
-  argv = new char *[vec.size()];
-  for (size_t i = 0; i < vec.size(); i++)
-    argv[i] = &vec[i][0];
-  live = true;
-  return argv;
-}
+scalaVersion := "2.11.8"
 
-void VectorWrapper::pup(PUP::er &p) { p|vec; }
+resolvers += Resolver.bintrayIvyRepo("com.eed3si9n", "sbt-plugins")
 
-VectorWrapper::~VectorWrapper() {
-  if (live) delete[] argv;
-}
+libraryDependencies ++= Seq(
+    "org.apache.spark" %% "spark-sql" % "2.3.0" % "provided"
+)
+

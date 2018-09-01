@@ -13,24 +13,14 @@
  * limitations under the License.
  */
 
-#include "vectorWrapper.h"
+%module core_c
+%{
+#include "../../../core/core_c.h" /* assumes running swig in swig dir */
+%}
 
-VectorWrapper::VectorWrapper(CkArgMsg *msg) : vec(msg->argc), live(false) {
-  for (int i = 0; i < vec.size(); i++)
-    vec[i] = msg->argv[i];
-}
-VectorWrapper::VectorWrapper() : live(false) { }
+%include "../../../spark/myTypemaps.i" /* argc, argv, and input_ptr are specifically mapped in myTypemaps */
+%apply char* NOCOPYBYTE { char *output_ptr, char *scratch_ptr};
+%apply size_t* LONG { size_t* input_bytes}; 
 
-char** VectorWrapper::toArgv() {
-  argv = new char *[vec.size()];
-  for (size_t i = 0; i < vec.size(); i++)
-    argv[i] = &vec[i][0];
-  live = true;
-  return argv;
-}
+%include "../../../core/core_c.h"
 
-void VectorWrapper::pup(PUP::er &p) { p|vec; }
-
-VectorWrapper::~VectorWrapper() {
-  if (live) delete[] argv;
-}
