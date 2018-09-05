@@ -33,7 +33,7 @@ if [[ $USE_LEGION -eq 1 ]]; then
 fi
 
 if [[ $USE_REALM -eq 1 ]]; then
-    ./realm/realm_bench -steps 4 -type stencil_1d
+    ./bt.sh ./realm/realm_bench -steps 4 -type stencil_1d
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
