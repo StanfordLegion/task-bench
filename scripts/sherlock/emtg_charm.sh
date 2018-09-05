@@ -15,7 +15,7 @@ function get_nodefile {
 }
 
 function launch {
-    ./charmrun ./benchmark +p$(( $1 * cores )) ++nodelist hostfile +setcpuaffinity ++mpiexec "${@:2}" -width $(( $1 * cores ))
+    ../../charm++/charmrun ../../charm++/benchmark +p$(( $1 * cores )) ++nodelist hostfile +setcpuaffinity ++mpiexec "${@:2}" -width $(( $1 * cores ))
 }
 
 function sweep {
@@ -29,6 +29,6 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     get_nodefile $n
     for t in stencil_1d; do
-        sweep launch $n $t > parsec_type_${t}_nodes_${n}.log
+        sweep launch $n $t > charm_type_${t}_nodes_${n}.log
     done
 done
