@@ -325,6 +325,8 @@ proc find_number_of_steps(graphs) {
         curr[j] = ascii(chr):int(8);
         j += 1;
       }
+      assert(j == args[i].length);
+      curr[j] = 0;
       result[i] = curr;
     }
     result[argc] = nil;

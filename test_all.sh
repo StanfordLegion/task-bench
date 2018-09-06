@@ -67,6 +67,12 @@ if [[ $USE_CHARM -eq 1 ]]; then
     rm charmrun.*
 fi
 
+if [[ $USE_CHAPEL -eq 1 ]]; then
+    for t in trivial; do # FIXME: no_comm stencil_1d stencil_1d_periodic dom tree fft nearest all_to_all
+        ./chapel/task_benchmark -- -steps 9 -type $t
+    done
+fi
+
 if [[ $USE_OPENMP -eq 1 ]]; then
     export LD_LIBRARY_PATH=/usr/local/clang/lib:$LD_LIBRARY_PATH
     for t in $basic_types; do
