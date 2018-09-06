@@ -1,3 +1,18 @@
+/* Copyright 2018 Stanford University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 use Time;
 use BlockDist;
 config const quiet: bool = false;
@@ -94,12 +109,11 @@ var t: Timer;
               var interval = interval_list_interval(list, k);
               // writeln("interval on location (", i - 1, ",", j - 1, ") is sending to ", size, " location(s) at [", interval.start, ",", interval.end, "]");
               var output_ptr = get_output_ptr(depenGrid, i, j, graph.output_bytes_per_task);
-              update_input_ptr(tasksGrid, tmpArray, input_ptr, interval, (graph.output_bytes_per_task):int, j);
-              var input_bytes = get_input_bytes(graph, interval, maxDepen);
+              update_input_ptr(tasksGrid, tmpArray, input_ptr, interval, (graph.output_bytes_per_task):int, j, size);
+              var input_bytes = get_input_bytes(graph, interval, maxDepen, size);
               // before doing execute point make sure the priors have what they need 
-
               task_graph_execute_point(graph, j - 1, i - 1, output_ptr, graph.output_bytes_per_task, 
-                input_ptr, input_bytes, (((interval.end - interval.start) + 1):uint));
+                input_ptr, input_bytes, (((interval.end - interval.start) + size):uint));
 
               // should be waiting for the other people that are expexting the same thing your getting
               add_to_tasksGrid(tasksGrid, tmpArray, depenGrid, (graph.output_bytes_per_task):int, i, j);
@@ -146,32 +160,36 @@ var t: Timer;
     return result;
   }
 
-  proc get_input_bytes(graph, interval, maxDepen) {
+  proc get_input_bytes(graph, interval, maxDepen, size) {
     var array: [0..maxDepen - 1] uint;
     var count = 0;
-    for points in interval.start..interval.end {
-      // get the acutual size of the input and assigne that to the array instead  
-      array[count] = graph.output_bytes_per_task;
-      count += 1;
+    for k in 0..size - 1 {
+      for points in interval.start..interval.end {
+        // get the acutual size of the input and assigne that to the array instead  
+        array[count] = graph.output_bytes_per_task;
+        count += 1;
+      }
     }
     return c_ptrTo(array);
   }
 
-  proc update_input_ptr(tasksGrid, tmpArray, input_ptr, interval, dataSize, step) {
+  proc update_input_ptr(tasksGrid, tmpArray, input_ptr, interval, dataSize, step, size) {
     var count = 0;
-    for points in interval.start..interval.end {
-      forall i in 1..dataSize {
-        tmpArray[points + 1][i + (dataSize:int*(step-1))] = tasksGrid[(points + 1,i + (dataSize:int*(step-1)))];
+    for k in 0..size - 1 {
+      for points in interval.start..interval.end {
+        forall i in 1..dataSize {
+          tmpArray[points + 1][i + (dataSize:int*(step-1))] = tasksGrid[(points + 1,i + (dataSize:int*(step-1)))];
+       }
+        // input_ptr[count] = c_ptrTo(tasksGrid[(points + 1,1 + (dataSize:int*(step-1)))]);
+        input_ptr[count] = c_ptrTo(tmpArray[points + 1][1 + (dataSize:int*(step-1))]);
+        count += 1;
       }
-      // input_ptr[count] = c_ptrTo(tasksGrid[(points + 1,1 + (dataSize:int*(step-1)))]);
-      input_ptr[count] = c_ptrTo(tmpArray[points + 1][1 + (dataSize:int*(step-1))]);
-      count += 1;
     }
   }
   
   // make room for the maximum number of dependencies in the dependent set and each elememnt is the size of a pointer
-  proc get_input_space(maxSetDepen, outputBytes) {
-    return c_malloc(c_ptr(int(8)), maxSetDepen);
+  proc get_input_space(maxDepen, outputBytes) {
+    return c_malloc(c_ptr(int(8)), maxDepen);
   }
 
   // returns a pointer to the row int the grid we are looking at 
@@ -182,11 +200,12 @@ var t: Timer;
   proc get_reverse_depenencies(graph, totalWidth) {
     // writeln("where to send to: ");
     var maxDepen = 0;
+    var size = 0;
     for tasks in 0..totalWidth - 1 {
       for steps in 0..graph.timesteps - 1 {
         var depenSet = task_graph_dependence_set_at_timestep(graph, steps);
         var list = task_graph_reverse_dependencies(graph, depenSet, tasks); // get interval list 
-        var size = interval_list_num_intervals(list);
+        size = interval_list_num_intervals(list);
         for i in 0..size - 1{
           var interval = interval_list_interval(list, i);
           // write("interval on location (", tasks, ",", steps, ")");
@@ -194,7 +213,7 @@ var t: Timer;
           var count = 0;
           for points in interval.start..interval.end {
             count += 1;
-            if count > maxDepen then maxDepen = count;
+            if count*size > maxDepen then maxDepen = count*size;
           }
         }
       }
