@@ -12,6 +12,7 @@ USE_REALM=${USE_REALM:-$DEFAULT_FEATURES}
 USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
 USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
+USE_CHAPEL=${USE_CHAPEL:-$DEFAULT_FEATURES}
 USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
 USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
 USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
@@ -106,6 +107,27 @@ export CHARM_SMP_DIR=$CHARM_SMP_DIR
 EOF
     git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_DIR"
     git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_SMP_DIR"
+fi
+
+if [[ $USE_CHAPEL -eq 1 ]]; then
+    export CHPL_HOME="$PWD"/deps/chapel
+    cat >>deps/env.sh <<EOF
+export USE_CHAPEL=$USE_CHAPEL
+export CHPL_HOME=$CHPL_HOME
+export CHPL_HOST_PLATFORM=\$(\$CHPL_HOME/util/chplenv/chpl_platform.py)
+export CHPL_LLVM=llvm
+export CHPL_TARGET_ARCH=native
+EOF
+    if [[ $USE_GASNET -eq 1 ]]; then
+    cat >>deps/env.sh <<EOF
+export CHPL_COMM=gasnet
+export CHPL_COMM_SUBSTRATE=$CONDUIT
+export CHPL_LAUNCHER=${CHPL_LAUNCHER:-slurm-srun}
+export CHPL_GASNET_MORE_CFG_OPTIONS=$CHPL_GASNET_MORE_CFG_OPTIONS
+EOF
+    fi
+
+    git clone https://github.com/chapel-lang/chapel.git "$CHPL_HOME"
 fi
 
 if [[ $USE_OPENMP -eq 1 ]]; then
