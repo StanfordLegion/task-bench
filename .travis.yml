@@ -30,9 +30,11 @@ env:
 before_install:
   - |
     if [[ "$(uname)" = "Linux" ]]; then
+      wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+      sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main"
       sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
       sudo apt-get update -qq
-      sudo apt-get install -qq g++-5 mpich2 libmpich-dev libpcre3-dev binutils-dev
+      sudo apt-get install -qq g++-5 mpich2 libmpich-dev libpcre3-dev binutils-dev clang-6.0 libclang-6.0-dev llvm-6.0-dev
     fi
   - if [[ "$(uname)" = "Linux" && "$CXX" = "g++" ]]; then export CXX="g++-5" CC="gcc-5"; fi
 install:

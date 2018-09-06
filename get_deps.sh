@@ -119,11 +119,20 @@ export CHPL_LLVM=llvm
 export CHPL_TARGET_ARCH=native
 EOF
     if [[ $USE_GASNET -eq 1 ]]; then
-    cat >>deps/env.sh <<EOF
+        cat >>deps/env.sh <<EOF
 export CHPL_COMM=gasnet
 export CHPL_COMM_SUBSTRATE=$CONDUIT
 export CHPL_LAUNCHER=${CHPL_LAUNCHER:-slurm-srun}
 export CHPL_GASNET_MORE_CFG_OPTIONS=$CHPL_GASNET_MORE_CFG_OPTIONS
+EOF
+    fi
+
+    if [[ -n $TRAVIS ]]; then
+    cat >>deps/env.sh <<EOF
+# overrides to make Travis fast
+export CHPL_LLVM=system
+export CHPL_GMP=none
+export CHPL_REGEXP=none
 EOF
     fi
 
