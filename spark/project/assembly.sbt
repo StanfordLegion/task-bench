@@ -13,24 +13,4 @@
  * limitations under the License.
  */
 
-#include "vectorWrapper.h"
-
-VectorWrapper::VectorWrapper(CkArgMsg *msg) : vec(msg->argc), live(false) {
-  for (int i = 0; i < vec.size(); i++)
-    vec[i] = msg->argv[i];
-}
-VectorWrapper::VectorWrapper() : live(false) { }
-
-char** VectorWrapper::toArgv() {
-  argv = new char *[vec.size()];
-  for (size_t i = 0; i < vec.size(); i++)
-    argv[i] = &vec[i][0];
-  live = true;
-  return argv;
-}
-
-void VectorWrapper::pup(PUP::er &p) { p|vec; }
-
-VectorWrapper::~VectorWrapper() {
-  if (live) delete[] argv;
-}
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.7")
