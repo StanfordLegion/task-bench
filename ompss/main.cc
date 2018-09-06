@@ -88,7 +88,7 @@ void task3(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, payload_t paylo
   input_bytes.push_back(graph.output_bytes_per_task);
   input_ptrs.push_back((char*)tile_in2->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
-
+  
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else  
@@ -228,12 +228,12 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
     
-    printf("graph id %d, M = %d, N = %d\n", i, matrix[i].M, matrix[i].N);
+    printf("graph id %d, M = %d, N = %d, worker %d\n", i, matrix[i].M, matrix[i].N, nb_workers);
   }
   
-  extra_local_memory = (char**)malloc(sizeof(char*) * nb_workers);
+  extra_local_memory = (char**)malloc(sizeof(char*) * (nb_workers+1));
   assert(extra_local_memory != NULL);
-  for (int k = 0; k < nb_workers; k++) {
+  for (int k = 0; k < (nb_workers+1); k++) {
     if (max_scratch_bytes_per_task > 0) {
       extra_local_memory[k] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
     } else {
@@ -242,7 +242,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   }
   
   // omp_set_dynamic(1);
-  //omp_set_num_threads(nb_workers);
+  omp_set_num_threads(nb_workers);
 }
 
 OmpSsApp::~OmpSsApp()

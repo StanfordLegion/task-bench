@@ -23,7 +23,8 @@ env:
     - USE_PARSEC=1 TASKBENCH_USE_HWLOC=1
     - USE_CHARM=1
     - USE_OPENMP=1
-    - USE_OMPSS=2
+    - USE_OMPSS=1
+    - USE_OMPSS2=1
     - USE_SPARK=1
     - USE_SWIFT=1
 before_install:
