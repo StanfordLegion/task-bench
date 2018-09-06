@@ -179,8 +179,6 @@ void deserialize_byte_array(ShardArgs &args, std::vector<std::vector<std::vector
   args = *(ShardArgs *)walking_pointer;
   walking_pointer = (ShardArgs *)walking_pointer + 1;
   num_tasks = *(int *)walking_pointer;
-  printf("num_tasks: %d\n", num_tasks);
-  fflush(stdout);
   walking_pointer = (int *)walking_pointer + 1;
 
   /* Graphs */
@@ -198,7 +196,8 @@ void deserialize_byte_array(ShardArgs &args, std::vector<std::vector<std::vector
     {
       TaskGraph graph = graphs[graph_num];
       std::vector<std::vector<std::vector<RegionInstance> > > regions_per_task;
-      for (int taskid = 0; taskid < num_tasks; taskid++)
+      int graph_num_tasks = graph.max_width;
+      for (int taskid = 0; taskid < graph_num_tasks; taskid++)
         {
 	  std::vector<std::vector<RegionInstance> > regions_per_dset;
           for (long dset = 0; dset < graph.max_dependence_sets(); dset++)
@@ -604,7 +603,7 @@ void shard_task(const void *args, size_t arglen,
 		    }
 		}
 	      /* Advance local copy of every barrier */
-	      for (int task_num = 0; task_num < num_tasks; task_num++)
+	      for (int task_num = 0; task_num < graph.max_width; task_num++)
 		{
 		  for (int cur_dset = 0; cur_dset < graph.max_dependence_sets(); cur_dset++)
 		    {
