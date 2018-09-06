@@ -29,22 +29,19 @@ ALT_MAPPERS     ?= 0		# Include alternative mappers (not recommended)
 # Put the binary file name here
 OUTFILE		?= realm_bench
 # List all the application source files here
-GEN_SRC		?= main.cc cpu_kernels.cc ../core/core.cc ../core/core_kernel.cc		# .cc files
+GEN_SRC		?= main.cc ../core/core.cc ../core/core_c.cc ../core/core_kernel.cc		# .cc files
 GEN_GPU_SRC	?=		# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
 INC_FLAGS	?=
-CC_FLAGS	?=
+CC_FLAGS	?= -mavx
 NVCC_FLAGS	?=
 GASNET_FLAGS	?=
 LD_FLAGS	?=
 
-# Stencil parameters
-DTYPE ?= double
-RESTRICT ?= __restrict__
-RADIUS ?= 2
-CC_FLAGS += -DDTYPE=$(DTYPE) -DRESTRICT=$(RESTRICT) -DRADIUS=$(RADIUS) -std=c++11
+CC_FLAGS += -std=c++11 -I../core
 
+include ../core/make_blas.mk
 ###########################################################################
 #
 #   Don't change anything below here
