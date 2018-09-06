@@ -179,28 +179,31 @@ export CORE_DIR="$PWD"/core
 export JAVA_HOME="$JAVA_HOME"
 export PATH="\$JAVA_HOME/bin:\$PATH"
 EOF
-    mkdir -p "$SPARK_DIR" #make deps/spark 
-    #don’t install Scala--use 2.11.8 that comes with Spark 2.3.0
+    mkdir -p "$SPARK_DIR"
+    pushd "$SPARK_DIR"
+    # don't install Scala--use 2.11.8 that comes with Spark 2.3.0
 
-    #Java
+    # Java
     wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
-    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$SPARK_DIR" 
+    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$SPARK_DIR"
     rm jdk-8u131-linux-x64.tar.gz
 
-    #Spark 2.3.0   
-    wget https://archive.apache.org/dist/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn’t work without hadoop
-    tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn’t add to path—put full paths in emtg script
+    # Spark 2.3.0
+    wget https://archive.apache.org/dist/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
+    tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn't add to path-put full paths in emtg script
     rm spark-2.3.0-bin-hadoop2.7.tgz
 
-    #SWIG 3.0.12
+    # SWIG 3.0.12
     wget https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
     tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
     rm swig-3.0.12.tar.gz
 
-    #SBT 1.1.6
+    # SBT 1.1.6
     wget https://sbt-downloads.cdnedge.bluemix.net/releases/v1.1.6/sbt-1.1.6.tgz
     tar -zxf sbt-1.1.6.tgz -C "$SPARK_DIR"
-    rm -rf sbt-1.1.6.tar.gz    
+    rm sbt-1.1.6.tar.gz
+
+    popd
 fi
 
 if [[ $USE_SWIFT -eq 1 ]]; then
