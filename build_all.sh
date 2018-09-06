@@ -105,6 +105,16 @@ fi
      )
 fi)
 
+(if [[ $USE_CHAPEL -eq 1 ]]; then
+     export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM:$PATH"
+     pushd "$CHPL_HOME"
+     make -j$THREADS
+     popd
+
+     make -C chapel clean
+     make -C chapel
+fi)
+
 if [[ $USE_OPENMP -eq 1 ]]; then
     make -C openmp clean
     make -C openmp -j$THREADS
