@@ -9,7 +9,7 @@
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
 function launch {
-    ./task_benchmark -nl $1 -- "${@:2}" -width $(( $1 * cores ))
+    ../../chapel/task_benchmark -nl $1 -- "${@:2}" -width $(( $1 * cores ))
 }
 
 function sweep {
