@@ -68,7 +68,7 @@ if [[ $USE_CHARM -eq 1 ]]; then
 fi
 
 if [[ $USE_CHAPEL -eq 1 ]]; then
-    for t in trivial; do # FIXME: no_comm stencil_1d stencil_1d_periodic dom tree fft nearest all_to_all
+    for t in trivial no_comm stencil_1d nearest all_to_all; do # FIXME: stencil_1d_periodic dom tree fft
         ./chapel/task_benchmark -- -steps 9 -type $t
     done
 fi
