@@ -1,16 +1,16 @@
 # A Task Benchmark [![Build Status](https://travis-ci.org/StanfordLegion/task-bench.svg?branch=master)](https://travis-ci.org/StanfordLegion/task-bench)
 
-## Implementations
-
-  * [Charm++](charm++)
-  * [Legion](legion)
-  * [MPI](mpi)
-  * [OmpSs](ompss)
-  * [OpenMP](openmp)
-  * [PaRSEC](parsec)
-  * [Spark](spark)
-  * [StarPU](starpu)
-  * [Swift/T](swift)
+Implementations:
+[Charm++](charm++),
+[Legion](legion),
+[MPI](mpi),
+[OmpSs](ompss),
+[OpenMP](openmp),
+[PaRSEC](parsec),
+[Realm](realm),
+[Spark](spark),
+[StarPU](starpu),
+[Swift/T](swift)
 
 ## Quickstart
 
