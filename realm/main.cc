@@ -179,6 +179,8 @@ void deserialize_byte_array(ShardArgs &args, std::vector<std::vector<std::vector
   args = *(ShardArgs *)walking_pointer;
   walking_pointer = (ShardArgs *)walking_pointer + 1;
   num_tasks = *(int *)walking_pointer;
+  printf("num_tasks: %d\n", num _tasks);
+  fflush(stdout);
   walking_pointer = (int *)walking_pointer + 1;
 
   /* Graphs */
