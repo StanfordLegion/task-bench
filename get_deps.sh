@@ -13,7 +13,8 @@ USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
 USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
 USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
-USE_OMPSS=${USE_OMPSS:-2}
+USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}}
+USE_OMPSS2=${USE_OMPSS2:-$DEFAULT_FEATURES}}
 USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 
@@ -131,25 +132,25 @@ EOF
     rm -rf ompss-17.12.1.tar.gz
 fi
 
-if [[ $USE_OMPSS -eq 2 ]]; then
-    export OMPSS_DL_DIR="$PWD"/deps/ompss2
+if [[ $USE_OMPSS2 -eq 1 ]]; then
+    export OMPSS2_DL_DIR="$PWD"/deps/ompss2
     cat >>deps/env.sh <<EOF
-export USE_OMPSS=$USE_OMPSS
-export OMPSS_DL_DIR=$OMPSS_DL_DIR
-export GPERF_SRC_DIR=$OMPSS_DL_DIR/gperf-3.0.4
-export GPERF_PREFIX=$OMPSS_DL_DIR/gperf-3.0.4/install
-export NANOS6_SRC_DIR=$OMPSS_DL_DIR/nanos6
-export NANOS6_PREFIX=$OMPSS_DL_DIR/nanos6/install
-export MCXX_SRC_DIR=$OMPSS_DL_DIR/mcxx
-export MCXX_PREFIX=$OMPSS_DL_DIR/mcxx/install
+export USE_OMPSS2=$USE_OMPSS2
+export OMPSS2_DL_DIR=$OMPSS2_DL_DIR
+export GPERF_SRC_DIR=$OMPSS2_DL_DIR/gperf-3.0.4
+export GPERF_PREFIX=$OMPSS2_DL_DIR/gperf-3.0.4/install
+export NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
+export NANOS6_PREFIX=$OMPSS2_DL_DIR/nanos6/install
+export MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
+export MCXX_PREFIX=$OMPSS2_DL_DIR/mcxx/install
 EOF
-    mkdir -p "$OMPSS_DL_DIR"
+    mkdir -p "$OMPSS2_DL_DIR"
     wget http://ftp.gnu.org/gnu/gperf/gperf-3.0.4.tar.gz
-    tar -zxf gperf-3.0.4.tar.gz -C "$OMPSS_DL_DIR"
+    tar -zxf gperf-3.0.4.tar.gz -C "$OMPSS2_DL_DIR"
     rm -rf gperf-3.0.4.tar.gz
-    export NANOS6_SRC_DIR=$OMPSS_DL_DIR/nanos6
+    export NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
     git clone https://github.com/bsc-pm/nanos6.git "$NANOS6_SRC_DIR"
-    export MCXX_SRC_DIR=$OMPSS_DL_DIR/mcxx
+    export MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
     git clone https://github.com/bsc-pm/mcxx.git "$MCXX_SRC_DIR"
 fi
 

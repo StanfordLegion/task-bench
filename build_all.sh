@@ -137,7 +137,7 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     make -C ompss -j$THREADS
 fi
 
-if [[ $USE_OMPSS -eq 2 ]]; then
+if [[ $USE_OMPSS2 -eq 1 ]]; then
     pushd "$GPERF_SRC_DIR"
     mkdir build
     cd build
