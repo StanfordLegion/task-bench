@@ -16,6 +16,7 @@
 #ifndef __SUBCHARE_H__
 #define __SUBCHARE_H__
 
+#include "multicastMsg.h"
 #include "../core/core.h"
 #include <vector>
 #include <set>
@@ -35,22 +36,24 @@ class Subchare : public CBase_Subchare {
   std::pair<long, long> output;
   size_t output_bytes;
   bool sent;
+  bool firstTime;
   App app;
   TaskGraph graph;
+  CkMulticastMgr *mcastMgr;
+  CkSectionInfo sid;
 
   void checkAndRun(bool receiving);
 
  public:
 
   /// Constructors ///
-  Subchare(VectorWrapper wrapper);
-  Subchare(CkMigrateMessage *msg);
+  Subchare(VectorWrapper wrapper, int graphIndex, CkGroupID mcastMgrGID);
 
   /// Entry Methods ///
-  void initGraph(int graphIndex);
-  void runTimestep();
-  void receive(std::pair<long, long> input);
-  void reset();
+  void initGraph(MulticastMsg* msg);
+  void runTimestep(MulticastMsg* msg);
+  void receive(const std::pair<long, long>& input);
+  void reset(MulticastMsg* msg);
 
 };
 

@@ -14,30 +14,29 @@
  */
 
 #include "subchare.decl.h"
-
 #include "subchare.h"
 #include "main.decl.h"
-#include <thread>
-#include <chrono>
-
-#include <stdlib.h>
-#include "unistd.h"
 
 extern CProxy_Main mainProxy;
 
 const static bool SENDING = false;
 const static bool RECEIVING = true;
 
-Subchare::Subchare(VectorWrapper wrapper) : app(wrapper.vec.size(), wrapper.toArgv()) { }
-
-Subchare::Subchare(CkMigrateMessage* msg) : app(0, (char **)NULL) { }
+Subchare::Subchare(VectorWrapper wrapper, int gi, CkGroupID mcastMgrGID)
+  : app(wrapper.vec.size(), wrapper.toArgv()), graphIndex(gi), firstTime(true)
+{
+  mcastMgr = CProxy_CkMulticastMgr(mcastMgrGID).ckLocalBranch();
+}
 
 /**
  * Initializes the graph and necessary data structures to minimize computation
  * during the timing for Charm++.
  */
-void Subchare::initGraph(int graphIndex) {
-  this->graphIndex = graphIndex;
+void Subchare::initGraph(MulticastMsg* msg) {
+  if (firstTime) {
+    sid = msg->_cookie;
+    firstTime = false;
+  }
   graph = app.graphs[graphIndex];
   currentTimestep = 0;
 
@@ -91,14 +90,13 @@ void Subchare::initGraph(int graphIndex) {
   }
 
   output_bytes = sizeof(output);
-  contribute(CkCallback(CkReductionTarget(Main, workerReady), mainProxy));
+  mcastMgr->contribute(sid, CkCallback(CkReductionTarget(Main, workerReady), mainProxy));
 }
 
 /**
  * Executes a single timestep of the task graph for this particular chare.
  */
-void Subchare::runTimestep() {
-  if (app.verbose) CkPrintf("Chare %d running timestep %d.\n", thisIndex, currentTimestep);
+void Subchare::runTimestep(MulticastMsg* msg) {
   long offset = graph.offset_at_timestep(currentTimestep);
   long width = graph.width_at_timestep(currentTimestep);
   if (offset <= thisIndex && thisIndex < offset + width) 
@@ -107,7 +105,6 @@ void Subchare::runTimestep() {
               inputs[currentTimestep].size());
 
   for (long target : whereToSend[currentTimestep]) {
-    if (app.verbose) CkPrintf("\tChare %d sending message from timestep %d to chare %d.\n", thisIndex, currentTimestep, target);
     thisProxy[target].receive(output);
   }
   sent = true;
@@ -118,8 +115,7 @@ void Subchare::runTimestep() {
 /**
  * Entry method that acts according to the message sent from another chare.
  */
-void Subchare::receive(std::pair<long, long> input) {
-  if (app.verbose) CkPrintf("\tChare %d receiving message from timestep %d from chare %d.\n", thisIndex, input.first, input.second);
+void Subchare::receive(const std::pair<long, long>& input) {
   notReceived[input.first + 1].erase(input.second);
   size_t idx = receivingMap[std::pair<long, long>(input.first + 1, input.second)];
   inputs[input.first + 1][idx]->first = input.first;
@@ -137,11 +133,11 @@ void Subchare::receive(std::pair<long, long> input) {
 void Subchare::checkAndRun(bool receiving) {
   if (notReceived[currentTimestep + 1].empty()) {
     if (currentTimestep + 1 == graph.timesteps - 1) {
-      contribute(CkCallback(CkReductionTarget(Main, finishedGraph), mainProxy));
+      mcastMgr->contribute(sid, CkCallback(CkReductionTarget(Main, finishedGraph), mainProxy));
     } else if (!receiving || sent) {
       sent = false;
       currentTimestep++;
-      thisProxy[thisIndex].runTimestep();
+      runTimestep(NULL);
     }
   }
 }
@@ -149,7 +145,7 @@ void Subchare::checkAndRun(bool receiving) {
 /**
  * Resets the data structures within the subchare for another run of the graphs.
  */
-void Subchare::reset() {
+void Subchare::reset(MulticastMsg* msg) {
   notReceived.clear();
   whereToSend.clear();
   receivingMap.clear();
@@ -159,7 +155,7 @@ void Subchare::reset() {
   inputs.clear();
   input_bytes.clear();
   sent = false;
-  initGraph(graphIndex);
+  initGraph(NULL);
 }
 
 #include "subchare.def.h"

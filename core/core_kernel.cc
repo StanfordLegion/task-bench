@@ -13,9 +13,15 @@
  * limitations under the License.
  */
 
+#include <immintrin.h>
 #include <cassert>
+#include <math.h>
+#include <sys/time.h>
 #include "core.h"
 #include "core_kernel.h"
+#ifdef USE_BLAS_KERNEL
+#include <mkl.h>
+#endif
 
 void execute_kernel_empty(const Kernel &kernel)
 {
@@ -52,24 +58,100 @@ void execute_kernel_memory(const Kernel &kernel,
   // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
 }
 
-void execute_kernel_compute(const Kernel &kernel)
+void execute_kernel_dgemm(const Kernel &kernel,
+                           char *scratch_ptr, size_t scratch_bytes)
 {
-  long long max_power = kernel.max_power;
-  double temp, sum;
-  double A[128];
+#ifdef USE_BLAS_KERNEL
+  long long N = scratch_bytes / (3 * sizeof(double));
+  int m, n, p;
+  double alpha, beta;
+
+  m = n = p = sqrt(N);
+  alpha = 1.0; beta = 1.0;
+
+  double *A = reinterpret_cast<double *>(scratch_ptr);
+  double *B = reinterpret_cast<double *>(scratch_ptr + N * sizeof(double));
+  double *C = reinterpret_cast<double *>(scratch_ptr + 2 * N * sizeof(double));
 
   for (long iter = 0; iter < kernel.iterations; iter++) {
-    for (long i = 0; i < 128; i++) {
-      temp = ((double) rand() / (RAND_MAX));
-      sum = temp;
-      for (long j=0; j<max_power; j++) {
-        temp *=temp;
-        sum += temp;
-      }
-      A[i] = sum;
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
+                m, n, p, alpha, A, p, B, n, beta, C, n);
+  }
+  // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
+#else
+  fprintf(stderr, "No BLAS is detected\n");
+  fflush(stderr);
+  abort();
+#endif
+}
+
+double execute_kernel_compute(const Kernel &kernel)
+{
+#if 0 
+  double A[32];
+  
+  for (int i = 0; i < 32; i++) {
+    A[i] = 1.2345;
+  }
+  
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    for (int i = 0; i < 32; i++) {
+        A[i] *= A[i];
     }
   }
-  // printf("execute_kernel_memory! A[127]=%f, max_power=%lld\n", A[127], max_power);
+  
+  double dot = 1.0;
+  for (int i = 0; i < 32; i++) {
+    dot *= A[i];
+  }
+  return dot; 
+#else
+  __m256d A[8];
+  
+  for (int i = 0; i < 8; i++) {
+    A[i] = _mm256_set_pd(1.0f, 2.0f, 3.0f, 4.0f);
+  }
+  
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    for (int i = 0; i < 8; i++) {
+      A[i] = _mm256_mul_pd(A[i], A[i]);
+       //A[i] = _mm256_fmadd_pd(A[i], A[i], A[i]);
+       //  A[i] = _mm256_add_pd(A[i], A[i]);
+    }
+  }
+  
+  double *C = (double *)A;
+  double dot = 1.0;
+  for (int i = 0; i < 32; i++) {
+    dot *= C[i];
+  }
+  return dot; 
+#endif  
+}
+
+double execute_kernel_compute2(const Kernel &kernel)
+{
+  constexpr size_t N = 32;
+  double A[N] = {0};
+  double B[N] = {0};
+  double C[N] = {0};
+
+  for (size_t i = 0; i < N; ++i) {
+    A[i] = 1.2345;
+    B[i] = 1.010101;
+  }
+
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    for (size_t i = 0; i < N; ++i) {
+      C[i] = C[i] + (A[i] * B[i]);
+    }
+  }
+
+  double sum = 0;
+  for (size_t i = 0; i < N; ++i) {
+    sum += C[i];
+  }
+  return sum;
 }
 
 void execute_kernel_io(const Kernel &kernel)
@@ -77,15 +159,17 @@ void execute_kernel_io(const Kernel &kernel)
   assert(false);
 }
 
-void execute_kernel_imbalance(const Kernel &kernel)
+double execute_kernel_imbalance(const Kernel &kernel)
 {
-  //random pick one task to be compute bound
-
   // Use current time as seed for random generator
-  // srand(Timer::get_cur_time());
+  //struct timeval tv;
+  //gettimeofday(&tv,NULL);
+  //long t = tv.tv_sec *1e6 + tv.tv_usec;
+  //srand(t);
 
-  long long max_power = rand() % kernel.max_power;
+  long iterations = rand() % kernel.iterations;
   Kernel k(kernel);
-  k.max_power = max_power;
-  execute_kernel_compute(k);
+  k.iterations = iterations;
+  //printf("iteration %d\n", iterations);
+  return execute_kernel_compute(k);
 }

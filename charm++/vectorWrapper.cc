@@ -15,7 +15,10 @@
 
 #include "vectorWrapper.h"
 
-VectorWrapper::VectorWrapper(std::vector<std::string> vec) : vec(vec), live(false) { }
+VectorWrapper::VectorWrapper(CkArgMsg *msg) : vec(msg->argc), live(false) {
+  for (int i = 0; i < vec.size(); i++)
+    vec[i] = msg->argv[i];
+}
 VectorWrapper::VectorWrapper() : live(false) { }
 
 char** VectorWrapper::toArgv() {

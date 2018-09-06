@@ -20,7 +20,9 @@
 #include <cstring>
 #include <algorithm>
 #include <map>
+#include <set>
 #include <string>
+#include <math.h>
 
 #include "core.h"
 #include "core_kernel.h"
@@ -44,8 +46,16 @@ void Kernel::execute(char *scratch_ptr, size_t scratch_bytes) const
     assert(scratch_bytes > 0);
     execute_kernel_memory(*this, scratch_ptr, scratch_bytes);
     break;
+  case KernelType::COMPUTE_DGEMM:
+    assert(scratch_ptr != NULL);
+    assert(scratch_bytes > 0);
+    execute_kernel_dgemm(*this, scratch_ptr, scratch_bytes);
+    break;  
   case KernelType::COMPUTE_BOUND:
     execute_kernel_compute(*this);
+    break;
+  case KernelType::COMPUTE_BOUND2:
+    execute_kernel_compute2(*this);
     break;
   case KernelType::IO_BOUND:
     execute_kernel_io(*this);
@@ -66,7 +76,9 @@ static const std::map<std::string, KernelType> &ktype_by_name()
     types["empty"] = KernelType::EMPTY;
     types["busy_wait"] = KernelType::BUSY_WAIT;
     types["memory_bound"] = KernelType::MEMORY_BOUND;
+    types["compute_dgemm"] = KernelType::COMPUTE_DGEMM;
     types["compute_bound"] = KernelType::COMPUTE_BOUND;
+    types["compute_bound2"] = KernelType::COMPUTE_BOUND2;
     types["io_bound"] = KernelType::IO_BOUND;
     types["load_imbalance"] = KernelType::LOAD_IMBALANCE;
   }
@@ -101,6 +113,8 @@ static const std::map<std::string, DependenceType> &dtype_by_name()
     types["tree"] = DependenceType::TREE;
     types["fft"] = DependenceType::FFT;
     types["all_to_all"] = DependenceType::ALL_TO_ALL;
+    types["nearest"] = DependenceType::NEAREST;
+    types["spread"] = DependenceType::SPREAD;
   }
 
   return types;
@@ -133,6 +147,8 @@ long TaskGraph::offset_at_timestep(long timestep) const
   case DependenceType::TREE:
   case DependenceType::FFT:
   case DependenceType::ALL_TO_ALL:
+  case DependenceType::NEAREST:
+  case DependenceType::SPREAD:
     return 0;
   default:
     assert(false && "unexpected dependence type");
@@ -154,6 +170,8 @@ long TaskGraph::width_at_timestep(long timestep) const
     return std::min(max_width, 1L << std::min(timestep, 62L));
   case DependenceType::FFT:
   case DependenceType::ALL_TO_ALL:
+  case DependenceType::NEAREST:
+  case DependenceType::SPREAD:
     return max_width;
   default:
     assert(false && "unexpected dependence type");
@@ -173,6 +191,8 @@ long TaskGraph::max_dependence_sets() const
   case DependenceType::FFT:
     return (long)ceil(log2(max_width));
   case DependenceType::ALL_TO_ALL:
+  case DependenceType::NEAREST:
+  case DependenceType::SPREAD:
     return 1;
   default:
     assert(false && "unexpected dependence type");
@@ -199,6 +219,8 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::FFT:
     return (timestep + max_dependence_sets() - 1) % max_dependence_sets();
   case DependenceType::ALL_TO_ALL:
+  case DependenceType::NEAREST:
+  case DependenceType::SPREAD:
     return 0;
   default:
     assert(false && "unexpected dependence type");
@@ -210,20 +232,22 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
   std::vector<std::pair<long, long> > deps;
 
   switch (dependence) {
-  case DependenceType::TRIVIAL:                                                                                                                                           
+  case DependenceType::TRIVIAL:
     break;
-  case DependenceType::NO_COMM:                                                                                                                                           
+  case DependenceType::NO_COMM:
     deps.push_back(std::pair<long, long>(point, point));
     break;
-  case DependenceType::STENCIL_1D:                                                                                                                                        
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+  case DependenceType::STENCIL_1D:
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
+                                         std::min(point+1, max_width-1)));
     break;
-  case DependenceType::STENCIL_1D_PERIODIC:                                                                                                                              
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
-    if (point-1 < 0) { // Wrap around negative case                                                                                                                              
+  case DependenceType::STENCIL_1D_PERIODIC:
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
+                                         std::min(point+1, max_width-1)));
+    if (point-1 < 0) { // Wrap around negative case
       deps.push_back(std::pair<long, long>(max_width-1, max_width-1));
     }
-    if (point+1 >= max_width) { // Wrap around positive case                                                                                                                     
+    if (point+1 >= max_width) { // Wrap around positive case
       deps.push_back(std::pair<long, long>(0, 0));
     }
     break;
@@ -241,7 +265,7 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
 
     }
     break;
-    case DependenceType::FFT:                                                                                                                                               
+  case DependenceType::FFT:
     {
       long d1 = point - (1 << dset);
       long d2 = point + (1 << dset);
@@ -253,8 +277,13 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
       }
     }
     break;
-  case DependenceType::ALL_TO_ALL:                                                                                                                                        
+  case DependenceType::ALL_TO_ALL:
     deps.push_back(std::pair<long, long>(0, max_width-1));
+    break;
+  case DependenceType::NEAREST:
+    deps.push_back(std::pair<long, long>(std::max(0L, point - (radix+1)/2),
+                                         std::min(point + radix/2,
+                                                  max_width-1)));
     break;
   default:
     assert(false && "unexpected dependence type");
@@ -274,10 +303,12 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
     deps.push_back(std::pair<long, long>(point, point));
     break;
   case DependenceType::STENCIL_1D:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
+                                         std::min(point+1, max_width-1)));
     break;
   case DependenceType::STENCIL_1D_PERIODIC:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1), std::min(point+1, max_width-1)));
+    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
+                                         std::min(point+1, max_width-1)));
     if (point-1 < 0) { // Wrap around negative case
       deps.push_back(std::pair<long, long>(max_width-1, max_width-1));
     }
@@ -308,6 +339,11 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
     break;
   case DependenceType::ALL_TO_ALL:
     deps.push_back(std::pair<long, long>(0, max_width-1));
+    break;
+  case DependenceType::NEAREST:
+    deps.push_back(std::pair<long, long>(std::max(0L, point - radix/2),
+                                         std::min(point + (radix+1)/2,
+                                                  max_width-1)));
     break;
   default:
     assert(false && "unexpected dependence type");
@@ -391,7 +427,8 @@ static TaskGraph default_graph()
   graph.timesteps = 4;
   graph.max_width = 4;
   graph.dependence = DependenceType::TRIVIAL;
-  graph.kernel = {KernelType::EMPTY, 0, 0, 0};
+  graph.radix = 2;
+  graph.kernel = {KernelType::EMPTY, 0, 0};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
   graph.scratch_bytes_per_task = 0;
 
@@ -448,6 +485,16 @@ App::App(int argc, char **argv)
       graph.dependence = type->second;
     }
 
+    if (!strcmp(argv[i], "-radix")) {
+      needs_argument(i, argc, "-radix");
+      long value = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-radix %ld\" must be >= 0\n", value);
+        abort();
+      }
+      graph.radix = value;
+    }
+
     if (!strcmp(argv[i], "-kernel")) {
       needs_argument(i, argc, "-kernel");
       auto types = ktype_by_name();
@@ -478,16 +525,6 @@ App::App(int argc, char **argv)
         abort();
       }
       graph.scratch_bytes_per_task = value;
-    }
-
-    if (!strcmp(argv[i], "-max_power")) {
-      needs_argument(i, argc, "-max_power");
-      long value  = atol(argv[++i]);
-      if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-max_power %ld\" must be >= 0\n", value);
-        abort();
-      }
-      graph.kernel.max_power = value;
     }
 
     if (!strcmp(argv[i], "-jump")) {
@@ -524,6 +561,28 @@ void App::check() const
 
       long dset = g.dependence_set_at_timestep(t);
       assert(dset >= 0 && dset <= g.max_dependence_sets());
+    }
+    for (long dset = 0; dset < g.max_dependence_sets(); ++dset) {
+      std::map<long, std::set<long> > materialized_deps;
+      for (long point = 0; point < g.max_width; ++point) {
+        auto deps = g.dependencies(dset, point);
+        for (auto dep : deps) {
+          for (long dp = dep.first; dp <= dep.second; ++dp) {
+            assert(materialized_deps[point].count(dp) == 0); // No duplicates
+            materialized_deps[point].insert(dp);
+          }
+        }
+      }
+
+      // Reverse dependencies mirror dependencies
+      for (long point = 0; point < g.max_width; ++point) {
+        auto rdeps = g.reverse_dependencies(dset, point);
+        for (auto rdep : rdeps) {
+          for (long rdp = rdep.first; rdp <= rdep.second; ++rdp) {
+            assert(materialized_deps[rdp].count(point) == 1);
+          }
+        }
+      }
     }
   }
 }
@@ -569,10 +628,63 @@ void App::display() const
   }
 }
 
+// IMPORTANT: Keep this up-to-date with kernel implementations
+long long flops_per_task(const TaskGraph &g)
+{
+  switch(g.kernel.type) {
+  case KernelType::EMPTY:
+  case KernelType::BUSY_WAIT:
+  case KernelType::MEMORY_BOUND:
+    return 0;
+    
+  case KernelType::COMPUTE_DGEMM:
+  {
+    long N = sqrt(g.scratch_bytes_per_task / (3 * sizeof(double))); 
+    return 2 * N * N * N * g.kernel.iterations;
+  }
+
+  case KernelType::COMPUTE_BOUND:
+    return 2 * 32 * g.kernel.iterations + 32*2;
+
+  case KernelType::COMPUTE_BOUND2:
+    return 2 * 32 * g.kernel.iterations;
+
+  case KernelType::IO_BOUND:
+  case KernelType::LOAD_IMBALANCE:
+    return 0;
+  default:
+    assert(false && "unimplemented kernel type");
+  };
+}
+
+// IMPORTANT: Keep this up-to-date with kernel implementations
+long long bytes_per_task(const TaskGraph &g)
+{
+  switch(g.kernel.type) {
+  case KernelType::EMPTY:
+  case KernelType::BUSY_WAIT:
+    return 0;
+
+  case KernelType::MEMORY_BOUND:
+    return g.scratch_bytes_per_task * g.kernel.iterations;
+
+  case KernelType::COMPUTE_DGEMM:
+  case KernelType::COMPUTE_BOUND:
+  case KernelType::COMPUTE_BOUND2:
+  case KernelType::IO_BOUND:
+  case KernelType::LOAD_IMBALANCE:
+    return 0;
+  default:
+    assert(false && "unimplemented kernel type");
+  };
+}
+
 void App::report_timing(double elapsed_seconds) const
 {
   long long num_tasks = 0;
   long long num_deps = 0;
+  long long flops = 0;
+  long long bytes = 0;
   for (auto g : graphs) {
     for (long t = 0; t < g.timesteps; ++t) {
       long offset = g.offset_at_timestep(t);
@@ -588,11 +700,16 @@ void App::report_timing(double elapsed_seconds) const
         }
       }
     }
+
+    flops += flops_per_task(g) * num_tasks;
+    bytes += bytes_per_task(g) * num_tasks;
   }
 
   printf("Total Tasks %lld\n", num_tasks);
   printf("Total Dependencies %lld\n", num_deps);
+  printf("Total FLOPs %lld\n", flops);
+  printf("Total Bytes %lld\n", bytes);
   printf("Elapsed Time %e seconds\n", elapsed_seconds);
-  printf("Time per Task %e seconds\n", elapsed_seconds/num_tasks);
-  printf("Time per Dependency %e seconds\n", elapsed_seconds/num_deps);
+  printf("FLOP/s %e\n", flops/elapsed_seconds);
+  printf("B/s %e\n", bytes/elapsed_seconds);
 }

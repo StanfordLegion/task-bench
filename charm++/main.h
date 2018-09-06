@@ -28,10 +28,7 @@ class Main : public CBase_Main {
  private:
 
   /// Member Variables (Object State) ///
-  std::vector<CProxy_Subchare> graphSubchareVec;
-  int numFinished;
-  int numChareArrays;
-  int numReady;
+  CProxySection_Subchare sectionProxy;
   Timer timer;
   App app;
   double start;
@@ -44,7 +41,6 @@ class Main : public CBase_Main {
 
   /// Constructors ///
   Main(CkArgMsg* msg);
-  Main(CkMigrateMessage* msg);
 
   /// Entry Methods ///
   void finishedGraph();
