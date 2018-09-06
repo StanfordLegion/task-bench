@@ -226,9 +226,9 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
     printf("graph id %d, M = %d, N = %d\n", i, matrix[i].M, matrix[i].N);
   }
   
-  extra_local_memory = (char**)malloc(sizeof(char*) * nb_workers);
+  extra_local_memory = (char**)malloc(sizeof(char*) * (nb_workers+1));
   assert(extra_local_memory != NULL);
-  for (int k = 0; k < nb_workers; k++) {
+  for (int k = 0; k < (nb_workers+1); k++) {
     if (max_scratch_bytes_per_task > 0) {
       extra_local_memory[k] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
     } else {
