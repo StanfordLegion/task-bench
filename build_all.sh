@@ -110,6 +110,9 @@ fi)
      pushd "$CHPL_HOME"
      make -j$THREADS
      popd
+
+     make -C chapel clean
+     make -C chapel
 fi)
 
 if [[ $USE_OPENMP -eq 1 ]]; then
