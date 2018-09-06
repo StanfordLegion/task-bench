@@ -112,7 +112,7 @@ var t: Timer;
               update_input_ptr(tasksGrid, tmpArray, input_ptr, interval, (graph.output_bytes_per_task):int, j, size);
               var input_bytes = get_input_bytes(graph, interval, maxDepen, size);
               // before doing execute point make sure the priors have what they need 
-              task_graph_execute_point(graph, j - 1, i - 1, output_ptr, graph.output_bytes_per_task, 
+              task_graph_execute_point_nonconst(graph, j - 1, i - 1, output_ptr, graph.output_bytes_per_task, 
                 input_ptr, input_bytes, (((interval.end - interval.start) + size):uint));
 
               // should be waiting for the other people that are expexting the same thing your getting
