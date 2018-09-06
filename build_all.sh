@@ -131,15 +131,13 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     fi
     popd
 
-    export PATH=$NANOS_PREFIX/bin:$MERCURIUM_PREFIX/bin:$PATH
-    export LD_LIBRARY_PATH=$NANOS_PREFIX/lib:$MERCURIUM_PREFIX/lib:$LD_LIBRARY_PATH
     make -C ompss clean
     make -C ompss -j$THREADS
 fi
 
 if [[ $USE_OMPSS2 -eq 1 ]]; then
     pushd "$GPERF_SRC_DIR"
-    mkdir build
+    mkdir -p build
     cd build
     ../configure --prefix=$GPERF_PREFIX --docdir=$GPERF_PREFIX/doc
     make -j$THREADS
@@ -149,7 +147,7 @@ if [[ $USE_OMPSS2 -eq 1 ]]; then
 
     pushd "$NANOS6_SRC_DIR"
     autoreconf -fiv
-    mkdir build
+    mkdir -p build
     cd build
     ../configure --prefix=$NANOS6_PREFIX --with-boost=$BOOST_ROOT --without-nanos6-mercurium
     make all -j$THREADS
@@ -159,17 +157,15 @@ if [[ $USE_OMPSS2 -eq 1 ]]; then
     
     pushd "$MCXX_SRC_DIR"
     autoreconf -fiv
-    mkdir build
+    mkdir -p build
     cd build
     ../configure --prefix=$MCXX_PREFIX --enable-ompss-2 --with-nanos6=$NANOS6_PREFIX
     make -j$THREADS
     make install
     popd
 
-    export PATH=$MCXX_PREFIX/bin:$PATH
-    export LD_LIBRARY_PATH=$NANOS6_PREFIX/lib:$MCXX_PREFIX/lib:$LD_LIBRARY_PATH
-    make -C ompss clean
-    make -C ompss -j$THREADS
+    make -C ompss2 clean
+    make -C ompss2 -j$THREADS
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then

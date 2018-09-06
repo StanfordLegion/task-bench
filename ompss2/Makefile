@@ -1,9 +1,8 @@
 DEBUG ?= 0
-USE_OMPSS ?=1
-MCXX = $(MERCURIUM_PREFIX)/bin/mcxx
+MCXX = $(MCXX_PREFIX)/bin/mcxx
 
-CXXFLAGS = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps -DOMPSS
-LDFLAGS  = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
+CXXFLAGS = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps -DOMPSS2 
+LDFLAGS  = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps 
 
 ifeq ($(strip $(DEBUG)),1)
 CXXFLAGS += -g -O0 -mavx
@@ -31,7 +30,7 @@ all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
 
-main.o: main.cc ../core/timer.h
+main.o: ../ompss/main.cc ../core/timer.h
 	$(MCXX) $(CXXFLAGS) -c $<
 
 main: main.o ../core/libcore.a

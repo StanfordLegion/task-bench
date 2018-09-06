@@ -3,13 +3,24 @@
 #include <string.h>
 #include <algorithm> 
 #include <unistd.h>
-#include <omp.h>
 #include "core.h"
 #include "timer.h"
 
 #define VERBOSE_LEVEL 0
 
 #define USE_CORE_VERIFICATION
+
+#if defined(OMPSS)
+#define OMPSS_TASKWAIT #pragma omp taskwait
+#elif defined(OMPSS2)
+#define OMPSS_TASKWAIT #pragma oss taskwait
+#endif
+
+#if defined(OMPSS)      
+#define OMPSS_TASK_DEPEND  #pragma omp task depend
+#elif defined(OMPSS2)
+#define OMPSS_TASK_DEPEND #pragma oss task depend
+#endif
 
 typedef struct tile_s {
   float dep;
@@ -242,7 +253,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   }
   
   // omp_set_dynamic(1);
-  omp_set_num_threads(nb_workers);
+  //omp_set_num_threads(nb_workers);
 }
 
 OmpSsApp::~OmpSsApp()
@@ -277,22 +288,11 @@ void OmpSsApp::execute_main_loop()
   
   for (unsigned i = 0; i < graphs.size(); i++) {
     const TaskGraph &g = graphs[i];
-  
-/*#pragma omp parallel*/
-    //{
-//#pragma omp master
-      /*{*/
-        for (int y = 0; y < g.timesteps; y++) {
-          execute_timestep(i, y);
-        }
-      }
-/*    }*/
-  //}
-#if defined(OMPSS)
-#pragma omp taskwait  
-#elif defined(OMPSS2)
-#pragma oss taskwait
-#endif
+    for (int y = 0; y < g.timesteps; y++) {
+      execute_timestep(i, y);
+    }
+  }
+  OMPSS_TASKWAIT 
 
   double elapsed = Timer::time_end();
   report_timing(elapsed);
@@ -361,11 +361,7 @@ void OmpSsApp::insert_task(std::vector<task_args_t> args, payload_t payload, siz
   switch(num_args) {
   case 1:
   {
-#if defined(OMPSS)      
-#pragma omp task depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#elif defined(OMPSS2)
-#pragma oss task depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#endif
+    OMPSS_TASK_DEPEND(inout: mat[y0 * matrix[graph_id].N + x0])
       task1(&mat[y0 * matrix[graph_id].N + x0], payload);
     break;
   }
@@ -373,12 +369,8 @@ void OmpSsApp::insert_task(std::vector<task_args_t> args, payload_t payload, siz
   case 2: 
   {
     int x1 = args[1].x;
-    int y1 = args[1].y;
-#if defined(OMPSS)      
-#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#elif defined(OMPSS2)
-#pragma oss task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#endif
+    int y1 = args[1].y;  
+    OMPSS_TASK_DEPEND(in: mat[y1 * matrix[graph_id].N + x1]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task2(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], payload);
     break;
@@ -389,12 +381,8 @@ void OmpSsApp::insert_task(std::vector<task_args_t> args, payload_t payload, siz
     int x1 = args[1].x;
     int y1 = args[1].y;
     int x2 = args[2].x;
-    int y2 = args[2].y;
-#if defined(OMPSS)      
-#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#elif defined(OMPSS2)
-#pragma oss task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#endif
+    int y2 = args[2].y;  
+    OMPSS_TASK_DEPEND(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task3(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], payload);
@@ -408,12 +396,8 @@ void OmpSsApp::insert_task(std::vector<task_args_t> args, payload_t payload, siz
     int x2 = args[2].x;
     int y2 = args[2].y;
     int x3 = args[3].x;
-    int y3 = args[3].y;
-#if defined(OMPSS)    
-#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#elif defined(OMPSS2)
-#pragma oss task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#endif
+    int y3 = args[3].y;  
+    OMPSS_TASK_DEPEND(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task4(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -431,11 +415,7 @@ void OmpSsApp::insert_task(std::vector<task_args_t> args, payload_t payload, siz
     int y3 = args[3].y;
     int x4 = args[4].x;
     int y4 = args[4].y;
-#if defined(OMPSS)    
-#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#elif defined (OMPSS2)
-#pragma oss task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#endif
+    OMPSS_TASK_DEPEND(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task5(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -456,11 +436,7 @@ void OmpSsApp::insert_task(std::vector<task_args_t> args, payload_t payload, siz
     int y4 = args[4].y;
     int x5 = args[5].x;
     int y5 = args[5].y;
-#if defined(OMPSS)
-#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#elif defined(OMPSS2)
-#pragma oss task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
-#endif    
+    OMPSS_TASK_DEPEND(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task6(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
