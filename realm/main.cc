@@ -817,17 +817,18 @@ void top_level_task(const void *args, size_t arglen,
       {
 	graph_max_width = graph.max_width; //won't work for multiple graphs
         std::vector<std::vector<std::vector<std::vector<Barrier> > > > task_recv_bars;
-        std::vector<std::vector<std::vector<RegionInstance> > > tasks_for_each_task;
+        std::vector<std::vector<std::vector<RegionInstance> > > tasks_for_each_task(graph.max_width);
         size_t output_bytes = graph.output_bytes_per_task;
         for (int taskid = 0; taskid < graph.max_width; taskid++)
           {
+            long num_dsets = graph.max_dependence_sets();
             std::vector<std::vector<std::vector<Barrier> > > recv_bars;
-            std::vector<std::vector<RegionInstance> > tasks_for_each_dset;
-           for (long dset = 0; dset < graph.max_dependence_sets(); dset++)
+            std::vector<std::vector<RegionInstance> > tasks_for_each_dset(num_dsets);
+           for (long dset = 0; dset < num_dsets; dset++)
             {
               int num_deps = num_dependencies(graph, dset, taskid);
 	      int num_rev_deps = num_rev_dependencies(graph, dset, taskid);
-	      std::vector<RegionInstance> task_instances((num_deps * NUM_INPUT_REGIONS) + NUM_OUTPUT_REGIONS, RegionInstance::NO_INST); //need to preallocate all vectors so the scope stays
+	      std::vector<RegionInstance> task_instances((num_deps * NUM_INPUT_REGIONS) + NUM_OUTPUT_REGIONS, RegionInstance::NO_INST);
 	      std::vector<std::vector<Barrier> > out_in_barriers;
               for (int index = OUT_INDEX; index <= IN_INDEX; index++)
 		{
@@ -870,13 +871,10 @@ void top_level_task(const void *args, size_t arglen,
 		  size_of_byte_array += sizeof(RegionInstance);
                 }
               
-              tasks_for_each_dset.emplace_back();
-              task_instances.swap(tasks_for_each_dset.back());
+              task_instances.swap(tasks_for_each_dset[dset]);
             }
             task_recv_bars.push_back(recv_bars);
-
-            tasks_for_each_task.emplace_back();
-            tasks_for_each_dset.swap(tasks_for_each_task.back());
+            tasks_for_each_dset.swap(tasks_for_each_task[taskid]);
           }
         graph_recv_bars.push_back(task_recv_bars);
 
