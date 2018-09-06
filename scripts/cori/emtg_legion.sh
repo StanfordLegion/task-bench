@@ -6,8 +6,6 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-set -x
-
 total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 cores=$(( $total_cores - 2 ))
 
