@@ -32,6 +32,13 @@ if [[ $USE_LEGION -eq 1 ]]; then
     done
 fi
 
+if [[ $USE_REALM -eq 1 ]]; then
+    for t in $extended_types; do
+        ./realm/task_bench -steps 9 -type $t
+        ./realm/task_bench -steps 9 -type $t -ll:cpu 2
+    done
+fi
+
 if [[ $USE_STARPU -eq 1 ]]; then
     for t in $basic_types; do
         mpirun -np 1 ./starpu/main -steps 9 -type $t
