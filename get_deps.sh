@@ -131,6 +131,7 @@ EOF
     cat >>deps/env.sh <<EOF
 # overrides to make Travis fast
 export CHPL_LLVM=system
+export CHPL_MEM=cstdlib
 export CHPL_GMP=none
 export CHPL_REGEXP=none
 EOF
