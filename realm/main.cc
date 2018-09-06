@@ -19,11 +19,12 @@
 #include <climits>
 #include <vector>
 
-#include "realm.h"
 #include <float.h>
-#include "../core/timer.h"
-#include "cpu_kernels.h"
-#include "../core/core.h"
+
+#include "realm.h"
+
+#include "timer.h"
+#include "core.h"
 
 #define OUT_INDEX 0
 #define IN_INDEX 1
@@ -130,7 +131,7 @@ Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
   CopySrcDstField src_field;
   src_field.inst = src_inst;
   src_field.field_id = fid;
-  src_field.size = sizeof(DTYPE);
+  src_field.size = sizeof(char);
 
   std::vector<CopySrcDstField> src_fields;
   src_fields.push_back(src_field);
@@ -138,7 +139,7 @@ Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
   CopySrcDstField dst_field;
   dst_field.inst = dst_inst;
   dst_field.field_id = fid;
-  dst_field.size = sizeof(DTYPE);
+  dst_field.size = sizeof(char);
 
   std::vector<CopySrcDstField> dst_fields;
   dst_fields.push_back(dst_field);
@@ -675,8 +676,8 @@ void create_region_task(const void *args, size_t arglen,
   const CreateRegionArgs &a = *reinterpret_cast<const CreateRegionArgs *>(args);
 
   std::map<FieldID, size_t> field_sizes;
-  field_sizes[FID_INPUT] = sizeof(DTYPE);
-  field_sizes[FID_OUTPUT] = sizeof(DTYPE);
+  field_sizes[FID_INPUT] = sizeof(char);
+  field_sizes[FID_OUTPUT] = sizeof(char);
   RegionInstance inst = RegionInstance::NO_INST;
   RegionInstance::create_instance(inst, a.memory,
                                   a.bounds, field_sizes,
@@ -802,8 +803,8 @@ void top_level_task(const void *args, size_t arglen,
     int graph_max_width = procs.size();
     
     std::map<FieldID, size_t> field_sizes;
-    field_sizes[FID_INPUT] = sizeof(DTYPE);
-    field_sizes[FID_OUTPUT] = sizeof(DTYPE);
+    field_sizes[FID_INPUT] = sizeof(char);
+    field_sizes[FID_OUTPUT] = sizeof(char);
 
 
     //can wrap this whole thing in a k-loop
@@ -865,17 +866,22 @@ void top_level_task(const void *args, size_t arglen,
                   args.memory = memory;
                   args.dest_proc = p;
                   args.dest_inst = &task_instances[count];
-                  //events.push_back(shard_proc.spawn(CREATE_REGION_TASK, &args, sizeof(args)));
-                  shard_proc.spawn(CREATE_REGION_TASK, &args, sizeof(args)).wait(); //temp, need to make sure vector stays in scope
+                  events.push_back(shard_proc.spawn(CREATE_REGION_TASK, &args, sizeof(args)));
 		  size_of_byte_array += sizeof(RegionInstance);
                 }
-              tasks_for_each_dset.push_back(task_instances);
+              
+              tasks_for_each_dset.emplace_back();
+              task_instances.swap(tasks_for_each_dset.back());
             }
             task_recv_bars.push_back(recv_bars);
-            tasks_for_each_task.push_back(tasks_for_each_dset);
+
+            tasks_for_each_task.emplace_back();
+            tasks_for_each_dset.swap(tasks_for_each_task.back());
           }
         graph_recv_bars.push_back(task_recv_bars);
-        tasks_for_each_graph.push_back(tasks_for_each_task);
+
+        tasks_for_each_graph.emplace_back();
+        tasks_for_each_task.swap(tasks_for_each_graph.back());
       }
     Event::merge_events(events).wait();
 
