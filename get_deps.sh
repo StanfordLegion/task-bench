@@ -131,7 +131,7 @@ EOF
     cat >>deps/env.sh <<EOF
 # overrides to make Travis fast
 export CHPL_TASKS=fifo
-export CHPL_MEM=cstdlib
+# export CHPL_MEM=cstdlib # FIXME: Breaks input size array
 export CHPL_GMP=none
 export CHPL_REGEXP=none
 export CHPL_LLVM=system
