@@ -902,7 +902,8 @@ void top_level_task(const void *args, size_t arglen,
 	args.last_stop = last_stop_bar;
         void *byte_array = serialized_array(args, graph_recv_bars, tasks_for_each_graph, 
 					    size_of_byte_array, graphs, graph_max_width);
-        spawn_events.push_back(procs[taskid].spawn(SHARD_TASK, byte_array, sizeof(ShardArgs) + size_of_byte_array));
+        Processor shard_proc(procs[(taskid * procs.size()) / graph_max_width]);
+        spawn_events.push_back(shard_proc.spawn(SHARD_TASK, byte_array, sizeof(ShardArgs) + size_of_byte_array));
 	//free byte array
       }
     Event::merge_events(spawn_events).wait();
