@@ -2,6 +2,7 @@
 
 Implementations:
 [Charm++](charm++),
+[Chapel](chapel),
 [Legion](legion),
 [MPI](mpi),
 [OmpSs](ompss),
