@@ -105,7 +105,7 @@ int num_dependencies(TaskGraph &graph, long dset, int taskid)
 {
   int num_deps = 0;
   std::vector< std::pair<long, long> > deps = graph.dependencies(dset, taskid);
-  for (std::pair<long, long> interval: deps)
+  for (auto interval : deps)
     {
       for (int i = interval.first; i <= interval.second; i++)
 	num_deps++;        
@@ -117,7 +117,7 @@ int num_rev_dependencies(TaskGraph &graph, long dset, int taskid)
 {
   int num_deps = 0;
   std::vector< std::pair<long, long> > deps = graph.reverse_dependencies(dset, taskid);
-  for (std::pair<long, long> interval: deps)
+  for (auto interval : deps)
     {
       for (int i = interval.first; i <= interval.second; i++)
 	num_deps++;
@@ -281,7 +281,7 @@ int alt_find_index(long inter, TaskGraph &graph, int taskid, long dset)
 {
   int index = 0;
   std::vector<std::pair<long, long> > rev_deps = graph.reverse_dependencies(dset, inter);
-  for (std::pair<long, long> interval: rev_deps)
+  for (auto interval : rev_deps)
     {
       for (long rev = interval.first; rev <= interval.second; rev++)
         {
@@ -297,7 +297,7 @@ int find_index(long inter, TaskGraph &graph, int taskid, long dset)
 {
   int index = 0;
   std::vector<std::pair<long, long> > deps = graph.dependencies(dset, inter);
-  for (std::pair<long, long> interval: deps)
+  for (auto interval : deps)
     {
       for (long dep = interval.first; dep <= interval.second; dep++)
 	{
@@ -327,14 +327,14 @@ void *serialize_comm_array(CommArgs &args, TaskGraph &graph,
   walking_pointer = (TaskGraph *)walking_pointer + 1;
 
   /* Input Ptrs */
-  for (char *data: input_ptrs)
+  for (auto data: input_ptrs)
     {
       *(char **)walking_pointer = data;
       walking_pointer = (char **)walking_pointer + 1;
     }
 
   /* Input Bytes */
-  for (size_t input: input_bytes)
+  for (auto input: input_bytes)
     {
       *(size_t *)walking_pointer = input;
       walking_pointer = (size_t *)walking_pointer + 1;
@@ -347,7 +347,7 @@ void *serialize_comm_array(CommArgs &args, TaskGraph &graph,
 void get_output_locations(std::vector<RegionInstance> &output_locations, std::vector<std::vector<std::vector<RegionInstance> > > &tasks_for_each_graph,
                           std::vector<std::pair<long, long> > &rev_deps, TaskGraph &graph, int taskid, int dset, int k_input)
 {
-  for (std::pair<long, long> interval: rev_deps)
+  for (auto interval: rev_deps)
     {
       for (long inter = interval.first; inter <= interval.second; inter++)
         {
@@ -365,7 +365,7 @@ void get_output_locations(std::vector<RegionInstance> &output_locations, std::ve
 std::vector<Event> create_recv_barriers(std::vector<Barrier> &recv_barriers, TaskGraph &graph, long timestep, Barrier output_bar, int k_input, int num_deps, int taskid)
 {
   std::vector<int> deps;
-  for (std::pair<long, long> interval : graph.dependencies(graph.dependence_set_at_timestep(timestep), taskid))
+  for (auto interval : graph.dependencies(graph.dependence_set_at_timestep(timestep), taskid))
     {
       for (int inter = interval.first; inter <= interval.second; inter++)
 	deps.push_back(inter);
@@ -505,7 +505,7 @@ void shard_task(const void *args, size_t arglen,
 		  /* Signal to dependencies that you are ready to recv again */
 		  
 		  long loop_dset = graph.dependence_set_at_timestep(timestep + NUM_INPUT_REGIONS);
-		  for (std::pair<long, long> interval: graph_dependencies[graph_num][loop_dset])
+		  for (auto interval : graph_dependencies[graph_num][loop_dset])
 		    {
 		      for (long inter = interval.first; inter <= interval.second; inter++)
 			{
@@ -526,7 +526,7 @@ void shard_task(const void *args, size_t arglen,
 		  /* Copy to every reverse dependency */
 		  if (iter == 1 && timestep == graph.timesteps - 1) break;
 		  int index = 0;
-		  for (std::pair<long, long> interval: graph_rev_deps[graph_num][new_dset]) 
+		  for (auto interval : graph_rev_deps[graph_num][new_dset]) 
 		    {
 		      for (long inter = interval.first; inter <= interval.second; inter++)
 			{
@@ -561,7 +561,7 @@ void shard_task(const void *args, size_t arglen,
 	      else
 		{
 		  //this needs to be looped dset, even though fft doesn't use this section
-		  for (std::pair<long, long> interval: graph_dependencies[graph_num][new_dset])
+		  for (auto interval : graph_dependencies[graph_num][new_dset])
 		    {
 		      for (long inter = interval.first; inter <= interval.second; inter++)
 			{
@@ -573,7 +573,7 @@ void shard_task(const void *args, size_t arglen,
 			}  
 		    }
 		  int index = 0;
-		  for (std::pair<long, long> interval: graph_rev_deps[graph_num][new_dset])
+		  for (auto interval : graph_rev_deps[graph_num][new_dset])
 		    {
 		      for (long inter = interval.first; inter <= interval.second; inter++)
 			{
@@ -591,7 +591,7 @@ void shard_task(const void *args, size_t arglen,
 		  if (iter == 1 && timestep == graph.timesteps - 1) break;
 		  		  
 		  index = 0;
-		  for (std::pair<long, long> interval: graph_rev_deps[graph_num][new_dset])
+		  for (auto interval : graph_rev_deps[graph_num][new_dset])
 		    {
 		      for (long inter = interval.first; inter <= interval.second; inter++)
 			{
@@ -708,20 +708,20 @@ void *serialized_array(ShardArgs &args, std::vector<std::vector<std::vector<std:
   walking_pointer = (int *)walking_pointer + 1;
 
   /* Graphs */
-  for (TaskGraph graph: graphs)
+  for (auto graph : graphs)
   {
     *(TaskGraph *)walking_pointer = graph;
     walking_pointer = (TaskGraph *)walking_pointer + 1;
   }
 
   /* Region Instances */
-  for (std::vector<std::vector<std::vector<RegionInstance> > > per_task: tasks_for_each_graph)
+  for (auto per_task : tasks_for_each_graph)
     {
-      for (std::vector<std::vector<RegionInstance> > per_dset: per_task)
+      for (auto per_dset : per_task)
         {
-          for (std::vector<RegionInstance> all_inputs: per_dset)
+          for (auto all_inputs : per_dset)
             {
-              for (RegionInstance region: all_inputs)
+              for (auto region : all_inputs)
                 {
                   *(RegionInstance *)walking_pointer = region;
                   walking_pointer = (RegionInstance *)walking_pointer + 1;
@@ -731,15 +731,15 @@ void *serialized_array(ShardArgs &args, std::vector<std::vector<std::vector<std:
     }
 
   /* Barriers */
-  for (std::vector<std::vector<std::vector<std::vector<Barrier> > > > task_barriers : graph_recv_bars)
+  for (auto task_barriers : graph_recv_bars)
     {
-      for (std::vector<std::vector<std::vector<Barrier> > > per_dset: task_barriers)
+      for (auto per_dset: task_barriers)
         {
-          for (std::vector<std::vector<Barrier> > out_in: per_dset)
+          for (auto out_in: per_dset)
             {
-              for (std::vector<Barrier> barriers: out_in)
+              for (auto barriers: out_in)
 		{
-		  for (Barrier bar: barriers)
+		  for (auto bar: barriers)
 		    {
 		      *(Barrier *)walking_pointer = bar;
 		      walking_pointer = (Barrier *)walking_pointer + 1;
@@ -813,7 +813,7 @@ void top_level_task(const void *args, size_t arglen,
     size_t size_of_byte_array = 0;
     std::vector<std::vector<std::vector<std::vector<std::vector<Barrier> > > > > graph_recv_bars;
     std::vector<std::vector<std::vector<std::vector<RegionInstance> > > > tasks_for_each_graph;
-    for (TaskGraph graph: graphs)
+    for (auto graph : graphs)
       {
 	graph_max_width = graph.max_width; //won't work for multiple graphs
         std::vector<std::vector<std::vector<std::vector<Barrier> > > > task_recv_bars;
@@ -943,7 +943,7 @@ void *create_byte_array_main(App &config, size_t size_of_byte_array, int num_gra
   *(int *)walking_pointer = num_graphs;
   walking_pointer = (int *)walking_pointer + 1;
 
-  for (TaskGraph graph: config.graphs)
+  for (auto graph : config.graphs)
     {
       *(TaskGraph *)walking_pointer = graph;
       walking_pointer = (TaskGraph *)walking_pointer + 1;
