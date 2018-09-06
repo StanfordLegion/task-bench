@@ -814,10 +814,11 @@ void top_level_task(const void *args, size_t arglen,
     std::vector<std::vector<std::vector<std::vector<RegionInstance> > > > tasks_for_each_graph;
     for (TaskGraph graph: graphs)
       {
+	graph_max_width = graph.max_width; //won't work for multiple graphs
         std::vector<std::vector<std::vector<std::vector<Barrier> > > > task_recv_bars;
         std::vector<std::vector<std::vector<RegionInstance> > > tasks_for_each_task;
         size_t output_bytes = graph.output_bytes_per_task;
-        for (int taskid = 0; taskid < graph_max_width; taskid++)
+        for (int taskid = 0; taskid < graph.max_width; taskid++)
           {
             std::vector<std::vector<std::vector<Barrier> > > recv_bars;
             std::vector<std::vector<RegionInstance> > tasks_for_each_dset;
