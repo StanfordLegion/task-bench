@@ -13,17 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef __REALM_START__
-#define __REALM_START__
+#ifndef MAIN_H
+#define MAIN_H
 
 #include "realm.h"
 
-#include "cpu_kernels.h" // for coord_t
+typedef long long int coord_t;
 
-typedef Realm::Point<1, coord_t> Point1; //can probably use this and wont need to do 2D thing?
-typedef Realm::Point<2, coord_t> Point2;
+typedef Realm::Point<1, coord_t> Point1;
 typedef Realm::Rect<1, coord_t> Rect1;
-typedef Realm::Rect<2, coord_t> Rect2;
 
 struct CreateRegionArgs {
 public:
