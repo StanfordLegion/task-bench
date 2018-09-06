@@ -854,7 +854,7 @@ void top_level_task(const void *args, size_t arglen,
 	      recv_bars.push_back(out_in_barriers);
 	      
               Rect1 input_bounds(Point1(0), Point1(output_bytes - 1));
-              Processor shard_proc(procs[taskid]);
+              Processor shard_proc(procs[(taskid * procs.size()) / graph_max_width]);
               Memory memory(proc_regmems[shard_proc]);
 
               //create instance for each dependency (num_deps * output_bytes_per_task)
