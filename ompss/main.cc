@@ -3,6 +3,8 @@
 #include <string.h>
 #include <algorithm> 
 #include <unistd.h>
+#include <sys/syscall.h> 
+#include <sys/types.h>
 #include "core.h"
 #include "timer.h"
 
@@ -44,16 +46,30 @@ typedef struct matrix_s {
   int N;
 }matrix_t;
 
-int omp_get_thread_num()
+char **extra_local_memory;
+
+pid_t main_tid;
+
+int ompss_get_thread_num()
 {
-  return 1;
+#if defined(OMPSS) 
+  return omp_get_thread_num();
+#elif defined(OMPSS2)
+  return syscall(SYS_gettid) - main_tid;
+#endif
 }
 
-char **extra_local_memory;
+void ompss_set_num_threads(int nb_threads)
+{
+#if defined(OMPSS) 
+  omp_set_num_threads(nb_threads);
+#elif defined(OMPSS2)
+#endif 
+}
 
 void task1(tile_t *tile_out, payload_t payload)
 {
-  int tid = omp_get_thread_num();
+  int tid = ompss_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
   std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(tile_out->output_buff);
   output->first = payload.y;
@@ -68,7 +84,7 @@ void task1(tile_t *tile_out, payload_t payload)
 
 void task2(tile_t *tile_out, tile_t *tile_in1, payload_t payload)
 {
-  int tid = omp_get_thread_num();
+  int tid = ompss_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)tile_out->output_buff;
@@ -88,7 +104,7 @@ void task2(tile_t *tile_out, tile_t *tile_in1, payload_t payload)
 
 void task3(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, payload_t payload)
 {
-  int tid = omp_get_thread_num();
+  int tid = ompss_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)tile_out->output_buff;
@@ -110,7 +126,7 @@ void task3(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, payload_t paylo
 
 void task4(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, payload_t payload)
 {
-  int tid = omp_get_thread_num();
+  int tid = ompss_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)tile_out->output_buff;
@@ -134,7 +150,7 @@ void task4(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
 
 void task5(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, payload_t payload)
 {
-  int tid = omp_get_thread_num();
+  int tid = ompss_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)tile_out->output_buff;
@@ -160,7 +176,7 @@ void task5(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
 
 void task6(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, payload_t payload)
 {
-  int tid = omp_get_thread_num();
+  int tid = ompss_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)tile_out->output_buff;
@@ -253,7 +269,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   }
   
   // omp_set_dynamic(1);
-  //omp_set_num_threads(nb_workers);
+  ompss_set_num_threads(nb_workers);
 }
 
 OmpSsApp::~OmpSsApp()
@@ -464,6 +480,8 @@ void OmpSsApp::debug_printf(int verbose_level, const char *format, ...)
 
 int main(int argc, char ** argv)
 {
+  main_tid = syscall(SYS_gettid);
+  printf("main_tid %d\n", main_tid);
   OmpSsApp app(argc, argv);
   app.execute_main_loop();
 
