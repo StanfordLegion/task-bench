@@ -57,10 +57,10 @@ fi
 if [[ $USE_STARPU -eq 1 ]]; then
     for t in $basic_types; do
         for k in "${kernels[@]}"; do
-            mpirun -np 1 ./starpu/main -steps 9 -type $t $k
-            mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 1
-            mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 2
-            mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 4
+            mpirun -np 1 ./starpu/main -steps 9 -type $t $k -core 2
+            mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 1 -core 2
+            mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 2 -core 2
+            mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 4 -core 2
         done
     done
 fi
@@ -68,10 +68,10 @@ fi
 if [[ $USE_PARSEC -eq 1 ]]; then
     for t in $basic_types; do
         for k in "${kernels[@]}"; do
-            mpirun -np 1 ./parsec/main -steps 9 -type $t $k
-            mpirun -np 4 ./parsec/main -steps 9 -type $t $k -p 1
-            mpirun -np 4 ./parsec/main -steps 9 -type $t $k -p 2
-            mpirun -np 4 ./parsec/main -steps 9 -type $t $k -p 4
+            mpirun -np 1 ./parsec/main -steps 9 -type $t $k -c 2
+            mpirun -np 4 ./parsec/main -steps 9 -type $t $k -p 1 -c 2
+            mpirun -np 4 ./parsec/main -steps 9 -type $t $k -p 2 -c 2
+            mpirun -np 4 ./parsec/main -steps 9 -type $t $k -p 4 -c 2
         done
     done
 fi
@@ -97,7 +97,7 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     export LD_LIBRARY_PATH=/usr/local/clang/lib:$LD_LIBRARY_PATH
     for t in $basic_types; do
         for k in "${kernels[@]}"; do
-            ./openmp/main -steps 9 -type $t $k
+            ./openmp/main -steps 9 -type $t $k -worker 2
         done
     done
 fi
