@@ -128,7 +128,7 @@ EOF
     fi
 
     if [[ -n $TRAVIS ]]; then
-    cat >>deps/env.sh <<EOF
+        cat >>deps/env.sh <<EOF
 # overrides to make Travis fast
 export CHPL_TASKS=fifo
 # export CHPL_MEM=cstdlib # FIXME: Breaks input size array
