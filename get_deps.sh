@@ -208,16 +208,20 @@ fi
 
 if [[ $USE_SWIFT -eq 1 ]]; then
     export SWIFT_DIR="$PWD"/deps/swift
-    export SWIFT_INSTALL="$SWIFT_DIR"/install
+    export SWIFT_PREFIX="$SWIFT_DIR"/install
+    export PATH=$SWIFT_DIR/apache-ant-1.10.5/bin:$SWIFT_DIR/jdk-10.0.2/bin:$SWIFT_PREFIX/bin:$SWIFT_PREFIX/stc/bin:$SWIFT_PREFIX/turbine/bin:$PATH
+    export LD_LIBRARY_PATH=$SWIFT_PREFIX/lib:$LD_LIBRARY_PATH
+    export JAVA_HOME=$SWIFT_DIR/jdk-10.0.2
+    export ANT_HOME=$SWIFT_DIR/apache-ant-1.10.5
     cat >>deps/env.sh <<EOF
 export USE_SWIFT=$USE_SWIFT
 export SWIFT_DIR=$SWIFT_DIR
-export SWIFT_INSTALL=$SWIFT_INSTALL
-export PATH=$SWIFT_DIR/apache-ant-1.10.5/bin:$SWIFT_DIR/jdk-10.0.2/bin:$SWIFT_INSTALL/bin:$SWIFT_INSTALL/stc/bin:$SWIFT_INSTALL/turbine/bin:$PATH
-export LD_LIBRARY_PATH=$SWIFT_INSTALL/lib:$LD_LIBRARY_PATH
-export JAVA_HOME=$SWIFT_DIR/jdk-10.0.2
-export ANT_HOME=$SWIFT_DIR/apache-ant-1.10.5
-EOF 
+export SWIFT_PREFIX=$SWIFT_PREFIX
+export PATH=$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH
+export JAVA_HOME=$JAVA_HOME
+export ANT_HOME=$ANT_HOME
+EOF
     mkdir -p "$SWIFT_DIR"
     mkdir -p "$SWIFT_INSTALL"
     mkdir -p "$SWIFT_INSTALL"/src

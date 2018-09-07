@@ -104,7 +104,9 @@ fi
 
 if [[ $USE_SWIFT -eq 1 ]]; then
     for t in $extended_types; do
-        swift-t -n 4 ./swift/benchmark.swift -type $t -steps 9
+        for k in "${kernels[@]}"; do
+            swift-t -n 4 ./swift/benchmark.swift -type $t $k -steps 9
+        done
     done
 fi
 
