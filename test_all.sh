@@ -107,10 +107,10 @@ fi
         cat "$HOME/.ssh/authorized_keys"
     fi
 
-    if ! ssh -q -o BatchMode=yes localhost exit; then
-        echo "Passwordless SSH is required for running Spark tests"
-        exit 1
-    fi
+    # if ! ssh -q -o BatchMode=yes localhost exit; then
+    #     echo "Passwordless SSH is required for running Spark tests"
+    #     exit 1
+    # fi
 
     $SPARK_SRC_DIR/sbin/start-all.sh 
     #run standalone cluster, not local
