@@ -128,3 +128,8 @@ fi
 
     $SPARK_SRC_DIR/sbin/stop-all.sh 
 fi)
+
+set +x
+
+echo
+echo "Tests completed successfully."

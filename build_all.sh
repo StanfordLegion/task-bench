@@ -265,3 +265,6 @@ fi
 
     popd
 fi)
+
+echo
+echo "Build completed successfully."
