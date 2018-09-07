@@ -43,13 +43,14 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     popd
 fi
 
-if [[ $USE_LEGION -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 || $USE_REALM -eq 1 ]]; then
     make -C legion clean
+    make -C realm clean
+fi
+if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j$THREADS
 fi
-
 if [[ $USE_REALM -eq 1 ]]; then
-    make -C realm clean
     make -C realm -j$THREADS
 fi
 
