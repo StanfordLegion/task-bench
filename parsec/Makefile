@@ -2,19 +2,19 @@ ifndef PARSEC_DIR
 $(error PARSEC_DIR variable is not defined, aborting build)
 endif
 
-DEBUG			 = 0
+DEBUG ?= 0
 
 CC         = mpic++
 
 CFLAGS     = -std=c++11 -D_GNU_SOURCE
 LDFLAGS    = -m64 -std=c++11 -Wall -D_GNU_SOURCE
 
-ifeq ($(strip $(DEBUG)),1)
-CFLAGS		 += -g -O0 -mavx
-LDFLAGS		 += -g -O0
-else
+ifeq ($(strip $(DEBUG)),0)
 CFLAGS		 += -O3 -mavx
 LDFLAGS		 += -O3
+else
+CFLAGS		 += -g -O0 -mavx
+LDFLAGS		 += -g -O0
 endif
 
 #PARSEC_DIR = /home/wwu12/parsec-master/install

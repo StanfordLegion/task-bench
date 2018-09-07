@@ -3,6 +3,8 @@ CHAPEL ?= chpl
 BIN=task_benchmark
 SRC=task_benchmark.chpl
 
+DEBUG ?= 0
+
 CHAPEL_FLAGS ?=
 ifeq ($(strip $(DEBUG)),0)
 	CHAPEL_FLAGS += --fast

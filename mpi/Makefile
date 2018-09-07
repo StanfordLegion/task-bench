@@ -1,5 +1,7 @@
 MPICXX ?= mpicxx
 
+DEBUG ?= 0
+
 CXXFLAGS ?=
 CXXFLAGS += -std=c++11 -I../core
 ifeq ($(strip $(DEBUG)),0)
