@@ -10,10 +10,10 @@ CFLAGS     = -std=c++11 -D_GNU_SOURCE
 LDFLAGS    = -m64 -std=c++11 -Wall -D_GNU_SOURCE
 
 ifeq ($(strip $(DEBUG)),0)
-CFLAGS		 += -O3 -mavx
+CFLAGS		 += -O3
 LDFLAGS		 += -O3
 else
-CFLAGS		 += -g -O0 -mavx
+CFLAGS		 += -g -O0
 LDFLAGS		 += -g -O0
 endif
 
@@ -26,7 +26,7 @@ INC        = -I$(PARSEC_DIR)/include -I$(PARSEC_DIR)/include/parsec -I../core
 INC_EXT    = -I$(HWLOC_DIR)/include 
 
 # Location of the libraries.
-LIB        = -Wl,-rpath,$(PARSEC_DIR)/lib $(PARSEC_DIR)/lib/libparsec.so
+LIB        = -Wl,-rpath,$(PARSEC_DIR)/lib $(PARSEC_DIR)/lib/libparsec.so -L../core -lcore -Wl,-rpath -Wl,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))../core
 LIB_EXT    = -lpthread -lm -latomic
 
 INC := $(INC) $(INC_EXT)
@@ -41,19 +41,13 @@ all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
 
-core.o: ../core/core.cc ../core/core.h ../core/core_kernel.h
-	$(CC) -c $(CFLAGS) $<
-
-core_kernel.o: ../core/core_kernel.cc ../core/core_kernel.h
-	$(CC) -c $(CFLAGS) $<
-
 common.o: common.cc common.h
 	$(CC) -c $(CFLAGS) $<
 
 main.o: main.cc ../core/timer.h
 	$(CC) -c $(CFLAGS) $<
 
-main: main.o common.o core.o core_kernel.o
+main: main.o common.o 
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 
 
