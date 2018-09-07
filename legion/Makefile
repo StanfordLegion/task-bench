@@ -40,7 +40,7 @@ GASNET_FLAGS	?=
 LD_FLAGS	?=
 
 CC_FLAGS += -std=c++11 -I../core
-LD_FLAGS += -static -L../core -lcore
+LD_FLAGS += -L../core -lcore_s
 
 include ../core/make_blas.mk
 ###########################################################################
