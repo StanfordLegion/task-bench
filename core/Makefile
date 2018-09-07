@@ -44,7 +44,7 @@ $(DLIB): $(SLIB)
 	mv $@.0 $@
 
 $(SLIB_SYMLINK):
-	ln -s $(SLIB) $@
+	ln -sf $(SLIB) $@
 
 $(OBJS) : %.o : %.cc $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
