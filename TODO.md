@@ -25,7 +25,6 @@
       * Regent
       * OCR
       * X10
-      * Chapel
       * TensorFlow
       * Dask
       * Ray

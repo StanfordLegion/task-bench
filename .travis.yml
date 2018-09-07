@@ -8,6 +8,7 @@ compiler:
   - clang
 env:
   global:
+    - DEBUG=1
     # Legion flags
     # - WARN_AS_ERROR=1
     - REALM_SYNTHETIC_CORE_MAP=""
@@ -22,6 +23,7 @@ env:
     - USE_STARPU=1 TASKBENCH_USE_HWLOC=1
     - USE_PARSEC=1 TASKBENCH_USE_HWLOC=1
     - USE_CHARM=1
+    - USE_CHAPEL=1
     - USE_OPENMP=1
     - USE_OMPSS=1
     - USE_OMPSS2=1
@@ -30,9 +32,11 @@ env:
 before_install:
   - |
     if [[ "$(uname)" = "Linux" ]]; then
+      wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+      sudo apt-add-repository "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-6.0 main"
       sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
       sudo apt-get update -qq
-      sudo apt-get install -qq g++-5 mpich2 libmpich-dev libpcre3-dev inutils-dev libboost-all-dev numactl
+      sudo apt-get install -qq g++-5 mpich2 libmpich-dev libpcre3-dev binutils-dev clang-6.0 libclang-6.0-dev llvm-6.0-dev libboost-all-dev numactl
     fi
   - if [[ "$(uname)" = "Linux" && "$CXX" = "g++" ]]; then export CXX="g++-5" CC="gcc-5"; fi
 install:

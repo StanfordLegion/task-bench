@@ -12,6 +12,7 @@ USE_REALM=${USE_REALM:-$DEFAULT_FEATURES}
 USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
 USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
+USE_CHAPEL=${USE_CHAPEL:-$DEFAULT_FEATURES}
 USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
 USE_OMPSS=${USE_OMPSS:-1}
 USE_OMPSS2=${USE_OMPSS2:-0}
@@ -109,6 +110,38 @@ EOF
     git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_SMP_DIR"
 fi
 
+if [[ $USE_CHAPEL -eq 1 ]]; then
+    export CHPL_HOME="$PWD"/deps/chapel
+    cat >>deps/env.sh <<EOF
+export USE_CHAPEL=$USE_CHAPEL
+export CHPL_HOME=$CHPL_HOME
+export CHPL_HOST_PLATFORM=\$(\$CHPL_HOME/util/chplenv/chpl_platform.py)
+export CHPL_LLVM=llvm
+export CHPL_TARGET_ARCH=native
+EOF
+    if [[ $USE_GASNET -eq 1 ]]; then
+        cat >>deps/env.sh <<EOF
+export CHPL_COMM=gasnet
+export CHPL_COMM_SUBSTRATE=$CONDUIT
+export CHPL_LAUNCHER=${CHPL_LAUNCHER:-slurm-srun}
+export CHPL_GASNET_MORE_CFG_OPTIONS=$CHPL_GASNET_MORE_CFG_OPTIONS
+EOF
+    fi
+
+    if [[ -n $TRAVIS ]]; then
+        cat >>deps/env.sh <<EOF
+# overrides to make Travis fast
+export CHPL_TASKS=fifo
+# export CHPL_MEM=cstdlib # FIXME: Breaks input size array
+export CHPL_GMP=none
+export CHPL_REGEXP=none
+export CHPL_LLVM=system
+EOF
+    fi
+
+    git clone https://github.com/chapel-lang/chapel.git "$CHPL_HOME"
+fi
+
 if [[ $USE_OPENMP -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export USE_OPENMP=$USE_OPENMP
@@ -158,7 +191,6 @@ if [[ $USE_SPARK -eq 1 ]]; then
     export SPARK_DIR="$PWD"/deps/spark
     export SPARK_SWIG_DIR=$SPARK_DIR/swig-3.0.12
     export JAVA_HOME="$SPARK_DIR"/jdk1.8.0_131
-    export PATH="$JAVA_HOME"/bin:"$PATH"
     cat >>deps/env.sh <<EOF
 export USE_SPARK=$USE_SPARK
 export SPARK_DIR=$SPARK_DIR
@@ -167,31 +199,34 @@ export SPARK_SBT_DIR=$SPARK_DIR/sbt/bin
 export SPARK_SWIG_DIR=$SPARK_SWIG_DIR
 export SPARK_PROJ_DIR="$PWD"/spark
 export CORE_DIR="$PWD"/core
-export JAVA_HOME=$JAVA_HOME
-export PATH=$PATH
+export JAVA_HOME="$JAVA_HOME"
+export PATH="\$JAVA_HOME/bin:\$PATH"
 EOF
-    mkdir -p "$SPARK_DIR" #make deps/spark 
-    #don’t install Scala--use 2.11.8 that comes with Spark 2.3.0
+    mkdir -p "$SPARK_DIR"
+    pushd "$SPARK_DIR"
+    # don't install Scala--use 2.11.8 that comes with Spark 2.3.0
 
-    #Java
+    # Java
     wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
-    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$SPARK_DIR" 
+    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$SPARK_DIR"
     rm jdk-8u131-linux-x64.tar.gz
 
-    #Spark 2.3.0   
-    wget https://archive.apache.org/dist/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn’t work without hadoop
-    tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn’t add to path—put full paths in emtg script
+    # Spark 2.3.0
+    wget https://archive.apache.org/dist/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
+    tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn't add to path-put full paths in emtg script
     rm spark-2.3.0-bin-hadoop2.7.tgz
 
-    #SWIG 3.0.12
+    # SWIG 3.0.12
     wget https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
     tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
     rm swig-3.0.12.tar.gz
 
-    #SBT 1.1.6
+    # SBT 1.1.6
     wget https://sbt-downloads.cdnedge.bluemix.net/releases/v1.1.6/sbt-1.1.6.tgz
     tar -zxf sbt-1.1.6.tgz -C "$SPARK_DIR"
-    rm -rf sbt-1.1.6.tar.gz    
+    rm sbt-1.1.6.tgz
+
+    popd
 fi
 
 if [[ $USE_SWIFT -eq 1 ]]; then
