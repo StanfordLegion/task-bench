@@ -88,17 +88,29 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     done
 fi
 
-if [[ $USE_SPARK -eq 1 ]]; then
+(if [[ $USE_SPARK -eq 1 ]]; then
     export SPARK_LOCAL_IP=localhost
     export SPARK_MASTER_IP=localhost
     export SPARK_MASTER_HOST=localhost
-    ssh-keygen -N "" -f "$HOME/.ssh/id_rsa"
-    cat $HOME/.ssh/id_rsa.pub >> "$HOME/.ssh/authorized_keys"
-    echo "id_rsa.pub:"
-    cat $HOME/.ssh/id_rsa.pub
-    echo "authorized_keys:"
-    cat $HOME/.ssh/authorized_keys 
     export LD_LIBRARY_PATH="$CORE_DIR:$SPARK_SWIG_DIR:$LD_LIBRARY_PATH"
+
+    # These tests require a running ssh server that allows
+    # passwordless connections to localhost. On Travis we do this by
+    # setting up a passwordless SSH key. However, these are not
+    # changes I'm comfortable making to an arbitrary user's machine.
+    if [[ -n $TRAVIS ]]; then
+        ssh-keygen -N "" -f "$HOME/.ssh/id_rsa"
+        cat "$HOME/.ssh/id_rsa.pub" >> "$HOME/.ssh/authorized_keys"
+        echo "id_rsa.pub:"
+        cat "$HOME/.ssh/id_rsa.pub"
+        echo "authorized_keys:"
+        cat "$HOME/.ssh/authorized_keys"
+    fi
+
+    if ! ssh -q -o BatchMode=yes localhost exit; then
+        echo "Passwordless SSH is required for running Spark tests"
+        exit 1
+    fi
 
     $SPARK_SRC_DIR/sbin/start-all.sh 
     #run standalone cluster, not local
@@ -115,4 +127,4 @@ if [[ $USE_SPARK -eq 1 ]]; then
     done
 
     $SPARK_SRC_DIR/sbin/stop-all.sh 
-fi
+fi)
