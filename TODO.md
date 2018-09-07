@@ -23,7 +23,6 @@
   * Potential Implementations
       * DARMA
       * Regent
-      * Realm
       * OCR
       * X10
       * Chapel
