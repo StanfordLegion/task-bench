@@ -3,10 +3,15 @@
 #include <string.h>
 #include <algorithm> 
 #include <unistd.h>
-#include <sys/syscall.h> 
-#include <sys/types.h>
 #include "core.h"
 #include "timer.h"
+
+#if defined(OMPSS)      
+#include <omp.h>
+#elif defined(OMPSS2)
+#include <sys/syscall.h> 
+#include <sys/types.h>
+#endif
 
 #define VERBOSE_LEVEL 0
 
@@ -48,7 +53,7 @@ typedef struct matrix_s {
 
 char **extra_local_memory;
 
-pid_t main_tid;
+pid_t main_tid = 0;
 
 int ompss_get_thread_num()
 {
@@ -480,7 +485,9 @@ void OmpSsApp::debug_printf(int verbose_level, const char *format, ...)
 
 int main(int argc, char ** argv)
 {
+#if defined(OMPSS2)
   main_tid = syscall(SYS_gettid);
+#endif
   printf("main_tid %d\n", main_tid);
   OmpSsApp app(argc, argv);
   app.execute_main_loop();

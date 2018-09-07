@@ -111,21 +111,21 @@ if [[ $USE_OPENMP -eq 1 ]]; then
 fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then
-    pushd "$NANOS_SRC_DIR"
+    pushd "$OMPSS_NANOS_SRC_DIR"
     if [[ ! -d build ]]; then
         mkdir build
         cd build
-        ../configure --prefix=$NANOS_PREFIX --disable-instrumentation --disable-debug
+        ../configure --prefix=$OMPSS_NANOS_PREFIX --disable-instrumentation --disable-debug
         make -j$THREADS
         make install
     fi
     popd
 
-    pushd "$MERCURIUM_SRC_DIR"
+    pushd "$OMPSS_MCXX_SRC_DIR"
     if [[ ! -d build ]]; then
         mkdir build
         cd build
-        ../configure --prefix=$MERCURIUM_PREFIX --enable-ompss --with-nanox=$NANOS_PREFIX
+        ../configure --prefix=$OMPSS_MCXX_PREFIX --enable-ompss --with-nanox=$OMPSS_NANOS_PREFIX
         make -j$THREADS
         make install
     fi
@@ -136,30 +136,30 @@ if [[ $USE_OMPSS -eq 1 ]]; then
 fi
 
 if [[ $USE_OMPSS2 -eq 1 ]]; then
-    pushd "$GPERF_SRC_DIR"
+    pushd "$OMPSS2_GPERF_SRC_DIR"
     mkdir -p build
     cd build
-    ../configure --prefix=$GPERF_PREFIX --docdir=$GPERF_PREFIX/doc
+    ../configure --prefix=$OMPSS2_GPERF_PREFIX --docdir=$OMPSS2_GPERF_PREFIX/doc
     make -j$THREADS
     make install
-    export PATH=$GPERF_PREFIX/bin:$PATH
+    export PATH=$OMPSS2_GPERF_PREFIX/bin:$PATH
     popd
 
-    pushd "$NANOS6_SRC_DIR"
+    pushd "$OMPSS2_NANOS6_SRC_DIR"
     autoreconf -fiv
     mkdir -p build
     cd build
-    ../configure --prefix=$NANOS6_PREFIX --with-boost=$BOOST_ROOT --without-nanos6-mercurium
+    ../configure --prefix=$OMPSS2_NANOS6_PREFIX --with-boost=$BOOST_ROOT --without-nanos6-mercurium
     make all -j$THREADS
     make check -j$THREADS
     make install
     popd
     
-    pushd "$MCXX_SRC_DIR"
+    pushd "$OMPSS2_MCXX_SRC_DIR"
     autoreconf -fiv
     mkdir -p build
     cd build
-    ../configure --prefix=$MCXX_PREFIX --enable-ompss-2 --with-nanos6=$NANOS6_PREFIX
+    ../configure --prefix=$OMPSS2_MCXX_PREFIX --enable-ompss-2 --with-nanos6=$OMPSS2_NANOS6_PREFIX
     make -j$THREADS
     make install
     popd

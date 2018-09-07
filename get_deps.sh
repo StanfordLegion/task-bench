@@ -13,8 +13,8 @@ USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
 USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
 USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
-USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
-USE_OMPSS2=${USE_OMPSS2:-1}
+USE_OMPSS=${USE_OMPSS:-1}
+USE_OMPSS2=${USE_OMPSS2:-0}
 USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 
@@ -121,10 +121,10 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export USE_OMPSS=$USE_OMPSS
 export OMPSS_DL_DIR=$OMPSS_DL_DIR
-export NANOS_SRC_DIR=$OMPSS_DL_DIR/nanox-0.14.1
-export NANOS_PREFIX=$OMPSS_DL_DIR/nanox-0.14.1/install
-export MERCURIUM_SRC_DIR=$OMPSS_DL_DIR/mcxx-2.1.0
-export MERCURIUM_PREFIX=$OMPSS_DL_DIR/mcxx-2.1.0/install
+export OMPSS_NANOS_SRC_DIR=$OMPSS_DL_DIR/nanox-0.14.1
+export OMPSS_NANOS_PREFIX=$OMPSS_DL_DIR/nanox-0.14.1/install
+export OMPSS_MCXX_SRC_DIR=$OMPSS_DL_DIR/mcxx-2.1.0
+export OMPSS_MCXX_PREFIX=$OMPSS_DL_DIR/mcxx-2.1.0/install
 EOF
     mkdir -p "$OMPSS_DL_DIR"
     wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
@@ -137,21 +137,21 @@ if [[ $USE_OMPSS2 -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export USE_OMPSS2=$USE_OMPSS2
 export OMPSS2_DL_DIR=$OMPSS2_DL_DIR
-export GPERF_SRC_DIR=$OMPSS2_DL_DIR/gperf-3.0.4
-export GPERF_PREFIX=$OMPSS2_DL_DIR/gperf-3.0.4/install
-export NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
-export NANOS6_PREFIX=$OMPSS2_DL_DIR/nanos6/install
-export MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
-export MCXX_PREFIX=$OMPSS2_DL_DIR/mcxx/install
+export OMPSS2_GPERF_SRC_DIR=$OMPSS2_DL_DIR/gperf-3.0.4
+export OMPSS2_GPERF_PREFIX=$OMPSS2_DL_DIR/gperf-3.0.4/install
+export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
+export OMPSS2_NANOS6_PREFIX=$OMPSS2_DL_DIR/nanos6/install
+export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
+export OMPSS2_MCXX_PREFIX=$OMPSS2_DL_DIR/mcxx/install
 EOF
     mkdir -p "$OMPSS2_DL_DIR"
     wget http://ftp.gnu.org/gnu/gperf/gperf-3.0.4.tar.gz
     tar -zxf gperf-3.0.4.tar.gz -C "$OMPSS2_DL_DIR"
     rm -rf gperf-3.0.4.tar.gz
-    export NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
-    git clone https://github.com/bsc-pm/nanos6.git "$NANOS6_SRC_DIR"
-    export MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
-    git clone https://github.com/bsc-pm/mcxx.git "$MCXX_SRC_DIR"
+    export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
+    git clone https://github.com/bsc-pm/nanos6.git "$OMPSS2_NANOS6_SRC_DIR"
+    export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
+    git clone https://github.com/bsc-pm/mcxx.git "$OMPSS2_MCXX_SRC_DIR"
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then

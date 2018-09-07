@@ -1,6 +1,6 @@
 DEBUG ?= 0
 USE_OMPSS ?=1
-MCXX = $(MERCURIUM_PREFIX)/bin/mcxx
+MCXX = $(OMPSS_MCXX_PREFIX)/bin/mcxx
 
 CXXFLAGS = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps -DOMPSS
 LDFLAGS  = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
