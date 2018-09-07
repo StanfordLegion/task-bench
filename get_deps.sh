@@ -223,10 +223,10 @@ export JAVA_HOME=$JAVA_HOME
 export ANT_HOME=$ANT_HOME
 EOF
     mkdir -p "$SWIFT_DIR"
-    mkdir -p "$SWIFT_INSTALL"
-    mkdir -p "$SWIFT_INSTALL"/src
+    mkdir -p "$SWIFT_PREFIX"
+    mkdir -p "$SWIFT_PREFIX"/src
 
-    pushd "$SWIFT_INSTALL"/src
+    pushd "$SWIFT_PREFIX"/src
 
     git clone git://anongit.freedesktop.org/git/xorg/util/modular util/modular
     popd
