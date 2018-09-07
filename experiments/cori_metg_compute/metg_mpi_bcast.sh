@@ -15,7 +15,7 @@ function launch {
 function sweep {
     for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
         for rep in 0 1 2 3 4; do
-            $1 $2 -kernel busy_wait -iter $(( 1 << (24-s) )) -type $3 -steps 1000
+            $1 $2 -kernel compute_bound -iter $(( 1 << (24-s) )) -type $3 -steps 1000
         done
     done
 }

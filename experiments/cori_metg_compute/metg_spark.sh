@@ -69,7 +69,7 @@ function sweep {
             --conf "spark.network.timeout=420000" \
             --conf spark.scheduler.listenerbus.eventqueue.capacity=20000 \
             $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar \
-            -kernel busy_wait -iter $(( 1 << (26-s) )) -type $1 -steps 1000 -width 20
+            -kernel compute_bound -iter $(( 1 << (26-s) )) -type $1 -steps 1000 -width 20
     done
 }
 
