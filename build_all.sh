@@ -102,8 +102,6 @@ if [[ $USE_OPENMP -eq 1 ]]; then
 fi
 
 if [[ $USE_SWIFT -eq 1 ]]; then
-    export PATH="$SWIFT_INSTALL"/bin:"$PATH"
-    export LD_LIBRARY_PATH="$SWIFT_INSTALL"/lib:"$LD_LIBRARY_PATH"
     module load openmpi/3.0.1
     pushd "$SWIFT_DIR"
     # x11
@@ -131,14 +129,6 @@ if [[ $USE_SWIFT -eq 1 ]]; then
     ./configure --enable-shared --prefix="$SWIFT_INSTALL"
     make
     make install
-    cd ..
-    # jdk
-    export JAVA_HOME="$SWIFT_DIR"/jdk-10.0.2
-    export PATH="$JAVA_HOME"/bin:"$PATH"
-    # ant
-    cd apache-ant-1.10.5
-    export ANT_HOME="$PWD"
-    export PATH="$ANT_HOME"/bin:"$PATH"
     # ncurses
     cd ../ncurses-6.1
     export CXXFLAGS=" -fPIC"
@@ -165,7 +155,6 @@ if [[ $USE_SWIFT -eq 1 ]]; then
     sed -i 's@# export ANT_HOME=@export ANT_HOME='"$SWIFT_DIR"'/apache-ant-1.10.5@g' ./dev/build/swift-t-settings.sh
 
     ./dev/build/build-all.sh
-    export PATH="$SWIFT_INSTALL"/stc/bin:"$SWIFT_INSTALL"/turbine/bin:$PATH
     find "$SWIFT_INSTALL"/stc -type f -exec sed -i 's@/bin/zsh@'"$SWIFT_INSTALL"'/bin/zsh@g' {} +
     find "$SWIFT_INSTALL"/turbine -type f -exec sed -i 's@/bin/zsh@'"$SWIFT_INSTALL"'/bin/zsh@g' {} +
     popd

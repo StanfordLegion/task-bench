@@ -12,6 +12,7 @@ USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
 USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
 USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
+USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 
 if [[ -e deps ]]; then
     echo "The directory deps already exists, nothing to do."
@@ -117,6 +118,10 @@ if [[ $USE_SWIFT -eq 1 ]]; then
 export USE_SWIFT=$USE_SWIFT
 export SWIFT_DIR=$SWIFT_DIR
 export SWIFT_INSTALL=$SWIFT_INSTALL
+export PATH=$SWIFT_DIR/apache-ant-1.10.5/bin:$SWIFT_DIR/jdk-10.0.2/bin:$SWIFT_INSTALL/bin:$SWIFT_INSTALL/stc/bin:$SWIFT_INSTALL/turbine/bin:$PATH
+export LD_LIBRARY_PATH=$SWIFT_INSTALL/lib:$LD_LIBRARY_PATH
+export JAVA_HOME=$SWIFT_DIR/jdk-10.0.2
+export ANT_HOME=$SWIFT_DIR/apache-ant-1.10.5
 EOF
     mkdir -p "$SWIFT_DIR"
     mkdir -p "$SWIFT_INSTALL"

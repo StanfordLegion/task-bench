@@ -66,3 +66,10 @@ if [[ $USE_OPENMP -eq 1 ]]; then
         ./openmp/main -steps 9 -type $t -kernel memory_bound -scratch 64
     done
 fi
+
+if [[ $USE_SWIFT -eq 1 ]]; then
+    for t in $extended_types; do
+        ./deps/swift/install/stc/bin/swift-t -n 4 ./swift/benchmark.swift -type $t -steps 9
+    done
+fi
+
