@@ -1,8 +1,10 @@
 ## Compile
+```
 cd ../core
 make
 cd ompss
 make
+```
 
 ## Ompss Run
 ```
