@@ -18,7 +18,7 @@ INC        = -I../core
 INC_EXT    =  
 
 # Location of the libraries.
-LIB        = -L../core -lcore -Wl,-rpath -Wl,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))../core
+LIB        = -L../core -lcore_s
 LIB_EXT    = 
 
 INC := $(INC) $(INC_EXT)

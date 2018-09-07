@@ -26,7 +26,7 @@ INC        = -I$(PARSEC_DIR)/include -I$(PARSEC_DIR)/include/parsec -I../core
 INC_EXT    = -I$(HWLOC_DIR)/include 
 
 # Location of the libraries.
-LIB        = -Wl,-rpath,$(PARSEC_DIR)/lib $(PARSEC_DIR)/lib/libparsec.so -L../core -lcore -Wl,-rpath -Wl,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))../core
+LIB        = -Wl,-rpath,$(PARSEC_DIR)/lib $(PARSEC_DIR)/lib/libparsec.so -L../core -lcore_s
 LIB_EXT    = -lpthread -lm -latomic
 
 INC := $(INC) $(INC_EXT)
