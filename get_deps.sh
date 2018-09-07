@@ -8,10 +8,14 @@ TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 USE_GASNET=${USE_GASNET:-0}
 TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
 USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
+USE_REALM=${USE_REALM:-$DEFAULT_FEATURES}
 USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
 USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
+USE_CHAPEL=${USE_CHAPEL:-$DEFAULT_FEATURES}
 USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
+USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
+USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 
 if [[ -e deps ]]; then
@@ -50,7 +54,7 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export TASKBENCH_USE_HWLOC=$TASKBENCH_USE_HWLOC
 export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
-export HWLOC_DIR=$HWLOC_DL_DIR
+export HWLOC_DIR=$HWLOC_DL_DIR/install
 EOF
     wget https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
     mkdir -p "$HWLOC_DL_DIR"
@@ -58,10 +62,11 @@ EOF
     rm -rf hwloc-1.11.10.tar.gz
 fi
 
-if [[ $USE_LEGION -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 || $USE_REALM -eq 1 ]]; then
     export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
 export USE_LEGION=$USE_LEGION
+export USE_REALM=$USE_REALM
 export LG_RT_DIR="$LEGION_DIR"/runtime
 export USE_LIBDL=0
 EOF
@@ -104,11 +109,101 @@ EOF
     git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_SMP_DIR"
 fi
 
+if [[ $USE_CHAPEL -eq 1 ]]; then
+    export CHPL_HOME="$PWD"/deps/chapel
+    cat >>deps/env.sh <<EOF
+export USE_CHAPEL=$USE_CHAPEL
+export CHPL_HOME=$CHPL_HOME
+export CHPL_HOST_PLATFORM=\$(\$CHPL_HOME/util/chplenv/chpl_platform.py)
+export CHPL_LLVM=llvm
+export CHPL_TARGET_ARCH=native
+EOF
+    if [[ $USE_GASNET -eq 1 ]]; then
+        cat >>deps/env.sh <<EOF
+export CHPL_COMM=gasnet
+export CHPL_COMM_SUBSTRATE=$CONDUIT
+export CHPL_LAUNCHER=${CHPL_LAUNCHER:-slurm-srun}
+export CHPL_GASNET_MORE_CFG_OPTIONS=$CHPL_GASNET_MORE_CFG_OPTIONS
+EOF
+    fi
+
+    if [[ -n $TRAVIS ]]; then
+        cat >>deps/env.sh <<EOF
+# overrides to make Travis fast
+export CHPL_TASKS=fifo
+# export CHPL_MEM=cstdlib # FIXME: Breaks input size array
+export CHPL_GMP=none
+export CHPL_REGEXP=none
+export CHPL_LLVM=system
+EOF
+    fi
+
+    git clone https://github.com/chapel-lang/chapel.git "$CHPL_HOME"
+fi
+
 if [[ $USE_OPENMP -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export USE_OPENMP=$USE_OPENMP
 EOF
     source deps/env.sh
+fi
+
+if [[ $USE_OMPSS -eq 1 ]]; then
+    export OMPSS_DL_DIR="$PWD"/deps/ompss
+    cat >>deps/env.sh <<EOF
+export USE_OMPSS=$USE_OMPSS
+export OMPSS_DL_DIR=$OMPSS_DL_DIR
+export NANOS_SRC_DIR=$OMPSS_DL_DIR/nanox-0.14.1
+export NANOS_PREFIX=$OMPSS_DL_DIR/nanox-0.14.1/install
+export MERCURIUM_SRC_DIR=$OMPSS_DL_DIR/mcxx-2.1.0
+export MERCURIUM_PREFIX=$OMPSS_DL_DIR/mcxx-2.1.0/install
+EOF
+    mkdir -p "$OMPSS_DL_DIR"
+    wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
+    tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
+    rm -rf ompss-17.12.1.tar.gz
+fi
+
+if [[ $USE_SPARK -eq 1 ]]; then
+    export SPARK_DIR="$PWD"/deps/spark
+    export SPARK_SWIG_DIR=$SPARK_DIR/swig-3.0.12
+    export JAVA_HOME="$SPARK_DIR"/jdk1.8.0_131
+    cat >>deps/env.sh <<EOF
+export USE_SPARK=$USE_SPARK
+export SPARK_DIR=$SPARK_DIR
+export SPARK_SRC_DIR=$SPARK_DIR/spark-2.3.0-bin-hadoop2.7  
+export SPARK_SBT_DIR=$SPARK_DIR/sbt/bin 
+export SPARK_SWIG_DIR=$SPARK_SWIG_DIR
+export SPARK_PROJ_DIR="$PWD"/spark
+export CORE_DIR="$PWD"/core
+export JAVA_HOME="$JAVA_HOME"
+export PATH="\$JAVA_HOME/bin:\$PATH"
+EOF
+    mkdir -p "$SPARK_DIR"
+    pushd "$SPARK_DIR"
+    # don't install Scala--use 2.11.8 that comes with Spark 2.3.0
+
+    # Java
+    wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
+    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$SPARK_DIR"
+    rm jdk-8u131-linux-x64.tar.gz
+
+    # Spark 2.3.0
+    wget https://archive.apache.org/dist/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
+    tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn't add to path-put full paths in emtg script
+    rm spark-2.3.0-bin-hadoop2.7.tgz
+
+    # SWIG 3.0.12
+    wget https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
+    tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
+    rm swig-3.0.12.tar.gz
+
+    # SBT 1.1.6
+    wget https://sbt-downloads.cdnedge.bluemix.net/releases/v1.1.6/sbt-1.1.6.tgz
+    tar -zxf sbt-1.1.6.tgz -C "$SPARK_DIR"
+    rm sbt-1.1.6.tgz
+
+    popd
 fi
 
 if [[ $USE_SWIFT -eq 1 ]]; then
@@ -122,12 +217,13 @@ export PATH=$SWIFT_DIR/apache-ant-1.10.5/bin:$SWIFT_DIR/jdk-10.0.2/bin:$SWIFT_IN
 export LD_LIBRARY_PATH=$SWIFT_INSTALL/lib:$LD_LIBRARY_PATH
 export JAVA_HOME=$SWIFT_DIR/jdk-10.0.2
 export ANT_HOME=$SWIFT_DIR/apache-ant-1.10.5
-EOF
+EOF 
     mkdir -p "$SWIFT_DIR"
     mkdir -p "$SWIFT_INSTALL"
     mkdir -p "$SWIFT_INSTALL"/src
 
     pushd "$SWIFT_INSTALL"/src
+
     git clone git://anongit.freedesktop.org/git/xorg/util/modular util/modular
     popd
 
@@ -139,7 +235,7 @@ EOF
     tar xfz tk8.6.8-src.tar.gz -C "$SWIFT_DIR"
     rm tk8.6.8-src.tar.gz
 
-    wget http://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz
+    wget https://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz
     tar xfz swig-3.0.12.tar.gz -C "$SWIFT_DIR"
     rm swig-3.0.12.tar.gz
 
@@ -151,7 +247,7 @@ EOF
     tar xfz apache-ant-1.10.5-bin.tar.gz -C "$SWIFT_DIR"
     rm apache-ant-1.10.5-bin.tar.gz
 
-    wget ftp://ftp.invisible-island.net/ncurses/ncurses-6.1.tar.gz
+    wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz
     tar xfz ncurses-6.1.tar.gz -C "$SWIFT_DIR"
     rm ncurses-6.1.tar.gz
 

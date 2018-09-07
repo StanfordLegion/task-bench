@@ -21,16 +21,11 @@
           * Maybe CMake?
   * Test suite
   * Potential Implementations
-      * OmpSs
       * DARMA
       * Regent
-      * Realm
       * OCR
       * X10
-      * Chapel
-      * Apache Spark
       * TensorFlow
       * Dask
       * Ray
       * Nimbus
-      * Swift/T

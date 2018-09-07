@@ -1,15 +1,15 @@
 DEBUG ?= 0
 
-CXX ?= g++
+MCXX = mcxx
 
-CXXFLAGS = -std=c++11 -Wall -fopenmp
-LDFLAGS  = -std=c++11 -Wall -fopenmp
+CXXFLAGS = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
+LDFLAGS  = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 
 ifeq ($(strip $(DEBUG)),1)
-CXXFLAGS += -g -O0
+CXXFLAGS += -g -O0 -mavx
 LDFLAGS  += -g -O0
 else
-CXXFLAGS += -O3 -march=native
+CXXFLAGS += -O3 -march=native -mavx
 LDFLAGS  += -O3 -march=native
 endif
 
@@ -18,7 +18,7 @@ INC        = -I../core
 INC_EXT    =  
 
 # Location of the libraries.
-LIB        = -L../core -lcore_s
+LIB        = 
 LIB_EXT    = 
 
 INC := $(INC) $(INC_EXT)
@@ -26,18 +26,16 @@ LIB := $(LIB) $(LIB_EXT)
 
 CXXFLAGS += $(INC)
 
-include ../core/make_blas.mk
-
 TARGET = main
 all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
 
 main.o: main.cc ../core/timer.h
-	$(CXX) -c $(CXXFLAGS) $<
+	$(MCXX) $(CXXFLAGS) -c $<
 
-main: main.o
-	$(CXX) $^ $(LIB) $(LDFLAGS) -o $@ 
+main: main.o ../core/libcore.a
+	$(MCXX) $^ $(LIB) $(LDFLAGS) -o $@ 
 
 
 clean:

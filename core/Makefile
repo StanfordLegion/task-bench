@@ -3,6 +3,11 @@ DLIB=libcore.so
 OBJS=core.o core_c.o core_kernel.o
 HEADERS=core.h core_c.h core_kernel.h timer.h
 
+# Second name for library that can be used to exclusively statically link.
+SLIB_SYMLINK=libcore_s.a
+
+DEBUG ?= 0
+
 CXXFLAGS ?=
 CXXFLAGS += -std=c++11 -fPIC
 ifeq ($(strip $(DEBUG)),0)
@@ -27,7 +32,7 @@ endif
 
 
 .PHONY: all
-all: $(SLIB) $(DLIB)
+all: $(SLIB) $(DLIB) $(SLIB_SYMLINK)
 
 $(SLIB): $(OBJS)
 	rm -f $@
@@ -37,6 +42,9 @@ $(DLIB): $(SLIB)
 	rm -f $@
 	$(CXX) $(LDFLAGS) -o $@.0
 	mv $@.0 $@
+
+$(SLIB_SYMLINK):
+	ln -sf $(SLIB) $@
 
 $(OBJS) : %.o : %.cc $(HEADERS)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
