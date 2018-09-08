@@ -6,9 +6,8 @@
 
 using namespace tensorflow;
 
-REGISTER_OP("TwoInput")
+REGISTER_OP("OneInput")
 	.Input("first_input: T")
-	.Input("second_input: T")
 	.Input("task_graph: uint32")
 	.Input("timestep: int32")
 	.Input("point: int32")
@@ -16,29 +15,25 @@ REGISTER_OP("TwoInput")
 	.Output("output: T");
 
 template <typename T>
-class TwoInputOp : public OpKernel {
+class OneInputOp : public OpKernel {
 public:
 
-	explicit TwoInputOp(OpKernelConstruction* context) : OpKernel(context) {}
+	explicit OneInputOp(OpKernelConstruction* context) : OpKernel(context) {}
 
 	void Compute(OpKernelContext* context) override {
 		// get input tensors
-		const Tensor& first_input_tensor = context->input(0); // left-most input
-		const Tensor& second_input_tensor = context->input(1); // right-most input
-		const Tensor& timestep_tensor = context->input(3); // timestep where this op is being run
-		const Tensor& point_tensor = context->input(4); // point where this op is being run
+		const Tensor& first_input_tensor = context->input(0);
+		const Tensor& timestep_tensor = context->input(2); // timestep where this op is being run
+		const Tensor& point_tensor = context->input(3); // point where this op is being run
 		// convert tensors to readable arrays
 		auto first_input = first_input_tensor.flat<T>();
-		auto second_input = second_input_tensor.flat<T>();
 		auto timestep_input = timestep_tensor.flat<int32>();
 		auto point_input = point_tensor.flat<int32>();
 		long timestep = timestep_input(0);
 		long point = point_input(0);
-		//TESTING
-		std::cout << "TIMESTEP: " << timestep << " POINT: " << point << std::endl;
 
 		// construct task_graph from given values
-		const Tensor& task_graph_tensor = context->input(2);
+		const Tensor& task_graph_tensor = context->input(1);
 		task_graph_t task_graph = constructTaskGraph(task_graph_tensor);
 
 		TensorShape output_shape;
@@ -49,16 +44,9 @@ public:
 		auto output_flat = output_tensor->flat<T>(); // set output type to any of int8, int16, int32, int64
 
 		std::pair<long, long> first_input_pair = std::make_pair(first_input(0), first_input(1));
-		std::pair<long, long> second_input_pair = std::make_pair(second_input(0), second_input(1));
 
-		const std::pair<long, long> *input[2] = { // array of pointers to pairs
-			&first_input_pair, 
-			&second_input_pair
-		};
-
-		for (auto pair : input) {
-			std::cout << "INPUT: " << pair->first << " " << pair->second << std::endl;
-		}
+		const std::pair<long, long> *input[1];
+		input[0] = &first_input_pair;
 
 		output_flat(0) = timestep;
 		output_flat(1) = point;
@@ -66,8 +54,9 @@ public:
 		// Execute Point
 		char *output_ptr = (char *)(&output_flat);
 		size_t output_bytes = sizeof(output_flat);
-		size_t n_inputs = 2;
-		size_t input_bytes[n_inputs] = {sizeof(*input[0]), sizeof(*input[1])};
+		size_t n_inputs = 1;
+		size_t input_bytes[n_inputs];
+		input_bytes[0] = sizeof(*input[0]);
 		const char **input_ptr = (const char **)(input);
 		
 		task_graph_execute_point(task_graph, timestep, point, output_ptr, output_bytes, input_ptr, input_bytes, n_inputs);
@@ -85,13 +74,13 @@ private:
 
 };
 
-// REGISTER_KERNEL_BUILDER(Name("TwoInput").Device(DEVICE_CPU), TwoInputOp);
+// REGISTER_KERNEL_BUILDER(Name("OneInput").Device(DEVICE_CPU), OneInputOp);
 
 // Macro for registering operator for different types (int8, int16, int32, int64)
 #define REGISTER_KERNEL(type)											\
 	REGISTER_KERNEL_BUILDER(											\
-		Name("TwoInput").Device(DEVICE_CPU).TypeConstraint<type>("T"),	\
-		TwoInputOp<type>)
+		Name("OneInput").Device(DEVICE_CPU).TypeConstraint<type>("T"),	\
+		OneInputOp<type>)
 
 REGISTER_KERNEL(int8);
 REGISTER_KERNEL(int16);

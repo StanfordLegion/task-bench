@@ -1,14 +1,14 @@
 SLIB=libcore.a
 DLIB=libcore.so
-OBJS=core.o core_c.o
-HEADERS=core.h core_c.h timer.h
+OBJS=core.o core_c.o core_kernel.o
+HEADERS=core.h core_c.h core_kernel.h timer.h
 
 CXXFLAGS ?=
 CXXFLAGS += -std=c++11 -fPIC
 ifeq ($(strip $(DEBUG)),0)
-	CXXFLAGS += -O3
+	CXXFLAGS += -O3 -mavx
 else
-	CXXFLAGS += -O0 -ggdb
+	CXXFLAGS += -O0 -ggdb -mavx
 endif
 
 LDFLAGS ?=
