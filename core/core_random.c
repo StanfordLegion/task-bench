@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include <cstdint>
+#include <stdint.h>
 
 #include "core_random.h"
 
@@ -21,23 +21,23 @@
 
 // #define TEST_HARNESS
 #ifdef TEST_HARNESS
-#include <cassert>
-#include <cmath>
-#include <cstdio>
+#include <assert.h>
+#include <math.h>
+#include <stdio.h>
 #endif
 
-void gen_bits(const void *input, size_t input_bytes, uint64_t (&output)[2])
+void gen_bits(const void *input, size_t input_bytes, void *output)
 {
   // To generate deterministic uniformly distributed bits, run a hash
   // function on the seed and use the hash value as the output.
-  murmur_hash3_128(input, input_bytes, 1234567, &output[0]);
+  murmur_hash3_128(input, input_bytes, 1234567, output);
 }
 
 double random_uniform(const void *input, size_t input_bytes)
 {
   uint64_t bits[2];
-  gen_bits(input, input_bytes, bits);
-  return static_cast<double>(bits[0]) * 0x1.p-64;
+  gen_bits(input, input_bytes, &bits[0]);
+  return ((double)(bits[0])) * 0x1.p-64;
 }
 
 #ifdef TEST_HARNESS

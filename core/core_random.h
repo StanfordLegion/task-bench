@@ -16,7 +16,7 @@
 #ifndef CORE_RANDOM_H
 #define CORE_RANDOM_H
 
-#include <cstddef>
+#include <stddef.h>
 
 // Compute a deterministic, uniformly distributed pseudo-random value
 // between [0, 1) using input as a seed.
