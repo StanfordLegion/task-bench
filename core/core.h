@@ -30,7 +30,8 @@ struct Kernel : public kernel_t {
   Kernel(kernel_t k) : kernel_t(k) {}
 
   void execute() const;
-  void execute(char *scratch_ptr, size_t scratch_bytes) const;
+  void execute(long timestep, long point,
+               char *scratch_ptr, size_t scratch_bytes) const;
 };
 
 struct TaskGraph : public task_graph_t {
