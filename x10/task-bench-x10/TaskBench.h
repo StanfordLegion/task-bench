@@ -3,9 +3,9 @@
 
 #include <x10rt.h>
 
-#include "/home/users/nicolaig/task-bench/x10/task-bench-x10/core/timer.h"
-#include "/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core.h"
-#include "/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core_kernel.h"
+#include "/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/timer.h"
+#include "/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/core.h"
+#include "/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/core_kernel.h"
 
 #define X10_UTIL_PAIR_H_NODEPS
 #include <x10/util/Pair.h>
@@ -80,15 +80,6 @@ class CheckedThrowable;
 namespace x10 { namespace compiler { 
 class Native;
 } } 
-namespace x10 { namespace io { 
-class Printer;
-} } 
-namespace x10 { namespace io { 
-class Console;
-} } 
-namespace x10 { namespace lang { 
-class Any;
-} } 
 namespace x10 { namespace lang { 
 class String;
 } } 
@@ -104,10 +95,9 @@ class NativeCPPCompilationUnit;
 
 class TaskBench_Strings {
   public:
-    static ::x10::lang::String sl__3063;
-    static ::x10::lang::String sl__3061;
-    static ::x10::lang::String sl__3060;
-    static ::x10::lang::String sl__3062;
+    static ::x10::lang::String sl__3037;
+    static ::x10::lang::String sl__3036;
+    static ::x10::lang::String sl__3035;
 };
 
 class TaskBench : public ::x10::lang::X10Class   {

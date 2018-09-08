@@ -30,6 +30,7 @@ struct Kernel : public kernel_t {
   Kernel(kernel_t k) : kernel_t(k) {}
 
   void execute() const;
+  void execute(char *scratch_ptr, size_t scratch_bytes) const;
 };
 
 struct TaskGraph : public task_graph_t {
@@ -46,6 +47,17 @@ struct TaskGraph : public task_graph_t {
   // std::pair(a, b) represents the INCLUSIVE interval from a to b
   std::vector<std::pair<long, long> > reverse_dependencies(long dset, long point) const;
   std::vector<std::pair<long, long> > dependencies(long dset, long point) const;
+
+  void execute_point(long timestep, long point,
+                     char *output_ptr, size_t output_bytes,
+                     const char **input_ptr, const size_t *input_bytes,
+                     size_t n_inputs) const;
+
+  void execute_point(long timestep, long point,
+                     char *output_ptr, size_t output_bytes,
+                     const char **input_ptr, const size_t *input_bytes,
+                     size_t n_inputs,
+                     char *scratch_ptr, size_t scratch_bytes) const;
 };
 
 struct App {
@@ -61,5 +73,8 @@ struct App {
 // Make sure core types are POD
 static_assert(std::is_pod<Kernel>::value, "Kernel must be POD");
 static_assert(std::is_pod<TaskGraph>::value, "TaskGraph must be POD");
+
+long long flops_per_task(const TaskGraph &g);
+long long bytes_per_task(const TaskGraph &g);
 
 #endif

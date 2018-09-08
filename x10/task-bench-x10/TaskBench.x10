@@ -6,11 +6,11 @@ import x10.compiler.Native;
 import x10.compiler.NativeCPPInclude;
 import x10.compiler.NativeCPPCompilationUnit;
 
-@NativeCPPInclude("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/timer.h")
-@NativeCPPInclude("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core.h")
-@NativeCPPInclude("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core_kernel.h")
-@NativeCPPCompilationUnit("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core.cc")
-@NativeCPPCompilationUnit("/home/users/nicolaig/task-bench/x10/task-bench-x10/core/core_kernel.cc")
+@NativeCPPInclude("/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/timer.h")
+@NativeCPPInclude("/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/core.h")
+@NativeCPPInclude("/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/core_kernel.h")
+@NativeCPPCompilationUnit("/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/core.cc")
+@NativeCPPCompilationUnit("/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/core_kernel.cc")
 
 public class TaskBench {
 
@@ -173,7 +173,7 @@ public class TaskBench {
 			at (p) async {
 				val pi = plh();
 				for (ts in 0..(dsetForTimestep.size-1)) { // loop through timesteps
-					Console.OUT.println(p + " AT TIMESTEP " + ts);
+					// Console.OUT.println(p + " AT TIMESTEP " + ts);
 					// send data
 					if (ts < dsetForTimestep.size-1) { // only if not on last timestep
 						for (sendNeighbor in pi.neighborsSendRails(ts).range()) {

@@ -1,15 +1,16 @@
 #!/bin/bash
 #SBATCH -C haswell
 #SBATCH -q debug
-#SBATCH -N 2
-#SBATCH --cpus-per-task=1
+#SBATCH -N 1
+#SBATCH --cpus-per-task=20
 #SBATCH --exclusive
 #SBATCH -t 00:30:00
 #SBATCH --mail-type=ALL
 
+export LD_LIBRARY_PATH="../../../core:$LD_LIBRARY_PATH"
 
 function launch {
-    srun -n $(( 20 * $1 )) -N $1 ./a.out "${@:2}" -width $(( 20 * $1 ))
+    srun -n $1 -N $1 python task_bench_multiple_cores.py "${@:2}" -width $(( 20 * $1 ))
 }
 
 function sweep {
@@ -18,8 +19,8 @@ function sweep {
     done
 }
 
-for n in 1 2; do
+for n in 1; do
     for t in stencil_1d; do
-        sweep launch $n $t > x10_type_${t}_nodes_${n}.log
+        sweep launch $n $t > tensorflow_type_${t}_nodes_${n}.log
     done
 done

@@ -49,10 +49,10 @@ class Synthetic;
 
 class TaskBench__PlaceInstance_Strings {
   public:
-    static ::x10::lang::String sl__3096;
-    static ::x10::lang::String sl__3095;
-    static ::x10::lang::String sl__3098;
-    static ::x10::lang::String sl__3097;
+    static ::x10::lang::String sl__3070;
+    static ::x10::lang::String sl__3069;
+    static ::x10::lang::String sl__3072;
+    static ::x10::lang::String sl__3071;
 };
 
 class TaskBench__PlaceInstance : public ::x10::lang::X10Class   {
