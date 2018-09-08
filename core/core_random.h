@@ -18,8 +18,16 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Compute a deterministic, uniformly distributed pseudo-random value
 // between [0, 1) using input as a seed.
 double random_uniform(const void *input, size_t input_bytes);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
