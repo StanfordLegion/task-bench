@@ -17,7 +17,9 @@ function launch {
 function sweep {
     for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
         for rep in 0 1 2 3 4; do
-            $1 $2 -kernel compute_bound -iter $(( 1 << (26-s) )) -type $3 -steps 1000
+            if [[ $rep -le $s ]]; then
+                $1 $2 -kernel compute_bound -iter $(( 1 << (26-s) )) -type $3 -steps 1000
+            done
         done
     done
 }
