@@ -54,7 +54,7 @@ static void task1(void *descr[], void *cl_arg)
   output->first = payload.i;
   output->second = payload.j;
   Kernel k(payload.graph.kernel);
-  k.execute(extra_local_memory[tid], payload.graph.scratch_bytes_per_task);
+  k.execute(payload.i, payload.j, extra_local_memory[tid], payload.graph.scratch_bytes_per_task);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);

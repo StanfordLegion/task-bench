@@ -81,7 +81,7 @@ static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
   output->first = payload.i;
   output->second = payload.j;
   Kernel k(payload.graph.kernel);
-  k.execute(extra_local_memory[es->core_id], payload.graph.scratch_bytes_per_task);
+  k.execute(payload.i, payload.j, extra_local_memory[es->core_id], payload.graph.scratch_bytes_per_task);
 #else   
   *out = 0.0;
   printf("Graph %d, Task1, [%d, %d], rank %d, core %d, out %.2f, local_mem %p\n", 
