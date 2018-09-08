@@ -18,7 +18,7 @@ function sweep {
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
                 $1 $2 -kernel compute_bound -iter $(( 1 << (26-s) )) -type $3 -steps 1000
-            done
+            fi
         done
     done
 }
