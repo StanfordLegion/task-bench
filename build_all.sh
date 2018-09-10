@@ -173,6 +173,7 @@ fi
 
 (if [[ $USE_SWIFT -eq 1 ]]; then
     pushd "$SWIFT_DIR"
+    module load openmpi
 
     # x11
     pushd "$SWIFT_PREFIX"/src
@@ -234,20 +235,24 @@ fi
         popd
     )
 
-    # swift-t
+    # swift-t FIXME: completes successfully, but crashes when executed.
     pushd swift-t-1.4
-    ./dev/build/init-settings.sh
-    sed -i 's@SWIFT_T_PREFIX=/tmp/swift-t-install@SWIFT_T_PREFIX='"$SWIFT_PREFIX"'@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCLSH_LOCAL=/usr/bin/tclsh@TCLSH_LOCAL='"$SWIFT_PREFIX"'/bin/tclsh8.6@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCL_LIB_DIR=/path/to/tcl/lib@TCL_LIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCL_INCLUDE_DIR=/path/to/tcl/include@TCL_INCLUDE_DIR='"$SWIFT_PREFIX"'/include@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCL_SYSLIB_DIR=/path/to/tcl/lib@TCL_SYSLIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# export JAVA_HOME=@export JAVA_HOME='"$SWIFT_DIR"'/jdk-10.0.2@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# export ANT_HOME=@export ANT_HOME='"$SWIFT_DIR"'/apache-ant-1.10.5@g' ./dev/build/swift-t-settings.sh
+    cd c-utils/code
+    ./configure --prefix=$SWIFT_PREFIX CC=gcc
+    make install
 
-    ./dev/build/build-all.sh
-    find "$SWIFT_PREFIX"/stc -type f -exec sed -i 's@/bin/zsh@'"$SWIFT_PREFIX"'/bin/zsh@g' {} +
-    find "$SWIFT_PREFIX"/turbine -type f -exec sed -i 's@/bin/zsh@'"$SWIFT_PREFIX"'/bin/zsh@g' {} +
+    cd ../../lb/code
+    ./configure --prefix=$SWIFT_PREFIX --with-c-utils=$SWIFT_PREFIX CC=gcc
+    make install
+
+    cd ../../turbine/code
+    ./configure --with-launcher=/usr/bin/srun --with-c-utils=$SWIFT_PREFIX --with-adlb=$SWIFT_PREFIX --with-tcl=$SWIFT_PREFIX --prefix=$SWIFT_PREFIX CC=gcc
+    make install
+
+    cd ../../stc/code
+    ant install -Ddist.dir=$SWIFT_PREFIX -Dturbine.home=$SWIFT_PREFIX
+    
+    find "$SWIFT_PREFIX" -type f -exec sed -i 's@/bin/zsh@'"$SWIFT_PREFIX"'/bin/zsh@g' {} +
     popd
 
     popd

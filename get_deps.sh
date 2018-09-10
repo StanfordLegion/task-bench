@@ -209,7 +209,7 @@ fi
 if [[ $USE_SWIFT -eq 1 ]]; then
     export SWIFT_DIR="$PWD"/deps/swift
     export SWIFT_PREFIX="$SWIFT_DIR"/install
-    export PATH=$SWIFT_DIR/apache-ant-1.10.5/bin:$SWIFT_DIR/jdk-10.0.2/bin:$SWIFT_PREFIX/bin:$SWIFT_PREFIX/stc/bin:$SWIFT_PREFIX/turbine/bin:$PATH
+    export PATH=$SWIFT_DIR/apache-ant-1.10.5/bin:$SWIFT_DIR/jdk-10.0.2/bin:$SWIFT_PREFIX/bin:$PATH
     export LD_LIBRARY_PATH=$SWIFT_PREFIX/lib:$LD_LIBRARY_PATH
     export JAVA_HOME=$SWIFT_DIR/jdk-10.0.2
     export ANT_HOME=$SWIFT_DIR/apache-ant-1.10.5

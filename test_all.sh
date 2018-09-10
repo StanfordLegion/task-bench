@@ -105,7 +105,7 @@ fi
 if [[ $USE_SWIFT -eq 1 ]]; then
     for t in $extended_types; do
         for k in "${kernels[@]}"; do
-            swift-t -n 4 ./swift/benchmark.swift -type $t $k -steps 9
+            ./deps/swift/install/bin/swift-t -n 5 ./swift/benchmark.swift -type $t $k -steps 9
         done
     done
 fi
