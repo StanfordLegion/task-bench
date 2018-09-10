@@ -16,11 +16,22 @@ CXXFLAGS ?=
 CXXFLAGS += -std=c++11 -fPIC
 
 ifeq ($(strip $(DEBUG)),0)
-	CFLAGS += -O3 -mavx
-	CXXFLAGS += -O3 -mavx
+	CFLAGS += -O3
+	CXXFLAGS += -O3
 else
-	CFLAGS += -O0 -ggdb -mavx
-	CXXFLAGS += -O0 -ggdb -mavx
+	CFLAGS += -O0 -ggdb
+	CXXFLAGS += -O0 -ggdb
+endif
+
+#check AVX support
+HAVE_AVX2 ?= $(filter-out 0,$(shell $(CXX) -mavx2 -dM -E - < /dev/null | egrep "AVX2" | wc -l))
+HAVE_AVX ?= $(filter-out 0,$(shell $(CXX) -mavx -dM -E - < /dev/null | egrep "AVX" | wc -l))
+ifeq ($(strip $(HAVE_AVX2)),1)
+	CFLAGS += -mavx2 -mfma
+	CXXFLAGS += -mavx2 -mfma
+else ifeq ($(strip $(HAVE_AVX)),1)
+	CFLAGS += -mavx
+	CXXFLAGS += -mavx
 endif
 
 LDFLAGS ?=

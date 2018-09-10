@@ -646,7 +646,11 @@ long long flops_per_task(const TaskGraph &g)
   }
 
   case KernelType::COMPUTE_BOUND:
+#if __AVX2__ == 1
+    return 2 * 32 * g.kernel.iterations + 32;
+#else
     return 32 * g.kernel.iterations + 32;
+#endif
 
   case KernelType::COMPUTE_BOUND2:
     return 2 * 32 * g.kernel.iterations;
