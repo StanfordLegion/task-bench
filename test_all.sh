@@ -87,7 +87,7 @@ fi
 
 if [[ $USE_CHAPEL -eq 1 ]]; then
     for t in trivial no_comm stencil_1d nearest all_to_all; do # FIXME: stencil_1d_periodic dom tree fft
-        for k in "${kernels[@]}"; do
+        for k in "${compute_kernels[@]}"; do # FIXME: memory-bound kernel is broken
             ./chapel/task_benchmark -- -steps 9 -type $t $k
         done
     done

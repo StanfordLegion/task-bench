@@ -29,10 +29,11 @@
 
 void Kernel::execute() const
 {
-  Kernel::execute(NULL, 0);
+  Kernel::execute(-1, -1, NULL, 0);
 }
 
-void Kernel::execute(char *scratch_ptr, size_t scratch_bytes) const
+void Kernel::execute(long timestep, long point,
+                     char *scratch_ptr, size_t scratch_bytes) const
 {
   switch(type) {
   case KernelType::EMPTY:
@@ -61,7 +62,8 @@ void Kernel::execute(char *scratch_ptr, size_t scratch_bytes) const
     execute_kernel_io(*this);
     break;
   case KernelType::LOAD_IMBALANCE:
-    execute_kernel_imbalance(*this);
+    assert(timestep >= 0 && point >= 0);
+    execute_kernel_imbalance(*this, timestep, point);
     break;
   default:
     assert(false && "unimplemented kernel type");
@@ -417,7 +419,7 @@ void TaskGraph::execute_point(long timestep, long point,
 
   // Execute kernel
   Kernel k(kernel);
-  k.execute(scratch_ptr, scratch_bytes);
+  k.execute(timestep, point, scratch_ptr, scratch_bytes);
 }
 
 static TaskGraph default_graph()
@@ -644,7 +646,7 @@ long long flops_per_task(const TaskGraph &g)
   }
 
   case KernelType::COMPUTE_BOUND:
-    return 2 * 32 * g.kernel.iterations + 32*2;
+    return 32 * g.kernel.iterations + 32;
 
   case KernelType::COMPUTE_BOUND2:
     return 2 * 32 * g.kernel.iterations;
