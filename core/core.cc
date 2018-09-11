@@ -646,7 +646,7 @@ long long flops_per_task(const TaskGraph &g)
   }
 
   case KernelType::COMPUTE_BOUND:
-    return 32 * g.kernel.iterations + 32;
+    return 2 * 32 * g.kernel.iterations + 32;
 
   case KernelType::COMPUTE_BOUND2:
     return 2 * 32 * g.kernel.iterations;
