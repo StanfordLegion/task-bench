@@ -112,6 +112,7 @@ double execute_kernel_compute(const Kernel &kernel)
   for (long iter = 0; iter < kernel.iterations; iter++) {
     for (int i = 0; i < 8; i++) {
       A[i] = _mm256_mul_pd(A[i], A[i]);
+      A[i] = _mm256_add_pd(A[i], A[i]);
     }
   }
 #else
@@ -123,7 +124,7 @@ double execute_kernel_compute(const Kernel &kernel)
   
   for (long iter = 0; iter < kernel.iterations; iter++) {
     for (int i = 0; i < 32; i++) {
-        A[i] *= A[i];
+        A[i] = A[i] * A[i] + A[i];
     }
   } 
 #endif
