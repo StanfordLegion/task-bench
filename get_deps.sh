@@ -157,6 +157,7 @@ export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
 export OMPSS2_NANOS6_PREFIX=$OMPSS2_DL_DIR/nanos6/install
 export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
 export OMPSS2_MCXX_PREFIX=$OMPSS2_DL_DIR/mcxx/install
+export BOOST_ROOT=/usr/lib/x86_64-linux-gnu
 EOF
     mkdir -p "$OMPSS2_DL_DIR"
     wget http://ftp.gnu.org/gnu/gperf/gperf-3.0.4.tar.gz
