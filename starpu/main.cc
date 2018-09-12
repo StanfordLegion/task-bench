@@ -50,11 +50,16 @@ static void task1(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
   
 #if defined (USE_CORE_VERIFICATION) 
-  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(out);
-  output->first = payload.i;
-  output->second = payload.j;
-  Kernel k(payload.graph.kernel);
-  k.execute(payload.i, payload.j, extra_local_memory[tid], payload.graph.scratch_bytes_per_task);
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)out;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)out);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
