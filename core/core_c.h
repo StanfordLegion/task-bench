@@ -34,6 +34,8 @@ typedef enum dependence_type_t {
   ALL_TO_ALL,
   NEAREST,
   SPREAD,
+  RANDOM_NEAREST,
+  RANDOM_SPREAD,
 } dependence_type_t;
 
 typedef enum kernel_type_t {
@@ -73,7 +75,9 @@ typedef struct task_graph_t {
   long timesteps;
   long max_width;
   dependence_type_t dependence;
-  long radix; // parameter to nearest/spread dependence types
+  long radix; // max number of dependencies in nearest/spread/random patterns
+  long period; // period of repetition in random pattern
+  double fraction_connected; // fraction of connected nodes in random pattern
   kernel_t kernel;
   size_t output_bytes_per_task;
   size_t scratch_bytes_per_task;
