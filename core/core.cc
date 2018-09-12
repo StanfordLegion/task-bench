@@ -284,9 +284,11 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
     deps.push_back(std::pair<long, long>(0, max_width-1));
     break;
   case DependenceType::NEAREST:
-    deps.push_back(std::pair<long, long>(std::max(0L, point - (radix+1)/2),
-                                         std::min(point + radix/2,
-                                                  max_width-1)));
+    if (radix > 0) {
+      deps.push_back(std::pair<long, long>(std::max(0L, point - (radix-1)/2),
+                                           std::min(point + radix/2,
+                                                    max_width-1)));
+    }
     break;
   default:
     assert(false && "unexpected dependence type");
@@ -345,9 +347,11 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
     deps.push_back(std::pair<long, long>(0, max_width-1));
     break;
   case DependenceType::NEAREST:
-    deps.push_back(std::pair<long, long>(std::max(0L, point - radix/2),
-                                         std::min(point + (radix+1)/2,
-                                                  max_width-1)));
+    if (radix > 0) {
+      deps.push_back(std::pair<long, long>(std::max(0L, point - radix/2),
+                                           std::min(point + (radix-1)/2,
+                                                    max_width-1)));
+    }
     break;
   default:
     assert(false && "unexpected dependence type");
@@ -606,6 +610,7 @@ void App::display() const
     printf("      Time Steps: %ld\n", g.timesteps);
     printf("      Max Width: %ld\n", g.max_width);
     printf("      Dependence Type: %s\n", dnames.at(g.dependence).c_str());
+    printf("      Radix: %ld\n", g.radix);
     printf("      Kernel:\n");
     printf("        Type: %s\n", knames.at(g.kernel.type).c_str());
     printf("        Iterations: %ld\n", g.kernel.iterations);
