@@ -22,12 +22,12 @@ kernels=("" "$compute_kernel" "$memory_kernel")
 set -x
 
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
-    for t in no_comm stencil_1d stencil_1d_periodic dom tree fft nearest all_to_all; do # FIXME: trivial is broken
+    for t in no_comm stencil_1d stencil_1d_periodic dom tree nearest all_to_all; do # FIXME: trivial fft are broken
         for k in "${compute_kernels[@]}"; do # FIXME: memory-bound kernel is broken
             mpirun -np 4 ./mpi/nonblock      -steps 9 -width 4 -type $t $k
         done
     done
-    for t in no_comm stencil_1d stencil_1d_periodic fft all_to_all; do # FIXME: trivial, dom, tree, nearest are broken
+    for t in no_comm stencil_1d stencil_1d_periodic all_to_all; do # FIXME: trivial dom tree fft nearest are broken
         for k in "${compute_kernels[@]}"; do # FIXME: memory-bound kernel is broken
             for binary in bcast alltoall buffered_send; do
                 mpirun -np 4 ./mpi/$binary   -steps 9 -width 4 -type $t $k
@@ -86,7 +86,7 @@ if [[ $USE_CHARM -eq 1 ]]; then
 fi
 
 if [[ $USE_CHAPEL -eq 1 ]]; then
-    for t in no_comm stencil_1d nearest all_to_all; do # FIXME: trivial stencil_1d_periodic dom tree fft
+    for t in stencil_1d nearest all_to_all; do # FIXME: trivial no_comm stencil_1d_periodic dom tree fft
         for k in "${compute_kernels[@]}"; do # FIXME: memory-bound kernel is broken
             ./chapel/task_benchmark -- -steps 9 -type $t $k
         done
