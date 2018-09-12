@@ -57,9 +57,9 @@ def analyze(filename, nodes, cores, threshold, peak_flops, peak_bytes):
     ])
 
     if peak_flops:
-        compute['efficiency'] = lambda t: (t['flops'] / t['elapsed']) / peak_flops
+        compute['efficiency'] = lambda t: (t['flops'] / t['elapsed'] / node) / peak_flops
     elif peak_bytes:
-        compute['efficiency'] = lambda t: (t['bytes'] / t['elapsed']) / peak_bytes
+        compute['efficiency'] = lambda t: (t['bytes'] / t['elapsed'] / node) / peak_bytes
     else:
         compute['efficiency'] = lambda t: t['elapsed'][0] / (t['elapsed'] * t['scale_factor'])
 
