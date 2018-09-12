@@ -91,46 +91,46 @@ void execute_kernel_dgemm(const Kernel &kernel,
 double execute_kernel_compute(const Kernel &kernel)
 {
 #if __AVX2__ == 1
-  __m256d A[8];
+  __m256d A[16];
   
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < 16; i++) {
     A[i] = _mm256_set_pd(1.0f, 2.0f, 3.0f, 4.0f);
   }
   
   for (long iter = 0; iter < kernel.iterations; iter++) {
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 16; i++) {
       A[i] = _mm256_fmadd_pd(A[i], A[i], A[i]);
     }
   }
 #elif __AVX__ == 1
-  __m256d A[8];
+  __m256d A[16];
   
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < 16; i++) {
     A[i] = _mm256_set_pd(1.0f, 2.0f, 3.0f, 4.0f);
   }
   
   for (long iter = 0; iter < kernel.iterations; iter++) {
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 16; i++) {
       A[i] = _mm256_mul_pd(A[i], A[i]);
       A[i] = _mm256_add_pd(A[i], A[i]);
     }
   }
 #else
-  double A[32];
+  double A[64];
   
-  for (int i = 0; i < 32; i++) {
+  for (int i = 0; i < 64; i++) {
     A[i] = 1.2345;
   }
   
   for (long iter = 0; iter < kernel.iterations; iter++) {
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 64; i++) {
         A[i] = A[i] * A[i] + A[i];
     }
   } 
 #endif
   double *C = (double *)A;
   double dot = 1.0;
-  for (int i = 0; i < 32; i++) {
+  for (int i = 0; i < 64; i++) {
     dot *= C[i];
   }
   return dot;  
