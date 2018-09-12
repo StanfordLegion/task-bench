@@ -43,7 +43,7 @@ void task1(tile_t *tile_out, payload_t payload)
   output->first = payload.y;
   output->second = payload.x;
   Kernel k(payload.graph.kernel);
-  k.execute(extra_local_memory[tid], payload.graph.scratch_bytes_per_task);
+  k.execute(payload.y, payload.x, extra_local_memory[tid], payload.graph.scratch_bytes_per_task);
 #else  
   tile_out->dep = 0;
   printf("Task1 tid %d, x %d, y %d, out %f\n", tid, payload.x, payload.y, tile_out->dep);
@@ -226,9 +226,9 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
     printf("graph id %d, M = %d, N = %d\n", i, matrix[i].M, matrix[i].N);
   }
   
-  extra_local_memory = (char**)malloc(sizeof(char*) * nb_workers);
+  extra_local_memory = (char**)malloc(sizeof(char*) * (nb_workers+1));
   assert(extra_local_memory != NULL);
-  for (int k = 0; k < nb_workers; k++) {
+  for (int k = 0; k < (nb_workers+1); k++) {
     if (max_scratch_bytes_per_task > 0) {
       extra_local_memory[k] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
     } else {

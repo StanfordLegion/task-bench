@@ -58,14 +58,14 @@ void *execute_task(void *tr)
   
   // warm up
   for (int i = 0; i < 10; i++) {
-    k.execute(task_arg->thread_buff, task_arg->graph.scratch_bytes_per_task);
+    k.execute(0, 0, task_arg->thread_buff, task_arg->graph.scratch_bytes_per_task);
   }
   
   pthread_barrier_wait(&mybarrier);
   
   *(task_arg->time_start) = Timer::get_cur_time();
   for (int i = 0; i < task_arg->nb_tasks; i++) {
-    k.execute(task_arg->thread_buff, task_arg->graph.scratch_bytes_per_task);
+    k.execute(i, task_arg->tid, task_arg->thread_buff, task_arg->graph.scratch_bytes_per_task);
   }
   *(task_arg->time_end) = Timer::get_cur_time();
   
