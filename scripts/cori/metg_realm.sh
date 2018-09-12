@@ -6,10 +6,11 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+cores=$(( $total_cores - 2 ))
 
 function launch {
-    ../../chapel/task_benchmark -nl $1 -- "${@:2}" -width $(( $1 * cores ))
+    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../realm/task_bench "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 0
 }
 
 function sweep {
@@ -22,6 +23,6 @@ function sweep {
 
 for n in $SLURM_JOB_NUM_NODES; do
     for t in stencil_1d; do
-        sweep launch $n $t > chapel_type_${t}_nodes_${n}.log
+        sweep launch $n $t > realm_type_${t}_nodes_${n}.log
     done
 done

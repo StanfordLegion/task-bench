@@ -2,8 +2,17 @@
 
 set -e
 
-DEFAULT_FEATURES=${DEFAULT_FEATURES:-0}
+if [[ -e deps ]]; then
+    echo "The directory deps already exists, nothing to do."
+    echo "Delete deps and run again if you want to re-download dependencies."
+    false
+fi
 
+mkdir deps
+
+DEFAULT_FEATURES=${DEFAULT_FEATURES:-1}
+
+cat >>deps/env.sh <<EOF
 TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 USE_GASNET=${USE_GASNET:-0}
 TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
@@ -18,21 +27,9 @@ USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
 USE_OMPSS2=${USE_OMPSS2:-$DEFAULT_FEATURES}
 USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
-
-if [[ -e deps ]]; then
-    echo "The directory deps already exists, nothing to do."
-    echo "Delete deps and run again if you want to re-download dependencies."
-    false
-fi
-
-mkdir deps
-
-if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
-    cat >>deps/env.sh <<EOF
-export TASKBENCH_USE_MPI=$TASKBENCH_USE_MPI
 EOF
-    source deps/env.sh
-fi
+
+source deps/env.sh
 
 if [[ $USE_GASNET -eq 1 ]]; then
     if [ -z ${CONDUIT+x} ]; then
@@ -42,7 +39,6 @@ if [[ $USE_GASNET -eq 1 ]]; then
     fi
     export GASNET_DIR="$PWD"/deps/gasnet
     cat >>deps/env.sh <<EOF
-export USE_GASNET=$USE_GASNET
 export GASNET_DIR="$GASNET_DIR"
 export GASNET="$GASNET_DIR"/release
 export CONDUIT=$CONDUIT
@@ -53,7 +49,6 @@ fi
 if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     export HWLOC_DL_DIR="$PWD"/deps/hwloc
     cat >>deps/env.sh <<EOF
-export TASKBENCH_USE_HWLOC=$TASKBENCH_USE_HWLOC
 export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
 export HWLOC_DIR=$HWLOC_DL_DIR/install
 EOF
@@ -66,8 +61,6 @@ fi
 if [[ $USE_LEGION -eq 1 || $USE_REALM -eq 1 ]]; then
     export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
-export USE_LEGION=$USE_LEGION
-export USE_REALM=$USE_REALM
 export LG_RT_DIR="$LEGION_DIR"/runtime
 export USE_LIBDL=0
 EOF
@@ -77,7 +70,6 @@ fi
 if [[ $USE_STARPU -eq 1 ]]; then
     export STARPU_DL_DIR="$PWD"/deps/starpu
     cat >>deps/env.sh <<EOF
-export USE_STARPU=$USE_STARPU
 export STARPU_SRC_DIR=$STARPU_DL_DIR/starpu-1.2.4
 export STARPU_DIR=$STARPU_DL_DIR
 EOF
@@ -90,7 +82,6 @@ fi
 if [[ $USE_PARSEC -eq 1 ]]; then
     export PARSEC_DL_DIR="$PWD"/deps/parsec
     cat >>deps/env.sh <<EOF
-export USE_PARSEC=$USE_PARSEC
 export PARSEC_DIR=$PARSEC_DL_DIR/build
 EOF
     mkdir -p "$PARSEC_DL_DIR"
@@ -102,7 +93,6 @@ if [[ $USE_CHARM -eq 1 ]]; then
     export CHARM_SMP_DIR="$PWD"/deps/charm++_smp
     cat >>deps/env.sh <<EOF
 export CHARM_VERSION=${CHARM_VERSION:-netlrts-linux-x86_64}
-export USE_CHARM=$USE_CHARM
 export CHARM_DIR=$CHARM_DIR
 export CHARM_SMP_DIR=$CHARM_SMP_DIR
 EOF
@@ -113,7 +103,6 @@ fi
 if [[ $USE_CHAPEL -eq 1 ]]; then
     export CHPL_HOME="$PWD"/deps/chapel
     cat >>deps/env.sh <<EOF
-export USE_CHAPEL=$USE_CHAPEL
 export CHPL_HOME=$CHPL_HOME
 export CHPL_HOST_PLATFORM=\$(\$CHPL_HOME/util/chplenv/chpl_platform.py)
 export CHPL_LLVM=llvm
@@ -142,17 +131,9 @@ EOF
     git clone https://github.com/chapel-lang/chapel.git "$CHPL_HOME"
 fi
 
-if [[ $USE_OPENMP -eq 1 ]]; then
-    cat >>deps/env.sh <<EOF
-export USE_OPENMP=$USE_OPENMP
-EOF
-    source deps/env.sh
-fi
-
 if [[ $USE_OMPSS -eq 1 ]]; then
     export OMPSS_DL_DIR="$PWD"/deps/ompss
     cat >>deps/env.sh <<EOF
-export USE_OMPSS=$USE_OMPSS
 export OMPSS_DL_DIR=$OMPSS_DL_DIR
 export OMPSS_NANOS_SRC_DIR=$OMPSS_DL_DIR/nanox-0.14.1
 export OMPSS_NANOS_PREFIX=$OMPSS_DL_DIR/nanox-0.14.1/install
@@ -192,7 +173,6 @@ if [[ $USE_SPARK -eq 1 ]]; then
     export SPARK_SWIG_DIR=$SPARK_DIR/swig-3.0.12
     export JAVA_HOME="$SPARK_DIR"/jdk1.8.0_131
     cat >>deps/env.sh <<EOF
-export USE_SPARK=$USE_SPARK
 export SPARK_DIR=$SPARK_DIR
 export SPARK_SRC_DIR=$SPARK_DIR/spark-2.3.0-bin-hadoop2.7  
 export SPARK_SBT_DIR=$SPARK_DIR/sbt/bin 
@@ -233,7 +213,6 @@ if [[ $USE_SWIFT -eq 1 ]]; then
     export SWIFT_DIR="$PWD"/deps/swift
     export SWIFT_PREFIX="$SWIFT_DIR"/install
     cat >>deps/env.sh <<EOF
-export USE_SWIFT=$USE_SWIFT
 export SWIFT_DIR=$SWIFT_DIR
 export SWIFT_PREFIX=$SWIFT_PREFIX
 EOF

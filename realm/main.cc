@@ -33,6 +33,10 @@
 
 using namespace Realm;
 
+// Hack: Track argc/argv in globals to avoid needing to serialize arguments to top_level task.
+static int global_argc = 0;
+static char **global_argv = NULL;
+
 enum {
   TOP_LEVEL_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 0,
   CREATE_REGION_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 1,
@@ -698,7 +702,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     Event::merge_events(events).wait();
     time_elapsed = Timer::get_cur_time();
   }
-  printf("taskid: %d, total_time: %f\n", taskid, time_elapsed - start_time);
+  // printf("taskid: %d, total_time: %f\n", taskid, time_elapsed - start_time);
   a.first_start.arrive(1, Event::NO_EVENT, &start_time, sizeof(start_time));
   a.last_start.arrive(1, Event::NO_EVENT, &start_time, sizeof(start_time));
   a.first_stop.arrive(1, Event::NO_EVENT, &time_elapsed, sizeof(time_elapsed));
@@ -811,8 +815,12 @@ void deserialize_top_array(const void *args, std::vector<TaskGraph> &graphs)
 void top_level_task(const void *args, size_t arglen, const void *userdata,
                     size_t userlen, Processor p)
 {
-  std::vector<TaskGraph> graphs;
-  deserialize_top_array(args, graphs);
+  assert(global_argc > 0 && global_argv != NULL);
+  App app(global_argc, global_argv);
+  app.display();
+
+  auto graphs = app.graphs;
+
   Machine machine = Machine::get_machine();
 
   std::vector<Processor> procs;
@@ -981,7 +989,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   last_stop_bar.wait();
   assert(last_stop_bar.get_result(&last_stop, sizeof(last_stop)));
 
-  printf("Elapsed Time: %f\n", last_stop - first_start);
+  app.report_timing(last_stop - first_start);
 }
 
 void *create_byte_array_main(App &config, size_t size_of_byte_array,
@@ -1023,19 +1031,11 @@ int main(int argc, char **argv)
   }
   assert(p.exists());
 
-  // AppConfig config = parse_config(argc, argv);
-  App config(argc, argv);
-  // config.display();
-
-  // pass just the graphs on as big array
-  int num_graphs = config.graphs.size();
-  size_t size_of_byte_array = sizeof(int) + (num_graphs * sizeof(TaskGraph));
-  void *byte_array =
-      create_byte_array_main(config, size_of_byte_array, num_graphs);
+  global_argc = argc;
+  global_argv = argv;
 
   // collective launch of a single task - everybody gets the same finish event
-  Event e =
-      rt.collective_spawn(p, TOP_LEVEL_TASK, byte_array, size_of_byte_array);
+  Event e = rt.collective_spawn(p, TOP_LEVEL_TASK, NULL, 0);
   // request shutdown once that task is complete
   rt.shutdown(e);
 

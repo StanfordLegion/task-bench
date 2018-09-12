@@ -81,7 +81,7 @@ static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
   output->first = payload.i;
   output->second = payload.j;
   Kernel k(payload.graph.kernel);
-  k.execute(extra_local_memory[es->core_id], payload.graph.scratch_bytes_per_task);
+  k.execute(payload.i, payload.j, extra_local_memory[es->core_id], payload.graph.scratch_bytes_per_task);
 #else   
   *out = 0.0;
   printf("Graph %d, Task1, [%d, %d], rank %d, core %d, out %.2f, local_mem %p\n", 
@@ -475,8 +475,14 @@ ParsecApp::ParsecApp(int argc, char **argv)
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
     
+    if (nb_fields_arg > 0) {
+      nb_fields = nb_fields_arg;
+    } else {
+      nb_fields = graph.timesteps;
+    }
+    
     iparam[IPARAM_N] = graph.max_width * iparam[IPARAM_MB];
-    iparam[IPARAM_M] = graph.timesteps * iparam[IPARAM_MB];
+    iparam[IPARAM_M] = nb_fields * iparam[IPARAM_MB];
   
     parse_arguments(&argc, &argv, iparam);
     
@@ -514,13 +520,6 @@ ParsecApp::ParsecApp(int argc, char **argv)
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
     
-    if (nb_fields < graph.timesteps) {
-      nb_fields = graph.timesteps;
-    }
-  }
-  
-  if (nb_fields_arg > 0) {
-    nb_fields = nb_fields_arg;
   }
   
   nb_tasks = 0;
@@ -600,7 +599,7 @@ void ParsecApp::execute_main_loop()
     const TaskGraph &g = graphs[i];
     matrix_t &mat = mat_array[i];
 
-    debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, nb_fields);
+    debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d, timesteps %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, nb_fields, g.timesteps);
 
     for (y = 0; y < g.timesteps; y++) {
       execute_timestep(i, y);

@@ -22,6 +22,10 @@ THREADS=${THREADS:-$DEFAULT_THREADS}
 make -C core clean
 make -C core -j$THREADS
 
+make -C kernel_bench clean
+make -C kernel_bench all -j$THREADS
+
+
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     make -C mpi clean
     make -C mpi all -j$THREADS

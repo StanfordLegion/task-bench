@@ -13,19 +13,21 @@
  * limitations under the License.
  */
 
-module subchare {
+#ifndef CORE_RANDOM_H
+#define CORE_RANDOM_H
 
-  message MulticastMsg;
+#include <stddef.h>
 
-  include "vectorWrapper.h";
-  include "multicastMsg.h";
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-  array [1D] Subchare {
-    entry Subchare(VectorWrapper wrapper, int i, CkGroupID mcastMgrGID);
-    entry [expedited, nokeep] void initGraph(MulticastMsg* msg);
-    entry [expedited, nokeep] void runTimestep(MulticastMsg* msg);
-    entry [expedited] void receive(const std::pair<long, long>& input);
-    entry [expedited, nokeep] void reset(MulticastMsg* msg);
-  };
+// Compute a deterministic, uniformly distributed pseudo-random value
+// between [0, 1) using input as a seed.
+double random_uniform(const void *input, size_t input_bytes);
 
-};
+#ifdef __cplusplus
+}
+#endif
+
+#endif

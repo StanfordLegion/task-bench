@@ -1,3 +1,18 @@
+/* Copyright 2018 Los Alamos National Laboratory
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +54,7 @@ static void task1(void *descr[], void *cl_arg)
   output->first = payload.i;
   output->second = payload.j;
   Kernel k(payload.graph.kernel);
-  k.execute(extra_local_memory[tid], payload.graph.scratch_bytes_per_task);
+  k.execute(payload.i, payload.j, extra_local_memory[tid], payload.graph.scratch_bytes_per_task);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -484,10 +499,17 @@ StarPUApp::StarPUApp(int argc, char **argv)
   for (i = 0; i < graphs.size(); i++) {
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
+    
+    if (nb_fields_arg > 0) {
+      nb_fields = nb_fields_arg;
+    } else {
+      nb_fields = graph.timesteps;
+    }
+    
     mat.NT = graph.max_width;
-    mat.MT = graph.timesteps;
+    mat.MT = nb_fields;
   
-    debug_printf(0, "mt %d, nt %d\n", mat.MT, mat.NT);
+    debug_printf(0, "mt %d, nt %d, timesteps %d\n", mat.MT, mat.NT, graph.timesteps);
     assert (graph.output_bytes_per_task <= sizeof(float) * MB * MB);
 
     mat.ddescA = create_and_distribute_data(rank, world, MB, MB, mat.MT, mat.NT, P, Q, i);
@@ -495,14 +517,6 @@ StarPUApp::StarPUApp(int argc, char **argv)
     if (graph.scratch_bytes_per_task > max_scratch_bytes_per_task) {
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
-    
-    if (nb_fields < graph.timesteps) {
-      nb_fields = graph.timesteps;
-    }
-  }
-  
-  if (nb_fields_arg > 0) {
-    nb_fields = nb_fields_arg;
   }
    
   extra_local_memory = (char**)malloc(sizeof(char*) * nb_cores);
