@@ -274,6 +274,7 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
       if (d1 >= 0) {
         deps.push_back(std::pair<long, long>(d1, d1));
       }
+      deps.push_back(std::pair<long, long>(point, point));
       if (d2 < max_width) {
         deps.push_back(std::pair<long, long>(d2, d2));
       }
@@ -334,6 +335,7 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
       if (d1 >= 0) {
         deps.push_back(std::pair<long, long>(d1, d1));
       }
+      deps.push_back(std::pair<long, long>(point, point));
       if (d2 < max_width) {
         deps.push_back(std::pair<long, long>(d2, d2));
       }
