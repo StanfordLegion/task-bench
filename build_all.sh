@@ -160,11 +160,16 @@ if [[ $USE_OMPSS2 -eq 1 ]]; then
     export PATH=$OMPSS2_GPERF_PREFIX/bin:$PATH
     popd
 
+    pushd "$BOOST_SRC_DIR"
+    ./bootstrap.sh --prefix=$BOOST_PREFIX
+    ./b2 install
+    popd
+
     pushd "$OMPSS2_NANOS6_SRC_DIR"
     autoreconf -fiv
     mkdir -p build
     cd build
-    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_NANOS6_PREFIX --with-boost=$BOOST_ROOT --without-nanos6-mercurium
+    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_NANOS6_PREFIX --with-boost=$BOOST_PREFIX --without-nanos6-mercurium
     make all -j$THREADS
     make check -j$THREADS
     make install

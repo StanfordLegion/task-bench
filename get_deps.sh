@@ -10,7 +10,7 @@ fi
 
 mkdir deps
 
-DEFAULT_FEATURES=${DEFAULT_FEATURES:-1}
+DEFAULT_FEATURES=${DEFAULT_FEATURES:-0}
 
 cat >>deps/env.sh <<EOF
 TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
@@ -24,7 +24,7 @@ USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
 USE_CHAPEL=${USE_CHAPEL:-$DEFAULT_FEATURES}
 USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
 USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
-USE_OMPSS2=${USE_OMPSS2:-$DEFAULT_FEATURES}
+USE_OMPSS2=${USE_OMPSS2:-1}
 USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 EOF
@@ -157,7 +157,8 @@ export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
 export OMPSS2_NANOS6_PREFIX=$OMPSS2_DL_DIR/nanos6/install
 export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
 export OMPSS2_MCXX_PREFIX=$OMPSS2_DL_DIR/mcxx/install
-export BOOST_ROOT=/usr/lib/x86_64-linux-gnu
+export BOOST_SRC_DIR=$OMPSS2_DL_DIR/boost_1_68_0
+export BOOST_PREFIX=$OMPSS2_DL_DIR/boost_1_68_0/install
 EOF
     mkdir -p "$OMPSS2_DL_DIR"
     wget http://ftp.gnu.org/gnu/gperf/gperf-3.0.4.tar.gz
@@ -167,6 +168,9 @@ EOF
     git clone https://github.com/bsc-pm/nanos6.git "$OMPSS2_NANOS6_SRC_DIR"
     export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
     git clone https://github.com/bsc-pm/mcxx.git "$OMPSS2_MCXX_SRC_DIR"
+    wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
+    tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
+    rm -rf boost_1_68_0.tar.gz 
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
