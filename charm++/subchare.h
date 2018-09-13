@@ -39,7 +39,6 @@ class Subchare : public CBase_Subchare {
   bool firstTime;
   App app;
   TaskGraph graph;
-  CkMulticastMgr *mcastMgr;
   CkSectionInfo sid;
 
   void checkAndRun(bool receiving);
@@ -47,7 +46,7 @@ class Subchare : public CBase_Subchare {
  public:
 
   /// Constructors ///
-  Subchare(VectorWrapper wrapper, int graphIndex, CkGroupID mcastMgrGID);
+  Subchare(VectorWrapper wrapper, int graphIndex);
 
   /// Entry Methods ///
   void initGraph(MulticastMsg* msg);
@@ -56,6 +55,5 @@ class Subchare : public CBase_Subchare {
   void reset(MulticastMsg* msg);
 
 };
-
 
 #endif

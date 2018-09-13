@@ -18,11 +18,12 @@
 #include "subchare.decl.h"
 #include <stdlib.h>
 
-CProxy_Main mainProxy;
+/*readonly*/ CProxy_Main mainProxy;
 
 /**
- * Instantiates all of the child chares and invokes methods on them to initialize their
- * internal structures.
+ * Instantiates all of the child chare arrays, creates a section spanning
+ * all chare arrays, and invokes the initGraph entry method on them to
+ * initialize their internal structures.
  */
 Main::Main(CkArgMsg* msg) : totalTimeElapsed(0.0), numRuns(1), numRunsDone(0),
                             app(msg->argc, msg->argv) {
@@ -30,20 +31,16 @@ Main::Main(CkArgMsg* msg) : totalTimeElapsed(0.0), numRuns(1), numRunsDone(0),
   VectorWrapper wrapper(msg);
   mainProxy = thisProxy;
 
-  // Create a multicast manager group
-  CkGroupID mcastMgrGID = CProxy_CkMulticastMgr::ckNew();
-  CkMulticastMgr *mcastMgr = CProxy_CkMulticastMgr(mcastMgrGID).ckLocalBranch();
-
   // Create a list of array section members spanning all arrays
   int numArrays = app.graphs.size();
   std::vector<CkArrayID> arrID(numArrays);
   std::vector<std::vector<CkArrayIndex> > elems(numArrays);
 
-  for (int i=0; i < numArrays; i++) {
+  for (int i = 0; i < numArrays; i++) {
     int sectionSize = app.graphs[i].max_width;
     // Create the array
-    CProxy_Subchare array = CProxy_Subchare::ckNew(wrapper, i, mcastMgrGID, sectionSize);
-    // Store the AID
+    CProxy_Subchare array = CProxy_Subchare::ckNew(wrapper, i, sectionSize);
+    // Store the array ID
     arrID[i] = array.ckGetArrayID();
     // Create a list of section member indices in this array
     elems[i].resize(sectionSize);
@@ -55,16 +52,13 @@ Main::Main(CkArgMsg* msg) : totalTimeElapsed(0.0), numRuns(1), numRunsDone(0),
   // Create the cross-array section
   sectionProxy = CProxySection_Subchare(arrID, elems);
 
-  // Delegate the section communication to CkMulticast
-  sectionProxy.ckSectionDelegate(mcastMgr);
-
   // Invoke initialization on each subchare.
   sectionProxy.initGraph(new MulticastMsg());
 }
 
 /**
- * Invoked by a subchare to indicate that they are ready to start executing
- * the task graph.
+ * Invoked by a reduction from the section spanning all subchares
+ * to indicate that they are ready to start executing the task graph.
  */
 void Main::workerReady() {
   // TIMER ON!
@@ -73,8 +67,8 @@ void Main::workerReady() {
 }
 
 /**
- * Invoked by a subchare to indicate that they have finished their part of
- * the task graph.
+ * Invoked by a reduction from the section spanning all subchares
+ * to indicate that they have finished the task graph.
  */
 void Main::finishedGraph() {
   // TIMER OFF!
