@@ -22,10 +22,10 @@ module subchare {
 
   array [1D] Subchare {
     entry Subchare(VectorWrapper wrapper, int i);
-    entry [expedited, nokeep] void initGraph(MulticastMsg* msg);
-    entry [expedited, nokeep] void runTimestep(MulticastMsg* msg);
-    entry [expedited] void receive(const std::pair<long, long>& input);
-    entry [expedited, nokeep] void reset(MulticastMsg* msg);
+    entry [expedited, nokeep] void initGraph(MulticastMsg *msg);
+    entry [expedited, nokeep] void runTimestep(MulticastMsg *msg);
+    entry [expedited] void receive(const std::vector<char> &input);
+    entry [expedited, nokeep] void reset(MulticastMsg *msg);
   };
 
 };

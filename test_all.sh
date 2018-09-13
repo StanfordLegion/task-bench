@@ -80,7 +80,7 @@ fi
 
 if [[ $USE_CHARM -eq 1 ]]; then
     for t in $extended_types; do
-        for k in "${basic_kernels[@]}"; do
+        for k in "${extended_kernels[@]}"; do
             ./charm++/charmrun +p1 ++mpiexec ./charm++/benchmark -steps 9 -type $t $k
         done
     done
