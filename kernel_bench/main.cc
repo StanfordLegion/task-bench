@@ -69,13 +69,20 @@ void *execute_task(void *tr)
   }
   *(task_arg->time_end) = Timer::get_cur_time();
   
-  long long flops = flops_per_task(task_arg->graph) * task_arg->nb_tasks;
-  
-  printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flop/s %e\n", 
-        task_arg->tid, task_arg->nb_tasks, 
-        task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
-        flops / (*(task_arg->time_end) - *(task_arg->time_start)));
-
+  if (k.type == COMPUTE_BOUND) {
+    long long flops = flops_per_task(task_arg->graph) * task_arg->nb_tasks;
+    printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flop/s %e\n", 
+          task_arg->tid, task_arg->nb_tasks, 
+          task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
+          (double)flops / (*(task_arg->time_end) - *(task_arg->time_start)));
+  } else if (k.type == MEMORY_BOUND) {
+    long long bytes = bytes_per_task(task_arg->graph) * task_arg->nb_tasks;
+    printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, bytes %lld, bw %e MB/s\n", 
+          task_arg->tid, task_arg->nb_tasks, 
+          task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
+          bytes,
+          ((double)bytes/1024/1024) / (*(task_arg->time_end) - *(task_arg->time_start)));
+  }
   return NULL;
 }
 
