@@ -9,6 +9,12 @@ fi
 if [[ -n $4 ]]; then
     peak_bytes="--peak-memory-bandwidth $4"
 fi
-for f in *_nodes_$n.log; do
-    (set -x; "$script_dir"/metg_chart.py $f -c $c -n $n $peak_flops $peak_bytes)
+
+files=()
+while IFS= read -r -d $'\0'; do
+    files+=("$REPLY")
+done < <(find . -name '*_nodes_'"$n"'.log' -print0)
+
+for f in "${files[@]}"; do
+    (set -x; "$script_dir"/metg_chart.py "$f" -c $c -n $n $peak_flops $peak_bytes)
 done

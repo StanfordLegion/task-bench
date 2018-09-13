@@ -17,22 +17,21 @@
 #include "subchare.h"
 #include "main.decl.h"
 
-extern CProxy_Main mainProxy;
+/*readonly*/ extern CProxy_Main mainProxy;
 
 const static bool SENDING = false;
 const static bool RECEIVING = true;
 
-Subchare::Subchare(VectorWrapper wrapper, int gi, CkGroupID mcastMgrGID)
+Subchare::Subchare(VectorWrapper wrapper, int gi)
   : app(wrapper.vec.size(), wrapper.toArgv()), graphIndex(gi), firstTime(true)
-{
-  mcastMgr = CProxy_CkMulticastMgr(mcastMgrGID).ckLocalBranch();
-}
+{}
 
 /**
  * Initializes the graph and necessary data structures to minimize computation
  * during the timing for Charm++.
  */
 void Subchare::initGraph(MulticastMsg* msg) {
+  // First time here, save the CkSectionInfo for use in reduction contributions
   if (firstTime) {
     sid = msg->_cookie;
     firstTime = false;
@@ -90,7 +89,10 @@ void Subchare::initGraph(MulticastMsg* msg) {
   }
 
   output_bytes = sizeof(output);
-  mcastMgr->contribute(sid, CkCallback(CkReductionTarget(Main, workerReady), mainProxy));
+
+  scratch.resize(graph.scratch_bytes_per_task);
+
+  CProxySection_Subchare::contribute(sid, CkCallback(CkReductionTarget(Main, workerReady), mainProxy));
 }
 
 /**
@@ -102,7 +104,8 @@ void Subchare::runTimestep(MulticastMsg* msg) {
   if (offset <= thisIndex && thisIndex < offset + width) 
     graph.execute_point(currentTimestep, thisIndex, (char *)&output, output_bytes,
               (const char**)inputs[currentTimestep].data(), (const size_t*)input_bytes[currentTimestep].data(),
-              inputs[currentTimestep].size());
+              inputs[currentTimestep].size(),
+              scratch.data(), scratch.size());
 
   for (long target : whereToSend[currentTimestep]) {
     thisProxy[target].receive(output);
@@ -133,7 +136,7 @@ void Subchare::receive(const std::pair<long, long>& input) {
 void Subchare::checkAndRun(bool receiving) {
   if (notReceived[currentTimestep + 1].empty()) {
     if (currentTimestep + 1 == graph.timesteps - 1) {
-      mcastMgr->contribute(sid, CkCallback(CkReductionTarget(Main, finishedGraph), mainProxy));
+      CProxySection_Subchare::contribute(sid, CkCallback(CkReductionTarget(Main, finishedGraph), mainProxy));
     } else if (!receiving || sent) {
       sent = false;
       currentTimestep++;

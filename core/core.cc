@@ -502,7 +502,7 @@ static TaskGraph default_graph()
   TaskGraph graph;
 
   graph.timesteps = 4;
-  graph.max_width = 5;
+  graph.max_width = 4;
   graph.dependence = DependenceType::TRIVIAL;
   graph.radix = 3;
   graph.period = -1;
