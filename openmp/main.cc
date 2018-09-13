@@ -54,11 +54,16 @@ void task1(tile_t *tile_out, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
-  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(tile_out->output_buff);
-  output->first = payload.y;
-  output->second = payload.x;
-  Kernel k(payload.graph.kernel);
-  k.execute(payload.y, payload.x, extra_local_memory[tid], payload.graph.scratch_bytes_per_task);
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)tile_out->output_buff;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)tile_out->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  
+  graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else  
   tile_out->dep = 0;
   printf("Task1 tid %d, x %d, y %d, out %f\n", tid, payload.x, payload.y, tile_out->dep);
