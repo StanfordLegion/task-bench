@@ -203,6 +203,8 @@ int main(int argc, char *argv[])
           graph_all_data[i][dset][dep] = recv;
         }
       }
+
+      free(scratch_ptr);
     }
     MPI_Barrier(MPI_COMM_WORLD);
     double time_elapsed = Timer::time_end();

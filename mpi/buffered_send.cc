@@ -209,6 +209,8 @@ int main(int argc, char *argv[])
         int size;
         MPI_Buffer_detach(&graph_buffers[i][current_buf], &size);
       }
+
+      free(scratch_ptr);
     }
     MPI_Barrier(MPI_COMM_WORLD);
     double time_elapsed = Timer::time_end();

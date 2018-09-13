@@ -342,6 +342,8 @@ int main(int argc, char *argv[])
             taskid == numtasks - 1)
           rearrange(graph_all_data[graph_num][dset]);
       }
+
+      free(scratch_ptr);
     }
     MPI_Barrier(MPI_COMM_WORLD);
     double time_elapsed = Timer::time_end();

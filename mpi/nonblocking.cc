@@ -197,6 +197,8 @@ int main(int argc, char *argv[])
         }
         MPI_Waitall(idx, graph_all_requests[i][dset], MPI_STATUSES_IGNORE);
       }
+
+      free(scratch_ptr);
     }
     MPI_Barrier(MPI_COMM_WORLD);
     double time_elapsed = Timer::time_end();
