@@ -15,8 +15,9 @@ extended_types="$basic_types all_to_all"
 
 compute_kernel="-kernel compute_bound -iter 1024"
 memory_kernel="-kernel memory_bound -iter 1024 -scratch 64"
+imbalanced_kernel="-kernel load_imbalance -iter 1024"
 
-compute_kernels=("" "$compute_kernel")
+compute_kernels=("" "$compute_kernel" "$imbalanced_kernel")
 kernels=("" "$compute_kernel" "$memory_kernel")
 
 set -x
