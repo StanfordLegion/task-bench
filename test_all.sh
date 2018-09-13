@@ -18,7 +18,7 @@ memory_kernel="-kernel memory_bound -iter 1024 -scratch 64"
 imbalanced_kernel="-kernel load_imbalance -iter 1024"
 
 compute_kernels=("" "$compute_kernel" "$imbalanced_kernel")
-kernels=("" "$compute_kernel" "$memory_kernel")
+kernels=("" "$compute_kernel" "$memory_kernel" "$imbalanced_kernel")
 
 set -x
 
