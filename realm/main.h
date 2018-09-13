@@ -42,7 +42,7 @@ public:
 
 struct ShardArgs {
 public:
-  int taskid;
+  long taskid;
   Realm::Barrier sync;
   Realm::Barrier first_start;
   Realm::Barrier last_start;
@@ -52,8 +52,9 @@ public:
 
 struct CommArgs {
 public:
-  int taskid, timestep, num_deps, output_bytes;
+  long taskid, timestep, num_deps;
   long dset;
+  size_t output_bytes;
   char *output_ptr;
 };
 
