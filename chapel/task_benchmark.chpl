@@ -82,6 +82,9 @@ var t: Timer;
         //writeln("the frist and second: ", place + 1, " and ", tasksArray[here.id] + place, " id: ", here.id);
         coforall i in (1 + place)..(tasksArray[here.id] + place) {
           //writeln("Using locale ", here.id + 1, " of ", numLocales, " and task number ", i, " is running on node ", here.id + 1);
+          var scratch_bytes = graph.scratch_bytes_per_task;
+          var scratch_ptr = c_malloc(int(8), scratch_bytes);
+
           for j in 1..totalSteps - 1 {
             var input_ptr = get_input_space(maxDepen, graph.output_bytes_per_task);
             var tmpArray: [1..totalWidth][1..((graph.output_bytes_per_task):int)*totalSteps] int(8);
@@ -112,8 +115,9 @@ var t: Timer;
               update_input_ptr(tasksGrid, tmpArray, input_ptr, interval, (graph.output_bytes_per_task):int, j, size);
               var input_bytes = get_input_bytes(graph, interval, maxDepen, size);
               // before doing execute point make sure the priors have what they need 
-              task_graph_execute_point_nonconst(graph, j - 1, i - 1, output_ptr, graph.output_bytes_per_task, 
-                input_ptr, input_bytes, (((interval.end - interval.start) + size):uint));
+              task_graph_execute_point_scratch_nonconst(graph, j - 1, i - 1, output_ptr, graph.output_bytes_per_task, 
+                input_ptr, input_bytes, (((interval.end - interval.start) + size):uint),
+                scratch_ptr, scratch_bytes);
 
               // should be waiting for the other people that are expexting the same thing your getting
               add_to_tasksGrid(tasksGrid, tmpArray, depenGrid, (graph.output_bytes_per_task):int, i, j);
@@ -127,6 +131,8 @@ var t: Timer;
               }
             }
           }
+
+          c_free(scratch_ptr);
         }
       }
     }
