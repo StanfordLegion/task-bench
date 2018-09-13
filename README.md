@@ -75,8 +75,8 @@ Then run:
 ```
 git clone https://github.com/StanfordLegion/task-bench.git
 cd task-bench
-CONDUIT=aries USE_GASNET=1 CHARM_VERSION=gni-crayxc ./get_deps.sh
-DEBUG=0 ./build_all.sh
+USE_GASNET=1 CONDUIT=aries CHPL_COMM=ugni CHARM_VERSION=gni-crayxc ./get_deps.sh
+./build_all.sh
 cd scripts/cori
 sbatch --nodes 1 emtg_legion.sh
 ```

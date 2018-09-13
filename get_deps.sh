@@ -107,7 +107,12 @@ export CHPL_HOST_PLATFORM=\$(\$CHPL_HOME/util/chplenv/chpl_platform.py)
 export CHPL_LLVM=llvm
 export CHPL_TARGET_ARCH=native
 EOF
-    if [[ $USE_GASNET -eq 1 ]]; then
+    if [[ -n $CHPL_COMM ]]; then
+        cat >>deps/env.sh <<EOF
+export CHPL_COMM=$CHPL_COMM
+export CHPL_LAUNCHER=${CHPL_LAUNCHER:-slurm-srun}
+EOF
+    elif [[ $USE_GASNET -eq 1 ]]; then
         cat >>deps/env.sh <<EOF
 export CHPL_COMM=gasnet
 export CHPL_COMM_SUBSTRATE=$CONDUIT
