@@ -113,7 +113,7 @@ fi
 if [[ $USE_OMPSS2 -eq 1 ]]; then
     for t in $basic_types; do
         ./ompss2/main -steps 9 -type $t
-        ./ompss2/main -steps 9 -type $t -kernel memory_bound -scratch 64
+        #./ompss2/main -steps 9 -type $t -kernel memory_bound -scratch 64
     done
 fi
 
