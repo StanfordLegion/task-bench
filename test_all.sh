@@ -79,7 +79,7 @@ fi
 
 if [[ $USE_CHARM -eq 1 ]]; then
     for t in $extended_types; do
-        for k in "${compute_kernels[@]}"; do # FIXME: memory-bound kernel is broken
+        for k in "${kernels[@]}"; do
             ./charm++/charmrun +p1 ++mpiexec ./charm++/benchmark -steps 9 -type $t $k
         done
     done

@@ -35,6 +35,7 @@ class Subchare : public CBase_Subchare {
   std::vector<std::vector<size_t> > input_bytes;
   std::pair<long, long> output;
   size_t output_bytes;
+  std::vector<char> scratch;
   bool sent;
   bool firstTime;
   App app;

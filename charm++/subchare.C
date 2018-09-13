@@ -89,6 +89,9 @@ void Subchare::initGraph(MulticastMsg* msg) {
   }
 
   output_bytes = sizeof(output);
+
+  scratch.resize(graph.scratch_bytes_per_task);
+
   CProxySection_Subchare::contribute(sid, CkCallback(CkReductionTarget(Main, workerReady), mainProxy));
 }
 
@@ -101,7 +104,8 @@ void Subchare::runTimestep(MulticastMsg* msg) {
   if (offset <= thisIndex && thisIndex < offset + width) 
     graph.execute_point(currentTimestep, thisIndex, (char *)&output, output_bytes,
               (const char**)inputs[currentTimestep].data(), (const size_t*)input_bytes[currentTimestep].data(),
-              inputs[currentTimestep].size());
+              inputs[currentTimestep].size(),
+              scratch.data(), scratch.size());
 
   for (long target : whereToSend[currentTimestep]) {
     thisProxy[target].receive(output);
