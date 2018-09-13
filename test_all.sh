@@ -13,22 +13,24 @@ source deps/env.sh
 basic_types="trivial no_comm stencil_1d stencil_1d_periodic dom tree fft nearest random_nearest"
 extended_types="$basic_types all_to_all"
 
-compute_kernel="-kernel compute_bound -iter 1024"
-memory_kernel="-kernel memory_bound -iter 1024 -scratch 64"
-imbalanced_kernel="-kernel load_imbalance -iter 1024"
+compute_bound="-kernel compute_bound -iter 1024"
+memory_bound="-kernel memory_bound -iter 1024 -scratch 64"
+imbalanced="-kernel load_imbalance -iter 1024"
+communication_bound="-output 1024"
 
-kernels=("" "$compute_kernel" "$memory_kernel" "$imbalanced_kernel")
+basic_kernels=("" "$compute_bound" "$memory_bound" "$imbalanced")
+extended_kernels=("" "$compute_bound" "$memory_bound" "$imbalanced" "$communication_bound")
 
 set -x
 
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     for t in no_comm stencil_1d stencil_1d_periodic dom tree nearest all_to_all; do # FIXME: trivial fft random_nearest are broken
-        for k in "${kernels[@]}"; do
+        for k in "${extended_kernels[@]}"; do
             mpirun -np 4 ./mpi/nonblock      -steps 9 -type $t $k
         done
     done
     for t in no_comm stencil_1d stencil_1d_periodic all_to_all; do # FIXME: trivial dom tree fft nearest random_nearest are broken
-        for k in "${kernels[@]}"; do
+        for k in "${extended_kernels[@]}"; do
             for binary in bcast alltoall buffered_send; do
                 mpirun -np 4 ./mpi/$binary   -steps 9 -type $t $k
             done
@@ -38,7 +40,7 @@ fi
 
 if [[ $USE_LEGION -eq 1 ]]; then
     for t in $extended_types; do
-        for k in "${kernels[@]}"; do
+        for k in "${extended_kernels[@]}"; do
             ./legion/task_bench -steps 9 -type $t $k
             ./legion/task_bench -steps 9 -type $t $k -ll:cpu 2
         done
@@ -47,7 +49,7 @@ fi
 
 if [[ $USE_REALM -eq 1 ]]; then
     for t in $extended_types; do
-        for k in "${kernels[@]}"; do
+        for k in "${extended_kernels[@]}"; do
             ./realm/task_bench -steps 9 -type $t $k
             ./realm/task_bench -steps 9 -type $t $k -ll:cpu 2
         done
@@ -56,7 +58,7 @@ fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
     for t in $basic_types; do
-        for k in "${kernels[@]}"; do
+        for k in "${extended_kernels[@]}"; do
             mpirun -np 1 ./starpu/main -steps 9 -type $t $k -core 2
             mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 1 -core 2
             mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 2 -core 2
@@ -67,7 +69,7 @@ fi
 
 if [[ $USE_PARSEC -eq 1 ]]; then
     for t in $basic_types; do
-        for k in "${kernels[@]}"; do
+        for k in "${extended_kernels[@]}"; do
             mpirun -np 1 ./parsec/main -steps 9 -type $t $k -c 2
             mpirun -np 4 ./parsec/main -steps 9 -type $t $k -p 1 -c 2
             mpirun -np 4 ./parsec/main -steps 9 -type $t $k -p 2 -c 2
@@ -78,7 +80,7 @@ fi
 
 if [[ $USE_CHARM -eq 1 ]]; then
     for t in $extended_types; do
-        for k in "${kernels[@]}"; do
+        for k in "${basic_kernels[@]}"; do
             ./charm++/charmrun +p1 ++mpiexec ./charm++/benchmark -steps 9 -type $t $k
         done
     done
@@ -87,7 +89,7 @@ fi
 
 if [[ $USE_CHAPEL -eq 1 ]]; then
     for t in stencil_1d nearest all_to_all; do # FIXME: trivial no_comm stencil_1d_periodic dom tree fft
-        for k in "${kernels[@]}"; do
+        for k in "${extended_kernels[@]}"; do
             ./chapel/task_benchmark -- -steps 9 -type $t $k
         done
     done
@@ -96,7 +98,7 @@ fi
 if [[ $USE_OPENMP -eq 1 ]]; then
     export LD_LIBRARY_PATH=/usr/local/clang/lib:$LD_LIBRARY_PATH
     for t in $basic_types; do
-        for k in "${kernels[@]}"; do
+        for k in "${extended_kernels[@]}"; do
             ./openmp/main -steps 9 -type $t $k -worker 2
         done
     done
@@ -104,7 +106,7 @@ fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then
     for t in $basic_types; do
-        for k in "${kernels[@]}"; do
+        for k in "${extended_kernels[@]}"; do
             ./ompss/main -steps 9 -type $t $k
         done
     done
@@ -139,7 +141,7 @@ fi
     MASTER_URL=spark://localhost:7077
     
     for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree fft nearest all_to_all; do # FIXME: broken: random_nearest
-        for k in "${kernels[@]}"; do
+        for k in "${extended_kernels[@]}"; do
            $SPARK_SRC_DIR/bin/spark-submit --class "Main" \
                 --master ${MASTER_URL} \
                 --files $SPARK_SWIG_DIR/libcore_c.so \

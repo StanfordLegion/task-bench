@@ -588,7 +588,7 @@ App::App(int argc, char **argv)
       needs_argument(i, argc, "-fraction");
       double value = atof(argv[++i]);
       if (value < 0 || value > 1) {
-        fprintf(stderr, "error: Invalid flag \"-fraction %ld\" must be >= 0 and <= 1\n", value);
+        fprintf(stderr, "error: Invalid flag \"-fraction %f\" must be >= 0 and <= 1\n", value);
         abort();
       }
       graph.fraction_connected = value;
@@ -614,6 +614,17 @@ App::App(int argc, char **argv)
         abort();
       }
       graph.kernel.iterations = value;
+    }
+
+    if (!strcmp(argv[i], "-output")) {
+      needs_argument(i, argc, "-output");
+      long value  = atol(argv[++i]);
+      if (value < sizeof(std::pair<long, long>)) {
+        fprintf(stderr, "error: Invalid flag \"-output %ld\" must be >= %lu\n",
+                value, sizeof(std::pair<long, long>));
+        abort();
+      }
+      graph.output_bytes_per_task = value;
     }
 
     if (!strcmp(argv[i], "-scratch")) {
@@ -720,9 +731,12 @@ void App::display() const
     printf("      Dependence Type: %s\n", dnames.at(g.dependence).c_str());
     printf("      Radix: %ld\n", g.radix);
     printf("      Period: %ld\n", g.period);
+    printf("      Fraction Connected: %f\n", g.fraction_connected);
     printf("      Kernel:\n");
     printf("        Type: %s\n", knames.at(g.kernel.type).c_str());
     printf("        Iterations: %ld\n", g.kernel.iterations);
+    printf("      Output Bytes: %lu\n", g.output_bytes_per_task);
+    printf("      Scratch Bytes: %lu\n", g.scratch_bytes_per_task);
 
     if (verbose) {
       for (long t = 0; t < g.timesteps; ++t) {
