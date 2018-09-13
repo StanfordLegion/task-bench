@@ -175,7 +175,8 @@ void comm_task(const void *args, size_t arglen, const void *userdata,
 
   /* Execute Kernel */
   graph.execute_point(a.timestep, a.taskid, a.output_ptr, a.output_bytes,
-                      (const char **)input_ptrs, input_bytes, a.num_deps);
+                      (const char **)input_ptrs, input_bytes, a.num_deps,
+                      a.scratch_ptr, a.scratch_bytes);
 }
 
 void deserialize_byte_array(
@@ -450,6 +451,12 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     num_rev_deps_per_graph.push_back(num_rev_deps_total);
   }
 
+  std::vector<std::vector<char> > scratch_ptrs;
+  for (size_t i = 0; i < graphs.size(); i++) {
+    size_t scratch_bytes = graphs[i].scratch_bytes_per_task;
+    scratch_ptrs.emplace_back(scratch_bytes);
+  }
+
   Barrier share_barrier = Barrier::NO_BARRIER;
   Barrier sync = a.sync;
   double start_time = 0.0;
@@ -481,6 +488,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           args.taskid = taskid;
           args.timestep = timestep;
           args.output_bytes = output_bytes;
+          args.scratch_bytes = scratch_ptrs[graph_num].size();
+          args.scratch_ptr = scratch_ptrs[graph_num].data();
           long output_region_index = (timestep % NUM_OUTPUT_REGIONS) + 1;
           RegionInstance output_region = tasks_for_each_graph
               [graph_num][taskid][new_dset]

@@ -54,8 +54,8 @@ struct CommArgs {
 public:
   long taskid, timestep, num_deps;
   long dset;
-  size_t output_bytes;
-  char *output_ptr;
+  size_t output_bytes, scratch_bytes;
+  char *output_ptr, *scratch_ptr;
 };
 
 #endif
