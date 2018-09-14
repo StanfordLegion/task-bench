@@ -1,35 +1,43 @@
 MPICXX ?= mpicxx
 
+DEBUG ?= 0
+
 CXXFLAGS ?=
 CXXFLAGS += -std=c++11 -I../core
+
+LDFLAGS ?=
+# FIXME: Would prefer static linking, but some MPI implementations don't support it.
+LDFLAGS += -L../core -lcore_s
+
 ifeq ($(strip $(DEBUG)),0)
-	CXXFLAGS += -O3 -mavx
+	CXXFLAGS += -O3
 else
-	CXXFLAGS += -O0 -ggdb -mavx
+	CXXFLAGS += -O0 -ggdb
 endif
 
-CORE       = ../core/core.cc ../core/core_kernel.cc
+include ../core/make_blas.mk
 
 all: nonblock basic bcast alltoall buffered_send
 
-nonblock: nonblocking.cc $(CORE) ../core/core.h ../core/core_kernel.h
-	$(MPICXX) $(CXXFLAGS) $< $(CORE) -o $@
+alltoall: alltoallv.cc
+	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
 
-basic: basic.cc $(CORE) ../core/core.h ../core/core_kernel.h
-	$(MPICXX) $(CXXFLAGS) $< $(CORE) -o $@
+basic: basic.cc
+	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
 
-buffered_send: buffered_send.cc $(CORE) ../core/core.h ../core/core_kernel.h
-	$(MPICXX) $(CXXFLAGS) $< $(CORE) -o $@
+bcast: bcast.cc
+	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
 
-bcast: bcast.cc $(CORE) ../core/core.h ../core/core_kernel.h
-	$(MPICXX) $(CXXFLAGS) $< $(CORE) -o $@
+buffered_send: buffered_send.cc
+	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
 
-alltoall: alltoallv.cc $(CORE) ../core/core.h ../core/core_kernel.h
-	$(MPICXX) $(CXXFLAGS) $< $(CORE) -o $@
+nonblock: nonblocking.cc
+	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
 
 clean:
 	rm -f *.o
-	rm -f nonblock
+	rm -f alltoall
 	rm -f basic
 	rm -f bcast
-	rm -f alltoall
+	rm -f buffered_send
+	rm -f nonblock

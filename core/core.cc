@@ -22,16 +22,19 @@
 #include <map>
 #include <set>
 #include <string>
+#include <math.h>
 
 #include "core.h"
 #include "core_kernel.h"
+#include "core_random.h"
 
 void Kernel::execute() const
 {
-  Kernel::execute(NULL, 0);
+  Kernel::execute(-1, -1, NULL, 0);
 }
 
-void Kernel::execute(char *scratch_ptr, size_t scratch_bytes) const
+void Kernel::execute(long timestep, long point,
+                     char *scratch_ptr, size_t scratch_bytes) const
 {
   switch(type) {
   case KernelType::EMPTY:
@@ -45,6 +48,11 @@ void Kernel::execute(char *scratch_ptr, size_t scratch_bytes) const
     assert(scratch_bytes > 0);
     execute_kernel_memory(*this, scratch_ptr, scratch_bytes);
     break;
+  case KernelType::COMPUTE_DGEMM:
+    assert(scratch_ptr != NULL);
+    assert(scratch_bytes > 0);
+    execute_kernel_dgemm(*this, scratch_ptr, scratch_bytes);
+    break;  
   case KernelType::COMPUTE_BOUND:
     execute_kernel_compute(*this);
     break;
@@ -55,7 +63,8 @@ void Kernel::execute(char *scratch_ptr, size_t scratch_bytes) const
     execute_kernel_io(*this);
     break;
   case KernelType::LOAD_IMBALANCE:
-    execute_kernel_imbalance(*this);
+    assert(timestep >= 0 && point >= 0);
+    execute_kernel_imbalance(*this, timestep, point);
     break;
   default:
     assert(false && "unimplemented kernel type");
@@ -70,6 +79,7 @@ static const std::map<std::string, KernelType> &ktype_by_name()
     types["empty"] = KernelType::EMPTY;
     types["busy_wait"] = KernelType::BUSY_WAIT;
     types["memory_bound"] = KernelType::MEMORY_BOUND;
+    types["compute_dgemm"] = KernelType::COMPUTE_DGEMM;
     types["compute_bound"] = KernelType::COMPUTE_BOUND;
     types["compute_bound2"] = KernelType::COMPUTE_BOUND2;
     types["io_bound"] = KernelType::IO_BOUND;
@@ -108,6 +118,8 @@ static const std::map<std::string, DependenceType> &dtype_by_name()
     types["all_to_all"] = DependenceType::ALL_TO_ALL;
     types["nearest"] = DependenceType::NEAREST;
     types["spread"] = DependenceType::SPREAD;
+    types["random_nearest"] = DependenceType::RANDOM_NEAREST;
+    types["random_spread"] = DependenceType::RANDOM_SPREAD;
   }
 
   return types;
@@ -142,6 +154,8 @@ long TaskGraph::offset_at_timestep(long timestep) const
   case DependenceType::ALL_TO_ALL:
   case DependenceType::NEAREST:
   case DependenceType::SPREAD:
+  case DependenceType::RANDOM_NEAREST:
+  case DependenceType::RANDOM_SPREAD:
     return 0;
   default:
     assert(false && "unexpected dependence type");
@@ -165,6 +179,8 @@ long TaskGraph::width_at_timestep(long timestep) const
   case DependenceType::ALL_TO_ALL:
   case DependenceType::NEAREST:
   case DependenceType::SPREAD:
+  case DependenceType::RANDOM_NEAREST:
+  case DependenceType::RANDOM_SPREAD:
     return max_width;
   default:
     assert(false && "unexpected dependence type");
@@ -187,6 +203,9 @@ long TaskGraph::max_dependence_sets() const
   case DependenceType::NEAREST:
   case DependenceType::SPREAD:
     return 1;
+  case DependenceType::RANDOM_NEAREST:
+  case DependenceType::RANDOM_SPREAD:
+    return period;
   default:
     assert(false && "unexpected dependence type");
   };
@@ -215,6 +234,9 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::NEAREST:
   case DependenceType::SPREAD:
     return 0;
+  case DependenceType::RANDOM_NEAREST:
+  case DependenceType::RANDOM_SPREAD:
+    return timestep % max_dependence_sets();
   default:
     assert(false && "unexpected dependence type");
   };
@@ -265,6 +287,7 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
       if (d1 >= 0) {
         deps.push_back(std::pair<long, long>(d1, d1));
       }
+      deps.push_back(std::pair<long, long>(point, point));
       if (d2 < max_width) {
         deps.push_back(std::pair<long, long>(d2, d2));
       }
@@ -274,9 +297,39 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
     deps.push_back(std::pair<long, long>(0, max_width-1));
     break;
   case DependenceType::NEAREST:
-    deps.push_back(std::pair<long, long>(std::max(0L, point - (radix+1)/2),
-                                         std::min(point + radix/2,
-                                                  max_width-1)));
+    if (radix > 0) {
+      deps.push_back(std::pair<long, long>(std::max(0L, point - (radix-1)/2),
+                                           std::min(point + radix/2,
+                                                    max_width-1)));
+    }
+    break;
+  case DependenceType::RANDOM_NEAREST:
+    {
+      long run_start = -1;
+      long i, last_i;
+      for (i = std::max(0L, point - (radix-1)/2),
+             last_i = std::min(point + radix/2, max_width-1);
+           i <= last_i; ++i) {
+        // Figure out whether we're including this dependency or not.
+        const long hash_value[4] = {radix, dset, point, i};
+        double value = random_uniform(&hash_value[0], sizeof(hash_value));
+        bool include = value < fraction_connected || (radix > 0 && i == point);
+
+        if (include) {
+          if (run_start < 0) {
+            run_start = i;
+          }
+        } else {
+          if (run_start >= 0) {
+            deps.push_back(std::pair<long, long>(run_start, i-1));
+          }
+          run_start = -1;
+        }
+      }
+      if (run_start >= 0) {
+        deps.push_back(std::pair<long, long>(run_start, i-1));
+      }
+    }
     break;
   default:
     assert(false && "unexpected dependence type");
@@ -325,6 +378,7 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
       if (d1 >= 0) {
         deps.push_back(std::pair<long, long>(d1, d1));
       }
+      deps.push_back(std::pair<long, long>(point, point));
       if (d2 < max_width) {
         deps.push_back(std::pair<long, long>(d2, d2));
       }
@@ -334,9 +388,39 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
     deps.push_back(std::pair<long, long>(0, max_width-1));
     break;
   case DependenceType::NEAREST:
-    deps.push_back(std::pair<long, long>(std::max(0L, point - radix/2),
-                                         std::min(point + (radix+1)/2,
-                                                  max_width-1)));
+    if (radix > 0) {
+      deps.push_back(std::pair<long, long>(std::max(0L, point - radix/2),
+                                           std::min(point + (radix-1)/2,
+                                                    max_width-1)));
+    }
+    break;
+  case DependenceType::RANDOM_NEAREST:
+    {
+      long run_start = -1;
+      long i, last_i;
+      for (i = std::max(0L, point - radix/2),
+             last_i = std::min(point + (radix-1)/2, max_width-1);
+           i <= last_i; ++i) {
+        // Figure out whether we're including this dependency or not.
+        const long hash_value[4] = {radix, dset, i, point};
+        double value = random_uniform(&hash_value[0], sizeof(hash_value));
+        bool include = value < fraction_connected || (radix > 0 && i == point);
+
+        if (include) {
+          if (run_start < 0) {
+            run_start = i;
+          }
+        } else {
+          if (run_start >= 0) {
+            deps.push_back(std::pair<long, long>(run_start, i-1));
+          }
+          run_start = -1;
+        }
+      }
+      if (run_start >= 0) {
+        deps.push_back(std::pair<long, long>(run_start, i-1));
+      }
+    }
     break;
   default:
     assert(false && "unexpected dependence type");
@@ -384,9 +468,11 @@ void TaskGraph::execute_point(long timestep, long point,
           assert(input_bytes[idx] == output_bytes_per_task);
           assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
 
-          const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
-          assert(input.first == timestep - 1);
-          assert(input.second == dep);
+          const std::pair<long, long> *input = reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
+          for (size_t i = 0; i < input_bytes[idx]/sizeof(std::pair<long, long>); ++i) {
+            assert(input[i].first == timestep - 1);
+            assert(input[i].second == dep);
+          }
           idx++;
         }
       }
@@ -402,15 +488,17 @@ void TaskGraph::execute_point(long timestep, long point,
 
   // Generate output
   std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(output_ptr);
-  output->first = timestep;
-  output->second = point;
+  for (size_t i = 0; i < output_bytes/sizeof(std::pair<long, long>); ++i) {
+    output[i].first = timestep;
+    output[i].second = point;
+  }
 
   // Validate scratch
   assert(scratch_bytes == scratch_bytes_per_task);
 
   // Execute kernel
   Kernel k(kernel);
-  k.execute(scratch_ptr, scratch_bytes);
+  k.execute(timestep, point, scratch_ptr, scratch_bytes);
 }
 
 static TaskGraph default_graph()
@@ -420,8 +508,10 @@ static TaskGraph default_graph()
   graph.timesteps = 4;
   graph.max_width = 4;
   graph.dependence = DependenceType::TRIVIAL;
-  graph.radix = 2;
-  graph.kernel = {KernelType::EMPTY, 0, 0, 0};
+  graph.radix = 3;
+  graph.period = -1;
+  graph.fraction_connected = 0.25;
+  graph.kernel = {KernelType::EMPTY, 0, 0};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
   graph.scratch_bytes_per_task = 0;
 
@@ -488,6 +578,26 @@ App::App(int argc, char **argv)
       graph.radix = value;
     }
 
+    if (!strcmp(argv[i], "-period")) {
+      needs_argument(i, argc, "-period");
+      long value = atol(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-period %ld\" must be >= 0\n", value);
+        abort();
+      }
+      graph.period = value;
+    }
+
+    if (!strcmp(argv[i], "-fraction")) {
+      needs_argument(i, argc, "-fraction");
+      double value = atof(argv[++i]);
+      if (value < 0 || value > 1) {
+        fprintf(stderr, "error: Invalid flag \"-fraction %f\" must be >= 0 and <= 1\n", value);
+        abort();
+      }
+      graph.fraction_connected = value;
+    }
+
     if (!strcmp(argv[i], "-kernel")) {
       needs_argument(i, argc, "-kernel");
       auto types = ktype_by_name();
@@ -510,6 +620,17 @@ App::App(int argc, char **argv)
       graph.kernel.iterations = value;
     }
 
+    if (!strcmp(argv[i], "-output")) {
+      needs_argument(i, argc, "-output");
+      long value  = atol(argv[++i]);
+      if (value < sizeof(std::pair<long, long>)) {
+        fprintf(stderr, "error: Invalid flag \"-output %ld\" must be >= %lu\n",
+                value, sizeof(std::pair<long, long>));
+        abort();
+      }
+      graph.output_bytes_per_task = value;
+    }
+
     if (!strcmp(argv[i], "-scratch")) {
       needs_argument(i, argc, "-scratch");
       long value  = atol(argv[++i]);
@@ -518,16 +639,6 @@ App::App(int argc, char **argv)
         abort();
       }
       graph.scratch_bytes_per_task = value;
-    }
-
-    if (!strcmp(argv[i], "-max_power")) {
-      needs_argument(i, argc, "-max_power");
-      long value  = atol(argv[++i]);
-      if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-max_power %ld\" must be >= 0\n", value);
-        abort();
-      }
-      graph.kernel.max_power = value;
     }
 
     if (!strcmp(argv[i], "-jump")) {
@@ -541,11 +652,18 @@ App::App(int argc, char **argv)
     }
 
     if (!strcmp(argv[i], "-and")) {
+      // Hack: set default value of period for random graph
+      if (graph.period < 0) {
+        graph.period = graph.dependence == DependenceType::RANDOM_NEAREST ? 3 : 0;
+      }
       graphs.push_back(graph);
       graph = default_graph();
     }
   }
 
+  if (graph.period < 0) {
+    graph.period = graph.dependence == DependenceType::RANDOM_NEAREST ? 3 : 0;
+  }
   graphs.push_back(graph);
 
   check();
@@ -555,6 +673,16 @@ void App::check() const
 {
   // Validate task graph is well-formed
   for (auto g : graphs) {
+    if (g.dependence == DependenceType::RANDOM_NEAREST && g.period == 0) {
+      fprintf(stderr, "error: Graph type \"%s\" requires a non-zero period (specify with -period)\n",
+              name_by_dtype().at(g.dependence).c_str());
+      abort();
+    } else if (g.dependence != DependenceType::RANDOM_NEAREST && g.period != 0) {
+      fprintf(stderr, "error: Graph type \"%s\" does not support user-configurable period\n",
+              name_by_dtype().at(g.dependence).c_str());
+      abort();
+    }
+
     for (long t = 0; t < g.timesteps; ++t) {
       long offset = g.offset_at_timestep(t);
       long width = g.width_at_timestep(t);
@@ -605,9 +733,14 @@ void App::display() const
     printf("      Time Steps: %ld\n", g.timesteps);
     printf("      Max Width: %ld\n", g.max_width);
     printf("      Dependence Type: %s\n", dnames.at(g.dependence).c_str());
+    printf("      Radix: %ld\n", g.radix);
+    printf("      Period: %ld\n", g.period);
+    printf("      Fraction Connected: %f\n", g.fraction_connected);
     printf("      Kernel:\n");
     printf("        Type: %s\n", knames.at(g.kernel.type).c_str());
     printf("        Iterations: %ld\n", g.kernel.iterations);
+    printf("      Output Bytes: %lu\n", g.output_bytes_per_task);
+    printf("      Scratch Bytes: %lu\n", g.scratch_bytes_per_task);
 
     if (verbose) {
       for (long t = 0; t < g.timesteps; ++t) {
@@ -639,9 +772,16 @@ long long flops_per_task(const TaskGraph &g)
   case KernelType::BUSY_WAIT:
   case KernelType::MEMORY_BOUND:
     return 0;
+    
+  case KernelType::COMPUTE_DGEMM:
+  {
+    long N = sqrt(g.scratch_bytes_per_task / (3 * sizeof(double))); 
+    return 2 * N * N * N * g.kernel.iterations;
+  }
 
   case KernelType::COMPUTE_BOUND:
-    return 2 * 32 * g.kernel.iterations + 32*2;
+    return 2 * 64 * g.kernel.iterations + 64;
+
   case KernelType::COMPUTE_BOUND2:
     return 2 * 32 * g.kernel.iterations;
 
@@ -664,6 +804,7 @@ long long bytes_per_task(const TaskGraph &g)
   case KernelType::MEMORY_BOUND:
     return g.scratch_bytes_per_task * g.kernel.iterations;
 
+  case KernelType::COMPUTE_DGEMM:
   case KernelType::COMPUTE_BOUND:
   case KernelType::COMPUTE_BOUND2:
   case KernelType::IO_BOUND:

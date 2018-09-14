@@ -16,6 +16,7 @@
 #ifndef __SUBCHARE_H__
 #define __SUBCHARE_H__
 
+#include "multicastMsg.h"
 #include "../core/core.h"
 #include <vector>
 #include <set>
@@ -30,29 +31,30 @@ class Subchare : public CBase_Subchare {
   std::vector<std::set<long> > notReceived;
   std::vector<std::set<long> > whereToSend;
   std::map<std::pair<long, long>, long> receivingMap;
-  std::vector<std::vector<std::pair<long, long>*> > inputs;
+  std::vector<std::vector<std::vector<char> > > inputs;
+  std::vector<std::vector<char *> > input_ptrs;
   std::vector<std::vector<size_t> > input_bytes;
-  std::pair<long, long> output;
-  size_t output_bytes;
+  std::vector<char> output;
+  std::vector<char> scratch;
   bool sent;
+  bool firstTime;
   App app;
   TaskGraph graph;
+  CkSectionInfo sid;
 
   void checkAndRun(bool receiving);
 
  public:
 
   /// Constructors ///
-  Subchare(VectorWrapper wrapper);
-  Subchare(CkMigrateMessage *msg);
+  Subchare(VectorWrapper wrapper, int graphIndex);
 
   /// Entry Methods ///
-  void initGraph(int graphIndex);
-  void runTimestep();
-  void receive(std::pair<long, long> input);
-  void reset();
+  void initGraph(MulticastMsg* msg);
+  void runTimestep(MulticastMsg* msg);
+  void receive(const std::vector<char> &input);
+  void reset(MulticastMsg* msg);
 
 };
-
 
 #endif

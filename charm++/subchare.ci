@@ -15,14 +15,17 @@
 
 module subchare {
 
+  message MulticastMsg;
+
   include "vectorWrapper.h";
+  include "multicastMsg.h";
 
   array [1D] Subchare {
-    entry Subchare(VectorWrapper wrapper);
-    entry void initGraph(int graphIndex);
-    entry [expedited] void runTimestep();
-    entry [expedited] void receive(std::pair<long, long> input);
-    entry void reset();
+    entry Subchare(VectorWrapper wrapper, int i);
+    entry [expedited, nokeep] void initGraph(MulticastMsg *msg);
+    entry [expedited, nokeep] void runTimestep(MulticastMsg *msg);
+    entry [expedited] void receive(const std::vector<char> &input);
+    entry [expedited, nokeep] void reset(MulticastMsg *msg);
   };
 
 };

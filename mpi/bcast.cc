@@ -288,6 +288,9 @@ int main(int argc, char *argv[])
       TaskGraph graph = graphs[graph_num];
       size_t output_bytes = graph.output_bytes_per_task;
       char *output_ptr = output_ptrs[graph_num];
+      size_t scratch_bytes = graph.scratch_bytes_per_task;
+      char *scratch_ptr = (char *)malloc(scratch_bytes);
+
       char *saved_ptr = NULL;
       for (long timestep = 0L; timestep < graph.timesteps; timestep++) {
         long dset = graph.dependence_set_at_timestep(timestep + 1);
@@ -300,7 +303,8 @@ int main(int argc, char *argv[])
           graph.execute_point(
               timestep, taskid, output_ptr, output_bytes,
               (const char **)graph_all_data[graph_num][old_dset].data(),
-              graph_input_bytes[graph_num][old_dset].data(), num_inputs);
+              graph_input_bytes[graph_num][old_dset].data(), num_inputs,
+              scratch_ptr, scratch_bytes);
         }
 
         int idx = 0;
@@ -338,6 +342,8 @@ int main(int argc, char *argv[])
             taskid == numtasks - 1)
           rearrange(graph_all_data[graph_num][dset]);
       }
+
+      free(scratch_ptr);
     }
     MPI_Barrier(MPI_COMM_WORLD);
     double time_elapsed = Timer::time_end();

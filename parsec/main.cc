@@ -77,11 +77,16 @@ static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
   parsec_dtd_unpack_args(this_task, &payload, &out);
 
 #if defined (USE_CORE_VERIFICATION)    
-  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(out);
-  output->first = payload.i;
-  output->second = payload.j;
-  Kernel k(payload.graph.kernel);
-  k.execute(extra_local_memory[es->core_id], payload.graph.scratch_bytes_per_task);
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)out;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)out);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
 #else   
   *out = 0.0;
   printf("Graph %d, Task1, [%d, %d], rank %d, core %d, out %.2f, local_mem %p\n", 
@@ -471,18 +476,35 @@ ParsecApp::ParsecApp(int argc, char **argv)
   
   size_t max_scratch_bytes_per_task = 0;
   
+  int MB_cal = 0;
+  
   for (i = 0; i < graphs.size(); i++) {
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
     
+    if (nb_fields_arg > 0) {
+      nb_fields = nb_fields_arg;
+    } else {
+      nb_fields = graph.timesteps;
+    }
+    
+    MB_cal = sqrt(graph.output_bytes_per_task / sizeof(float));
+    
+    if (MB_cal > iparam[IPARAM_MB]) {
+      iparam[IPARAM_MB] = MB_cal;
+      iparam[IPARAM_NB] = iparam[IPARAM_MB];
+    }
+    
     iparam[IPARAM_N] = graph.max_width * iparam[IPARAM_MB];
-    iparam[IPARAM_M] = graph.timesteps * iparam[IPARAM_MB];
+    iparam[IPARAM_M] = nb_fields * iparam[IPARAM_MB];
   
     parse_arguments(&argc, &argv, iparam);
     
     print_arguments(iparam);
     
     PASTE_CODE_IPARAM_LOCALS_MAT(iparam);
+    
+    debug_printf(0, "output_bytes_per_task %d, mb %d, nb %d\n", graph.output_bytes_per_task, mat.MB, mat.NB);
   
     assert(graph.output_bytes_per_task <= sizeof(float) * mat.MB * mat.NB);
   
@@ -514,13 +536,6 @@ ParsecApp::ParsecApp(int argc, char **argv)
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
     
-    if (nb_fields < graph.timesteps) {
-      nb_fields = graph.timesteps;
-    }
-  }
-  
-  if (nb_fields_arg > 0) {
-    nb_fields = nb_fields_arg;
   }
   
   nb_tasks = 0;
@@ -600,7 +615,7 @@ void ParsecApp::execute_main_loop()
     const TaskGraph &g = graphs[i];
     matrix_t &mat = mat_array[i];
 
-    debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, nb_fields);
+    debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d, timesteps %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, nb_fields, g.timesteps);
 
     for (y = 0; y < g.timesteps; y++) {
       execute_timestep(i, y);

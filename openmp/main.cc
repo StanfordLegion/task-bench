@@ -1,3 +1,18 @@
+/* Copyright 2018 Los Alamos National Laboratory
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <stdarg.h>
 #include <assert.h>
 #include <string.h>
@@ -39,11 +54,16 @@ void task1(tile_t *tile_out, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
-  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(tile_out->output_buff);
-  output->first = payload.y;
-  output->second = payload.x;
-  Kernel k(payload.graph.kernel);
-  k.execute(extra_local_memory[tid], payload.graph.scratch_bytes_per_task);
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)tile_out->output_buff;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)tile_out->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  
+  graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else  
   tile_out->dep = 0;
   printf("Task1 tid %d, x %d, y %d, out %f\n", tid, payload.x, payload.y, tile_out->dep);
@@ -209,7 +229,7 @@ OpenMPApp::OpenMPApp(int argc, char **argv)
     TaskGraph &graph = graphs[i];
     
     if (nb_fields == 0) {
-      nb_fields = graph.max_width;
+      nb_fields = graph.timesteps;
     }
     matrix[i].M = nb_fields;
     matrix[i].N = graph.max_width;

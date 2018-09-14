@@ -58,24 +58,31 @@ void *execute_task(void *tr)
   
   // warm up
   for (int i = 0; i < 10; i++) {
-    k.execute(task_arg->thread_buff, task_arg->graph.scratch_bytes_per_task);
+    k.execute(0, 0, task_arg->thread_buff, task_arg->graph.scratch_bytes_per_task);
   }
   
   pthread_barrier_wait(&mybarrier);
   
   *(task_arg->time_start) = Timer::get_cur_time();
   for (int i = 0; i < task_arg->nb_tasks; i++) {
-    k.execute(task_arg->thread_buff, task_arg->graph.scratch_bytes_per_task);
+    k.execute(i, task_arg->tid, task_arg->thread_buff, task_arg->graph.scratch_bytes_per_task);
   }
   *(task_arg->time_end) = Timer::get_cur_time();
   
-  long long flops = flops_per_task(task_arg->graph) * task_arg->nb_tasks;
-  
-  printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flop/s %e\n", 
-        task_arg->tid, task_arg->nb_tasks, 
-        task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
-        flops / (*(task_arg->time_end) - *(task_arg->time_start)));
-
+  if (k.type == COMPUTE_BOUND) {
+    long long flops = flops_per_task(task_arg->graph) * task_arg->nb_tasks;
+    printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flop/s %e\n", 
+          task_arg->tid, task_arg->nb_tasks, 
+          task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
+          (double)flops / (*(task_arg->time_end) - *(task_arg->time_start)));
+  } else if (k.type == MEMORY_BOUND) {
+    long long bytes = bytes_per_task(task_arg->graph) * task_arg->nb_tasks;
+    printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, bytes %lld, bw %e MB/s\n", 
+          task_arg->tid, task_arg->nb_tasks, 
+          task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
+          bytes,
+          ((double)bytes/1024/1024) / (*(task_arg->time_end) - *(task_arg->time_start)));
+  }
   return NULL;
 }
 
@@ -120,7 +127,7 @@ KernelBenchApp::KernelBenchApp(int argc, char **argv)
   assert(local_buff != nullptr);
   
   for (i = 0; i < nb_workers; i++) {
-    if (graph.kernel.type == MEMORY_BOUND) {
+    if (graph.scratch_bytes_per_task > 0) {
       local_buff[i] = (char*)malloc(sizeof(char) * graph.scratch_bytes_per_task);
       assert(local_buff[i] != nullptr);
     } else {

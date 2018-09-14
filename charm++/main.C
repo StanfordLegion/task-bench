@@ -14,84 +14,73 @@
  */
 
 #include "main.decl.h"
-
 #include "main.h"
 #include "subchare.decl.h"
-
 #include <stdlib.h>
 
-CProxy_Main mainProxy;
+/*readonly*/ CProxy_Main mainProxy;
 
 /**
- * Instantiates all of the child chares and invokes methods on them to initialize their
- * internal structures.
+ * Instantiates all of the child chare arrays, creates a section spanning
+ * all chare arrays, and invokes the initGraph entry method on them to
+ * initialize their internal structures.
  */
-Main::Main(CkArgMsg* msg) : numFinished(0), numChareArrays(0), numReady(0), totalTimeElapsed(0.0),
-                            numRuns(1), numRunsDone(0), app(msg->argc, msg->argv) {
+Main::Main(CkArgMsg* msg) : totalTimeElapsed(0.0), numRuns(1), numRunsDone(0),
+                            app(msg->argc, msg->argv) {
   app.display();
-
-  std::vector<std::string> msgVec;
-  VectorWrapper wrapper(msgVec);
-  for (int i = 0; i < msg->argc; i++)
-    wrapper.vec.push_back(std::string(msg->argv[i]));
-
+  VectorWrapper wrapper(msg);
   mainProxy = thisProxy;
-  delete msg;
 
-  // Add a subchare proxy for each graph.
-  for (TaskGraph graph : app.graphs) {
-    numChareArrays++;
-    graphSubchareVec.push_back(CProxy_Subchare::ckNew(wrapper, graph.max_width));
+  // Create a list of array section members spanning all arrays
+  int numArrays = app.graphs.size();
+  std::vector<CkArrayID> arrID(numArrays);
+  std::vector<std::vector<CkArrayIndex> > elems(numArrays);
+
+  for (int i = 0; i < numArrays; i++) {
+    int sectionSize = app.graphs[i].max_width;
+    // Create the array
+    CProxy_Subchare array = CProxy_Subchare::ckNew(wrapper, i, sectionSize);
+    // Store the array ID
+    arrID[i] = array.ckGetArrayID();
+    // Create a list of section member indices in this array
+    elems[i].resize(sectionSize);
+    for (int j = 0; j < sectionSize; j++) {
+      elems[i][j] = CkArrayIndex1D(j);
+    }
   }
+
+  // Create the cross-array section
+  sectionProxy = CProxySection_Subchare(arrID, elems);
+
   // Invoke initialization on each subchare.
-  for (size_t i = 0; i < graphSubchareVec.size(); i++) {
-    CProxy_Subchare subchares = graphSubchareVec[i];
-    subchares.initGraph(i);
-  }
+  sectionProxy.initGraph(new MulticastMsg());
 }
 
-Main::Main(CkMigrateMessage* msg) : app(0, (char **)NULL) { }
-
 /**
- * Invoked by a subchare to indicate that they are ready to start executing
- * the task graph.
+ * Invoked by a reduction from the section spanning all subchares
+ * to indicate that they are ready to start executing the task graph.
  */
 void Main::workerReady() {
-  numReady++;
-  // If all subchares are ready, execute the task graph.
-  if (numReady == numChareArrays) {
-    // TIMER ON!
-    start = timer.get_cur_time();
-    for (size_t i = 0; i < graphSubchareVec.size(); i++) {
-      CProxy_Subchare subchares = graphSubchareVec[i];
-      subchares.runTimestep();
-    }
-  }
+  // TIMER ON!
+  start = timer.get_cur_time();
+  sectionProxy.runTimestep(new MulticastMsg());
 }
 
 /**
- * Invoked by a subchare to indicate that they have finished their part of
- * the task graph.
+ * Invoked by a reduction from the section spanning all subchares
+ * to indicate that they have finished the task graph.
  */
 void Main::finishedGraph() {
-  numFinished++;
-  // If all subchares have finished, exit.
-  if (numFinished == numChareArrays) {
-    // TIMER OFF!
-    end = timer.get_cur_time();
-    numRunsDone++;
-    CkPrintf("Time for last run: %e\n", end - start);
-    if (numRunsDone > 1) totalTimeElapsed += (end - start);
-    if (numRunsDone == numRuns + 1) {
-      app.report_timing(totalTimeElapsed / numRuns);
-      CkExit();
-    } else {
-      numFinished = 0;
-      numReady = 0;
-      for (size_t i = 0; i < graphSubchareVec.size(); i++) {
-        graphSubchareVec[i].reset();
-      }
-    }
+  // TIMER OFF!
+  end = timer.get_cur_time();
+  numRunsDone++;
+  CkPrintf("Time for last run: %e\n", end - start);
+  if (numRunsDone > 1) totalTimeElapsed += (end - start);
+  if (numRunsDone == numRuns + 1) {
+    app.report_timing(totalTimeElapsed / numRuns);
+    CkExit();
+  } else {
+    sectionProxy.reset(new MulticastMsg());
   }
 }
 

@@ -16,6 +16,8 @@
 #ifndef CORE_KERNEL_H
 #define CORE_KERNEL_H
 
+#include <cstddef>
+
 struct Kernel;
 
 void execute_kernel_empty(const Kernel &kernel);
@@ -25,12 +27,15 @@ long long execute_kernel_busy_wait(const Kernel &kernel);
 void execute_kernel_memory(const Kernel &kernel,
                            char *scratch_ptr, size_t scratch_bytes);
 
+void execute_kernel_dgemm(const Kernel &kernel,
+                           char *scratch_ptr, size_t scratch_bytes);
+
 double execute_kernel_compute(const Kernel &kernel);
 
 double execute_kernel_compute2(const Kernel &kernel);
 
 void execute_kernel_io(const Kernel &kernel);
 
-void execute_kernel_imbalance(const Kernel &kernel);
+double execute_kernel_imbalance(const Kernel &kernel, long timestep, long point);
 
 #endif

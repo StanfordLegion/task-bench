@@ -34,12 +34,15 @@ typedef enum dependence_type_t {
   ALL_TO_ALL,
   NEAREST,
   SPREAD,
+  RANDOM_NEAREST,
+  RANDOM_SPREAD,
 } dependence_type_t;
 
 typedef enum kernel_type_t {
   EMPTY,
   BUSY_WAIT,
   MEMORY_BOUND,
+  COMPUTE_DGEMM,
   COMPUTE_BOUND,
   COMPUTE_BOUND2,
   IO_BOUND,
@@ -49,8 +52,6 @@ typedef enum kernel_type_t {
 typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
-
-  long max_power; // compute kernel parameter
   long jump;      // memory kernel parameter
 } kernel_t;
 
@@ -74,7 +75,9 @@ typedef struct task_graph_t {
   long timesteps;
   long max_width;
   dependence_type_t dependence;
-  long radix; // parameter to nearest/spread dependence types
+  long radix; // max number of dependencies in nearest/spread/random patterns
+  long period; // period of repetition in random pattern
+  double fraction_connected; // fraction of connected nodes in random pattern
   kernel_t kernel;
   size_t output_bytes_per_task;
   size_t scratch_bytes_per_task;
@@ -96,6 +99,17 @@ void task_graph_execute_point_scratch(task_graph_t graph, long timestep, long po
                                       const char **input_ptr, const size_t *input_bytes,
                                       size_t n_inputs,
                                       char *scratch_ptr, size_t scratch_bytes);
+
+// FIXME: input_ptr should be const, but this breaks Chapel
+void task_graph_execute_point_nonconst(task_graph_t graph, long timestep, long point,
+                                       char *output_ptr, size_t output_bytes,
+                                       char **input_ptr, const size_t *input_bytes,
+                                       size_t n_inputs);
+void task_graph_execute_point_scratch_nonconst(task_graph_t graph, long timestep, long point,
+                                               char *output_ptr, size_t output_bytes,
+                                               char **input_ptr, const size_t *input_bytes,
+                                               size_t n_inputs,
+                                               char *scratch_ptr, size_t scratch_bytes);
 
 typedef struct task_graph_list_t {
   void *impl;

@@ -6,10 +6,10 @@ CXXFLAGS = -std=c++11 -Wall -fopenmp
 LDFLAGS  = -std=c++11 -Wall -fopenmp
 
 ifeq ($(strip $(DEBUG)),1)
-CXXFLAGS += -g -O0 -mavx
+CXXFLAGS += -g -O0
 LDFLAGS  += -g -O0
 else
-CXXFLAGS += -O3 -march=native -mavx
+CXXFLAGS += -O3 -march=native
 LDFLAGS  += -O3 -march=native
 endif
 
@@ -18,7 +18,7 @@ INC        = -I../core
 INC_EXT    =  
 
 # Location of the libraries.
-LIB        = 
+LIB        = -L../core -lcore_s
 LIB_EXT    = 
 
 INC := $(INC) $(INC_EXT)
@@ -26,21 +26,17 @@ LIB := $(LIB) $(LIB_EXT)
 
 CXXFLAGS += $(INC)
 
+include ../core/make_blas.mk
+
 TARGET = main
 all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
 
-core.o: ../core/core.cc ../core/core.h ../core/core_kernel.h
-	$(CXX) -c $(CXXFLAGS) $<
-
-core_kernel.o: ../core/core_kernel.cc ../core/core_kernel.h
-	$(CXX) -c $(CXXFLAGS) $<
-
 main.o: main.cc ../core/timer.h
 	$(CXX) -c $(CXXFLAGS) $<
 
-main: main.o core.o core_kernel.o
+main: main.o
 	$(CXX) $^ $(LIB) $(LDFLAGS) -o $@ 
 
 
