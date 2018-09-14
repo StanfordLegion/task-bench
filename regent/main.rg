@@ -14,84 +14,120 @@
 
 import "regent"
 
-local c = terralib.includec("stdio.h")
-local d = terralib.includec("stdlib.h")
-local t = terralib.includec("time.h")
-local z = terralib.includec("core_c.h")
-terralib.linklibrary("../core/libcore.so")
+local core = terralib.includec("core_c.h")
 
 fspace fs {
-  x : double,
-  y : double,
+  x : int8,
+  y : int8,
 }
 
 fspace times {
-  start_t : uint64,
-  end_t : uint64,
+  start : uint64,
+  stop : uint64,
 }
 
-task init(primary : region(ispace(int1d), fs))
-where writes(primary.{x, y}) do
-  for i in primary do
-    primary[i].x = d.drand48()
-    primary[i].y = d.drand48()
-  end
-end
-
-task f1(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, timing_region : region(ispace(int1d), times))
-where reads writes(primary.{x}), reads(primary.{y}, secondary.{y}), writes(timing_region) do
-  if i == 0 then
-    timing_region[0].start_t = regentlib.c.legion_get_current_time_in_nanos()
+task f1(primary : region(ispace(int1d), fs),
+        secondary : region(ispace(int1d), fs),
+        task_graph : core.task_graph_t,
+        timestep : int,
+        max_timesteps : int,
+        time : region(ispace(int1d), times))
+where
+  reads writes(primary.x),
+  reads(primary.y, secondary.y),
+  reads writes(time)
+do
+  if timestep == 0 then
+    var current = regentlib.c.legion_get_current_time_in_nanos()
+    __forbid(__vectorize) -- FIXME: Breaks vectorizer
+    for t in time do
+      t.start min= current
+    end
   end
 
   for i in primary do
     primary[i].x = secondary[i].y + 1
   end
 
-  z.kernel_execute(task_graph.kernel)
-  timing_region[0].end_t = regentlib.c.legion_get_current_time_in_nanos()
+  core.kernel_execute(task_graph.kernel)
+
+  if timestep == max_timesteps - 1 then
+    var current = regentlib.c.legion_get_current_time_in_nanos()
+    __forbid(__vectorize) -- FIXME: Breaks vectorizer
+    for t in time do
+      t.stop max= current
+    end
+  end
 end
 
-task f2(primary : region(ispace(int1d), fs), secondary : region(ispace(int1d), fs), task_graph : z.task_graph_t, i : int, timing_region : region(ispace(int1d), times))
-where reads writes(primary.{y}), reads(primary.{x}, secondary.{x}), writes(timing_region) do
+task f2(primary : region(ispace(int1d), fs),
+        secondary : region(ispace(int1d), fs),
+        task_graph : core.task_graph_t,
+        timestep : int,
+        max_timesteps : int,
+        time : region(ispace(int1d), times))
+where
+  reads writes(primary.y),
+  reads(primary.x, secondary.x),
+  reads writes(time)
+do
+  if timestep == 0 then
+    var current = regentlib.c.legion_get_current_time_in_nanos()
+    __forbid(__vectorize) -- FIXME: Breaks vectorizer
+    for t in time do
+      t.start min= current
+    end
+  end
+
   for i in primary do
     primary[i].y = secondary[i].x + 1
   end
 
-  z.kernel_execute(task_graph.kernel)
-  timing_region[0].end_t = regentlib.c.legion_get_current_time_in_nanos()
+  core.kernel_execute(task_graph.kernel)
+
+  if timestep == max_timesteps - 1 then
+    var current = regentlib.c.legion_get_current_time_in_nanos()
+    __forbid(__vectorize) -- FIXME: Breaks vectorizer
+    for t in time do
+      t.stop max= current
+    end
+  end
 end
 
 
 task main()
   -- 1. initialization of constants
   var args = regentlib.c.legion_runtime_get_input_args()
-  var app = z.app_create(args.argc, args.argv)
-  z.app_display(app)
-  var task_graphs = z.app_task_graphs(app)
-  var task_graph = z.task_graph_list_task_graph(task_graphs, 0)
+  var app = core.app_create(args.argc, args.argv)
+  core.app_display(app)
+
+  var task_graphs = core.app_task_graphs(app)
+  regentlib.assert(
+    core.task_graph_list_num_task_graphs(task_graphs) == 1,
+    "can only handle one task graph for now")
+  var task_graph = core.task_graph_list_task_graph(task_graphs, 0)
   var max_timesteps = task_graph.timesteps
-  var num_tasks = task_graph.max_width
-  var output_per_task = task_graph.output_bytes_per_task
+  var max_width = task_graph.max_width
+  var output_bytes = task_graph.output_bytes_per_task
 
   -- 2. creating the dependence graph
-  var r1 = region(ispace(int1d, num_tasks, 0), rect1d) 
-  var p = partition(equal, r1, ispace(int1d, num_tasks))
-  
-  -- lays all the dependencies out consecutively, 3*num_tasks-2 of them for simple pattern
-  for i = 0, num_tasks do
+  var r1 = region(ispace(int1d, max_width), rect1d)
+  var p = partition(equal, r1, ispace(int1d, max_width))
+
+  -- lays all the dependencies out consecutively, 3*max_width-2 of them for simple pattern
+  for i = 0, max_width do
     var s = max(3*i - 1, 0)
-    var e = min(3*i - 1 +3, 3*num_tasks -2) - 1
-    r1[i] = rect1d{s,e}
+    var e = min(3*i - 1 + 3, 3*max_width - 2) - 1
+    r1[i] = rect1d{s, e}
   end
 
-  var r2 = region(ispace(int1d, 3*num_tasks-2, 0), rect1d)
+  var r2 = region(ispace(int1d, 3*max_width-2), rect1d)
   var q = image(r2, p, r1)
 
-  var r3 = region(ispace(int1d, num_tasks*output_per_task, 0), fs)
-  var primary = partition(equal, r3, ispace(int1d, num_tasks))
-  -- 
-  for i = 0, 3*num_tasks-2 do
+  var r3 = region(ispace(int1d, max_width*output_bytes), fs)
+  var primary = partition(equal, r3, ispace(int1d, max_width))
+
+  for i = 0, 3*max_width-2 do
     var tasks = (i+1)/3
     var dep = (i+1) - 3*tasks
     r2[i] = primary[tasks + dep - 1].bounds
@@ -99,41 +135,36 @@ task main()
 
   var secondary = image(r3, q, r2)
 
-  __demand(__parallel)
-  for i = 0, num_tasks do
-    init(primary[i])
-  end
+  fill(r3.{x, y}, 0)
 
-  -- 3. timing the performance
-  var start_time : uint64 = 0
-  var end_time : uint64 = 0
-  var timing_region = region(ispace(int1d, num_tasks, 0), times)
-  var equal_partition = partition(equal, timing_region, ispace(int1d, num_tasks))
+  -- 3. time the performance
+  var time = region(ispace(int1d, max_width, 0), times)
+  var ptime = partition(equal, time, ispace(int1d, max_width))
+
+  fill(time.start, [uint64:max()])
+  fill(time.stop, [uint64:min()])
 
   __demand(__spmd, __trace)
-  for i = 0, max_timesteps, 2 do
-    for j = 0, num_tasks do
-      f1(primary[j], secondary[j], task_graph, i, equal_partition[j])
+  for timestep = 0, max_timesteps, 2 do
+    for point = 0, max_width do
+      f1(primary[point], secondary[point], task_graph,
+         timestep, max_timesteps, ptime[point])
     end
 
-    for j = 0, num_tasks do
-      f2(primary[j], secondary[j], task_graph, i, equal_partition[j])
+    for point = 0, max_width do
+      f2(primary[point], secondary[point], task_graph,
+         timestep, max_timesteps, ptime[point])
     end
   end
 
   -- 4. determining the actual start and end times
-  var true_start_time = math.huge
-  var true_end_time = -math.huge
-  for i = 0, num_tasks do
-    if timing_region[i].start_t < true_start_time then
-      true_start_time = timing_region[i].start_t
-    end
-    if timing_region[i].end_t > true_end_time then
-      true_end_time = timing_region[i].end_t
-    end
+  var start_time = [uint64:max()]
+  var stop_time = [uint64:min()]
+  for t in time do
+    start_time min= t.start
+    stop_time max= t.stop
   end
-
-  z.app_report_timing(app, double(true_end_time - true_start_time)/1e9)
+  core.app_report_timing(app, double(stop_time - start_time)/1e9)
 end
 
 if os.getenv('SAVEOBJ') == '1' then
@@ -150,5 +181,6 @@ if os.getenv('SAVEOBJ') == '1' then
   local exe = os.getenv('OBJNAME') or "main"
   regentlib.saveobj(main, exe, "executable", nil, link_flags)
 else
+  terralib.linklibrary("../core/libcore.so")
   regentlib.start(main)
 end
