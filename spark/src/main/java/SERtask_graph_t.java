@@ -21,8 +21,10 @@ class SERtask_graph_t implements Serializable {
     private int dependence;
     private int type;
     private int iterations;
-    private long output_bytes_per_task;
     private int radix;
+    private int period;
+    private double fraction_connected;
+    private long output_bytes_per_task;
     private long scratch_bytes_per_task; 
 
     public SERtask_graph_t(task_graph_t taskGraph) { 
@@ -31,9 +33,11 @@ class SERtask_graph_t implements Serializable {
         this.dependence = taskGraph.getDependence().swigValue(); 
         this.type = taskGraph.getKernel().getType().swigValue();  
         this.iterations = taskGraph.getKernel().getIterations();
-        this.output_bytes_per_task = taskGraph.getOutput_bytes_per_task();
         this.radix = taskGraph.getRadix();
-        this.scratch_bytes_per_task = taskGraph.getOutput_bytes_per_task();
+        this.period = taskGraph.getPeriod();
+        this.fraction_connected = taskGraph.getFraction_connected();
+        this.output_bytes_per_task = taskGraph.getOutput_bytes_per_task();
+        this.scratch_bytes_per_task = taskGraph.getScratch_bytes_per_task();
     }
 
     public task_graph_t toTaskGraph( ) {
@@ -45,15 +49,25 @@ class SERtask_graph_t implements Serializable {
         k.setType(kernel_type_t.swigToEnum(this.type)); 
         k.setIterations(this.iterations);
         tg.setKernel(k); 
-        tg.setOutput_bytes_per_task(this.output_bytes_per_task);
         tg.setRadix(this.radix);
+        tg.setPeriod(this.period);
+        tg.setFraction_connected(this.fraction_connected);
+        tg.setOutput_bytes_per_task(this.output_bytes_per_task);
         tg.setScratch_bytes_per_task(this.scratch_bytes_per_task);
         return tg;
     }
 
     @Override //for testing
     public String toString() {
-        return "ts:"+timesteps+" mw:"+max_width+" dtype:"+dependence+" ktype:"+type+" iter:"+iterations
-            +" output:"+Long.toString(output_bytes_per_task) + " radix: "+radix+" scratch: " + Long.toString(scratch_bytes_per_task);
+        return "ts:" + timesteps +
+            " mw:" + max_width +
+            " dtype:" + dependence +
+            " ktype:" + type +
+            " iter:" + iterations +
+            " radix: " + radix +
+            " period: " + period +
+            " fraction_connected: " + fraction_connected +
+            " output:" + Long.toString(output_bytes_per_task) +
+            " scratch: " + Long.toString(scratch_bytes_per_task);
     }
 }

@@ -139,7 +139,7 @@ fi
     #run standalone cluster, not local
     MASTER_URL=spark://localhost:7077
     
-    for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree fft nearest all_to_all; do # FIXME: broken: random_nearest
+    for t in $extended_types; do
         for k in "${kernels[@]}"; do
            $SPARK_SRC_DIR/bin/spark-submit --class "Main" \
                 --master ${MASTER_URL} \
