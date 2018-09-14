@@ -67,7 +67,7 @@ if [[ $USE_REGENT -eq 1 ]]; then
         if [[ -z $TRAVIS ]]; then
             ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38
         else
-            ./install.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1
+            ./install.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --rdir=auto
         fi
     )
     popd
