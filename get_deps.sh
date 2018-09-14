@@ -17,6 +17,7 @@ export TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 export USE_GASNET=${USE_GASNET:-0}
 export TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
 export USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
+export USE_REGENT=${USE_REGENT:-$DEFAULT_FEATURES}
 export USE_REALM=${USE_REALM:-$DEFAULT_FEATURES}
 export USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 export USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
@@ -39,7 +40,7 @@ if [[ $USE_GASNET -eq 1 ]]; then
     export GASNET_DIR="$PWD"/deps/gasnet
     cat >>deps/env.sh <<EOF
 export GASNET_DIR="$GASNET_DIR"
-export GASNET="$GASNET_DIR"/release
+export GASNET="\$GASNET_DIR"/release
 export CONDUIT=$CONDUIT
 EOF
     git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
@@ -57,10 +58,12 @@ EOF
     rm -rf hwloc-1.11.10.tar.gz
 fi
 
-if [[ $USE_LEGION -eq 1 || $USE_REALM -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
     export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
-export LG_RT_DIR="$LEGION_DIR"/runtime
+export LEGION_DIR="$LEGION_DIR"
+export LG_RT_DIR="\$LEGION_DIR"/runtime
+export REGENT_DIR="\$LEGION_DIR"/language
 export USE_LIBDL=0
 EOF
     git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"

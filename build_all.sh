@@ -47,9 +47,27 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     popd
 fi
 
-if [[ $USE_LEGION -eq 1 || $USE_REALM -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
     make -C legion clean
     make -C realm clean
+fi
+if [[ $USE_REGENT -eq 1 ]]; then
+    pushd "$REGENT_DIR"
+    if [[ $USE_GASNET -eq 1 ]]; then
+        ln -sf "$GASNET_DIR" gasnet
+    fi
+    (
+        if [[ -z $CC ]]; then
+            export CC=cc
+        fi
+        if [[ -z $CXX ]]; then
+            export CXX=c++
+        fi
+        unset LG_RT_DIR
+        ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38
+    )
+    popd
+    make -C regent -j$THREADS
 fi
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j$THREADS
