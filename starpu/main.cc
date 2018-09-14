@@ -18,6 +18,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <mpi.h>
+#include <math.h>
 #include <starpu_mpi.h>
 #include <starpu_profiling.h>
 #include "data.h"
@@ -501,6 +502,8 @@ StarPUApp::StarPUApp(int argc, char **argv)
   
   size_t max_scratch_bytes_per_task = 0;
   
+  int MB_cal = 0;
+  
   for (i = 0; i < graphs.size(); i++) {
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
@@ -511,10 +514,15 @@ StarPUApp::StarPUApp(int argc, char **argv)
       nb_fields = graph.timesteps;
     }
     
+    MB_cal = sqrt(graph.output_bytes_per_task / sizeof(float));
+    if (MB_cal > MB) {
+      MB = MB_cal;
+    }
+    
     mat.NT = graph.max_width;
     mat.MT = nb_fields;
   
-    debug_printf(0, "mt %d, nt %d, timesteps %d\n", mat.MT, mat.NT, graph.timesteps);
+    debug_printf(0, "mb %d, mt %d, nt %d, timesteps %d\n", MB, mat.MT, mat.NT, graph.timesteps);
     assert (graph.output_bytes_per_task <= sizeof(float) * MB * MB);
 
     mat.ddescA = create_and_distribute_data(rank, world, MB, MB, mat.MT, mat.NT, P, Q, i);
