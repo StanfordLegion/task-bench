@@ -64,7 +64,11 @@ if [[ $USE_REGENT -eq 1 ]]; then
             export CXX=c++
         fi
         unset LG_RT_DIR
-        ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38
+        if [[ -z $TRAVIS ]]; then
+            ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38
+        else
+            ./install.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1
+        fi
     )
     popd
     make -C regent -j$THREADS
