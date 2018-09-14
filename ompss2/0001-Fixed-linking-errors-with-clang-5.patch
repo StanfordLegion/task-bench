@@ -1,0 +1,40 @@
+From 7d463950b56ef9d94fb304dee7e97eb3091e5ce2 Mon Sep 17 00:00:00 2001
+From: "Josep M. Perez" <josep.m.perez@bsc.es>
+Date: Fri, 14 Sep 2018 11:02:37 +0200
+Subject: [PATCH] Fixed linking errors with clang 5.
+
+---
+ src/executors/threads/WorkerThread.cpp                      | 2 ++
+ src/instrument/verbose/InstrumentComputePlaceManagement.cpp | 3 +++
+ 2 files changed, 5 insertions(+)
+
+diff --git a/src/executors/threads/WorkerThread.cpp b/src/executors/threads/WorkerThread.cpp
+index 6afac09..faedbce 100644
+--- a/src/executors/threads/WorkerThread.cpp
++++ b/src/executors/threads/WorkerThread.cpp
+@@ -24,6 +24,8 @@
+ #include <InstrumentThreadInstrumentationContext.hpp>
+ #include <InstrumentThreadInstrumentationContextImplementation.hpp>
+ #include <InstrumentThreadManagement.hpp>
++#include <instrument/support/InstrumentThreadLocalDataSupport.hpp>
++#include <instrument/support/InstrumentThreadLocalDataSupportImplementation.hpp>
+ 
+ #include <atomic>
+ 
+diff --git a/src/instrument/verbose/InstrumentComputePlaceManagement.cpp b/src/instrument/verbose/InstrumentComputePlaceManagement.cpp
+index 961ba5b..a8172a8 100644
+--- a/src/instrument/verbose/InstrumentComputePlaceManagement.cpp
++++ b/src/instrument/verbose/InstrumentComputePlaceManagement.cpp
+@@ -10,6 +10,9 @@
+ 
+ #include <InstrumentInstrumentationContext.hpp>
+ #include <InstrumentThreadInstrumentationContext.hpp>
++#include <InstrumentThreadInstrumentationContextImplementation.hpp>
++#include <instrument/support/InstrumentThreadLocalDataSupport.hpp>
++#include <instrument/support/InstrumentThreadLocalDataSupportImplementation.hpp>
+ 
+ 
+ namespace Instrument {
+-- 
+2.19.0
+
