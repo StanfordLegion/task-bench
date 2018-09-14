@@ -468,9 +468,11 @@ void TaskGraph::execute_point(long timestep, long point,
           assert(input_bytes[idx] == output_bytes_per_task);
           assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
 
-          const std::pair<long, long> input = *reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
-          assert(input.first == timestep - 1);
-          assert(input.second == dep);
+          const std::pair<long, long> *input = reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
+          for (size_t i = 0; i < input_bytes[idx]/sizeof(std::pair<long, long>); ++i) {
+            assert(input[i].first == timestep - 1);
+            assert(input[i].second == dep);
+          }
           idx++;
         }
       }
@@ -486,8 +488,10 @@ void TaskGraph::execute_point(long timestep, long point,
 
   // Generate output
   std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(output_ptr);
-  output->first = timestep;
-  output->second = point;
+  for (size_t i = 0; i < output_bytes/sizeof(std::pair<long, long>); ++i) {
+    output[i].first = timestep;
+    output[i].second = point;
+  }
 
   // Validate scratch
   assert(scratch_bytes == scratch_bytes_per_task);
