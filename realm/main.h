@@ -40,6 +40,22 @@ public:
   Realm::RegionInstance *dest_inst;
 };
 
+struct CreateBarrierArgs {
+public:
+  unsigned expected_arrivals;
+  Realm::Processor dest_proc;
+  // Warning: Pointers live on dest_proc
+  Realm::Barrier *dest_barrier;
+};
+
+struct CreateBarrierDoneArgs {
+public:
+  Realm::Barrier barrier;
+  Realm::Processor dest_proc;
+  // Warning: Pointers live on dest_proc
+  Realm::Barrier *dest_barrier;
+};
+
 struct ShardArgs {
 public:
   long taskid;
