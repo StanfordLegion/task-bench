@@ -28,13 +28,14 @@ fspace times {
 
 task f1(primary : region(ispace(int1d), fs),
         secondary : region(ispace(int1d), fs),
+        scratch : region(ispace(int1d), fs),
+        time : region(ispace(int1d), times),
         task_graph : core.task_graph_t,
-        timestep : int,
-        max_timesteps : int,
-        time : region(ispace(int1d), times))
+        timestep : int)
 where
   reads writes(primary.x),
   reads(primary.y, secondary.y),
+  reads writes(scratch.x),
   reads writes(time)
 do
   if timestep == 0 then
@@ -45,13 +46,9 @@ do
     end
   end
 
-  for i in primary do
-    primary[i].x = secondary[i].y + 1
-  end
-
   core.kernel_execute(task_graph.kernel)
 
-  if timestep == max_timesteps - 1 then
+  if timestep == task_graph.timesteps - 1 then
     var current = regentlib.c.legion_get_current_time_in_nanos()
     __forbid(__vectorize) -- FIXME: Breaks vectorizer
     for t in time do
@@ -62,13 +59,14 @@ end
 
 task f2(primary : region(ispace(int1d), fs),
         secondary : region(ispace(int1d), fs),
+        scratch : region(ispace(int1d), fs),
+        time : region(ispace(int1d), times),
         task_graph : core.task_graph_t,
-        timestep : int,
-        max_timesteps : int,
-        time : region(ispace(int1d), times))
+        timestep : int)
 where
   reads writes(primary.y),
   reads(primary.x, secondary.x),
+  reads writes(scratch.x),
   reads writes(time)
 do
   if timestep == 0 then
@@ -79,13 +77,9 @@ do
     end
   end
 
-  for i in primary do
-    primary[i].y = secondary[i].x + 1
-  end
-
   core.kernel_execute(task_graph.kernel)
 
-  if timestep == max_timesteps - 1 then
+  if timestep == task_graph.timesteps - 1 then
     var current = regentlib.c.legion_get_current_time_in_nanos()
     __forbid(__vectorize) -- FIXME: Breaks vectorizer
     for t in time do
@@ -96,48 +90,80 @@ end
 
 
 task main()
-  -- 1. initialization of constants
   var args = regentlib.c.legion_runtime_get_input_args()
   var app = core.app_create(args.argc, args.argv)
   core.app_display(app)
 
   var task_graphs = core.app_task_graphs(app)
+
   regentlib.assert(
     core.task_graph_list_num_task_graphs(task_graphs) == 1,
     "can only handle one task graph for now")
   var task_graph = core.task_graph_list_task_graph(task_graphs, 0)
+
+  regentlib.assert(
+    core.task_graph_max_dependence_sets(task_graph) == 1,
+    "can only handle one dependence set for now")
+  var dset = 0
+
   var max_timesteps = task_graph.timesteps
   var max_width = task_graph.max_width
   var output_bytes = task_graph.output_bytes_per_task
+  -- FIXME: Causes runtime error if size is 0
+  var scratch_bytes = max(task_graph.scratch_bytes_per_task, 1)
 
-  -- 2. creating the dependence graph
-  var r1 = region(ispace(int1d, max_width), rect1d)
-  var p = partition(equal, r1, ispace(int1d, max_width))
+  -- Compute map from points to number of dependencies per point.
+  var ndeps = region(ispace(int1d, max_width), rect1d)
+  var pndeps = partition(equal, ndeps, ispace(int1d, max_width))
 
-  -- lays all the dependencies out consecutively, 3*max_width-2 of them for simple pattern
-  for i = 0, max_width do
-    var s = max(3*i - 1, 0)
-    var e = min(3*i - 1 + 3, 3*max_width - 2) - 1
-    r1[i] = rect1d{s, e}
+  var last_dep = 0
+  for point = 0, max_width do
+    var dep_count = 0
+    var intervals = core.task_graph_dependencies(task_graph, dset, point)
+    for i = 0, core.interval_list_num_intervals(intervals) do
+      var interval = core.interval_list_interval(intervals, i)
+      dep_count += interval.["end"] - interval.start + 1
+    end
+    core.interval_list_destroy(intervals)
+
+    ndeps[point] = rect1d { last_dep, last_dep + dep_count - 1 }
+    last_dep += dep_count
   end
 
-  var r2 = region(ispace(int1d, 3*max_width-2), rect1d)
-  var q = image(r2, p, r1)
+  -- Compute dependencies.
+  var deps = region(ispace(int1d, 3*max_width-2), rect1d)
+  var pdeps = image(deps, pndeps, ndeps)
 
-  var r3 = region(ispace(int1d, max_width*output_bytes), fs)
-  var primary = partition(equal, r3, ispace(int1d, max_width))
+  -- Task output data.
+  var output = region(ispace(int1d, max_width*output_bytes), fs)
+  var primary = partition(equal, output, ispace(int1d, max_width))
 
-  for i = 0, 3*max_width-2 do
-    var tasks = (i+1)/3
-    var dep = (i+1) - 3*tasks
-    r2[i] = primary[tasks + dep - 1].bounds
+  do
+    var dep_index = 0
+    for point = 0, max_width do
+      var intervals = core.task_graph_dependencies(task_graph, dset, point)
+      for i = 0, core.interval_list_num_intervals(intervals) do
+        var interval = core.interval_list_interval(intervals, i)
+        for dep = interval.start, interval.["end"] + 1 do
+          deps[dep_index] = primary[dep].bounds
+          dep_index += 1
+        end
+      end
+      core.interval_list_destroy(intervals)
+    end
   end
 
-  var secondary = image(r3, q, r2)
+  var secondary = image(output, pdeps, deps)
 
-  fill(r3.{x, y}, 0)
+  fill(output.{x, y}, 0)
 
-  -- 3. time the performance
+  -- Task scratch data.
+  var scratch = region(ispace(int1d, max_width*scratch_bytes), fs)
+  var pscratch = partition(equal, scratch, ispace(int1d, max_width))
+
+  fill(scratch.{x, y}, 0)
+
+  -- Extra region for tracking execution time.
   var time = region(ispace(int1d, max_width, 0), times)
   var ptime = partition(equal, time, ispace(int1d, max_width))
 
@@ -147,17 +173,16 @@ task main()
   __demand(__spmd, __trace)
   for timestep = 0, max_timesteps, 2 do
     for point = 0, max_width do
-      f1(primary[point], secondary[point], task_graph,
-         timestep, max_timesteps, ptime[point])
+      f1(primary[point], secondary[point], pscratch[point], ptime[point],
+         task_graph, timestep)
     end
 
     for point = 0, max_width do
-      f2(primary[point], secondary[point], task_graph,
-         timestep, max_timesteps, ptime[point])
+      f2(primary[point], secondary[point], pscratch[point], ptime[point],
+         task_graph, timestep)
     end
   end
 
-  -- 4. determining the actual start and end times
   var start_time = [uint64:max()]
   var stop_time = [uint64:min()]
   for t in time do
