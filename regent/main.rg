@@ -112,13 +112,6 @@ terra execute_point(runtime : c.legion_runtime_t,
   c.legion_accessor_array_1d_destroy(output_acc)
   c.legion_accessor_array_1d_destroy(input_acc)
   c.legion_accessor_array_1d_destroy(scratch_acc)
-
-  -- for dep = interval.start, interval.["end"] + 1 do
-  --   deps[dep_index] = primary[dep].bounds
-  --   dep_index += 1
-  -- end
-
-  core.kernel_execute(task_graph.kernel)
 end
 
 task f1(output : region(ispace(int1d), fs),
