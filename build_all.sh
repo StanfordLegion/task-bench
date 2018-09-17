@@ -47,6 +47,12 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     popd
 fi
 
+(
+if [[ -n $TRAVIS ]]; then
+  if [[ "$(uname)" = "Linux" && "$CXX" = "g++" ]]; then
+      export CXX="g++-4.9" CC="gcc-4.9"
+  fi
+fi
 if [[ $USE_LEGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
     make -C legion clean
     make -C regent clean
@@ -80,6 +86,7 @@ fi
 if [[ $USE_REALM -eq 1 ]]; then
     make -C realm -j$THREADS
 fi
+)
 
 if [[ $USE_STARPU -eq 1 ]]; then
     STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples "
