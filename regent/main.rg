@@ -294,7 +294,7 @@ task main()
     for point = 0, max_width do
       f2(primary[point], secondary[point], pscratch[point], ptime[point],
          output, primary,
-         task_graph, timestep, point)
+         task_graph, timestep+1, point)
     end
   end
 
