@@ -49,6 +49,7 @@ fi
 
 if [[ $USE_LEGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
     make -C legion clean
+    make -C regent clean
     make -C realm clean
 fi
 if [[ $USE_REGENT -eq 1 ]]; then

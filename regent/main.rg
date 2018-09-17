@@ -282,6 +282,8 @@ task main()
 
   var raw_primary = __raw(primary)
 
+  regentlib.assert(max_timesteps % 2 == 0, "must run even number of timesteps")
+
   __demand(__spmd, __trace)
   for timestep = 0, max_timesteps, 2 do
     for point = 0, max_width do
@@ -314,7 +316,7 @@ if os.getenv('SAVEOBJ') == '1' then
   local root_dir = arg[0]:match(".*/") or "./"
   local core_dir = root_dir .. "../core/"
   local out_dir = (os.getenv('OBJNAME') and os.getenv('OBJNAME'):match('.*/')) or root_dir
-  local link_flags = terralib.newlist({"-L" .. core_dir, "-lcore"})
+  local link_flags = terralib.newlist({"-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore"})
 
   if os.getenv('STANDALONE') == '1' then
     os.execute('cp ' .. core_dir .. 'libcore.so ' .. out_dir)
