@@ -125,8 +125,10 @@ task f1(output : region(ispace(int1d), fs),
         input : region(ispace(int1d), fs),
         scratch : region(ispace(int1d), fs),
         time : region(ispace(int1d), times),
-        root : region(ispace(int1d), fs),
-        primary : partition(disjoint, root, ispace(int1d)),
+        -- FIXME: Can't use singleton regions in static control replication
+        -- root : region(ispace(int1d), fs),
+        -- primary : partition(disjoint, root, ispace(int1d)),
+        primary : c.legion_logical_partition_t,
         task_graph : core.task_graph_t,
         timestep : int,
         point : int)
@@ -149,7 +151,7 @@ do
     __physical(output), __fields(output),
     __physical(input), __fields(input),
     __physical(scratch), __fields(scratch),
-    __raw(primary),
+    primary,
     task_graph, timestep, point)
 
   if timestep == task_graph.timesteps - 1 then
@@ -165,8 +167,10 @@ task f2(output : region(ispace(int1d), fs),
         input : region(ispace(int1d), fs),
         scratch : region(ispace(int1d), fs),
         time : region(ispace(int1d), times),
-        root : region(ispace(int1d), fs),
-        primary : partition(disjoint, root, ispace(int1d)),
+        -- FIXME: Can't use singleton regions in static control replication
+        -- root : region(ispace(int1d), fs),
+        -- primary : partition(disjoint, root, ispace(int1d)),
+        primary : c.legion_logical_partition_t,
         task_graph : core.task_graph_t,
         timestep : int,
         point : int)
@@ -189,7 +193,7 @@ do
     __physical(output), __fields(output),
     __physical(input), __fields(input),
     __physical(scratch), __fields(scratch),
-    __raw(primary),
+    primary,
     task_graph, timestep, point)
 
   if timestep == task_graph.timesteps - 1 then
@@ -283,17 +287,23 @@ task main()
   fill(time.start, [uint64:max()])
   fill(time.stop, [uint64:min()])
 
+  var raw_primary = __raw(primary)
+
   __demand(__spmd, __trace)
   for timestep = 0, max_timesteps, 2 do
     for point = 0, max_width do
       f1(primary[point], secondary[point], pscratch[point], ptime[point],
-         output, primary,
+         -- FIXME: Can't use singleton regions in static control replication
+         -- output, primary,
+         raw_primary,
          task_graph, timestep, point)
     end
 
     for point = 0, max_width do
       f2(primary[point], secondary[point], pscratch[point], ptime[point],
-         output, primary,
+         -- FIXME: Can't use singleton regions in static control replication
+         -- output, primary,
+         raw_primary,
          task_graph, timestep+1, point)
     end
   end
