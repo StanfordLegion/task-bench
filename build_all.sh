@@ -49,7 +49,7 @@ fi
 
 (
 if [[ -n $TRAVIS ]]; then
-  if [[ "$(uname)" = "Linux" && "$CXX" = "g++" ]]; then
+  if [[ "$(uname)" = "Linux" && "$CXX" = "g++"* ]]; then
       export CXX="g++-4.9" CC="gcc-4.9"
   fi
 fi
