@@ -70,7 +70,8 @@ void *execute_task(void *tr)
   
   *(task_arg->time_start) = Timer::get_cur_time();
   for (int i = 0; i < task_arg->nb_tasks; i++) {
-    char *scratch_buff = task_arg->thread_buff + (i*2) % 32;
+    //char *scratch_buff = task_arg->thread_buff + (i*2) % 32;
+    char *scratch_buff = task_arg->thread_buff;
     g.execute_point(i, task_arg->tid, task_arg->output_ptr, task_arg->output_bytes, NULL, NULL, 0, scratch_buff, task_arg->scratch_bytes);
   }
   *(task_arg->time_end) = Timer::get_cur_time();
