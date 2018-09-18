@@ -59,6 +59,8 @@ void *execute_task(void *tr)
   
   TaskGraph g(task_arg->graph);
   
+  assert(task_arg->thread_buff != NULL);
+  
   // warm up
   for (int i = 0; i < 10; i++) {
     g.execute_point(0, 0, task_arg->output_ptr, task_arg->output_bytes, NULL, NULL, 0, task_arg->scratch_ptr, task_arg->scratch_bytes);
@@ -133,7 +135,7 @@ KernelBenchApp::KernelBenchApp(int argc, char **argv)
 
   scratch_buff.reserve(nb_workers);
   for (i = 0; i < nb_workers; i++) {
-    scratch_buff.emplace_back(graph.scratch_bytes_per_task, 0);
+    scratch_buff.emplace_back(graph.scratch_bytes_per_task*2, 0);
   }
 
   // init timer array

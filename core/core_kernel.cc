@@ -44,7 +44,7 @@ long long execute_kernel_busy_wait(const Kernel &kernel)
 void execute_kernel_memory(const Kernel &kernel,
                            char *scratch_ptr, size_t scratch_bytes)
 {
-#if 1
+#if 0
   long long jump = kernel.jump;
   long long N = scratch_bytes / (3 * sizeof(double));
   
@@ -65,13 +65,78 @@ void execute_kernel_memory(const Kernel &kernel,
     }
   }
 #else
-  long long N = scratch_bytes / 2;
-  double *A = reinterpret_cast<double *>(scratch_ptr);
-  double *B = reinterpret_cast<double *>(scratch_ptr + N);
-  for (long iter = 0; iter < kernel.iterations; iter++) {
-    memcpy(B, A, N);
+#if 1
+  assert(scratch_bytes % 2 == 0);
+  
+  char *base_ptr = reinterpret_cast<char *>(scratch_ptr);
+  intptr_t base_ptr_addr = (intptr_t)base_ptr;
+  size_t prolog_padding = 0;
+  char *aligned_ptr = base_ptr;
+  char *prolog_ptr = base_ptr;
+  char *epilog_ptr = base_ptr;
+  
+  // compute prolog
+  if (base_ptr_addr % 32 != 0) {
+    prolog_padding = 32 - (base_ptr_addr % 32); 
+    aligned_ptr = base_ptr + prolog_padding;
   }
-  printf("execute_kernel_memory! N %lld\n", N);
+  
+  size_t nbytes_aligned = (scratch_bytes - prolog_padding) / 64 * 64;
+  
+  size_t epilog_padding = scratch_bytes - prolog_padding - nbytes_aligned;
+  epilog_ptr = aligned_ptr + nbytes_aligned;
+  
+  int i;
+  
+  char *prolog_src = prolog_ptr;
+  char *prolog_dst = prolog_ptr + prolog_padding / 2;
+  size_t prolog_cp_size = prolog_padding / 2;
+  
+  size_t nb_m256 = nbytes_aligned / 64;
+  
+  char *epilog_src = epilog_ptr;
+  char *epilog_dst = epilog_ptr + epilog_padding / 2;
+  size_t epilog_cp_size = epilog_padding / 2;
+  
+  assert (prolog_padding + nbytes_aligned + epilog_padding == scratch_bytes);
+  
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    if (prolog_padding != 0) {
+      memcpy(prolog_dst, prolog_src, prolog_cp_size);
+    }
+    char *aligned_src = aligned_ptr;
+    char *aligned_dst = aligned_ptr + nbytes_aligned / 2;
+    assert ((intptr_t)aligned_src % 32 == 0);
+    assert ((intptr_t)aligned_dst % 32 == 0);
+
+#if 0 
+    for (i = 0; i < nb_m256; i++) {
+      __m256d *dst_m256 = (__m256d *)aligned_dst;
+      *dst_m256 = _mm256_load_pd((double *)aligned_src);
+      aligned_src += 32;
+      aligned_dst += 32;
+    }
+#else
+    memcpy(aligned_dst, aligned_src, nbytes_aligned/2);
+#endif
+    
+    if (epilog_padding != 0) {
+      memcpy(epilog_dst, epilog_src, epilog_cp_size);
+    }
+  }
+  
+  //printf("END scratch_ptr %ld, prolog_padding %ld, prolog_cp_size %ld, nb_m256 %ld, nbytes_aligned %ld, epilog_padding %ld, epilog_cp_size %ld\n", 
+  //  base_ptr_addr, prolog_padding, prolog_cp_size, nb_m256, nbytes_aligned, epilog_padding, epilog_cp_size);
+  
+#else
+  long long N = scratch_bytes / 2;
+  char *src = reinterpret_cast<char *>(scratch_ptr);
+  char *dst = reinterpret_cast<char *>(scratch_ptr + N);
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    memcpy(dst, src, N);
+  }
+#endif
+
 #endif
 }
 
