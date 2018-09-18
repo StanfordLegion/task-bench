@@ -36,6 +36,7 @@ double execute_kernel_compute2(const Kernel &kernel);
 
 void execute_kernel_io(const Kernel &kernel);
 
-double execute_kernel_imbalance(const Kernel &kernel, long timestep, long point);
+double execute_kernel_imbalance(const Kernel &kernel,
+                                long graph_index, long timestep, long point);
 
 #endif

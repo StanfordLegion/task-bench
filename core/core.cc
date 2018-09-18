@@ -63,7 +63,7 @@ void Kernel::execute(long graph_index, long timestep, long point,
     break;
   case KernelType::LOAD_IMBALANCE:
     assert(timestep >= 0 && point >= 0);
-    execute_kernel_imbalance(*this, timestep, point);
+    execute_kernel_imbalance(*this, graph_index, timestep, point);
     break;
   default:
     assert(false && "unimplemented kernel type");

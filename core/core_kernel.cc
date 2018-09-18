@@ -180,9 +180,10 @@ void execute_kernel_io(const Kernel &kernel)
   assert(false);
 }
 
-double execute_kernel_imbalance(const Kernel &kernel, long timestep, long point)
+double execute_kernel_imbalance(const Kernel &kernel,
+                                long graph_index, long timestep, long point)
 {
-  long seed[2] = {timestep, point};
+  long seed[3] = {graph_index, timestep, point};
   double value = random_uniform(&seed[0], sizeof(seed));
 
   long iterations = (long)floor(value * kernel.iterations);
