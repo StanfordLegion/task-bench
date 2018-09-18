@@ -310,7 +310,7 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
              last_i = std::min(point + radix/2, max_width-1);
            i <= last_i; ++i) {
         // Figure out whether we're including this dependency or not.
-        const long hash_value[4] = {radix, dset, point, i};
+        const long hash_value[5] = {graph_index, radix, dset, point, i};
         double value = random_uniform(&hash_value[0], sizeof(hash_value));
         bool include = value < fraction_connected || (radix > 0 && i == point);
 
@@ -401,7 +401,7 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
              last_i = std::min(point + (radix-1)/2, max_width-1);
            i <= last_i; ++i) {
         // Figure out whether we're including this dependency or not.
-        const long hash_value[4] = {radix, dset, i, point};
+        const long hash_value[5] = {graph_index, radix, dset, i, point};
         double value = random_uniform(&hash_value[0], sizeof(hash_value));
         bool include = value < fraction_connected || (radix > 0 && i == point);
 
