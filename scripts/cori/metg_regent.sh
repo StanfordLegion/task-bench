@@ -14,7 +14,7 @@ function launch_util_0 {
     if [[ $1 -le 1 ]]; then
         memoize="-dm:memoize -lg:parallel_replay $cores"
     fi
-    LD_LIBRARY_PATH="../../regent:$LD_LIBRARY_PATH" srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../regent/main.shard$cores "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 0 $memoize
+    LD_LIBRARY_PATH="../../regent:$LD_LIBRARY_PATH" srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../regent/main.shard$cores "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 0 $memoize
 }
 
 function launch_util_1 {
@@ -22,7 +22,7 @@ function launch_util_1 {
     if [[ $1 -le 1 ]]; then
         memoize="-dm:memoize"
     fi
-    LD_LIBRARY_PATH="../../regent:$LD_LIBRARY_PATH" srun -n $1 -N $1 --cpu_bind none ../../regent/main.shard$cores "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize
+    LD_LIBRARY_PATH="../../regent:$LD_LIBRARY_PATH" srun -n $1 -N $1 --cpu_bind none ../../regent/main.shard$cores "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize
 }
 
 function launch_util_2 {
@@ -30,7 +30,7 @@ function launch_util_2 {
     if [[ $1 -le 1 ]]; then
         memoize="-dm:memoize"
     fi
-    LD_LIBRARY_PATH="../../regent:$LD_LIBRARY_PATH" srun -n $1 -N $1 --cpu_bind none ../../regent/main.shard$cores "${@:2}" -width $(( $1 * cores )) -fields 2 -ll:cpu $cores -ll:util 2 $memoize
+    LD_LIBRARY_PATH="../../regent:$LD_LIBRARY_PATH" srun -n $1 -N $1 --cpu_bind none ../../regent/main.shard$cores "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 2 $memoize
 }
 
 function sweep {
