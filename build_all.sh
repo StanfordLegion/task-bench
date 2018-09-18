@@ -51,6 +51,8 @@ fi
 if [[ -n $TRAVIS ]]; then
   if [[ "$(uname)" = "Linux" && "$CXX" = "g++"* ]]; then
       export CXX="g++-4.9" CC="gcc-4.9"
+  elif [[ "$(uname)" = "Linux" && "$CXX" = "clang++"* ]]; then
+      export CXX="clang++-3.5" CC="clang-3.5"
   fi
 fi
 if [[ -n $CRAYPE_VERSION ]]; then
