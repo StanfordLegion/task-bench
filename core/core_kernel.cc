@@ -17,6 +17,7 @@
 #include <cmath>
 
 #include <immintrin.h>
+#include <string.h>
 
 #include "core.h"
 #include "core_kernel.h"
@@ -43,8 +44,13 @@ long long execute_kernel_busy_wait(const Kernel &kernel)
 void execute_kernel_memory(const Kernel &kernel,
                            char *scratch_ptr, size_t scratch_bytes)
 {
+#if 1
   long long jump = kernel.jump;
   long long N = scratch_bytes / (3 * sizeof(double));
+  
+  if (jump == 0) {
+    jump = 1;
+  }
 
   double *A = reinterpret_cast<double *>(scratch_ptr);
   double *B = reinterpret_cast<double *>(scratch_ptr + N * sizeof(double));
@@ -58,7 +64,15 @@ void execute_kernel_memory(const Kernel &kernel,
       }
     }
   }
-  // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
+#else
+  long long N = scratch_bytes / 2;
+  double *A = reinterpret_cast<double *>(scratch_ptr);
+  double *B = reinterpret_cast<double *>(scratch_ptr + N);
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    memcpy(B, A, N);
+  }
+  printf("execute_kernel_memory! N %lld\n", N);
+#endif
 }
 
 void execute_kernel_dgemm(const Kernel &kernel,
@@ -166,9 +180,10 @@ void execute_kernel_io(const Kernel &kernel)
   assert(false);
 }
 
-double execute_kernel_imbalance(const Kernel &kernel, long timestep, long point)
+double execute_kernel_imbalance(const Kernel &kernel,
+                                long graph_index, long timestep, long point)
 {
-  long seed[2] = {timestep, point};
+  long seed[3] = {graph_index, timestep, point};
   double value = random_uniform(&seed[0], sizeof(seed));
 
   long iterations = (long)floor(value * kernel.iterations);

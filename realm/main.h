@@ -40,9 +40,25 @@ public:
   Realm::RegionInstance *dest_inst;
 };
 
+struct CreateBarrierArgs {
+public:
+  unsigned expected_arrivals;
+  Realm::Processor dest_proc;
+  // Warning: Pointers live on dest_proc
+  Realm::Barrier *dest_barrier;
+};
+
+struct CreateBarrierDoneArgs {
+public:
+  Realm::Barrier barrier;
+  Realm::Processor dest_proc;
+  // Warning: Pointers live on dest_proc
+  Realm::Barrier *dest_barrier;
+};
+
 struct ShardArgs {
 public:
-  int taskid;
+  long taskid;
   Realm::Barrier sync;
   Realm::Barrier first_start;
   Realm::Barrier last_start;
@@ -52,9 +68,10 @@ public:
 
 struct CommArgs {
 public:
-  int taskid, timestep, num_deps, output_bytes;
+  long taskid, timestep, num_deps;
   long dset;
-  char *output_ptr;
+  size_t output_bytes, scratch_bytes;
+  char *output_ptr, *scratch_ptr;
 };
 
 #endif

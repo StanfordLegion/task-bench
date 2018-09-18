@@ -14,7 +14,10 @@ typedef struct task_args_s {
   int nb_tasks;
   double *time_start;
   double *time_end;
-  char *thread_buff;
+  char *output_ptr;
+  size_t output_bytes;
+  char *scratch_ptr;
+  size_t scratch_bytes;
   TaskGraph graph;
 }task_args_t;
 
@@ -54,28 +57,35 @@ void *execute_task(void *tr)
   
   bind_thread(task_arg->tid+1);
   
-  Kernel k(task_arg->graph.kernel);
+  TaskGraph g(task_arg->graph);
   
   // warm up
   for (int i = 0; i < 10; i++) {
-    k.execute(0, 0, task_arg->thread_buff, task_arg->graph.scratch_bytes_per_task);
+    g.execute_point(0, 0, task_arg->output_ptr, task_arg->output_bytes, NULL, NULL, 0, task_arg->scratch_ptr, task_arg->scratch_bytes);
   }
   
   pthread_barrier_wait(&mybarrier);
   
   *(task_arg->time_start) = Timer::get_cur_time();
   for (int i = 0; i < task_arg->nb_tasks; i++) {
-    k.execute(i, task_arg->tid, task_arg->thread_buff, task_arg->graph.scratch_bytes_per_task);
+    g.execute_point(i, task_arg->tid, task_arg->output_ptr, task_arg->output_bytes, NULL, NULL, 0, task_arg->scratch_ptr, task_arg->scratch_bytes);
   }
   *(task_arg->time_end) = Timer::get_cur_time();
   
-  long long flops = flops_per_task(task_arg->graph) * task_arg->nb_tasks;
-  
-  printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flop/s %e\n", 
-        task_arg->tid, task_arg->nb_tasks, 
-        task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
-        flops / (*(task_arg->time_end) - *(task_arg->time_start)));
-
+  if (g.kernel.type == COMPUTE_BOUND) {
+    long long flops = flops_per_task(task_arg->graph) * task_arg->nb_tasks;
+    printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flop/s %e\n", 
+          task_arg->tid, task_arg->nb_tasks, 
+          task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
+          (double)flops / (*(task_arg->time_end) - *(task_arg->time_start)));
+  } else if (g.kernel.type == MEMORY_BOUND) {
+    long long bytes = bytes_per_task(task_arg->graph) * task_arg->nb_tasks;
+    printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, bytes %lld, bw %e MB/s\n", 
+          task_arg->tid, task_arg->nb_tasks, 
+          task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
+          bytes,
+          ((double)bytes/1024/1024) / (*(task_arg->time_end) - *(task_arg->time_start)));
+  }
   return NULL;
 }
 
@@ -87,6 +97,8 @@ private:
   void debug_printf(int verbose_level, const char *format, ...);
 private:
   size_t nb_tasks;
+  std::vector<std::vector<char> > output_buff;
+  std::vector<std::vector<char> > scratch_buff;
   char **local_buff;
   double *time_start;
   double *time_end;
@@ -110,24 +122,20 @@ KernelBenchApp::KernelBenchApp(int argc, char **argv)
       nb_workers = atol(argv[++i]);
     }
   }
-  
+
   nb_tasks = graph.max_width * graph.timesteps;
   assert(nb_tasks % nb_workers == 0);
-  
-  // init buffer for memory kernel
-  local_buff = nullptr;
-  local_buff = (char**)malloc(sizeof(char*) * nb_workers);
-  assert(local_buff != nullptr);
-  
+
+  output_buff.reserve(nb_workers);
   for (i = 0; i < nb_workers; i++) {
-    if (graph.scratch_bytes_per_task > 0) {
-      local_buff[i] = (char*)malloc(sizeof(char) * graph.scratch_bytes_per_task);
-      assert(local_buff[i] != nullptr);
-    } else {
-      local_buff[i] = nullptr;
-    }
+    output_buff.emplace_back(graph.output_bytes_per_task, 0);
   }
-  
+
+  scratch_buff.reserve(nb_workers);
+  for (i = 0; i < nb_workers; i++) {
+    scratch_buff.emplace_back(graph.scratch_bytes_per_task, 0);
+  }
+
   // init timer array
   time_start = nullptr;
   time_end = nullptr;
@@ -148,14 +156,6 @@ KernelBenchApp::KernelBenchApp(int argc, char **argv)
 
 KernelBenchApp::~KernelBenchApp()
 {
-  if (local_buff != nullptr) {
-    for (int i = 0; i < nb_workers; i++) {
-      free(local_buff[i]);
-      local_buff[i] = nullptr;
-    }
-    local_buff = nullptr;
-  }
-  
   if (time_start != nullptr) {
     free(time_start);
     time_start = nullptr;
@@ -172,16 +172,19 @@ void KernelBenchApp::execute_main_loop()
   int i, rc;
   
   display();
-  
+
   task_args_t *task_args = (task_args_t*)malloc(sizeof(task_args_t) * nb_workers);
   assert(task_args != nullptr);
-  
+
   // create worker threads
   for (i = 0; i < nb_workers; i++) {
     task_args[i].tid = i;
     task_args[i].time_start = &(time_start[i]);
     task_args[i].time_end = &(time_end[i]);
-    task_args[i].thread_buff = local_buff[i];
+    task_args[i].output_ptr = output_buff[i].data();
+    task_args[i].output_bytes = output_buff[i].size();
+    task_args[i].scratch_ptr = scratch_buff[i].data();
+    task_args[i].scratch_bytes = scratch_buff[i].size();
     task_args[i].graph = graphs[0];
     task_args[i].nb_tasks = nb_tasks/nb_workers;
     rc = pthread_create(&threads[i], NULL, execute_task, (void *)&(task_args[i]));
