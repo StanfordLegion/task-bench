@@ -153,6 +153,7 @@ fi
 
 if [[ $USE_OMPSS2 -eq 1 ]]; then
     export OMPSS2_DL_DIR="$PWD"/deps/ompss2
+    export OMPSS2_BENCH_SRC="$PWD"/ompss2
     cat >>deps/env.sh <<EOF
 export USE_OMPSS2=$USE_OMPSS2
 export OMPSS2_DL_DIR=$OMPSS2_DL_DIR
@@ -172,7 +173,7 @@ EOF
     export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
     git clone https://github.com/bsc-pm/nanos6.git "$OMPSS2_NANOS6_SRC_DIR"
     pushd "$OMPSS2_NANOS6_SRC_DIR"
-    patch -p1 -i ./ompss2/0001-Fixed-linking-errors-with-clang-5.patch
+    patch -p1 -i $OMPSS2_BENCH_SRC/0001-Fixed-linking-errors-with-clang-5.patch
     popd
     export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
     git clone https://github.com/bsc-pm/mcxx.git "$OMPSS2_MCXX_SRC_DIR"
