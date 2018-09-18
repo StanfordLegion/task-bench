@@ -28,11 +28,6 @@
 #include "core_kernel.h"
 #include "core_random.h"
 
-void Kernel::execute() const
-{
-  Kernel::execute(-1, -1, NULL, 0);
-}
-
 void Kernel::execute(long timestep, long point,
                      char *scratch_ptr, size_t scratch_bytes) const
 {
@@ -427,16 +422,6 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
   };
 
   return deps;
-}
-
-void TaskGraph::execute_point(long timestep, long point,
-                              char *output_ptr, size_t output_bytes,
-                              const char **input_ptr, const size_t *input_bytes,
-                              size_t n_inputs) const
-{
-  TaskGraph::execute_point(timestep, point, output_ptr, output_bytes,
-                           input_ptr, input_bytes, n_inputs,
-                           NULL, 0);
 }
 
 void TaskGraph::execute_point(long timestep, long point,
