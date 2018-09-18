@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <atomic>
 #include <algorithm>
 #include <map>
 #include <set>
@@ -28,7 +29,10 @@
 #include "core_kernel.h"
 #include "core_random.h"
 
-void Kernel::execute(long timestep, long point,
+typedef unsigned long long TaskGraphMask;
+static std::atomic<TaskGraphMask> has_executed_graph;
+
+void Kernel::execute(long graph_index, long timestep, long point,
                      char *scratch_ptr, size_t scratch_bytes) const
 {
   switch(type) {
@@ -430,6 +434,10 @@ void TaskGraph::execute_point(long timestep, long point,
                               size_t n_inputs,
                               char *scratch_ptr, size_t scratch_bytes) const
 {
+  // Validate graph_index
+  assert(graph_index >= 0 && graph_index < sizeof(TaskGraphMask)*8);
+  has_executed_graph |= 1 << graph_index;
+
   // Validate timestep and point
   assert(0 <= timestep && timestep < timesteps);
 
@@ -483,13 +491,14 @@ void TaskGraph::execute_point(long timestep, long point,
 
   // Execute kernel
   Kernel k(kernel);
-  k.execute(timestep, point, scratch_ptr, scratch_bytes);
+  k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes);
 }
 
-static TaskGraph default_graph()
+static TaskGraph default_graph(long graph_index)
 {
   TaskGraph graph;
 
+  graph.graph_index = graph_index;
   graph.timesteps = 4;
   graph.max_width = 4;
   graph.dependence = DependenceType::TRIVIAL;
@@ -513,7 +522,7 @@ void needs_argument(int i, int argc, const char *flag) {
 App::App(int argc, char **argv)
   : verbose(false)
 {
-  TaskGraph graph = default_graph();
+  TaskGraph graph = default_graph(graphs.size());
 
   // Parse command line
   for (int i = 1; i < argc; i++) {
@@ -642,7 +651,7 @@ App::App(int argc, char **argv)
         graph.period = graph.dependence == DependenceType::RANDOM_NEAREST ? 3 : 0;
       }
       graphs.push_back(graph);
-      graph = default_graph();
+      graph = default_graph(graphs.size());
     }
   }
 
@@ -656,6 +665,11 @@ App::App(int argc, char **argv)
 
 void App::check() const
 {
+  if (graphs.size() >= sizeof(TaskGraphMask)*8) {
+    fprintf(stderr, "error: Can only execute up to %lu task graphs\n", sizeof(TaskGraphMask)*8);
+    abort();
+  }
+
   // Validate task graph is well-formed
   for (auto g : graphs) {
     if (g.dependence == DependenceType::RANDOM_NEAREST && g.period == 0) {
@@ -806,7 +820,9 @@ void App::report_timing(double elapsed_seconds) const
   long long num_deps = 0;
   long long flops = 0;
   long long bytes = 0;
+  const TaskGraphMask executed = has_executed_graph.load();
   for (auto g : graphs) {
+    assert(executed & (1 << g.graph_index) != 0);
     for (long t = 0; t < g.timesteps; ++t) {
       long offset = g.offset_at_timestep(t);
       long width = g.width_at_timestep(t);

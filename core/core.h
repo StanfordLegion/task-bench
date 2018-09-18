@@ -32,7 +32,7 @@ struct Kernel : public kernel_t {
   Kernel(kernel_t k) : kernel_t(k) {}
 
 private:
-  void execute(long timestep, long point,
+  void execute(long graph_index, long timestep, long point,
                char *scratch_ptr, size_t scratch_bytes) const;
   friend struct TaskGraph;
 };

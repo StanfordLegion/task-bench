@@ -16,6 +16,7 @@
 import java.io.Serializable;
 class SERtask_graph_t implements Serializable {
     private static final long serialVersionUID = 1L;
+    private int graph_index;
     private int timesteps;
     private int max_width;
     private int dependence;
@@ -28,6 +29,7 @@ class SERtask_graph_t implements Serializable {
     private long scratch_bytes_per_task; 
 
     public SERtask_graph_t(task_graph_t taskGraph) { 
+        this.graph_index = taskGraph.getGraph_index();
         this.timesteps = taskGraph.getTimesteps();
         this.max_width = taskGraph.getMax_width();
         this.dependence = taskGraph.getDependence().swigValue(); 
@@ -42,6 +44,7 @@ class SERtask_graph_t implements Serializable {
 
     public task_graph_t toTaskGraph( ) {
         task_graph_t tg =  new task_graph_t();
+        tg.setGraph_index(this.graph_index);
         tg.setTimesteps(this.timesteps);
         tg.setMax_width(this.max_width);
         tg.setDependence(dependence_type_t.swigToEnum(this.dependence));
@@ -59,7 +62,8 @@ class SERtask_graph_t implements Serializable {
 
     @Override //for testing
     public String toString() {
-        return "ts:" + timesteps +
+        return "id:" + graph_index +
+            "ts:" + timesteps +
             " mw:" + max_width +
             " dtype:" + dependence +
             " ktype:" + type +
