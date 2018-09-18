@@ -53,6 +53,9 @@ if [[ -n $TRAVIS ]]; then
       export CXX="g++-4.9" CC="gcc-4.9"
   fi
 fi
+if [[ -n $CRAYPE_VERSION ]]; then
+    export HOST_CC=gcc HOST_CXX=g++
+fi
 if [[ $USE_LEGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
     make -C legion clean
     make -C regent clean
@@ -78,7 +81,12 @@ if [[ $USE_REGENT -eq 1 ]]; then
         fi
     )
     popd
-    make -C regent -j$THREADS
+    (
+        if [[ -n $CRAYPE_VERSION ]]; then
+            export CC=gcc CXX=g++
+        fi
+        make -C regent -j$THREADS
+    )
 fi
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j$THREADS
