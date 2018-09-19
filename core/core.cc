@@ -521,6 +521,7 @@ void needs_argument(int i, int argc, const char *flag) {
 
 App::App(int argc, char **argv)
   : verbose(false)
+  , enable_graph_validation(true)
 {
   TaskGraph graph = default_graph(graphs.size());
 
@@ -528,6 +529,10 @@ App::App(int argc, char **argv)
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-v")) {
       verbose = true;
+    }
+
+    if (!strcmp(argv[i], "-skip-graph-validation")) {
+      enable_graph_validation = false;
     }
 
     if (!strcmp(argv[i], "-steps")) {
@@ -822,7 +827,9 @@ void App::report_timing(double elapsed_seconds) const
   long long bytes = 0;
   const TaskGraphMask executed = has_executed_graph.load();
   for (auto g : graphs) {
-    assert(executed & (1 << g.graph_index) != 0);
+    if (enable_graph_validation) {
+      assert(executed & (1 << g.graph_index) != 0);
+    }
     for (long t = 0; t < g.timesteps; ++t) {
       long offset = g.offset_at_timestep(t);
       long width = g.width_at_timestep(t);

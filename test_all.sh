@@ -162,8 +162,8 @@ fi
 
     for t in $extended_types; do
         for k in "${kernels[@]}"; do
-            run_spark -steps 9 -type $t $k
-            run_spark -steps 9 -type $t $k -and -steps 9 -type $t $k
+            run_spark -steps 9 -type $t $k -skip-graph-validation
+            run_spark -steps 9 -type $t $k -and -steps 9 -type $t $k -skip-graph-validation
         done
     done
 
