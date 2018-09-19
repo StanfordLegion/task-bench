@@ -23,55 +23,14 @@ typedef long long int coord_t;
 typedef Realm::Point<1, coord_t> Point1;
 typedef Realm::Rect<1, coord_t> Rect1;
 
-struct CreateRegionArgs {
-public:
-  Rect1 bounds;
-  Realm::Memory memory;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::RegionInstance *dest_inst;
-};
-
-struct CreateRegionDoneArgs {
-public:
-  Realm::RegionInstance inst;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::RegionInstance *dest_inst;
-};
-
-struct CreateBarrierArgs {
-public:
-  unsigned expected_arrivals;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::Barrier *dest_barrier;
-};
-
-struct CreateBarrierDoneArgs {
-public:
-  Realm::Barrier barrier;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::Barrier *dest_barrier;
-};
-
 struct ShardArgs {
 public:
-  long taskid;
+  long timesteps;
   Realm::Barrier sync;
   Realm::Barrier first_start;
   Realm::Barrier last_start;
   Realm::Barrier first_stop;
   Realm::Barrier last_stop;
-};
-
-struct CommArgs {
-public:
-  long taskid, timestep, num_deps;
-  long dset;
-  size_t output_bytes, scratch_bytes;
-  char *output_ptr, *scratch_ptr;
 };
 
 #endif
