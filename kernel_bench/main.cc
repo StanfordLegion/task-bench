@@ -59,6 +59,8 @@ void *execute_task(void *tr)
   
   TaskGraph g(task_arg->graph);
   
+  assert(task_arg->scratch_ptr != NULL);
+  
   // warm up
   for (int i = 0; i < 10; i++) {
     g.execute_point(0, 0, task_arg->output_ptr, task_arg->output_bytes, NULL, NULL, 0, task_arg->scratch_ptr, task_arg->scratch_bytes);
