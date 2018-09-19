@@ -136,6 +136,24 @@ long num_rev_dependencies(TaskGraph &graph, long dset, long taskid)
   return num_deps;
 }
 
+RegionInstance create_instance(Processor p)
+{
+  RegionInstance inst = RegionInstance::NO_INST;
+  Realm::Machine::MemoryQuery mq(Machine::get_machine());
+  mq.has_affinity_to(p);
+  mq.only_kind(Realm::Memory::Kind::SYSTEM_MEM);
+  Realm::Memory memory = mq.first();
+  Rect1 bounds(0, 16-1);
+  std::map<FieldID, size_t> field_sizes;
+  field_sizes[FID_INPUT] = sizeof(char);
+  field_sizes[FID_OUTPUT] = sizeof(char);
+  RegionInstance::create_instance(inst, memory, bounds, field_sizes,
+                                  0 /*SOA*/, ProfilingRequestSet())
+    .wait();
+  return inst;
+}
+
+
 Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
            Event wait_for)
 {
@@ -482,9 +500,13 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       // size_t output_bytes = graph.output_bytes_per_task;
 
       Event last_task = Event::NO_EVENT;
-#define CHAIN_BARRIERS
+#define CHAIN_COPIES_EVENTS
 #if defined(CHAIN_BARRIERS)
       Barrier last_barrier = Barrier::create_barrier(1);
+#endif
+#if defined(CHAIN_COPIES_EVENTS)
+      RegionInstance src_inst = create_instance(p);
+      RegionInstance dst_inst = create_instance(p);
 #endif
       for (long timestep = 0L; timestep < graph.timesteps; timestep++) {
 #if defined(CHAIN_NONE)
@@ -495,6 +517,9 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
         last_task = p.spawn(DUMMY_TASK, NULL, 0, last_barrier.get_previous_phase());
         last_barrier.arrive(1, last_task);
         last_barrier = last_barrier.advance_barrier();
+#elif defined(CHAIN_COPIES_EVENTS)
+        Event last_copy = copy(src_inst, dst_inst, FID_INPUT, last_task);
+        last_task = p.spawn(DUMMY_TASK, NULL, 0, last_copy);
 #else
 #error no case defined
 #endif
