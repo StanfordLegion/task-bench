@@ -111,6 +111,14 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     done
 fi
 
+if [[ $USE_SWIFT -eq 1 ]]; then
+    for t in $extended_types; do
+        for k in "${kernels[@]}"; do
+            ./deps/swift/install/bin/swift-t -n 5 ./swift/benchmark.swift -type $t $k -steps 9
+        done
+    done
+fi
+
 if [[ $USE_OMPSS -eq 1 ]]; then
     for t in $basic_types; do
         for k in "${kernels[@]}"; do

@@ -194,15 +194,24 @@ fi
 if [[ $USE_SWIFT -eq 1 ]]; then
     export SWIFT_DIR="$PWD"/deps/swift
     export SWIFT_PREFIX="$SWIFT_DIR"/install
+    export PATH=$SWIFT_DIR/apache-ant-1.10.5/bin:$SWIFT_DIR/jdk-10.0.2/bin:$SWIFT_PREFIX/bin:$PATH
+    export LD_LIBRARY_PATH=$SWIFT_PREFIX/lib:$LD_LIBRARY_PATH
+    export JAVA_HOME=$SWIFT_DIR/jdk-10.0.2
+    export ANT_HOME=$SWIFT_DIR/apache-ant-1.10.5
     cat >>deps/env.sh <<EOF
 export SWIFT_DIR=$SWIFT_DIR
 export SWIFT_PREFIX=$SWIFT_PREFIX
+export PATH=$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH
+export JAVA_HOME=$JAVA_HOME
+export ANT_HOME=$ANT_HOME
 EOF
     mkdir -p "$SWIFT_DIR"
     mkdir -p "$SWIFT_PREFIX"
     mkdir -p "$SWIFT_PREFIX"/src
 
     pushd "$SWIFT_PREFIX"/src
+
     git clone git://anongit.freedesktop.org/git/xorg/util/modular util/modular
     popd
 
