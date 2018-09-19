@@ -29,8 +29,10 @@
 #include "core_kernel.h"
 #include "core_random.h"
 
+#ifdef DEBUG_CORE
 typedef unsigned long long TaskGraphMask;
 static std::atomic<TaskGraphMask> has_executed_graph;
+#endif
 
 void Kernel::execute(long graph_index, long timestep, long point,
                      char *scratch_ptr, size_t scratch_bytes) const
@@ -434,9 +436,11 @@ void TaskGraph::execute_point(long timestep, long point,
                               size_t n_inputs,
                               char *scratch_ptr, size_t scratch_bytes) const
 {
+#ifdef DEBUG_CORE
   // Validate graph_index
   assert(graph_index >= 0 && graph_index < sizeof(TaskGraphMask)*8);
   has_executed_graph |= 1 << graph_index;
+#endif
 
   // Validate timestep and point
   assert(0 <= timestep && timestep < timesteps);
@@ -825,11 +829,12 @@ void App::report_timing(double elapsed_seconds) const
   long long num_deps = 0;
   long long flops = 0;
   long long bytes = 0;
-  const TaskGraphMask executed = has_executed_graph.load();
   for (auto g : graphs) {
+#ifdef DEBUG_CORE
     if (enable_graph_validation) {
-      assert(executed & (1 << g.graph_index) != 0);
+      assert(has_executed_graph.load() & (1 << g.graph_index) != 0);
     }
+#endif
     for (long t = 0; t < g.timesteps; ++t) {
       long offset = g.offset_at_timestep(t);
       long width = g.width_at_timestep(t);

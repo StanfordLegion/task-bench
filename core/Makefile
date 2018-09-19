@@ -19,8 +19,8 @@ ifeq ($(strip $(DEBUG)),0)
 	CFLAGS += -O3
 	CXXFLAGS += -O3
 else
-	CFLAGS += -O0 -ggdb
-	CXXFLAGS += -O0 -ggdb
+	CFLAGS += -O0 -ggdb -DDEBUG_CORE
+	CXXFLAGS += -O0 -ggdb -DDEBUG_CORE
 endif
 
 #check AVX support
