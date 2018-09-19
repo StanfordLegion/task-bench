@@ -256,8 +256,8 @@ fi
     sed -i 's@# TCL_LIB_DIR=/path/to/tcl/lib@TCL_LIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
     sed -i 's@# TCL_INCLUDE_DIR=/path/to/tcl/include@TCL_INCLUDE_DIR='"$SWIFT_PREFIX"'/include@g' ./dev/build/swift-t-settings.sh
     sed -i 's@# TCL_SYSLIB_DIR=/path/to/tcl/lib@TCL_SYSLIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# export JAVA_HOME=@export JAVA_HOME='"$SWIFT_DIR"'/jdk-10.0.2@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# export ANT_HOME=@export ANT_HOME='"$SWIFT_DIR"'/apache-ant-1.10.5@g' ./dev/build/swift-t-settings.sh
+    sed -i 's@# export JAVA_HOME=@export JAVA_HOME='"$JAVA_HOME"'@g' ./dev/build/swift-t-settings.sh
+    sed -i 's@# export ANT_HOME=@export ANT_HOME='"$ANT_HOME"'@g' ./dev/build/swift-t-settings.sh
 
     ./dev/build/build-all.sh
     export PATH="$SWIFT_PREFIX"/stc/bin:"$SWIFT_PREFIX"/turbine/bin:$PATH
