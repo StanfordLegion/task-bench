@@ -674,10 +674,12 @@ App::App(int argc, char **argv)
 
 void App::check() const
 {
+#ifdef DEBUG_CORE
   if (graphs.size() >= sizeof(TaskGraphMask)*8) {
     fprintf(stderr, "error: Can only execute up to %lu task graphs\n", sizeof(TaskGraphMask)*8);
     abort();
   }
+#endif
 
   // Validate task graph is well-formed
   for (auto g : graphs) {
