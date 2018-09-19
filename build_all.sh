@@ -221,10 +221,8 @@ fi
     export PATH="$JAVA_HOME"/bin:"$PATH"
 
     # ant
-    pushd apache-ant-1.10.5
-    export ANT_HOME="$PWD"
+    export ANT_HOME="$SWIFT_DIR"/apache-ant-1.10.5
     export PATH="$ANT_HOME"/bin:"$PATH"
-    popd
 
     # ncurses
     (

@@ -170,6 +170,24 @@ fi
     $SPARK_SRC_DIR/sbin/stop-all.sh 
 fi)
 
+(if [[ $USE_SWIFT -eq 1 ]]; then
+    export PATH="$SWIFT_PREFIX"/bin:"$PATH"
+    export LD_LIBRARY_PATH="$SWIFT_PREFIX"/lib:"$LD_LIBRARY_PATH"
+
+    export JAVA_HOME="$SWIFT_DIR"/jdk-10.0.2
+    export PATH="$JAVA_HOME"/bin:"$PATH"
+
+    export ANT_HOME="$SWIFT_DIR"/apache-ant-1.10.5
+    export PATH="$ANT_HOME"/bin:"$PATH"
+
+    for t in $extended_types; do
+        for k in "${kernels[@]}"; do
+            ./deps/swift/install/bin/swift-t -n 5 ./swift/benchmark.swift -type $t $k -steps 9
+            ./deps/swift/install/bin/swift-t -n 5 ./swift/benchmark.swift -type $t $k -steps 9 -and -type $t $k -steps 9
+        done
+    done
+fi)
+
 set +x
 
 echo
