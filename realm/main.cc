@@ -45,6 +45,7 @@ enum {
   CREATE_BARRIER_DONE_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 4,
   SHARD_TASK               = Processor::TASK_ID_FIRST_AVAILABLE + 5,
   COMM_TASK                = Processor::TASK_ID_FIRST_AVAILABLE + 6,
+  DUMMY_TASK               = Processor::TASK_ID_FIRST_AVAILABLE + 7,
 };
 
 enum {
@@ -179,6 +180,11 @@ void comm_task(const void *args, size_t arglen, const void *userdata,
   graph.execute_point(a.timestep, a.taskid, a.output_ptr, a.output_bytes,
                       (const char **)input_ptrs, input_bytes, a.num_deps,
                       a.scratch_ptr, a.scratch_bytes);
+}
+
+void dummy_task(const void *args, size_t arglen, const void *userdata,
+                size_t userlen, Processor p)
+{
 }
 
 void deserialize_byte_array(
@@ -459,7 +465,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     scratch_ptrs.emplace_back(scratch_bytes);
   }
 
-  Barrier share_barrier = Barrier::NO_BARRIER;
+  // Barrier share_barrier = Barrier::NO_BARRIER;
   Barrier sync = a.sync;
   double start_time = 0.0;
   double time_elapsed = 0.0;
@@ -473,241 +479,28 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 
     for (size_t graph_num = 0; graph_num < graphs.size(); graph_num++) {
       TaskGraph graph = graphs[graph_num];
-      size_t output_bytes = graph.output_bytes_per_task;
+      // size_t output_bytes = graph.output_bytes_per_task;
 
+      Event last_task = Event::NO_EVENT;
+#define CHAIN_BARRIERS
+#if defined(CHAIN_BARRIERS)
+      Barrier last_barrier = Barrier::create_barrier(1);
+#endif
       for (long timestep = 0L; timestep < graph.timesteps; timestep++) {
-        long dset = graph.dependence_set_at_timestep(timestep);
-        long new_dset = graph.dependence_set_at_timestep(timestep + 1);
-        long new_k_input = (timestep + 1) % NUM_INPUT_REGIONS;
-        long k_input = timestep % NUM_INPUT_REGIONS;
-        CommArgs args;
-        args.num_deps = num_deps_per_graph[graph_num][dset];
+#if defined(CHAIN_NONE)
+        events.push_back(p.spawn(DUMMY_TASK, NULL, 0, last_task));
+#elif defined(CHAIN_EVENTS)
+        last_task = p.spawn(DUMMY_TASK, NULL, 0, last_task);
+#elif defined(CHAIN_BARRIERS)
+        last_task = p.spawn(DUMMY_TASK, NULL, 0, last_barrier.get_previous_phase());
+        last_barrier.arrive(1, last_task);
+        last_barrier = last_barrier.advance_barrier();
+#else
+#error no case defined
+#endif
 
-        /* If not in the graph at timestep, just advance the barriers */
-        if (taskid < graph.width_at_timestep(timestep) +
-                         graph.offset_at_timestep(timestep) &&
-            taskid >= graph.offset_at_timestep(timestep)) {
-          args.taskid = taskid;
-          args.timestep = timestep;
-          args.output_bytes = output_bytes;
-          args.scratch_bytes = scratch_ptrs[graph_num].size();
-          args.scratch_ptr = scratch_ptrs[graph_num].data();
-          long output_region_index = (timestep % NUM_OUTPUT_REGIONS) + 1;
-          RegionInstance output_region = tasks_for_each_graph
-              [graph_num][taskid][new_dset]
-              [tasks_for_each_graph[graph_num][taskid][new_dset].size() -
-               output_region_index];
-
-          /* Populate the output_ptr of the CommArgs */
-          get_base(output_region, args.output_ptr);
-
-          /* Create the byte_array for comm_task - can all just return
-           * byte_array*/
-          size_t size_of_byte_array = get_byte_array_size(args.num_deps);
-          std::vector<char *> input_ptrs_array;
-          create_input_array(tasks_for_each_graph[graph_num][taskid][dset],
-                             input_ptrs_array, k_input, args.num_deps);
-          void *byte_array = serialize_comm_array(
-              args, graph, input_ptrs_array, graph_input_bytes[graph_num][dset],
-              size_of_byte_array);
-
-          /* Start synchronized launches */
-          std::vector<Event> recv_barriers = create_recv_barriers(
-              graph_recv_bars[graph_num][taskid][dset][IN_INDEX], graph,
-              timestep, output_barriers[output_region_index - 1], k_input,
-              args.num_deps, taskid);
-
-          /* Execute Point */
-          Event executed_point =
-              p.spawn(COMM_TASK, byte_array,
-                      sizeof(CommArgs) + size_of_byte_array + sizeof(TaskGraph),
-                      timestep != 0 ? Event::merge_events(recv_barriers)
-                                    : Event::NO_EVENT);
-          events.push_back(executed_point);
-
-          /* Signal to dependencies that you are ready to recv again */
-
-          long loop_dset =
-              graph.dependence_set_at_timestep(timestep + NUM_INPUT_REGIONS);
-          for (auto interval : graph_dependencies[graph_num][loop_dset]) {
-            for (long inter = interval.first; inter <= interval.second;
-                 inter++) {
-              long index = alt_find_index(inter, graph, taskid, loop_dset);
-              assert(index != -1);
-              long num_rev_deps = num_rev_dependencies(graph, loop_dset, inter);
-
-              if (timestep + NUM_INPUT_REGIONS <= graph.timesteps)
-                graph_recv_bars[graph_num][inter][loop_dset][OUT_INDEX]
-                               [index + (k_input * num_rev_deps)]
-                                   .arrive(1, executed_point);
-            }
-          }
-          /* Find and create output locations */
-          std::vector<RegionInstance> output_locations;
-          long num_outputs = num_rev_deps_per_graph[graph_num][new_dset];
-          output_barriers[output_region_index - 1] =
-              num_outputs != 0 ? Barrier::create_barrier(num_outputs)
-                               : Barrier::NO_BARRIER;
-          get_output_locations(output_locations,
-                               tasks_for_each_graph[graph_num],
-                               graph_rev_deps[graph_num][new_dset], graph,
-                               taskid, new_dset, new_k_input);
-
-          /* Copy to every reverse dependency */
-          if (iter == 1 && timestep == graph.timesteps - 1) break;
-          long index = 0;
-          for (auto interval : graph_rev_deps[graph_num][new_dset]) {
-            for (long inter = interval.first; inter <= interval.second;
-                 inter++) {
-              /* If task is out of bounds in the next timestep, do not copy to
-               * it */
-              if (inter < graph.width_at_timestep(timestep + 1) +
-                              graph.offset_at_timestep(timestep + 1) &&
-                  inter >= graph.offset_at_timestep(timestep + 1)) {
-                long num_rev_deps = num_rev_deps_per_graph[graph_num][new_dset];
-                long inter_num_deps = num_dependencies(graph, new_dset, inter);
-
-                if (timestep < NUM_INPUT_REGIONS - 1)
-                  graph_recv_bars[graph_num][taskid][new_dset][OUT_INDEX]
-                                 [index + (new_k_input * num_rev_deps)]
-                                     .arrive(1, share_barrier);
-                Event copy_done = copy(
-                    output_region, output_locations[index], FID_INPUT,
-                    Event::merge_events(
-                        graph_recv_bars[graph_num][taskid][new_dset][OUT_INDEX]
-                                       [index + (new_k_input * num_rev_deps)],
-                        executed_point));
-                events.push_back(copy_done);
-                long recv_index = find_index(inter, graph, taskid, new_dset);
-                graph_recv_bars[graph_num][inter][new_dset][IN_INDEX]
-                               [recv_index + (new_k_input * inter_num_deps)]
-                                   .arrive(1, copy_done);
-                output_barriers[output_region_index - 1].arrive(1, copy_done);
-              } else {
-                long recv_index = find_index(inter, graph, taskid, new_dset);
-                long inter_num_deps = num_dependencies(graph, new_dset, inter);
-                graph_recv_bars[graph_num][inter][new_dset][IN_INDEX]
-                               [recv_index + (new_k_input * inter_num_deps)]
-                                   .arrive(1, share_barrier);
-                share_barrier =
-                    graph_recv_bars[graph_num][inter][new_dset][IN_INDEX]
-                                   [recv_index +
-                                    (new_k_input * inter_num_deps)];
-              }
-              index++;
-            }
-          }
-        } else {
-          // this needs to be looped dset, even though fft doesn't use this
-          // section
-          for (auto interval : graph_dependencies[graph_num][new_dset]) {
-            for (long inter = interval.first; inter <= interval.second;
-                 inter++) {
-              long index = alt_find_index(inter, graph, taskid, new_dset);
-              long num_rev_deps = num_rev_dependencies(graph, new_dset, inter);
-              if (inter < graph.width_at_timestep(timestep + NUM_INPUT_REGIONS -
-                                                  1) +
-                              graph.offset_at_timestep(timestep +
-                                                       NUM_INPUT_REGIONS - 1) &&
-                  inter >= graph.offset_at_timestep(timestep +
-                                                    NUM_INPUT_REGIONS - 1) &&
-                  (timestep + NUM_INPUT_REGIONS - 1 < graph.timesteps))
-                graph_recv_bars[graph_num][inter][new_dset][OUT_INDEX]
-                               [index + (k_input * num_rev_deps)]
-                                   .arrive(1, share_barrier);
-            }
-          }
-          long index = 0;
-          for (auto interval : graph_rev_deps[graph_num][new_dset]) {
-            for (long inter = interval.first; inter <= interval.second;
-                 inter++) {
-              long num_rev_deps = num_rev_dependencies(graph, new_dset, taskid);
-              if (timestep < NUM_INPUT_REGIONS - 1 ||
-                  inter >= graph.width_at_timestep(timestep + 1 -
-                                                   NUM_INPUT_REGIONS) +
-                               graph.offset_at_timestep(timestep + 1 -
-                                                        NUM_INPUT_REGIONS) ||
-                  inter < graph.offset_at_timestep(
-                              timestep + 1 -
-                              NUM_INPUT_REGIONS))  // if i didnt do it before,
-                                                   // mark this k as arrived,
-                                                   // could be taskid, not inter
-              {
-                // this will take processor time
-                graph_recv_bars[graph_num][taskid][new_dset][OUT_INDEX]
-                               [index + (new_k_input * num_rev_deps)]
-                                   .arrive(
-                                       1, share_barrier);  // double arrive on 0
-                share_barrier =
-                    graph_recv_bars[graph_num][taskid][new_dset][OUT_INDEX]
-                                   [index + (new_k_input * num_rev_deps)];
-                index++;
-              }
-            }
-          }
-          if (iter == 1 && timestep == graph.timesteps - 1) break;
-
-          index = 0;
-          for (auto interval : graph_rev_deps[graph_num][new_dset]) {
-            for (long inter = interval.first; inter <= interval.second;
-                 inter++) {
-              long recv_index = find_index(inter, graph, taskid, new_dset);
-              long inter_num_deps = num_dependencies(graph, new_dset, inter);
-              graph_recv_bars[graph_num][inter][new_dset][IN_INDEX]
-                             [recv_index + (new_k_input * inter_num_deps)]
-                                 .arrive(1, share_barrier);
-              // share_barrier =
-              // graph_recv_bars[graph_num][inter][new_dset][IN_INDEX][recv_index
-              // + (new_k_input * inter_num_deps)];
-              index++;
-            }
-          }
-        }
-        /* Advance local copy of every barrier */
-        for (long task_num = 0; task_num < graph.max_width; task_num++) {
-          for (long cur_dset = 0; cur_dset < graph.max_dependence_sets();
-               cur_dset++) {
-            for (long in_out = OUT_INDEX; in_out <= IN_INDEX; in_out++) {
-              if (in_out == IN_INDEX) {
-                long cur_num_deps = num_dependencies(graph, cur_dset, task_num);
-                for (long dep_num = 0; dep_num < cur_num_deps; dep_num++) {
-                  if (task_num == taskid && cur_dset != new_dset)
-                    graph_recv_bars[graph_num][task_num][cur_dset][IN_INDEX]
-                                   [dep_num + (new_k_input * cur_num_deps)]
-                                       .arrive(1, share_barrier);
-                  // this will actually take processor time
-
-                  graph_recv_bars[graph_num][task_num][cur_dset][IN_INDEX]
-                                 [dep_num + (new_k_input * cur_num_deps)] =
-                                     graph_recv_bars[graph_num][task_num]
-                                                    [cur_dset][IN_INDEX]
-                                                    [dep_num + (new_k_input *
-                                                                cur_num_deps)]
-                                                        .advance_barrier();
-                }
-              } else {
-                long cur_num_rev_deps =
-                    num_rev_dependencies(graph, cur_dset, task_num);
-                for (long dep_num = 0; dep_num < cur_num_rev_deps; dep_num++) {
-                  if (task_num == taskid && cur_dset != new_dset)
-                    graph_recv_bars[graph_num][task_num][cur_dset][OUT_INDEX]
-                                   [dep_num + (new_k_input * cur_num_rev_deps)]
-                                       .arrive(1, share_barrier);
-
-                  graph_recv_bars[graph_num][task_num][cur_dset][OUT_INDEX]
-                                 [dep_num + (new_k_input * cur_num_rev_deps)] =
-                                     graph_recv_bars[graph_num][task_num]
-                                                    [cur_dset][OUT_INDEX]
-                                                    [dep_num +
-                                                     (new_k_input *
-                                                      cur_num_rev_deps)]
-                                                        .advance_barrier();
-                }
-              }
-            }
-          }
-        }
       }
+      events.push_back(last_task);
     }
     start_time = Timer::get_cur_time();
     Event::merge_events(events).wait();
@@ -1058,6 +851,7 @@ int main(int argc, char **argv)
   rt.register_task(CREATE_BARRIER_DONE_TASK, create_barrier_done_task);
   rt.register_task(SHARD_TASK, shard_task);
   rt.register_task(COMM_TASK, comm_task);
+  rt.register_task(DUMMY_TASK, dummy_task);
   rt.register_reduction<RedopMin>(REDOP_MIN);
   rt.register_reduction<RedopMax>(REDOP_MAX);
 
