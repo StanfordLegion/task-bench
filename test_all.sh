@@ -170,7 +170,7 @@ fi
     $SPARK_SRC_DIR/sbin/stop-all.sh 
 fi)
 
-(if [[ $USE_SWIFT -eq 1 ]]; then
+(if [[ $USE_SWIFT -eq 1 && false ]]; then # FIXME: Disable tests for now
     export PATH="$SWIFT_PREFIX"/bin:"$PATH"
     export LD_LIBRARY_PATH="$SWIFT_PREFIX"/lib:"$LD_LIBRARY_PATH"
 
