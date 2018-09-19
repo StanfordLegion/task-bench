@@ -863,4 +863,8 @@ void App::report_timing(double elapsed_seconds) const
   printf("Elapsed Time %e seconds\n", elapsed_seconds);
   printf("FLOP/s %e\n", flops/elapsed_seconds);
   printf("B/s %e\n", bytes/elapsed_seconds);
+
+#ifdef DEBUG_CORE
+  printf("Task Graph Execution Mask %llx\n", has_executed_graph.load());
+#endif
 }
