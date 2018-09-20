@@ -193,26 +193,29 @@ fi
 
 if [[ $USE_SWIFT -eq 1 ]]; then
     export SWIFT_DIR="$PWD"/deps/swift
-    export SWIFT_PREFIX="$SWIFT_DIR"/install
     cat >>deps/env.sh <<EOF
-export SWIFT_DIR=$SWIFT_DIR
-export SWIFT_PREFIX=$SWIFT_PREFIX
+export SWIFT_DIR="$SWIFT_DIR"
+# see swift/env.sh for Swift/T configuration
 EOF
-    mkdir -p "$SWIFT_DIR"
-    mkdir -p "$SWIFT_PREFIX"
-    mkdir -p "$SWIFT_PREFIX"/src
 
-    pushd "$SWIFT_PREFIX"/src
-    git clone git://anongit.freedesktop.org/git/xorg/util/modular util/modular
-    popd
+    mkdir -p "$SWIFT_DIR"
+
+    cat >>"$SWIFT_DIR"/env.sh <<EOF
+export SWIFT_DIR="$SWIFT_DIR"
+export SWIFT_PREFIX="\$SWIFT_DIR"/install
+export PATH="\$SWIFT_PREFIX"/bin:"\$SWIFT_PREFIX"/stc/bin:"\$SWIFT_PREFIX"/turbine/bin:"\$PATH"
+export LD_LIBRARY_PATH="\$SWIFT_PREFIX"/lib:"\$LD_LIBRARY_PATH"
+
+export JAVA_HOME="\$SWIFT_DIR"/jdk-10.0.2
+export PATH="\$JAVA_HOME"/bin:"\$PATH"
+
+export ANT_HOME="\$SWIFT_DIR"/apache-ant-1.10.5
+export PATH="\$ANT_HOME"/bin:"\$PATH"
+EOF
 
     wget https://prdownloads.sourceforge.net/tcl/tcl8.6.8-src.tar.gz
     tar xfz tcl8.6.8-src.tar.gz -C "$SWIFT_DIR"
     rm tcl8.6.8-src.tar.gz
-
-    wget https://prdownloads.sourceforge.net/tcl/tk8.6.8-src.tar.gz
-    tar xfz tk8.6.8-src.tar.gz -C "$SWIFT_DIR"
-    rm tk8.6.8-src.tar.gz
 
     wget https://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz
     tar xfz swig-3.0.12.tar.gz -C "$SWIFT_DIR"

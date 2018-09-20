@@ -172,14 +172,7 @@ fi
 fi)
 
 (if [[ $USE_SWIFT -eq 1 ]]; then
-    export PATH="$SWIFT_PREFIX"/bin:"$SWIFT_PREFIX"/stc/bin:"$SWIFT_PREFIX"/turbine/bin:"$PATH"
-    export LD_LIBRARY_PATH="$SWIFT_PREFIX"/lib:"$LD_LIBRARY_PATH"
-
-    export JAVA_HOME="$SWIFT_DIR"/jdk-10.0.2
-    export PATH="$JAVA_HOME"/bin:"$PATH"
-
-    export ANT_HOME="$SWIFT_DIR"/apache-ant-1.10.5
-    export PATH="$ANT_HOME"/bin:"$PATH"
+    source "$SWIFT_DIR"/env.sh
 
     pushd swift
     for t in $extended_types; do

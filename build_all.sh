@@ -176,32 +176,19 @@ if [[ $USE_SPARK -eq 1 ]]; then
 fi
 
 (if [[ $USE_SWIFT -eq 1 ]]; then
-    export PATH="$SWIFT_PREFIX"/bin:"$PATH"
-    export LD_LIBRARY_PATH="$SWIFT_PREFIX"/lib:"$LD_LIBRARY_PATH"
+    source "$SWIFT_DIR"/env.sh
     pushd "$SWIFT_DIR"
-
-    # # x11
-    # pushd "$SWIFT_PREFIX"/src
-    # echo -e "util/macros \nfont/util \ndoc/xorg-sgml-doctools \ndoc/xorg-docs \nproto/xorgproto \nxcb/proto \nlib/libxtrans" > modulefile
-    # echo -e "lib/libXau \nlib/libXdmcp \nxcb/pthread-stubs \nxcb/libxcb \nxcb/util \nxcb/util-image \nxcb/util-keysyms" >> modulefile
-    # echo -e "xcb/util-renderutil \nxcb/util-wm \nlib/libX11" >> modulefile
-    # ./util/modular/build.sh --clone --modfile modulefile "$SWIFT_PREFIX"
-    # rm modulefile
-    # popd
 
     # tcl
     pushd tcl8.6.8/unix
-    ./configure --enable-shared --prefix="$SWIFT_PREFIX"
-    make -j$THREADS
-    make install
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../configure --prefix="$SWIFT_PREFIX" --enable-shared
+        make -j$THREADS
+        make install
+    fi
     popd
-
-    # # tk
-    # pushd tk8.6.8/unix
-    # ./configure --enable-shared --prefix="$SWIFT_PREFIX" --with-tcl="$SWIFT_DIR"/tcl8.6.8/unix --x-includes="$SWIFT_PREFIX"/include --x-libraries="$SWIFT_PREFIX"/lib
-    # make -j$THREADS
-    # make install
-    # popd
 
     # swig
     (
@@ -211,20 +198,12 @@ fi
         if [[ ! -d build ]]; then
             mkdir build
             cd build
-            ../configure --enable-shared --prefix="$SWIFT_PREFIX"
+            ../configure --prefix="$SWIFT_PREFIX" --enable-shared
             make -j$THREADS
             make install
         fi
         popd
     )
-
-    # jdk
-    export JAVA_HOME="$SWIFT_DIR"/jdk-10.0.2
-    export PATH="$JAVA_HOME"/bin:"$PATH"
-
-    # ant
-    export ANT_HOME="$SWIFT_DIR"/apache-ant-1.10.5
-    export PATH="$ANT_HOME"/bin:"$PATH"
 
     # ncurses
     (
@@ -246,9 +225,13 @@ fi
         pushd zsh-5.5.1
         export CPPFLAGS="-I$SWIFT_PREFIX/include"
         export LDFLAGS="-L$SWIFT_PREFIX/lib"
-        ./configure --prefix="$SWIFT_PREFIX"
-        make -j$THREADS
-        make install
+        if [[ ! -d build ]]; then
+            mkdir build
+            cd build
+            ../configure --prefix="$SWIFT_PREFIX"
+            make -j$THREADS
+            make install
+        fi
         popd
     )
 
@@ -266,7 +249,6 @@ fi
     fi
 
     ./dev/build/build-all.sh
-    export PATH="$SWIFT_PREFIX"/stc/bin:"$SWIFT_PREFIX"/turbine/bin:$PATH
     find "$SWIFT_PREFIX"/stc -type f -exec sed -i 's@#!/bin/zsh@'"#!$SWIFT_PREFIX"'/bin/zsh@g' {} +
     find "$SWIFT_PREFIX"/turbine -type f -exec sed -i 's@#!/bin/zsh@'"#!$SWIFT_PREFIX"'/bin/zsh@g' {} +
     popd
