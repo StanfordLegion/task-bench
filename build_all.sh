@@ -180,39 +180,41 @@ fi
     export LD_LIBRARY_PATH="$SWIFT_PREFIX"/lib:"$LD_LIBRARY_PATH"
     pushd "$SWIFT_DIR"
 
-    # x11
-    pushd "$SWIFT_PREFIX"/src
-    echo -e "util/macros \nfont/util \ndoc/xorg-sgml-doctools \ndoc/xorg-docs \nproto/xorgproto \nxcb/proto \nlib/libxtrans" > modulefile
-    echo -e "lib/libXau \nlib/libXdmcp \nxcb/pthread-stubs \nxcb/libxcb \nxcb/util \nxcb/util-image \nxcb/util-keysyms" >> modulefile
-    echo -e "xcb/util-renderutil \nxcb/util-wm \nlib/libX11" >> modulefile
-    ./util/modular/build.sh --clone --modfile modulefile "$SWIFT_PREFIX"
-    rm modulefile
-    popd
+    # # x11
+    # pushd "$SWIFT_PREFIX"/src
+    # echo -e "util/macros \nfont/util \ndoc/xorg-sgml-doctools \ndoc/xorg-docs \nproto/xorgproto \nxcb/proto \nlib/libxtrans" > modulefile
+    # echo -e "lib/libXau \nlib/libXdmcp \nxcb/pthread-stubs \nxcb/libxcb \nxcb/util \nxcb/util-image \nxcb/util-keysyms" >> modulefile
+    # echo -e "xcb/util-renderutil \nxcb/util-wm \nlib/libX11" >> modulefile
+    # ./util/modular/build.sh --clone --modfile modulefile "$SWIFT_PREFIX"
+    # rm modulefile
+    # popd
 
     # tcl
     pushd tcl8.6.8/unix
     ./configure --enable-shared --prefix="$SWIFT_PREFIX"
-    make
+    make -j$THREADS
     make install
     popd
 
-    # tk
-    pushd tk8.6.8/unix
-    ./configure --enable-shared --prefix="$SWIFT_PREFIX" --with-tcl="$SWIFT_DIR"/tcl8.6.8/unix --x-includes="$SWIFT_PREFIX"/include --x-libraries="$SWIFT_PREFIX"/lib
-    make
-    make install
-    popd
+    # # tk
+    # pushd tk8.6.8/unix
+    # ./configure --enable-shared --prefix="$SWIFT_PREFIX" --with-tcl="$SWIFT_DIR"/tcl8.6.8/unix --x-includes="$SWIFT_PREFIX"/include --x-libraries="$SWIFT_PREFIX"/lib
+    # make -j$THREADS
+    # make install
+    # popd
 
     # swig
     (
         pushd swig-3.0.12
         export LDFLAGS=-L"$SWIFT_PREFIX"/lib
         export CPPFLAGS=-I"$SWIFT_PREFIX"/include
-        mkdir build
-        cd build
-        ../configure --enable-shared --prefix="$SWIFT_PREFIX"
-        make
-        make install
+        if [[ ! -d build ]]; then
+            mkdir build
+            cd build
+            ../configure --enable-shared --prefix="$SWIFT_PREFIX"
+            make -j$THREADS
+            make install
+        fi
         popd
     )
 
@@ -229,11 +231,13 @@ fi
         pushd ncurses-6.1
         export CXXFLAGS=" -fPIC"
         export CFLAGS=" -fPIC"
-        mkdir build
-        cd build
-        ../configure --prefix="$SWIFT_PREFIX" --enable-shared
-        make
-        make install
+        if [[ ! -d build ]]; then
+            mkdir build
+            cd build
+            ../configure --prefix="$SWIFT_PREFIX" --enable-shared
+            make -j$THREADS
+            make install
+        fi
         popd
     )
 
@@ -243,28 +247,34 @@ fi
         export CPPFLAGS="-I$SWIFT_PREFIX/include"
         export LDFLAGS="-L$SWIFT_PREFIX/lib"
         ./configure --prefix="$SWIFT_PREFIX"
-        make
+        make -j$THREADS
         make install
         popd
     )
 
     # swift-t
     pushd swift-t-1.4
-    ./dev/build/init-settings.sh
-    sed -i 's@SWIFT_T_PREFIX=/tmp/swift-t-install@SWIFT_T_PREFIX='"$SWIFT_PREFIX"'@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCLSH_LOCAL=/usr/bin/tclsh@TCLSH_LOCAL='"$SWIFT_PREFIX"'/bin/tclsh8.6@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCL_LIB_DIR=/path/to/tcl/lib@TCL_LIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCL_INCLUDE_DIR=/path/to/tcl/include@TCL_INCLUDE_DIR='"$SWIFT_PREFIX"'/include@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# TCL_SYSLIB_DIR=/path/to/tcl/lib@TCL_SYSLIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# export JAVA_HOME=@export JAVA_HOME='"$JAVA_HOME"'@g' ./dev/build/swift-t-settings.sh
-    sed -i 's@# export ANT_HOME=@export ANT_HOME='"$ANT_HOME"'@g' ./dev/build/swift-t-settings.sh
+    if [[ ! -f ./dev/build/swift-t-settings.sh ]]; then
+        ./dev/build/init-settings.sh
+        sed -i 's@SWIFT_T_PREFIX=/tmp/swift-t-install@SWIFT_T_PREFIX='"$SWIFT_PREFIX"'@g' ./dev/build/swift-t-settings.sh
+        sed -i 's@# TCLSH_LOCAL=/usr/bin/tclsh@TCLSH_LOCAL='"$SWIFT_PREFIX"'/bin/tclsh8.6@g' ./dev/build/swift-t-settings.sh
+        sed -i 's@# TCL_LIB_DIR=/path/to/tcl/lib@TCL_LIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
+        sed -i 's@# TCL_INCLUDE_DIR=/path/to/tcl/include@TCL_INCLUDE_DIR='"$SWIFT_PREFIX"'/include@g' ./dev/build/swift-t-settings.sh
+        sed -i 's@# TCL_SYSLIB_DIR=/path/to/tcl/lib@TCL_SYSLIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
+        sed -i 's@# export JAVA_HOME=@export JAVA_HOME='"$JAVA_HOME"'@g' ./dev/build/swift-t-settings.sh
+        sed -i 's@# export ANT_HOME=@export ANT_HOME='"$ANT_HOME"'@g' ./dev/build/swift-t-settings.sh
+    fi
 
     ./dev/build/build-all.sh
     export PATH="$SWIFT_PREFIX"/stc/bin:"$SWIFT_PREFIX"/turbine/bin:$PATH
-    find "$SWIFT_PREFIX"/stc -type f -exec sed -i 's@/bin/zsh@'"$SWIFT_PREFIX"'/bin/zsh@g' {} +
-    find "$SWIFT_PREFIX"/turbine -type f -exec sed -i 's@/bin/zsh@'"$SWIFT_PREFIX"'/bin/zsh@g' {} +
+    find "$SWIFT_PREFIX"/stc -type f -exec sed -i 's@#!/bin/zsh@'"#!$SWIFT_PREFIX"'/bin/zsh@g' {} +
+    find "$SWIFT_PREFIX"/turbine -type f -exec sed -i 's@#!/bin/zsh@'"#!$SWIFT_PREFIX"'/bin/zsh@g' {} +
     popd
 
+    popd
+
+    pushd swift
+    ./swig_script.sh
     popd
 fi)
 

@@ -19,6 +19,7 @@ imbalanced="-kernel load_imbalance -iter 1024"
 communication_bound="-output 1024"
 
 kernels=("" "$compute_bound" "$memory_bound" "$imbalanced" "$communication_bound")
+compute_kernels=("" "$compute_bound" "$imbalanced")
 
 set -x
 
@@ -170,8 +171,8 @@ fi
     $SPARK_SRC_DIR/sbin/stop-all.sh 
 fi)
 
-(if [[ $USE_SWIFT -eq 1 && false ]]; then # FIXME: Disable tests for now
-    export PATH="$SWIFT_PREFIX"/bin:"$PATH"
+(if [[ $USE_SWIFT -eq 1 ]]; then
+    export PATH="$SWIFT_PREFIX"/bin:"$SWIFT_PREFIX"/stc/bin:"$SWIFT_PREFIX"/turbine/bin:"$PATH"
     export LD_LIBRARY_PATH="$SWIFT_PREFIX"/lib:"$LD_LIBRARY_PATH"
 
     export JAVA_HOME="$SWIFT_DIR"/jdk-10.0.2
@@ -180,12 +181,15 @@ fi)
     export ANT_HOME="$SWIFT_DIR"/apache-ant-1.10.5
     export PATH="$ANT_HOME"/bin:"$PATH"
 
+    pushd swift
     for t in $extended_types; do
-        for k in "${kernels[@]}"; do
-            "$SWIFT_PREFIX"/bin/swift-t -n 5 ./swift/benchmark.swift -type $t $k -steps 9
-            "$SWIFT_PREFIX"/bin/swift-t -n 5 ./swift/benchmark.swift -type $t $k -steps 9 -and -type $t $k -steps 9
+        for k in "${compute_kernels[@]}"; do
+            "$SWIFT_PREFIX"/stc/bin/swift-t -n 5 ./benchmark.swift -type $t $k -steps 9
+            # FIXME: Swift breaks with multiple task graphs
+            # "$SWIFT_PREFIX"/stc/bin/swift-t -n 5 ./benchmark.swift -type $t $k -steps 9 -and -type $t $k -steps 9
         done
     done
+    popd
 fi)
 
 set +x
