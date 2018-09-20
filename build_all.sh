@@ -292,6 +292,8 @@ EOF
         fi
     fi
 
+    export SWIFT_T_OPT_BUILD=1
+
     if [[ -n $CRAYPE_VERSION ]]; then
         sed -i 's@mpicc@cc@g' ./dev/build/check-tools.sh
 
