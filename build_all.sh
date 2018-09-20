@@ -186,18 +186,28 @@ fi)
     pushd "$SWIFT_DIR"
 
     # tcl
-    pushd tcl8.6.8/unix
-    if [[ ! -d build ]]; then
-        mkdir build
-        cd build
-        ../configure --prefix="$SWIFT_PREFIX" --enable-shared
-        make -j$THREADS
-        make install
-    fi
-    popd
+    (
+        if [[ -n $CRAYPE_VERSION ]]; then
+            export CC=gcc CXX=g++
+        fi
+
+        pushd tcl8.6.8/unix
+        if [[ ! -d build ]]; then
+            mkdir build
+            cd build
+            ../configure --prefix="$SWIFT_PREFIX" --enable-shared
+            make -j$THREADS
+            make install
+        fi
+        popd
+    )
 
     # swig
     (
+        if [[ -n $CRAYPE_VERSION ]]; then
+            export CC=gcc CXX=g++
+        fi
+
         pushd swig-3.0.12
         export LDFLAGS=-L"$SWIFT_PREFIX"/lib
         export CPPFLAGS=-I"$SWIFT_PREFIX"/include
@@ -213,6 +223,10 @@ fi)
 
     # ncurses
     (
+        if [[ -n $CRAYPE_VERSION ]]; then
+            export CC=gcc CXX=g++
+        fi
+
         pushd ncurses-6.1
         export CXXFLAGS=" -fPIC"
         export CFLAGS=" -fPIC"
@@ -228,6 +242,10 @@ fi)
 
     # zsh
     (
+        if [[ -n $CRAYPE_VERSION ]]; then
+            export CC=gcc CXX=g++
+        fi
+
         pushd zsh-5.5.1
         export CPPFLAGS="-I$SWIFT_PREFIX/include"
         export LDFLAGS="-L$SWIFT_PREFIX/lib"
@@ -242,6 +260,21 @@ fi)
     )
 
     # swift-t
+
+    if [[ ! -d cc-wrapper ]]; then
+        mkdir cc-wrapper
+        pushd cc-wrapper
+        cat >cc <<EOF
+#!/bin/bash
+
+$(which cc) -dynamic "\$@"
+EOF
+        chmod +x cc
+        popd
+    fi
+    export PATH="$PWD"/cc-wrapper:"$PATH"
+
+
     pushd swift-t-1.4
     if [[ ! -f ./dev/build/swift-t-settings.sh ]]; then
         ./dev/build/init-settings.sh
@@ -252,6 +285,23 @@ fi)
         sed -i 's@# TCL_SYSLIB_DIR=/path/to/tcl/lib@TCL_SYSLIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
         sed -i 's@# export JAVA_HOME=@export JAVA_HOME='"$JAVA_HOME"'@g' ./dev/build/swift-t-settings.sh
         sed -i 's@# export ANT_HOME=@export ANT_HOME='"$ANT_HOME"'@g' ./dev/build/swift-t-settings.sh
+        sed -i 's@MAKE_PARALLELISM=1@MAKE_PARALLELISM='"$THREADS"'@g' ./dev/build/swift-t-settings.sh
+
+        if [[ -n $CRAYPE_VERSION ]]; then
+            sed -i 's@export CC=mpicc@export CC=cc@g' ./dev/build/swift-t-settings.sh
+        fi
+    fi
+
+    if [[ -n $CRAYPE_VERSION ]]; then
+        sed -i 's@mpicc@cc@g' ./dev/build/check-tools.sh
+
+        export CFLAGS="-fPIC"
+        export SWIFT_T_CUSTOM_MPI=1
+        export MPI_INCLUDE=$CRAY_MPICH_DIR/include
+        export MPI_LIB_DIR=$CRAY_MPICH_DIR/lib
+
+        # extra flags for turbine configure script
+        export CRAY_ARGS="--with-launcher=/usr/bin/srun"
     fi
 
     ./dev/build/build-all.sh
