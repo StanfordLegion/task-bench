@@ -152,12 +152,16 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     make -C ompss -j$THREADS
 fi
 
-if [[ $USE_SPARK -eq 1 ]]; then
+(if [[ $USE_SPARK -eq 1 ]]; then
+    source "$SPARK_DIR"/env.sh
+
+    export CORE_DIR="$PWD"/core
+    export SPARK_PROJ_DIR="$PWD"/spark
+
     pushd "$SPARK_SWIG_DIR"
     ./configure --prefix="$PWD"
-    make
+    make -j$THREADS
     make install
-    #make -k check #can run this on a compute node and pass -j$THREADS to make this faster
     popd
 
     #put .cxx in swig dir, java files in /src/main/java
@@ -166,14 +170,14 @@ if [[ $USE_SPARK -eq 1 ]]; then
 
     #make *.so in swig dir
     g++ -fpic -c -O3 -std=c++11 -I"$JAVA_HOME"/include -I"$JAVA_HOME"/include/linux core_c_wrap.cxx
-    g++ -shared -O3 -z noexecstack -std=c++11 "$CORE_DIR"/core_c.o core_c_wrap.o -L"$CORE_DIR" -lcore -o libcore_c.so
+    g++ -shared -O3 -z noexecstack -std=c++11 core_c_wrap.o -L"$CORE_DIR" -lcore -o libcore_c.so
     popd
 
     #make jar in sbt dir
-    pushd "$SPARK_PROJ_DIR" #task-bench/spark
+    pushd "$SPARK_PROJ_DIR"
     "$SPARK_SBT_DIR"/sbt assembly
     popd
-fi
+fi)
 
 (if [[ $USE_SWIFT -eq 1 ]]; then
     source "$SWIFT_DIR"/env.sh

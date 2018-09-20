@@ -152,19 +152,22 @@ fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
     export SPARK_DIR="$PWD"/deps/spark
-    export SPARK_SWIG_DIR=$SPARK_DIR/swig-3.0.12
-    export JAVA_HOME="$SPARK_DIR"/jdk1.8.0_131
     cat >>deps/env.sh <<EOF
-export SPARK_DIR=$SPARK_DIR
-export SPARK_SRC_DIR=$SPARK_DIR/spark-2.3.0-bin-hadoop2.7  
-export SPARK_SBT_DIR=$SPARK_DIR/sbt/bin 
-export SPARK_SWIG_DIR=$SPARK_SWIG_DIR
-export SPARK_PROJ_DIR="$PWD"/spark
-export CORE_DIR="$PWD"/core
-export JAVA_HOME="$JAVA_HOME"
+export SPARK_DIR="$SPARK_DIR"
+# see spark/env.sh for Spark configuration
+EOF
+
+    mkdir -p "$SPARK_DIR"
+
+    cat >>"$SPARK_DIR"/env.sh <<EOF
+export SPARK_DIR="$SPARK_DIR"
+export SPARK_SRC_DIR="\$SPARK_DIR"/spark-2.3.0-bin-hadoop2.7
+export SPARK_SBT_DIR="\$SPARK_DIR"/sbt/bin
+export SPARK_SWIG_DIR="\$SPARK_DIR"/swig-3.0.12
+export JAVA_HOME="\$SPARK_DIR"/jdk1.8.0_131
 export PATH="\$JAVA_HOME/bin:\$PATH"
 EOF
-    mkdir -p "$SPARK_DIR"
+
     pushd "$SPARK_DIR"
     # don't install Scala--use 2.11.8 that comes with Spark 2.3.0
 

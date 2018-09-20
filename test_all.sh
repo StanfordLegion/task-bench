@@ -122,6 +122,11 @@ if [[ $USE_OMPSS -eq 1 ]]; then
 fi
 
 (if [[ $USE_SPARK -eq 1 ]]; then
+    source "$SPARK_DIR"/env.sh
+
+    export CORE_DIR="$PWD"/core
+    export SPARK_PROJ_DIR="$PWD"/spark
+
     export SPARK_LOCAL_IP=localhost
     export SPARK_MASTER_IP=localhost
     export SPARK_MASTER_HOST=localhost
