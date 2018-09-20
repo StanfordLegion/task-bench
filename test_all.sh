@@ -130,7 +130,7 @@ fi
     export SPARK_LOCAL_IP=localhost
     export SPARK_MASTER_IP=localhost
     export SPARK_MASTER_HOST=localhost
-    export LD_LIBRARY_PATH="$CORE_DIR:$SPARK_SWIG_DIR:$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH="$CORE_DIR:$SPARK_PROJ_DIR:$LD_LIBRARY_PATH"
 
     # These tests require a running ssh server that allows
     # passwordless connections to localhost. On Travis we do this by
@@ -158,9 +158,9 @@ fi
         $SPARK_SRC_DIR/bin/spark-submit \
             --class "Main" \
             --master ${MASTER_URL} \
-            --files $SPARK_SWIG_DIR/libcore_c.so \
+            --files $SPARK_PROJ_DIR/libcore_c.so \
             --conf spark.scheduler.listenerbus.eventqueue.capacity=20000 \
-            --conf spark.executor.extraLibraryPath=$CORE_DIR:$SPARK_SWIG_DIR:$LD_LIBRARY_PATH \
+            --conf spark.executor.extraLibraryPath=$CORE_DIR:$SPARK_PROJ_DIR:$LD_LIBRARY_PATH \
             $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar \
             "$@"
         #logging is off...

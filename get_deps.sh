@@ -161,9 +161,12 @@ EOF
 
     cat >>"$SPARK_DIR"/env.sh <<EOF
 export SPARK_DIR="$SPARK_DIR"
+export SPARK_PREFIX="\$SPARK_DIR"/install
 export SPARK_SRC_DIR="\$SPARK_DIR"/spark-2.3.0-bin-hadoop2.7
 export SPARK_SBT_DIR="\$SPARK_DIR"/sbt/bin
 export SPARK_SWIG_DIR="\$SPARK_DIR"/swig-3.0.12
+export PATH="\$SPARK_PREFIX/bin:\$PATH"
+
 export JAVA_HOME="\$SPARK_DIR"/jdk1.8.0_131
 export PATH="\$JAVA_HOME/bin:\$PATH"
 EOF

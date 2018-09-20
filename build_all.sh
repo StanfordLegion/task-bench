@@ -159,17 +159,19 @@ fi
     export SPARK_PROJ_DIR="$PWD"/spark
 
     pushd "$SPARK_SWIG_DIR"
-    ./configure --prefix="$PWD"
-    make -j$THREADS
-    make install
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../configure --prefix="$SPARK_PREFIX"
+        make -j$THREADS
+        make install
+    fi
     popd
 
-    #put .cxx in swig dir, java files in /src/main/java
-    pushd "$SPARK_SWIG_DIR"
-    ./swig -c++ -java -outcurrentdir -outdir "$SPARK_PROJ_DIR"/src/main/java "$SPARK_PROJ_DIR"/core_c.i #core_c.i has full path to core_c.h, typemaps
+    pushd "$SPARK_PROJ_DIR"
+    swig -c++ -java -outcurrentdir -I../core -outdir "$SPARK_PROJ_DIR"/src/main/java core_c.i
 
-    #make *.so in swig dir
-    g++ -fpic -c -O3 -std=c++11 -I"$JAVA_HOME"/include -I"$JAVA_HOME"/include/linux core_c_wrap.cxx
+    g++ -fpic -c -O3 -std=c++11 -I../core -I"$JAVA_HOME"/include -I"$JAVA_HOME"/include/linux core_c_wrap.cxx
     g++ -shared -O3 -z noexecstack -std=c++11 core_c_wrap.o -L"$CORE_DIR" -lcore -o libcore_c.so
     popd
 
