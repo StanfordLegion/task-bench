@@ -824,7 +824,7 @@ long long bytes_per_task(const TaskGraph &g)
     return g.scratch_bytes_per_task * g.kernel.iterations;
 
   case KernelType::MEMORY_DAXPY:
-    return 2 * g.scratch_bytes_per_task * g.kernel.iterations;
+    return g.scratch_bytes_per_task * g.kernel.iterations;
 
   case KernelType::COMPUTE_DGEMM:
   case KernelType::COMPUTE_BOUND:
