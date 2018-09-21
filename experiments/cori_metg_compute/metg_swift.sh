@@ -8,11 +8,14 @@
 
 source ../../deps/swift/env.sh
 
-cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+cores=$(( $total_cores - 1 ))
+
+export TURBINE_LAUNCH_OPTIONS="--cpu_bind=cores"
 
 function launch {
     pushd ../../swift
-    swift-t -n $(( $1 * cores )) ./benchmark.swift "${@:2}" -width $(( $1 * cores ))
+    swift-t -n $(( $1 * total_cores )) ./benchmark.swift "${@:2}" -width $(( $1 * cores ))
     popd
 }
 
