@@ -139,7 +139,28 @@ void execute_kernel_dgemm(const Kernel &kernel,
     cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
                 m, n, p, alpha, A, p, B, n, beta, C, n);
   }
-  // printf("execute_kernel_memory! C[N-1]=%f, N=%lld, jump=%lld\n", C[N-1], N, jump);
+#else
+  fprintf(stderr, "No BLAS is detected\n");
+  fflush(stderr);
+  abort();
+#endif
+}
+
+void execute_kernel_daxpy(const Kernel &kernel,
+                           char *scratch_ptr, size_t scratch_bytes)
+{
+#ifdef USE_BLAS_KERNEL
+  int N = scratch_bytes / (2 * sizeof(double));
+  double alpha;
+
+  alpha = 1.0;
+
+  double *X = reinterpret_cast<double *>(scratch_ptr);
+  double *Y = reinterpret_cast<double *>(scratch_ptr + N * sizeof(double));
+
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    cblas_daxpy(N, alpha, X, 1, Y, 1);
+  }
 #else
   fprintf(stderr, "No BLAS is detected\n");
   fflush(stderr);

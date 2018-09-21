@@ -55,7 +55,7 @@ void *execute_task(void *tr)
 {
   task_args_t *task_arg = (task_args_t *)tr;
   
-  bind_thread(task_arg->tid+1);
+  bind_thread(task_arg->tid);
   
   TaskGraph g(task_arg->graph);
   

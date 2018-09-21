@@ -54,6 +54,7 @@ else
 	LDFLAGS += -L. -Wl,--whole-archive -lcore -Wl,--no-whole-archive
 endif
 
+include make_blas.mk
 
 .PHONY: all
 all: $(SLIB) $(DLIB) $(SLIB_SYMLINK)

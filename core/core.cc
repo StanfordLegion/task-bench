@@ -53,6 +53,11 @@ void Kernel::execute(long graph_index, long timestep, long point,
     assert(scratch_ptr != NULL);
     assert(scratch_bytes > 0);
     execute_kernel_dgemm(*this, scratch_ptr, scratch_bytes);
+    break;
+  case KernelType::MEMORY_DAXPY:
+    assert(scratch_ptr != NULL);
+    assert(scratch_bytes > 0);
+    execute_kernel_daxpy(*this, scratch_ptr, scratch_bytes);
     break;  
   case KernelType::COMPUTE_BOUND:
     execute_kernel_compute(*this);
@@ -81,6 +86,7 @@ static const std::map<std::string, KernelType> &ktype_by_name()
     types["busy_wait"] = KernelType::BUSY_WAIT;
     types["memory_bound"] = KernelType::MEMORY_BOUND;
     types["compute_dgemm"] = KernelType::COMPUTE_DGEMM;
+    types["memory_daxpy"] = KernelType::MEMORY_DAXPY;
     types["compute_bound"] = KernelType::COMPUTE_BOUND;
     types["compute_bound2"] = KernelType::COMPUTE_BOUND2;
     types["io_bound"] = KernelType::IO_BOUND;
@@ -788,6 +794,9 @@ long long flops_per_task(const TaskGraph &g)
     long N = sqrt(g.scratch_bytes_per_task / (3 * sizeof(double))); 
     return 2 * N * N * N * g.kernel.iterations;
   }
+  
+  case KernelType::MEMORY_DAXPY:
+    return 0;
 
   case KernelType::COMPUTE_BOUND:
     return 2 * 64 * g.kernel.iterations + 64;
@@ -813,6 +822,9 @@ long long bytes_per_task(const TaskGraph &g)
 
   case KernelType::MEMORY_BOUND:
     return g.scratch_bytes_per_task * g.kernel.iterations;
+
+  case KernelType::MEMORY_DAXPY:
+    return 2 * g.scratch_bytes_per_task * g.kernel.iterations;
 
   case KernelType::COMPUTE_DGEMM:
   case KernelType::COMPUTE_BOUND:

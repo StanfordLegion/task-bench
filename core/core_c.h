@@ -43,6 +43,7 @@ typedef enum kernel_type_t {
   BUSY_WAIT,
   MEMORY_BOUND,
   COMPUTE_DGEMM,
+  MEMORY_DAXPY,
   COMPUTE_BOUND,
   COMPUTE_BOUND2,
   IO_BOUND,
