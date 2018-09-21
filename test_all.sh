@@ -182,9 +182,9 @@ fi)
     pushd swift
     for t in $extended_types; do
         for k in "${compute_kernels[@]}"; do
-            "$SWIFT_PREFIX"/stc/bin/swift-t -n 5 ./benchmark.swift -type $t $k -steps 9
+            turbine -n 4 benchmark.tic -type $t $k -steps 9
             # FIXME: Swift breaks with multiple task graphs
-            # "$SWIFT_PREFIX"/stc/bin/swift-t -n 5 ./benchmark.swift -type $t $k -steps 9 -and -type $t $k -steps 9
+            # turbine -n 4 benchmark.tic -type $t $k -steps 9 -and -type $t $k -steps 9
         done
     done
     popd

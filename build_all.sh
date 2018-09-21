@@ -316,6 +316,7 @@ EOF
 
     pushd swift
     ./swig_script.sh
+    stc -O3 benchmark.swift
     popd
 fi)
 
