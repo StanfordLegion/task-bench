@@ -5,8 +5,10 @@
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --exclusive
-#SBATCH --time=03:00:00
+#SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
+
+cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
 source ../../deps/spark/env.sh #no SPARK_PROJ_DIR at this point...assume running in taskbench/scripts/sherlock
 export SPARK_PROJ_DIR=$PWD/../../spark
@@ -59,20 +61,20 @@ srun  -r1 --nodes=$nWorkerNodes --ntasks=$((2 * $nWorkerNodes)) --output=$SPARK_
 function launch {
     $SPARK_SRC_DIR/bin/spark-submit --class "Main" \
         --master ${MASTER_URL} \
-        --total-executor-cores $(( ( SLURM_NTASKS - 2 ) * SLURM_CPUS_PER_TASK )) \
+        --total-executor-cores $(( $1 * cores )) \
         --files $SPARK_PROJ_DIR/libcore_c.so \
         --conf "spark.executor.heartbeatInterval=360000" \
         --conf "spark.network.timeout=420000" \
         --conf spark.scheduler.listenerbus.eventqueue.capacity=20000 \
         $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar \
-        "${@:2}"
+        "${@:2}" -width $(( $1 * cores ))
 }
 
 function sweep {
     for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
-                $1 $2 -kernel compute_bound -iter $(( 1 << (28-s) )) -type $3 -steps 1000
+                $1 $2 -kernel compute_bound -iter $(( 1 << (26-s) )) -type $3 -steps 1000
             fi
         done
     done
