@@ -15,7 +15,7 @@ export TURBINE_LAUNCH_OPTIONS="--cpu_bind=cores"
 
 function launch {
     pushd ../../swift
-    swift-t -n $(( $1 * total_cores )) ./benchmark.swift "${@:2}" -width $(( $1 * cores ))
+    turbine -n $(( $1 * total_cores )) benchmark.tic "${@:2}" -width $(( $1 * cores ))
     popd
 }
 
