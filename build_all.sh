@@ -261,19 +261,20 @@ fi)
 
     # swift-t
 
-    if [[ ! -d cc-wrapper ]]; then
-        mkdir cc-wrapper
-        pushd cc-wrapper
-        cat >cc <<EOF
+    if [[ -n $CRAYPE_VERSION ]]; then
+        if [[ ! -d cc-wrapper ]]; then
+            mkdir cc-wrapper
+            pushd cc-wrapper
+            cat >cc <<EOF
 #!/bin/bash
 
 $(which cc) -dynamic "\$@"
 EOF
-        chmod +x cc
-        popd
+            chmod +x cc
+            popd
+        fi
+        export PATH="$PWD"/cc-wrapper:"$PATH"
     fi
-    export PATH="$PWD"/cc-wrapper:"$PATH"
-
 
     pushd swift-t-1.4
     if [[ ! -f ./dev/build/swift-t-settings.sh ]]; then
