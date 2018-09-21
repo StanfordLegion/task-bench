@@ -13,14 +13,15 @@ function launch {
 }
 
 function sweep {
-    for s in 0 1 2 3 4 5 6 7 8; do
+    for s in 0 1 2 3 4; do
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
-                $1 $2 -kernel memory_bound -iter $(( 1 << (9-s) )) -scratch $((1024*1024*8)) -type $3 -steps 1000
+                $1 $2 -kernel memory_bound -iter $(( 1 << (5-s) )) -scratch $((1024*1024*16)) -type $3 -steps 1000
             fi
         done
     done
 }
+
 for n in $SLURM_JOB_NUM_NODES; do
     for t in stencil_1d; do
         sweep launch $n $t > mpi_nonblock_type_${t}_nodes_${n}.log
