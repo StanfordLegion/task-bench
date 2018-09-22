@@ -111,13 +111,24 @@ fi
 fi)
 
 (if [[ $USE_CHAPEL -eq 1 ]]; then
-     export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM:$PATH"
-     pushd "$CHPL_HOME"
-     make -j$THREADS
-     popd
+    export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM:$PATH"
+    pushd "$CHPL_HOME"
+    make -j$THREADS
+    popd
 
-     make -C chapel clean
-     make -C chapel
+    make -C chapel clean
+    make -C chapel
+fi)
+
+(if [[ $USE_X10 -eq 1 ]]; then
+    source "$X10_DIR"/env.sh
+
+    pushd "$X10_DIR"/x10/x10.dist
+    ant -DX10RT_MPI=true dist # squeakyclean dist
+    popd
+
+    make -C x10 clean
+    make -C x10
 fi)
 
 (if [[ $USE_X10 -eq 1 ]]; then

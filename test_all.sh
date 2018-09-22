@@ -20,6 +20,7 @@ communication_bound="-output 1024"
 
 kernels=("" "$compute_bound" "$memory_bound" "$imbalanced" "$communication_bound")
 compute_kernels=("" "$compute_bound" "$imbalanced")
+basic_kernels=("" "$compute_bound")
 
 set -x
 
@@ -101,6 +102,16 @@ if [[ $USE_CHAPEL -eq 1 ]]; then
         done
     done
 fi
+
+(if [[ $USE_X10 -eq 1 ]]; then
+    source "$X10_DIR"/env.sh
+
+    for t in trivial no_comm stencil_1d stencil_1d_periodic nearest all_to_all; do # dom tree fft random_nearest
+        for k in "${basic_kernels[@]}"; do
+            mpirun -np 4 ./x10/main -steps 9 -type $t $k
+        done
+    done
+fi)
 
 if [[ $USE_OPENMP -eq 1 ]]; then
     export LD_LIBRARY_PATH=/usr/local/clang/lib:$LD_LIBRARY_PATH
