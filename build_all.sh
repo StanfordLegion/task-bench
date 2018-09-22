@@ -127,6 +127,8 @@ fi)
     ant -DX10RT_MPI=true dist # squeakyclean dist
     popd
 
+    find . -name 'x10rt.h' # Elliott: debugging.
+
     make -C x10 clean
     make -C x10
 fi)
