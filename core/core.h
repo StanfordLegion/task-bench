@@ -31,7 +31,7 @@ struct Kernel : public kernel_t {
   Kernel() = default;
   Kernel(kernel_t k) : kernel_t(k) {}
 
-private:
+/* private: */
   void execute(long graph_index, long timestep, long point,
                char *scratch_ptr, size_t scratch_bytes) const;
   friend struct TaskGraph;
