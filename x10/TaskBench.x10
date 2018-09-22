@@ -6,11 +6,9 @@ import x10.compiler.Native;
 import x10.compiler.NativeCPPInclude;
 import x10.compiler.NativeCPPCompilationUnit;
 
-@NativeCPPInclude("/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/timer.h")
-@NativeCPPInclude("/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/core.h")
-@NativeCPPInclude("/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/core_kernel.h")
-@NativeCPPCompilationUnit("/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/core.cc")
-@NativeCPPCompilationUnit("/global/homes/n/nicolaig/task-bench/x10/task-bench-x10/core/core_kernel.cc")
+@NativeCPPInclude("timer.h")
+@NativeCPPInclude("core.h")
+@NativeCPPInclude("core_kernel.h")
 
 public class TaskBench {
 
@@ -163,7 +161,7 @@ public class TaskBench {
 			k.type = kernel_type_t(kernelType);
 			k.iterations = *((long*)&iterations);
 			Kernel kernel(k);
-			kernel.execute();
+			kernel.execute(0, -1, -1, NULL, 0);
 		") {}
 	}
 
