@@ -25,13 +25,16 @@ typedef dependence_type_t DependenceType;
 
 typedef kernel_type_t KernelType;
 
+struct TaskGraph;
+
 struct Kernel : public kernel_t {
   Kernel() = default;
   Kernel(kernel_t k) : kernel_t(k) {}
 
-  void execute() const;
-  void execute(long timestep, long point,
+private:
+  void execute(long graph_index, long timestep, long point,
                char *scratch_ptr, size_t scratch_bytes) const;
+  friend struct TaskGraph;
 };
 
 struct TaskGraph : public task_graph_t {
@@ -52,11 +55,6 @@ struct TaskGraph : public task_graph_t {
   void execute_point(long timestep, long point,
                      char *output_ptr, size_t output_bytes,
                      const char **input_ptr, const size_t *input_bytes,
-                     size_t n_inputs) const;
-
-  void execute_point(long timestep, long point,
-                     char *output_ptr, size_t output_bytes,
-                     const char **input_ptr, const size_t *input_bytes,
                      size_t n_inputs,
                      char *scratch_ptr, size_t scratch_bytes) const;
 };
@@ -64,6 +62,7 @@ struct TaskGraph : public task_graph_t {
 struct App {
   std::vector<TaskGraph> graphs;
   bool verbose;
+  bool enable_graph_validation;
 
   App(int argc, char **argv);
   void check() const;

@@ -38,11 +38,13 @@ static int global_argc = 0;
 static char **global_argv = NULL;
 
 enum {
-  TOP_LEVEL_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 0,
-  CREATE_REGION_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 1,
-  CREATE_REGION_DONE_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 2,
-  SHARD_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 3,
-  COMM_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 4,
+  TOP_LEVEL_TASK           = Processor::TASK_ID_FIRST_AVAILABLE + 0,
+  CREATE_REGION_TASK       = Processor::TASK_ID_FIRST_AVAILABLE + 1,
+  CREATE_REGION_DONE_TASK  = Processor::TASK_ID_FIRST_AVAILABLE + 2,
+  CREATE_BARRIER_TASK      = Processor::TASK_ID_FIRST_AVAILABLE + 3,
+  CREATE_BARRIER_DONE_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 4,
+  SHARD_TASK               = Processor::TASK_ID_FIRST_AVAILABLE + 5,
+  COMM_TASK                = Processor::TASK_ID_FIRST_AVAILABLE + 6,
 };
 
 enum {
@@ -718,7 +720,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   a.last_stop.arrive(1, Event::NO_EVENT, &time_elapsed, sizeof(time_elapsed));
 }
 
-/* may need to format for my data */
 void create_region_done_task(const void *args, size_t arglen,
                              const void *userdata, size_t userlen, Processor p)
 {
@@ -732,7 +733,6 @@ void create_region_done_task(const void *args, size_t arglen,
   *a.dest_inst = a.inst;
 }
 
-/* may need to format for my data */
 void create_region_task(const void *args, size_t arglen, const void *userdata,
                         size_t userlen, Processor p)
 {
@@ -753,6 +753,36 @@ void create_region_task(const void *args, size_t arglen, const void *userdata,
   done.dest_proc = a.dest_proc;
   done.dest_inst = a.dest_inst;
   a.dest_proc.spawn(CREATE_REGION_DONE_TASK, &done, sizeof(done)).wait();
+}
+
+void create_barrier_done_task(const void *args, size_t arglen,
+                             const void *userdata, size_t userlen, Processor p)
+{
+  assert(arglen == sizeof(CreateBarrierDoneArgs));
+  const CreateBarrierDoneArgs &a =
+      *reinterpret_cast<const CreateBarrierDoneArgs *>(args);
+
+  // We had better be on the destination proc, otherwise these
+  // pointer won't be valid.
+  assert(a.dest_proc == p);
+  *a.dest_barrier = a.barrier;
+}
+
+void create_barrier_task(const void *args, size_t arglen, const void *userdata,
+                        size_t userlen, Processor p)
+{
+  assert(arglen == sizeof(CreateBarrierArgs));
+  const CreateBarrierArgs &a = *reinterpret_cast<const CreateBarrierArgs *>(args);
+
+  Barrier barrier = Barrier::create_barrier(a.expected_arrivals);
+
+  // Send the instance back to the requesting node
+  // Important: Don't return until this is complete
+  CreateBarrierDoneArgs done;
+  done.barrier = barrier;
+  done.dest_proc = a.dest_proc;
+  done.dest_barrier = a.dest_barrier;
+  a.dest_proc.spawn(CREATE_BARRIER_DONE_TASK, &done, sizeof(done)).wait();
 }
 
 void *serialized_array(
@@ -876,15 +906,18 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   for (auto graph : graphs) {
     graph_max_width = graph.max_width;  // won't work for multiple graphs
     std::vector<std::vector<std::vector<std::vector<Barrier> > > >
-        task_recv_bars;
+        task_recv_bars(graph.max_width);
     std::vector<std::vector<std::vector<RegionInstance> > > tasks_for_each_task(
         graph.max_width);
     size_t output_bytes = graph.output_bytes_per_task;
     for (long taskid = 0; taskid < graph.max_width; taskid++) {
       long num_dsets = graph.max_dependence_sets();
-      std::vector<std::vector<std::vector<Barrier> > > recv_bars;
+      std::vector<std::vector<std::vector<Barrier> > > recv_bars(num_dsets);
       std::vector<std::vector<RegionInstance> > tasks_for_each_dset(num_dsets);
       for (long dset = 0; dset < num_dsets; dset++) {
+        Processor shard_proc(procs[(taskid * procs.size()) / graph_max_width]);
+        Memory memory(proc_regmems[shard_proc]);
+
         long num_deps = num_dependencies(graph, dset, taskid);
         long num_rev_deps = num_rev_dependencies(graph, dset, taskid);
         std::vector<RegionInstance> task_instances(
@@ -892,29 +925,23 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
             RegionInstance::NO_INST);
         std::vector<std::vector<Barrier> > out_in_barriers;
         for (long index = OUT_INDEX; index <= IN_INDEX; index++) {
-          std::vector<Barrier> barriers;
-          if (index == IN_INDEX) {
-            for (long dep_num = 0; dep_num < num_deps * NUM_INPUT_REGIONS;
-                 dep_num++) {
-              Barrier recv_bar = Barrier::create_barrier(1);
-              barriers.push_back(recv_bar);
-              size_of_byte_array += sizeof(Barrier);
-            }
-          } else {
-            for (int dep_num = 0; dep_num < num_rev_deps * NUM_INPUT_REGIONS;
-                 dep_num++) {
-              Barrier recv_bar = Barrier::create_barrier(1);
-              barriers.push_back(recv_bar);
-              size_of_byte_array += sizeof(Barrier);
-            }
+          long num_bars = (index == IN_INDEX ? num_deps : num_rev_deps) * NUM_INPUT_REGIONS;
+          std::vector<Barrier> barriers(num_bars);
+          for (long bar_num = 0; bar_num < num_bars; bar_num++) {
+            CreateBarrierArgs args;
+            args.expected_arrivals = 1;
+            args.dest_proc = p;
+            args.dest_barrier = &barriers[bar_num];
+            events.push_back(
+              shard_proc.spawn(CREATE_BARRIER_TASK, &args, sizeof(args)));
+            size_of_byte_array += sizeof(Barrier);
           }
-          out_in_barriers.push_back(barriers);
+          out_in_barriers.emplace_back();
+          out_in_barriers.back().swap(barriers);
         }
-        recv_bars.push_back(out_in_barriers);
+        recv_bars[dset].swap(out_in_barriers);
 
         Rect1 input_bounds(Point1(0), Point1(output_bytes - 1));
-        Processor shard_proc(procs[(taskid * procs.size()) / graph_max_width]);
-        Memory memory(proc_regmems[shard_proc]);
 
         // create instance for each dependency (num_deps *
         // output_bytes_per_task)
@@ -932,15 +959,16 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
           size_of_byte_array += sizeof(RegionInstance);
         }
 
-        task_instances.swap(tasks_for_each_dset[dset]);
+        tasks_for_each_dset[dset].swap(task_instances);
       }
-      task_recv_bars.push_back(recv_bars);
-      tasks_for_each_dset.swap(tasks_for_each_task[taskid]);
+      task_recv_bars[taskid].swap(recv_bars);
+      tasks_for_each_task[taskid].swap(tasks_for_each_dset);
     }
-    graph_recv_bars.push_back(task_recv_bars);
+    graph_recv_bars.emplace_back();
+    graph_recv_bars.back().swap(task_recv_bars);
 
     tasks_for_each_graph.emplace_back();
-    tasks_for_each_task.swap(tasks_for_each_graph.back());
+    tasks_for_each_graph.back().swap(tasks_for_each_task);
   }
   Event::merge_events(events).wait();
 
@@ -1026,6 +1054,8 @@ int main(int argc, char **argv)
   rt.register_task(TOP_LEVEL_TASK, top_level_task);
   rt.register_task(CREATE_REGION_TASK, create_region_task);
   rt.register_task(CREATE_REGION_DONE_TASK, create_region_done_task);
+  rt.register_task(CREATE_BARRIER_TASK, create_barrier_task);
+  rt.register_task(CREATE_BARRIER_DONE_TASK, create_barrier_done_task);
   rt.register_task(SHARD_TASK, shard_task);
   rt.register_task(COMM_TASK, comm_task);
   rt.register_reduction<RedopMin>(REDOP_MIN);
