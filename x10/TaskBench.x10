@@ -101,6 +101,8 @@ public class TaskBench {
 
   }
 
+  public val graph_index:Long;
+
   public val dependenceSets:Rail[Rail[Pair[Rail[Long], Rail[Long]]]];
 
   public val dsetForTimestep:Rail[Long];
@@ -115,8 +117,9 @@ public class TaskBench {
 
   public val plh:PlaceLocalHandle[PlaceInstance];
 
-  public def this(dsets:Rail[Rail[Pair[Rail[Long], Rail[Long]]]], dsetForTimestep:Rail[Long], widthOffsets:Pair[Rail[Long], Rail[Long]], kernel:Pair[Int, Long]) {
+  public def this(index: Long, dsets:Rail[Rail[Pair[Rail[Long], Rail[Long]]]], dsetForTimestep:Rail[Long], widthOffsets:Pair[Rail[Long], Rail[Long]], kernel:Pair[Int, Long]) {
 
+    this.graph_index = index;
     this.dependenceSets = dsets;
     this.dsetForTimestep = dsetForTimestep;
     this.widthForTimesteps = widthOffsets.first;
@@ -155,13 +158,16 @@ public class TaskBench {
     }
   }
 
-  private def kernelExecute(kernelType:Int, iterations:Long):void {
+  private def kernelExecute(graph_index:Long, timestep:Long, point:Long, kernelType:Int, iterations:Long):void {
     @Native("c++", "
       kernel_t k;
+      long id = *((long*)&graph_index);
+      long ts = *((long*)&timestep);
+      long pt = *((long*)&point);
       k.type = kernel_type_t(kernelType);
       k.iterations = *((long*)&iterations);
       Kernel kernel(k);
-      kernel.execute(0, -1, -1, NULL, 0);
+      kernel.execute(id, ts, pt, NULL, 0);
     ") {}
   }
 
@@ -197,7 +203,7 @@ public class TaskBench {
               }
             }
           }
-          kernelExecute(kernel.first, kernel.second);
+          kernelExecute(graph_index, ts, here.id, kernel.first, kernel.second);
         }
       }
     }
@@ -386,7 +392,7 @@ public class TaskBench {
       val dsetForTimestep = timeStepMaps(tg);
       val widthsOffsets = widthsOffsetsRail(tg);
       val kernel = kernels(tg);
-      val taskBench = new TaskBench(dsets, dsetForTimestep, widthsOffsets, kernel);
+      val taskBench = new TaskBench(tg, dsets, dsetForTimestep, widthsOffsets, kernel);
       taskBench.executeTaskGraph();
     }
     val end = getTime();
