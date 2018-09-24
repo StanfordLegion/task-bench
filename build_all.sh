@@ -127,21 +127,8 @@ fi)
     ant -DX10RT_MPI=true dist # squeakyclean dist
     popd
 
-    find . -name 'x10rt.h' # Elliott: debugging.
-
     make -C x10 clean
     make -C x10
-fi)
-
-(if [[ $USE_X10 -eq 1 ]]; then
-     source "$X10_DIR"/env.sh
-
-     pushd "$X10_DIR"/x10/x10.dist
-     ant -DX10RT_MPI=true dist # squeakyclean dist
-     popd
-
-     make -C x10 clean
-     make -C x10
 fi)
 
 if [[ $USE_OPENMP -eq 1 ]]; then
