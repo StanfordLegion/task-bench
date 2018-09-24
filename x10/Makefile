@@ -1,3 +1,5 @@
+DEBUG ?= 0
+
 X10FLAGS ?=
 X10FLAGS += -x10rt mpi
 
