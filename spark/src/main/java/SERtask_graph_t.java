@@ -22,6 +22,7 @@ class SERtask_graph_t implements Serializable {
     private int dependence;
     private int type;
     private int iterations;
+    private int sample;
     private int radix;
     private int period;
     private double fraction_connected;
@@ -35,6 +36,7 @@ class SERtask_graph_t implements Serializable {
         this.dependence = taskGraph.getDependence().swigValue(); 
         this.type = taskGraph.getKernel().getType().swigValue();  
         this.iterations = taskGraph.getKernel().getIterations();
+        this.sample = taskGraph.getKernel().getSample();
         this.radix = taskGraph.getRadix();
         this.period = taskGraph.getPeriod();
         this.fraction_connected = taskGraph.getFraction_connected();
@@ -51,6 +53,7 @@ class SERtask_graph_t implements Serializable {
         kernel_t k = new kernel_t();
         k.setType(kernel_type_t.swigToEnum(this.type)); 
         k.setIterations(this.iterations);
+        k.setSample(this.sample);
         tg.setKernel(k); 
         tg.setRadix(this.radix);
         tg.setPeriod(this.period);
@@ -68,6 +71,7 @@ class SERtask_graph_t implements Serializable {
             " dtype:" + dependence +
             " ktype:" + type +
             " iter:" + iterations +
+            " sample:" + sample +
             " radix: " + radix +
             " period: " + period +
             " fraction_connected: " + fraction_connected +

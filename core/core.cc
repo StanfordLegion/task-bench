@@ -501,6 +501,8 @@ void TaskGraph::execute_point(long timestep, long point,
 
   // Execute kernel
   Kernel k(kernel);
+  scratch_bytes /= kernel.sample;
+  scratch_ptr = scratch_ptr + ((timestep) % kernel.sample) * scratch_bytes;
   k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes);
 }
 
@@ -515,7 +517,7 @@ static TaskGraph default_graph(long graph_index)
   graph.radix = 3;
   graph.period = -1;
   graph.fraction_connected = 0.25;
-  graph.kernel = {KernelType::EMPTY, 0, 0};
+  graph.kernel = {KernelType::EMPTY, 0, 16};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
   graph.scratch_bytes_per_task = 0;
 
@@ -650,14 +652,14 @@ App::App(int argc, char **argv)
       graph.scratch_bytes_per_task = value;
     }
 
-    if (!strcmp(argv[i], "-jump")) {
-      needs_argument(i, argc, "-jump");
-      long value  = atol(argv[++i]);
+    if (!strcmp(argv[i], "-sample")) {
+      needs_argument(i, argc, "-sample");
+      int value  = atoi(argv[++i]);
       if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-jump %ld\" must be >= 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"-sample %ld\" must be >= 0\n", value);
         abort();
       }
-      graph.kernel.jump = value;
+      graph.kernel.sample = value;
     }
 
     if (!strcmp(argv[i], "-and")) {
@@ -821,10 +823,10 @@ long long bytes_per_task(const TaskGraph &g)
     return 0;
 
   case KernelType::MEMORY_BOUND:
-    return g.scratch_bytes_per_task * g.kernel.iterations;
+    return g.scratch_bytes_per_task * g.kernel.iterations / g.kernel.sample;
 
   case KernelType::MEMORY_DAXPY:
-    return g.scratch_bytes_per_task * g.kernel.iterations;
+    return g.scratch_bytes_per_task * g.kernel.iterations / g.kernel.sample;
 
   case KernelType::COMPUTE_DGEMM:
   case KernelType::COMPUTE_BOUND:
