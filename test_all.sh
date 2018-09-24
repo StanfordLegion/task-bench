@@ -61,10 +61,9 @@ fi
 if [[ $USE_REGENT -eq 1 ]]; then
     for t in trivial no_comm stencil_1d nearest; do # FIXME: stencil_1d_periodic dom tree fft random_nearest all_to_all
         for k in "${kernels[@]}"; do
-            # FIXME: Regent always needs scratch space: https://github.com/StanfordLegion/legion/issues/427
             # FIXME: Regent needs even number of timesteps
-            ./regent/main.shard20 -steps 10 -type $t $k -scratch 64
-            ./regent/main.shard20 -steps 10 -type $t $k -scratch 64 -ll:cpu 2
+            ./regent/main.shard20 -steps 10 -type $t $k
+            ./regent/main.shard20 -steps 10 -type $t $k -ll:cpu 2
         done
     done
 fi

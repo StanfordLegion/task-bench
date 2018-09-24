@@ -41,7 +41,7 @@ terra get_base_and_size(runtime : c.legion_runtime_t,
   regentlib.assert(base ~= nil or volume <= 1, "failed to get base pointer")
   regentlib.assert(subrect.lo.x[0] == rect.lo.x[0], "size mismatch")
   regentlib.assert(subrect.hi.x[0] == rect.hi.x[0], "size mismatch")
-  regentlib.assert(offset.offset == 1, "stride mismatch")
+  regentlib.assert(offset.offset == 1 or volume <= 1, "stride mismatch")
 
   return base, volume
 end
@@ -219,8 +219,7 @@ task main()
   var max_timesteps = task_graph.timesteps
   var max_width = task_graph.max_width
   var output_bytes = task_graph.output_bytes_per_task
-  -- FIXME: Causes runtime error if size is 0
-  var scratch_bytes = max(task_graph.scratch_bytes_per_task, 1)
+  var scratch_bytes = task_graph.scratch_bytes_per_task
 
   -- Compute map from points to number of dependencies per point.
   var ndeps = region(ispace(int1d, max_width), rect1d)
