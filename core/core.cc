@@ -47,7 +47,7 @@ void Kernel::execute(long graph_index, long timestep, long point,
   case KernelType::MEMORY_BOUND:
     assert(scratch_ptr != NULL);
     assert(scratch_bytes > 0);
-    execute_kernel_memory(*this, scratch_ptr, scratch_bytes);
+    execute_kernel_memory(*this, scratch_ptr, scratch_bytes, timestep, sample);
     break;
   case KernelType::COMPUTE_DGEMM:
     assert(scratch_ptr != NULL);
@@ -57,7 +57,7 @@ void Kernel::execute(long graph_index, long timestep, long point,
   case KernelType::MEMORY_DAXPY:
     assert(scratch_ptr != NULL);
     assert(scratch_bytes > 0);
-    execute_kernel_daxpy(*this, scratch_ptr, scratch_bytes);
+    execute_kernel_daxpy(*this, scratch_ptr, scratch_bytes, timestep, sample);
     break;  
   case KernelType::COMPUTE_BOUND:
     execute_kernel_compute(*this);
@@ -501,8 +501,6 @@ void TaskGraph::execute_point(long timestep, long point,
 
   // Execute kernel
   Kernel k(kernel);
-  scratch_bytes /= kernel.sample;
-  scratch_ptr = scratch_ptr + ((timestep) % kernel.sample) * scratch_bytes;
   k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes);
 }
 
