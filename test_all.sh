@@ -14,7 +14,7 @@ basic_types="trivial no_comm stencil_1d stencil_1d_periodic dom tree fft nearest
 extended_types="$basic_types all_to_all"
 
 compute_bound="-kernel compute_bound -iter 1024"
-memory_bound="-kernel memory_bound -iter 1024 -scratch 64"
+memory_bound="-kernel memory_bound -iter 1024 -scratch $((64*16))"
 imbalanced="-kernel load_imbalance -iter 1024"
 communication_bound="-output 1024"
 
