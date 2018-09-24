@@ -29,6 +29,9 @@ env:
     - USE_SPARK=1
     - USE_OMPSS=1
     - USE_SWIFT=1
+  exclude:
+    - compiler: clang
+      env: USE_REGENT=1
 before_install:
   - |
     if [[ "$(uname)" = "Linux" ]]; then
