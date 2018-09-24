@@ -502,7 +502,7 @@ void TaskGraph::execute_point(long timestep, long point,
   // Execute kernel
   Kernel k(kernel);
   scratch_bytes /= kernel.sample;
-  scratch_ptr = scratch_ptr + (point * timesteps) % kernel.sample;
+  scratch_ptr = scratch_ptr + ((timestep) % kernel.sample) * scratch_bytes;
   k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes);
 }
 
