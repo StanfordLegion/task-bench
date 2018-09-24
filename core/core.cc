@@ -515,7 +515,7 @@ static TaskGraph default_graph(long graph_index)
   graph.radix = 3;
   graph.period = -1;
   graph.fraction_connected = 0.25;
-  graph.kernel = {KernelType::EMPTY, 0, 0};
+  graph.kernel = {KernelType::EMPTY, 0};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
   graph.scratch_bytes_per_task = 0;
 
@@ -648,16 +648,6 @@ App::App(int argc, char **argv)
         abort();
       }
       graph.scratch_bytes_per_task = value;
-    }
-
-    if (!strcmp(argv[i], "-jump")) {
-      needs_argument(i, argc, "-jump");
-      long value  = atol(argv[++i]);
-      if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-jump %ld\" must be >= 0\n", value);
-        abort();
-      }
-      graph.kernel.jump = value;
     }
 
     if (!strcmp(argv[i], "-and")) {
