@@ -425,16 +425,19 @@ void StarPUApp::parse_argument(int argc, char **argv)
 {
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-mb")) {
-      MB = atol(argv[++i]);
+      MB = atoi(argv[++i]);
     }
     if (!strcmp(argv[i], "-core")) {
-      nb_cores = atol(argv[++i]);
+      nb_cores = atoi(argv[++i]);
     }
     if (!strcmp(argv[i], "-p")) {
-      P = atol(argv[++i]);
+      P = atoi(argv[++i]);
     }
     if (!strcmp(argv[i], "-field")) {
-      nb_fields_arg = atol(argv[++i]);
+      nb_fields_arg = atoi(argv[++i]);
+    }
+    if (!strcmp(argv[i], "-S")) {
+      starpu_enable_supertiling = true;
     }
   }
 }
