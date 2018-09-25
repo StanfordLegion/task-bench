@@ -40,7 +40,6 @@ module load cmake/3.8.1
 module load gcc/6.3.0
 module load openmpi/2.1.1
 module load python/3.6.1
-module load java
 module load pcre
 ```
 
@@ -64,7 +63,6 @@ module unload PrgEnv-intel
 module load PrgEnv-gnu
 module load python/3.6-anaconda-4.4
 module load cmake
-module load java
 module load pcre
 export CC=cc
 export CXX=CC
