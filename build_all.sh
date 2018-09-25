@@ -47,9 +47,48 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     popd
 fi
 
-if [[ $USE_LEGION -eq 1 || $USE_REALM -eq 1 ]]; then
+(
+if [[ -n $TRAVIS ]]; then
+  if [[ "$(uname)" = "Linux" && "$CXX" = "g++"* ]]; then
+      export CXX="g++-4.9" CC="gcc-4.9"
+  elif [[ "$(uname)" = "Linux" && "$CXX" = "clang++"* ]]; then
+      export CXX="clang++-3.5" CC="clang-3.5"
+  fi
+fi
+if [[ -n $CRAYPE_VERSION ]]; then
+    export HOST_CC=gcc HOST_CXX=g++
+fi
+if [[ $USE_LEGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
     make -C legion clean
+    make -C regent clean
     make -C realm clean
+fi
+if [[ $USE_REGENT -eq 1 ]]; then
+    pushd "$REGENT_DIR"
+    if [[ $USE_GASNET -eq 1 ]]; then
+        ln -sf "$GASNET_DIR" gasnet
+    fi
+    (
+        if [[ -z $CC ]]; then
+            export CC=cc
+        fi
+        if [[ -z $CXX ]]; then
+            export CXX=c++
+        fi
+        unset LG_RT_DIR
+        if [[ -z $TRAVIS ]]; then
+            ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38
+        else
+            LLVM_CONFIG=llvm-config-3.5 ./install.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --rdir=auto
+        fi
+    )
+    popd
+    (
+        if [[ -n $CRAYPE_VERSION ]]; then
+            export CC=gcc CXX=g++
+        fi
+        make -C regent -j$THREADS
+    )
 fi
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j$THREADS
@@ -57,6 +96,7 @@ fi
 if [[ $USE_REALM -eq 1 ]]; then
     make -C realm -j$THREADS
 fi
+)
 
 if [[ $USE_STARPU -eq 1 ]]; then
     STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples "
