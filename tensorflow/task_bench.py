@@ -62,7 +62,7 @@ def build_task_graph_tensor(task_graph):
 
 
 ops = [no_input, one_input, two_input, three_input, four_input, five_input]
-def input_op(inputs, task_graph_tensor, timestep, point):
+def input_op(task_graph_tensor, timestep, point, inputs):
     op = ops[len(inputs)]
     return op(task_graph_tensor, timestep, point, *inputs)
 
@@ -101,7 +101,7 @@ def execute_task_graph(graph):
                 inputs = []
                 for dep in task_graph_dependencies(graph, timestep, point):
                     inputs.append(outputs[timestep - 1][dep])
-                row.append(input_op(inputs, graph_tensor, timestep, point))
+                row.append(input_op(graph_tensor, timestep, point, inputs))
         for point in range(offset + width, graph.max_width):
             row.append(None)
         assert(len(row) == graph.max_width)
