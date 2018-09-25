@@ -273,5 +273,7 @@ EOF
     bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
     rm Miniconda3-latest-Linux-x86_64.sh
     conda update -y conda
-    conda install -y tensorflow
+    # Hack: Try to install via pip to avoid compiler version incompatibility
+    # conda install -y tensorflow
+    pip install tensorflow
 fi)
