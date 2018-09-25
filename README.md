@@ -9,6 +9,7 @@ Implementations:
 [OpenMP](openmp),
 [PaRSEC](parsec),
 [Realm](realm),
+[Regent](regent),
 [Spark](spark),
 [StarPU](starpu),
 [Swift/T](swift)
