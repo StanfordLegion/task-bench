@@ -275,5 +275,6 @@ EOF
     conda update -y conda
     # Hack: Try to install via pip to avoid compiler version incompatibility
     # conda install -y tensorflow
+    conda install -y python=36
     pip install tensorflow
 fi)
