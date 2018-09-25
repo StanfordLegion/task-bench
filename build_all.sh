@@ -365,8 +365,12 @@ fi)
 
     export TF_CFLAGS="$(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))')"
     export TF_LFLAGS="$(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))')"
-    echo "TF_CFLAGS=$TF_CFLAGS"
-    echo "TF_LFLAGS=$TF_LFLAGS"
+
+    # Hack: Travis seems to get wrong setting, which breaks GCC-5.
+    if [[ -n $TRAVIS ]]; then
+        export TF_CFLAGS="$TF_CFLAGS -D_GLIBCXX_USE_CXX11_ABI=0"
+    fi
+
     make -C tensorflow/ops clean
     make -C tensorflow/ops all -j$THREADS
 fi)
