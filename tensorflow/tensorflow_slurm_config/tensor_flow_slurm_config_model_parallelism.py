@@ -6,6 +6,7 @@ import tensorflow as tf
 import re
 import os
 
+
 def tf_config_from_slurm(port_number=2222):
     """
     Creates configuration for a distributed tensorflow session 
@@ -16,48 +17,57 @@ def tf_config_from_slurm(port_number=2222):
     @return: a tuple containing cluster with fields cluster_spec,
              task_name and task_id 
     """
-    
+
     nodelist = os.environ["SLURM_JOB_NODELIST"]
     nodename = os.environ["SLURMD_NODENAME"]
     nodelist = _expand_nodelist(nodelist)
     num_nodes = int(os.getenv("SLURM_JOB_NUM_NODES"))
-    
+
     if len(nodelist) != num_nodes:
-        raise ValueError("Number of slurm nodes {} not equal to {}".format(len(nodelist), num_nodes))
-    
+        raise ValueError(
+            "Number of slurm nodes {} not equal to {}".format(len(nodelist), num_nodes)
+        )
+
     if nodename not in nodelist:
-        raise ValueError("Nodename({}) not in nodelist({}). This should not happen! ".format(nodename,nodelist))
-    
+        raise ValueError(
+            "Nodename({}) not in nodelist({}). This should not happen! ".format(
+                nodename, nodelist
+            )
+        )
+
     worker_nodes = [node for i, node in enumerate(nodelist)]
-    
-    
+
     my_job_name = "worker"
     my_task_index = worker_nodes.index(nodename)
-    
+
     worker_sockets = [":".join([node, str(port_number)]) for node in worker_nodes]
     cluster = {"worker": worker_sockets}
-    
+
     return cluster, my_job_name, my_task_index
 
+
 def _pad_zeros(iterable, length):
-    return (str(t).rjust(length, '0') for t in iterable)
-    
+    return (str(t).rjust(length, "0") for t in iterable)
+
+
 def _expand_ids(ids):
-    ids = ids.split(',')
+    ids = ids.split(",")
     result = []
     for id in ids:
-        if '-' in id:
-            begin, end = [int(token) for token in id.split('-')]
-            result.extend(_pad_zeros(range(begin, end+1), len(token)))
+        if "-" in id:
+            begin, end = [int(token) for token in id.split("-")]
+            result.extend(_pad_zeros(range(begin, end + 1), len(token)))
         else:
             result.append(id)
     return result
+
 
 def _expand_nodelist(nodelist):
     prefix, ids = re.findall("(.*)\[(.*)\]", nodelist)[0]
     ids = _expand_ids(ids)
     result = [prefix + str(id) for id in ids]
     return result
+
 
 def _worker_task_id(nodelist, nodename):
     return nodelist.index(nodename)
