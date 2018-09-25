@@ -1,8 +1,25 @@
+/* Copyright 2018 Stanford University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "tensorflow/core/framework/op.h"
 #include "tensorflow/core/framework/op_kernel.h"
 #include "tensorflow/core/framework/shape_inference.h"
 
 #include "core_c.h"
+
+#include "tf_core_wrapper.h"
 
 using namespace tensorflow;
 
@@ -61,17 +78,6 @@ public:
 		
 		task_graph_execute_point(task_graph, timestep, point, output_ptr, output_bytes, input_ptr, input_bytes, n_inputs);
 	}
-
-private:
-
-	task_graph_t constructTaskGraph(const Tensor& task_graph_tensor) {
-		auto tg = task_graph_tensor.flat<uint32>();
-
-		kernel_t kernel = { kernel_type_t(tg(4)), tg(5) };
-		task_graph_t task_graph = { tg(0), tg(1), dependence_type_t(tg(2)), tg(3), kernel, tg(6), tg(7) };
-		return task_graph;
-	}
-
 };
 
 // REGISTER_KERNEL_BUILDER(Name("OneInput").Device(DEVICE_CPU), OneInputOp);

@@ -5,7 +5,7 @@ CXX ?= g++
 DEBUG ?= 0
 
 CXXFLAGS ?=
-CXXFLAGS += -std=c++11 -I../../core -fPIC
+CXXFLAGS += -std=c++11 -I../../core -I. -fPIC
 
 LDFLAGS ?=
 LDFLAGS += -L../../core -lcore_s
