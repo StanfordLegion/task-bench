@@ -24,7 +24,7 @@
 using namespace tensorflow;
 
 REGISTER_OP("NoInput")
-    .Input("task_graph: uint32")
+    .Input("task_graph: uint8")
     .Input("timestep: int32")
     .Input("point: int32")
     .Attr("T: {int8, int16, int32, int64}")
@@ -47,8 +47,6 @@ public:
     auto point_input = point_tensor.flat<int32>();
     long timestep = timestep_input(0);
     long point = point_input(0);
-    // TESTING
-    std::cout << "TIMESTEP: " << timestep << " POINT: " << point << std::endl;
 
     TensorShape output_shape;
     output_shape.AddDim(2);

@@ -12,63 +12,52 @@ import numpy as np
 
 # load core header file, set up calling core in c with ffi
 core_header = subprocess.check_output(
-    ["gcc", "-D", "__attribute__(x)=", "-E", "-P", "../../../core/core_c.h"]
+    ["gcc", "-D", "__attribute__(x)=", "-E", "-P", "../core/core_c.h"]
 ).decode("utf-8")
 ffi = cffi.FFI()
 ffi.cdef(core_header)
-c = ffi.dlopen("../../../core/libcore.so")
+c = ffi.dlopen("libcore.so")
 
-no_input_module = tf.load_op_library("../../input_ops/no_input_op/no_input.so")
+no_input_module = tf.load_op_library("no_input.so")
 no_input = no_input_module.no_input
-one_input_module = tf.load_op_library("../../input_ops/one_input_op/one_input.so")
+one_input_module = tf.load_op_library("one_input.so")
 one_input = one_input_module.one_input
-two_input_module = tf.load_op_library("../../input_ops/two_input_op/two_input.so")
+two_input_module = tf.load_op_library("two_input.so")
 two_input = two_input_module.two_input
-three_input_module = tf.load_op_library("../../input_ops/three_input_op/three_input.so")
+three_input_module = tf.load_op_library("three_input.so")
 three_input = three_input_module.three_input
-four_input_module = tf.load_op_library("../../input_ops/four_input_op/four_input.so")
+four_input_module = tf.load_op_library("four_input.so")
 four_input = four_input_module.four_input
-five_input_module = tf.load_op_library("../../input_ops/five_input_op/five_input.so")
+five_input_module = tf.load_op_library("five_input.so")
 five_input = five_input_module.five_input
 
 
-def app_from_core():
-    argv_elements = []
+def app_create(args):
+    c_args = []
+    c_argv = ffi.new("char *[]", len(args) + 1)
+    for i, arg in enumerate(args):
+        c_args.append(ffi.new("char []", arg.encode('utf-8')))
+        c_argv[i] = c_args[-1]
+    c_argv[len(args)] = ffi.NULL
 
-    for a in sys.argv:
-        arg = ffi.new("char []", a)
-        argv_elements += [arg]
-
-    argv = ffi.new("char *[]", argv_elements)
-
-    app = c.app_create(len(argv_elements), argv)
+    app = c.app_create(len(args), c_argv)
     c.app_display(app)
     return app
 
 
-def task_graphs_from_core(app):
-    task_graphs = []
-    task_graph_list = c.app_task_graphs(app)
-    for tgi in range(c.task_graph_list_num_task_graphs(task_graph_list)):
-        task_graph = c.task_graph_list_task_graph(task_graph_list, tgi)
-        task_graphs = task_graphs + [task_graph]
+def app_task_graphs(app):
+    result = []
+    graphs = c.app_task_graphs(app)
+    for i in range(c.task_graph_list_num_task_graphs(graphs)):
+        result.append(c.task_graph_list_task_graph(graphs, i))
 
-    return task_graphs
+    return result
 
 
 def build_task_graph_tensor(task_graph):
     return tf.convert_to_tensor(
-        [
-            task_graph.timesteps,
-            task_graph.max_width,
-            task_graph.dependence,
-            task_graph.radix,
-            task_graph.kernel.type,
-            task_graph.kernel.iterations,
-            task_graph.output_bytes_per_task,
-            task_graph.scratch_bytes_per_task,
-        ],
-        dtype=tf.uint32,
+        [ord(x) for x in ffi.buffer(ffi.addressof(task_graph), ffi.sizeof(task_graph))],
+        dtype=tf.uint8,
     )
 
 
@@ -93,58 +82,68 @@ def input_op(inputs, task_graph_tensor, timestep, point):
             timestep,
             point,
         )
-    return five_input(
-        inputs[0],
-        inputs[1],
-        inputs[2],
-        inputs[3],
-        inputs[4],
-        task_graph_tensor,
-        timestep,
-        point,
-    )
+    elif len(inputs) == 5:
+        return five_input(
+            inputs[0],
+            inputs[1],
+            inputs[2],
+            inputs[3],
+            inputs[4],
+            task_graph_tensor,
+            timestep,
+            point,
+        )
+    else:
+        assert False
 
+def task_graph_dependencies(graph, timestep, point):
+    last_offset = c.task_graph_offset_at_timestep(graph, timestep - 1)
+    last_width = c.task_graph_width_at_timestep(graph, timestep - 1)
 
-def execute_task_graph(task_graph):
+    if timestep == 0:
+        last_offset, last_width = 0, 0
+
+    dset = c.task_graph_dependence_set_at_timestep(graph, timestep)
+    ilist = c.task_graph_dependencies(graph, dset, point)
+    for i in range(0, c.interval_list_num_intervals(ilist)):
+        interval = c.interval_list_interval(ilist, i)
+        for dep in range(interval.start, interval.end + 1):
+            if last_offset <= dep < last_offset + last_width:
+                yield dep
+
+def execute_task_graph(graph):
 
     sess = tf.Session()
 
-    task_graph_tensor = build_task_graph_tensor(task_graph)
+    graph_tensor = build_task_graph_tensor(graph)
 
     outputs = []
     last_row = []
-    for timestep in range(0, task_graph.timesteps):
-        # print("TIMESTEP", timestep)
-        offset_at_timestep = c.task_graph_offset_at_timestep(task_graph, timestep)
-        width_at_timestep = c.task_graph_width_at_timestep(task_graph, timestep)
-        dependence_set = c.task_graph_dependence_set_at_timestep(task_graph, timestep)
+    for timestep in range(0, graph.timesteps):
+        offset = c.task_graph_offset_at_timestep(graph, timestep)
+        width = c.task_graph_width_at_timestep(graph, timestep)
+        dset = c.task_graph_dependence_set_at_timestep(graph, timestep)
         row = []
-        for point in range(offset_at_timestep, offset_at_timestep + width_at_timestep):
-            with tf.name_scope("timestep-" + str(timestep) + "_node-" + str(point)):
-                # get dependencies
-                # print("	POINT", point)
-                point_inputs = []
-                intervals = c.task_graph_dependencies(task_graph, dependence_set, point)
-                for interval_index in range(
-                    0, c.interval_list_num_intervals(intervals)
-                ):
-                    interval = c.interval_list_interval(intervals, interval_index)
-                    for dep in range(interval.start, interval.end + 1):
-                        # print("		DEPENDENCY", dep)
-                        if timestep - 1 > -1:
-                            point_inputs += [outputs[timestep - 1][dep]]
+        for point in range(0, offset):
+            row.append(None)
+        for point in range(offset, offset + width):
+            with tf.name_scope("timestep-" + str(timestep) + "_point-" + str(point)):
+                inputs = []
+                for dep in task_graph_dependencies(graph, timestep, point):
+                    inputs.append(outputs[timestep - 1][dep])
+                row.append(input_op(inputs, graph_tensor, timestep, point))
+        for point in range(offset + width, graph.max_width):
+            row.append(None)
+        assert(len(row) == graph.max_width)
+        outputs.append(row)
 
-                row += [input_op(point_inputs, task_graph_tensor, timestep, point)]
-        outputs += [row]
-
-    print(sess.run(outputs[task_graph.timesteps - 1][range(0, task_graph.max_width)]))
-
+    sess.run(outputs[timestep][offset : offset + width])
 
 def execute_task_bench():
-    app = app_from_core()
-    task_graphs = task_graphs_from_core(app)
+    app = app_create(sys.argv)
+    task_graphs = app_task_graphs(app)
     start_time = time.time()
-    for tgi, task_graph in enumerate(task_graphs):
+    for task_graph in task_graphs:
         execute_task_graph(task_graph)
     total_time = time.time() - start_time
     c.app_report_timing(app, total_time)

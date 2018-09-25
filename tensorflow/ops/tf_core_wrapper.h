@@ -25,24 +25,13 @@
 using namespace tensorflow;
 
 inline task_graph_t constructTaskGraph(const Tensor& task_graph_tensor) {
-  auto tg = task_graph_tensor.flat<uint64>();
+  auto tg = task_graph_tensor.flat<uint8>();
 
-                
-  uint64_t fraction_connected = tg(6);
-  kernel_t kernel = { kernel_type_t(tg(7)), long(tg(8)), int(tg(9)) };
-  task_graph_t task_graph = {
-    long(tg(0)),
-    long(tg(1)),
-    long(tg(2)),
-    dependence_type_t(tg(3)),
-    long(tg(4)),
-    long(tg(5)),
-    *reinterpret_cast<double*>(&fraction_connected),
-    kernel,
-    size_t(tg(10)),
-    size_t(tg(11))
-  };
-  return task_graph;
+  task_graph_t result;
+  for (size_t i = 0; i < sizeof(result); ++i) {
+    reinterpret_cast<uint8_t *>(&result)[i] = tg(i);
+  }
+  return result;
 }
 
 #endif

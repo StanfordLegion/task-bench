@@ -26,7 +26,7 @@ using namespace tensorflow;
 REGISTER_OP("TwoInput")
     .Input("first_input: T")
     .Input("second_input: T")
-    .Input("task_graph: uint32")
+    .Input("task_graph: uint8")
     .Input("timestep: int32")
     .Input("point: int32")
     .Attr("T: {int8, int16, int32, int64}")
