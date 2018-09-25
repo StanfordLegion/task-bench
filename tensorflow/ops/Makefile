@@ -8,7 +8,7 @@ CXXFLAGS ?=
 CXXFLAGS += -std=c++11 -I../../core -I. -fPIC
 
 LDFLAGS ?=
-LDFLAGS += -L../../core -lcore_s
+LDFLAGS += -L../../core -lcore
 
 ifeq ($(strip $(DEBUG)),0)
 	CXXFLAGS += -O3
