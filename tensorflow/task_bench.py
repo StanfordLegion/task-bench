@@ -1,16 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
 import sys
-import os
 import cffi
 import subprocess
-import argparse
 import time
 
 import tensorflow as tf
-import numpy as np
 
-# load core header file, set up calling core in c with ffi
 core_header = subprocess.check_output(
     ["gcc", "-D", "__attribute__(x)=", "-E", "-P", "../core/core_c.h"]
 ).decode("utf-8")
@@ -18,18 +14,15 @@ ffi = cffi.FFI()
 ffi.cdef(core_header)
 c = ffi.dlopen("libcore.so")
 
-no_input_module = tf.load_op_library("no_input.so")
-no_input = no_input_module.no_input
-one_input_module = tf.load_op_library("one_input.so")
-one_input = one_input_module.one_input
-two_input_module = tf.load_op_library("two_input.so")
-two_input = two_input_module.two_input
-three_input_module = tf.load_op_library("three_input.so")
-three_input = three_input_module.three_input
-four_input_module = tf.load_op_library("four_input.so")
-four_input = four_input_module.four_input
-five_input_module = tf.load_op_library("five_input.so")
-five_input = five_input_module.five_input
+ops_module = tf.load_op_library("task_bench_ops.so")
+ops = [
+    ops_module.no_input,
+    ops_module.one_input,
+    ops_module.two_input,
+    ops_module.three_input,
+    ops_module.four_input,
+    ops_module.five_input
+]
 
 
 def app_create(args):
@@ -61,8 +54,7 @@ def build_task_graph_tensor(task_graph):
     )
 
 
-ops = [no_input, one_input, two_input, three_input, four_input, five_input]
-def input_op(task_graph_tensor, timestep, point, inputs):
+def kernel_op(task_graph_tensor, timestep, point, inputs):
     op = ops[len(inputs)]
     return op(task_graph_tensor, timestep, point, *inputs)
 
@@ -101,7 +93,7 @@ def execute_task_graph(graph):
                 inputs = []
                 for dep in task_graph_dependencies(graph, timestep, point):
                     inputs.append(outputs[timestep - 1][dep])
-                row.append(input_op(graph_tensor, timestep, point, inputs))
+                row.append(kernel_op(graph_tensor, timestep, point, inputs))
         for point in range(offset + width, graph.max_width):
             row.append(None)
         assert(len(row) == graph.max_width)

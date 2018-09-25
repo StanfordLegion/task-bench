@@ -1,4 +1,4 @@
-LIBS=no_input.so one_input.so two_input.so three_input.so four_input.so five_input.so
+LIBS=task_bench_ops.so
 
 CXX ?= g++
 
