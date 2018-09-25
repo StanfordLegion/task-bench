@@ -16,8 +16,6 @@ Implementations:
 
 ## Quickstart
 
-### Local
-
 To build and run just the Legion implementation, run:
 
 ```
@@ -47,6 +45,8 @@ And different kernels can be plugged in to the execution:
 ./legion/task_bench -kernel memory_bound -scratch 8192 -iter 16
 ./legion/task_bench -kernel load_imbalance -iter 1024
 ```
+
+## Instructions for Specific Machines
 
 ### Cori
 
