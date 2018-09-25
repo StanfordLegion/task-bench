@@ -27,6 +27,7 @@ export USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
 export USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
 export USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 export USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
+export USE_TENSORFLOW=${USE_TENSORFLOW:-$DEFAULT_FEATURES}
 EOF
 
 source deps/env.sh
@@ -250,3 +251,27 @@ EOF
     tar xfz swift-t-1.4.tar.gz -C "$SWIFT_DIR"
     rm swift-t-1.4.tar.gz
 fi
+
+(if [[ $USE_TENSORFLOW -eq 1 ]]; then
+    export TENSORFLOW_DIR="$PWD"/deps/tensorflow
+    cat >>deps/env.sh <<EOF
+export TENSORFLOW_DIR="$TENSORFLOW_DIR"
+# see tensorflow/env.sh for TensorFlow configuration
+EOF
+
+    mkdir -p "$TENSORFLOW_DIR"
+
+    cat >>"$TENSORFLOW_DIR"/env.sh <<EOF
+export TENSORFLOW_DIR="$TENSORFLOW_DIR"
+export CONDA_PREFIX="\$TENSORFLOW_DIR"/conda
+export PATH="\$CONDA_PREFIX"/bin:"\$PATH"
+EOF
+
+    source "$TENSORFLOW_DIR"/env.sh
+
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
+    rm Miniconda3-latest-Linux-x86_64.sh
+    conda update -y conda
+    conda install -y tensorflow
+fi)
