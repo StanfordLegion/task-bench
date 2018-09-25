@@ -48,7 +48,7 @@ void execute_kernel_memory(const Kernel &kernel,
 #if 1
   for (long iter = 0; iter < kernel.iterations; iter++) {
     size_t scratch_bytes = scratch_large_bytes / sample;
-    int idx = (timestep * iter) % kernel.sample;
+    int idx = (timestep * kernel.iterations + iter) % kernel.sample;
     char *scratch_ptr = scratch_large_ptr + idx * scratch_bytes;
     
     assert(scratch_bytes % 2 == 0);
@@ -159,7 +159,7 @@ void execute_kernel_daxpy(const Kernel &kernel,
 #ifdef USE_BLAS_KERNEL
   for (long iter = 0; iter < kernel.iterations; iter++) {  
     size_t scratch_bytes = scratch_large_bytes / sample;
-    int idx = (timestep * iter) % kernel.sample;
+    int idx = (timestep * kernel.iterations + iter) % kernel.sample;
     char *scratch_ptr = scratch_large_ptr + idx * scratch_bytes;
   
     int N = scratch_bytes / (2 * sizeof(double));
