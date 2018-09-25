@@ -61,40 +61,10 @@ def build_task_graph_tensor(task_graph):
     )
 
 
+ops = [no_input, one_input, two_input, three_input, four_input, five_input]
 def input_op(inputs, task_graph_tensor, timestep, point):
-    if len(inputs) == 0:
-        return no_input(task_graph_tensor, timestep, point)
-    elif len(inputs) == 1:
-        return one_input(inputs[0], task_graph_tensor, timestep, point)
-    elif len(inputs) == 2:
-        return two_input(inputs[0], inputs[1], task_graph_tensor, timestep, point)
-    elif len(inputs) == 3:
-        return three_input(
-            inputs[0], inputs[1], inputs[2], task_graph_tensor, timestep, point
-        )
-    elif len(inputs) == 4:
-        return four_input(
-            inputs[0],
-            inputs[1],
-            inputs[2],
-            inputs[3],
-            task_graph_tensor,
-            timestep,
-            point,
-        )
-    elif len(inputs) == 5:
-        return five_input(
-            inputs[0],
-            inputs[1],
-            inputs[2],
-            inputs[3],
-            inputs[4],
-            task_graph_tensor,
-            timestep,
-            point,
-        )
-    else:
-        assert False
+    op = ops[len(inputs)]
+    return op(task_graph_tensor, timestep, point, *inputs)
 
 def task_graph_dependencies(graph, timestep, point):
     last_offset = c.task_graph_offset_at_timestep(graph, timestep - 1)

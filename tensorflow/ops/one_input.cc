@@ -24,10 +24,10 @@
 using namespace tensorflow;
 
 REGISTER_OP("OneInput")
-    .Input("first_input: uint8")
     .Input("task_graph: uint8")
     .Input("timestep: int32")
     .Input("point: int32")
+    .Input("first_input: uint8")
     .Output("output: uint8");
 
 REGISTER_KERNEL_BUILDER(Name("OneInput").Device(DEVICE_CPU), TaskBenchOp);

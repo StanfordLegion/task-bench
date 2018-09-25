@@ -24,14 +24,14 @@
 using namespace tensorflow;
 
 REGISTER_OP("FiveInput")
+    .Input("task_graph: uint8")
+    .Input("timestep: int32")
+    .Input("point: int32")
     .Input("first_input: uint8")
     .Input("second_input: uint8")
     .Input("third_input: uint8")
     .Input("fourth_input: uint8")
     .Input("fifth_input: uint8")
-    .Input("task_graph: uint8")
-    .Input("timestep: int32")
-    .Input("point: int32")
     .Output("output: uint8");
 
 REGISTER_KERNEL_BUILDER(Name("FiveInput").Device(DEVICE_CPU), TaskBenchOp);

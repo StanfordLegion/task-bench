@@ -36,12 +36,16 @@ inline task_graph_t constructTaskGraph(const Tensor& task_graph_tensor) {
 
 inline void compute_generic(OpKernelContext* context)
 {
+  task_graph_t graph = constructTaskGraph(context->input(0));
+  long timestep = context->input(1).flat<int32>()(0);
+  long point = context->input(2).flat<int32>()(0);
+
   size_t n_inputs = context->num_inputs() - 3;
   std::vector<std::vector<char> > input_data;
   std::vector<const char *> input_ptrs;
   std::vector<size_t> input_bytes;
   for (size_t i = 0; i < n_inputs; ++i) {
-    auto input_tensor = context->input(i);
+    auto input_tensor = context->input(i + 3);
     auto input_flat = input_tensor.flat<uint8>();
 
     input_data.emplace_back(input_tensor.shape().num_elements());
@@ -52,10 +56,6 @@ inline void compute_generic(OpKernelContext* context)
     input_ptrs.push_back(input_data[i].data());
     input_bytes.push_back(input_data[i].size());
   }
-
-  task_graph_t graph = constructTaskGraph(context->input(n_inputs));
-  long timestep = context->input(n_inputs + 1).flat<int32>()(0);
-  long point = context->input(n_inputs + 2).flat<int32>()(0);
 
   std::vector<char> output(graph.output_bytes_per_task);
 
