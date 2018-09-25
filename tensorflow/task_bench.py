@@ -63,7 +63,7 @@ def build_task_graph_tensor(task_graph):
 
 def input_op(inputs, task_graph_tensor, timestep, point):
     if len(inputs) == 0:
-        return no_input(task_graph_tensor, timestep, point, tf.int8)
+        return no_input(task_graph_tensor, timestep, point)
     elif len(inputs) == 1:
         return one_input(inputs[0], task_graph_tensor, timestep, point)
     elif len(inputs) == 2:

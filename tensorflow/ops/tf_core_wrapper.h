@@ -34,4 +34,55 @@ inline task_graph_t constructTaskGraph(const Tensor& task_graph_tensor) {
   return result;
 }
 
+inline void compute_generic(OpKernelContext* context)
+{
+  size_t n_inputs = context->num_inputs() - 3;
+  std::vector<std::vector<char> > input_data;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  for (size_t i = 0; i < n_inputs; ++i) {
+    auto input_tensor = context->input(i);
+    auto input_flat = input_tensor.flat<uint8>();
+
+    input_data.emplace_back(input_tensor.shape().num_elements());
+    for (size_t j = 0; j < input_data[i].size(); ++j) {
+      input_data[i][j] = input_flat(j);
+    }
+
+    input_ptrs.push_back(input_data[i].data());
+    input_bytes.push_back(input_data[i].size());
+  }
+
+  task_graph_t graph = constructTaskGraph(context->input(n_inputs));
+  long timestep = context->input(n_inputs + 1).flat<int32>()(0);
+  long point = context->input(n_inputs + 2).flat<int32>()(0);
+
+  std::vector<char> output(graph.output_bytes_per_task);
+
+  task_graph_execute_point(graph, timestep, point,
+                           const_cast<char *>(output.data()), output.size(),
+                           input_ptrs.data(), input_bytes.data(), n_inputs);
+
+  TensorShape output_shape;
+  output_shape.AddDim(output.size());
+
+  Tensor* output_tensor = NULL;
+  OP_REQUIRES_OK(context,
+                 context->allocate_output(0, output_shape, &output_tensor));
+  auto output_flat = output_tensor->flat<uint8>();
+  for (size_t i = 0; i < output.size(); ++i) {
+    output_flat(i) = output[i];
+  }
+}
+
+class TaskBenchOp : public OpKernel {
+public:
+  explicit TaskBenchOp(OpKernelConstruction* context) : OpKernel(context) {}
+
+  void Compute(OpKernelContext* context) override
+  {
+    compute_generic(context);
+  }
+};
+
 #endif
