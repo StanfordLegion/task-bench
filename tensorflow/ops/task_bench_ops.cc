@@ -23,66 +23,12 @@
 
 using namespace tensorflow;
 
-REGISTER_OP("NoInput")
+REGISTER_OP("TaskBenchOp")
+    .Attr("n_inputs: int >= 0")
     .Input("task_graph: uint8")
     .Input("timestep: int32")
     .Input("point: int32")
+    .Input("inputs: n_inputs * uint8")
     .Output("output: uint8");
 
-REGISTER_KERNEL_BUILDER(Name("NoInput").Device(DEVICE_CPU), TaskBenchOp)
-
-
-REGISTER_OP("OneInput")
-    .Input("task_graph: uint8")
-    .Input("timestep: int32")
-    .Input("point: int32")
-    .Input("first_input: uint8")
-    .Output("output: uint8");
-
-REGISTER_KERNEL_BUILDER(Name("OneInput").Device(DEVICE_CPU), TaskBenchOp);
-
-REGISTER_OP("TwoInput")
-    .Input("task_graph: uint8")
-    .Input("timestep: int32")
-    .Input("point: int32")
-    .Input("first_input: uint8")
-    .Input("second_input: uint8")
-    .Output("output: uint8");
-
-REGISTER_KERNEL_BUILDER(Name("TwoInput").Device(DEVICE_CPU), TaskBenchOp);
-
-REGISTER_OP("ThreeInput")
-    .Input("task_graph: uint8")
-    .Input("timestep: int32")
-    .Input("point: int32")
-    .Input("first_input: uint8")
-    .Input("second_input: uint8")
-    .Input("third_input: uint8")
-    .Output("output: uint8");
-
-REGISTER_KERNEL_BUILDER(Name("ThreeInput").Device(DEVICE_CPU), TaskBenchOp);
-
-REGISTER_OP("FourInput")
-    .Input("task_graph: uint8")
-    .Input("timestep: int32")
-    .Input("point: int32")
-    .Input("first_input: uint8")
-    .Input("second_input: uint8")
-    .Input("third_input: uint8")
-    .Input("fourth_input: uint8")
-    .Output("output: uint8");
-
-REGISTER_KERNEL_BUILDER(Name("FourInput").Device(DEVICE_CPU), TaskBenchOp);
-
-REGISTER_OP("FiveInput")
-    .Input("task_graph: uint8")
-    .Input("timestep: int32")
-    .Input("point: int32")
-    .Input("first_input: uint8")
-    .Input("second_input: uint8")
-    .Input("third_input: uint8")
-    .Input("fourth_input: uint8")
-    .Input("fifth_input: uint8")
-    .Output("output: uint8");
-
-REGISTER_KERNEL_BUILDER(Name("FiveInput").Device(DEVICE_CPU), TaskBenchOp);
+REGISTER_KERNEL_BUILDER(Name("TaskBenchOp").Device(DEVICE_CPU), TaskBenchOp)

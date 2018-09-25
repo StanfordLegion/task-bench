@@ -14,15 +14,8 @@ ffi = cffi.FFI()
 ffi.cdef(core_header)
 c = ffi.dlopen("libcore.so")
 
-ops_module = tf.load_op_library("task_bench_ops.so")
-ops = [
-    ops_module.no_input,
-    ops_module.one_input,
-    ops_module.two_input,
-    ops_module.three_input,
-    ops_module.four_input,
-    ops_module.five_input
-]
+ops = tf.load_op_library("task_bench_ops.so")
+kernel_op = ops.task_bench_op
 
 
 def app_create(args):
@@ -53,10 +46,6 @@ def build_task_graph_tensor(task_graph):
         dtype=tf.uint8,
     )
 
-
-def kernel_op(task_graph_tensor, timestep, point, inputs):
-    op = ops[len(inputs)]
-    return op(task_graph_tensor, timestep, point, *inputs)
 
 def task_graph_dependencies(graph, timestep, point):
     last_offset = c.task_graph_offset_at_timestep(graph, timestep - 1)
