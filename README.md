@@ -12,7 +12,8 @@ Implementations:
 [Regent](regent),
 [Spark](spark),
 [StarPU](starpu),
-[Swift/T](swift)
+[Swift/T](swift),
+[TensorFlow](tensorflow)
 
 ## Quickstart
 

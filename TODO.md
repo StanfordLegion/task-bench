@@ -14,7 +14,6 @@
       * DARMA
       * OCR
       * X10
-      * TensorFlow
       * Dask
       * Ray
       * Nimbus
