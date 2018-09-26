@@ -296,7 +296,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   printf("      Fraction Connected: %f\n", 0.0);
   printf("      Kernel:\n");
   printf("        Type: %s\n", "empty");
-  printf("        Iterations: %ld\n", 0L);
+  printf("        Iterations: %ld\n", 1L);
   printf("      Output Bytes: %lu\n", 0LU);
   printf("      Scratch Bytes: %lu\n", 0LU);
 
