@@ -29,6 +29,7 @@ env:
     - USE_SPARK=1
     - USE_OMPSS=1
     - USE_SWIFT=1
+    - USE_TENSORFLOW=1
 matrix:
   exclude:
     - compiler: clang

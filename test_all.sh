@@ -202,6 +202,21 @@ fi)
     popd
 fi)
 
+(if [[ $USE_TENSORFLOW -eq 1 ]]; then
+    source "$TENSORFLOW_DIR"/env.sh
+
+    export LD_LIBRARY_PATH="$PWD"/core:"$PWD"/tensorflow/ops:"$LD_LIBRARY_PATH"
+
+    pushd tensorflow
+    for t in $extended_types; do
+        for k in "${compute_kernels[@]}"; do
+            python task_bench.py -steps 9 -type $t $k
+            python task_bench.py -steps 9 -type $t $k -and -steps 9 -type $t $k
+        done
+    done
+    popd
+fi)
+
 set +x
 
 echo

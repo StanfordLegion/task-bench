@@ -358,5 +358,15 @@ EOF
     popd
 fi)
 
+(if [[ $USE_TENSORFLOW -eq 1 ]]; then
+    source "$TENSORFLOW_DIR"/env.sh
+
+    export TF_CFLAGS="$(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))')"
+    export TF_LFLAGS="$(python -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))')"
+
+    make -C tensorflow/ops clean
+    make -C tensorflow/ops all -j$THREADS
+fi)
+
 echo
 echo "Build completed successfully."
