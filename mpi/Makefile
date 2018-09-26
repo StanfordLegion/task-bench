@@ -6,7 +6,6 @@ CXXFLAGS ?=
 CXXFLAGS += -std=c++11 -I../core
 
 LDFLAGS ?=
-# FIXME: Would prefer static linking, but some MPI implementations don't support it.
 LDFLAGS += -L../core -lcore_s
 
 ifeq ($(strip $(DEBUG)),0)

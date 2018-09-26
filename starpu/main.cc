@@ -425,16 +425,19 @@ void StarPUApp::parse_argument(int argc, char **argv)
 {
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-mb")) {
-      MB = atol(argv[++i]);
+      MB = atoi(argv[++i]);
     }
     if (!strcmp(argv[i], "-core")) {
-      nb_cores = atol(argv[++i]);
+      nb_cores = atoi(argv[++i]);
     }
     if (!strcmp(argv[i], "-p")) {
-      P = atol(argv[++i]);
+      P = atoi(argv[++i]);
     }
     if (!strcmp(argv[i], "-field")) {
-      nb_fields_arg = atol(argv[++i]);
+      nb_fields_arg = atoi(argv[++i]);
+    }
+    if (!strcmp(argv[i], "-S")) {
+      starpu_enable_supertiling = true;
     }
   }
 }
@@ -522,7 +525,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
     mat.NT = graph.max_width;
     mat.MT = nb_fields;
   
-    debug_printf(0, "mb %d, mt %d, nt %d, timesteps %d\n", MB, mat.MT, mat.NT, graph.timesteps);
+    debug_printf(0, "mb %d, mt %d, nt %d, timesteps %d, enable_supertiling %d\n", MB, mat.MT, mat.NT, graph.timesteps, starpu_enable_supertiling);
     assert (graph.output_bytes_per_task <= sizeof(float) * MB * MB);
 
     mat.ddescA = create_and_distribute_data(rank, world, MB, MB, mat.MT, mat.NT, P, Q, i);

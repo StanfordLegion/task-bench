@@ -14,38 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef TIMER_H
-#define TIMER_H
+#include "timer.h"
 
-#include <cstddef>
-
-#include <sys/time.h>
-
-struct Timer {
-public:
-  static double time_elapsed;
-  
-  static inline double get_cur_time()
-  {
-    struct timeval tv;
-    double t;
-
-    gettimeofday(&tv,NULL);
-    t = tv.tv_sec + tv.tv_usec / 1e6;
-    return t;
-  }
-  
-  static inline double time_start()
-  {
-    time_elapsed = get_cur_time();
-    return time_elapsed;
-  }
-  
-  static inline double time_end()
-  {
-    time_elapsed = get_cur_time() - time_elapsed;
-    return time_elapsed;
-  }
-};
-
-#endif //TIMER_H
+double Timer::time_elapsed = 0;

@@ -17,6 +17,7 @@ export TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 export USE_GASNET=${USE_GASNET:-0}
 export TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
 export USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
+export USE_REGENT=${USE_REGENT:-$DEFAULT_FEATURES}
 export USE_REALM=${USE_REALM:-$DEFAULT_FEATURES}
 export USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 export USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
@@ -26,6 +27,7 @@ export USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
 export USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
 export USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 export USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
+export USE_TENSORFLOW=${USE_TENSORFLOW:-$DEFAULT_FEATURES}
 EOF
 
 source deps/env.sh
@@ -39,7 +41,7 @@ if [[ $USE_GASNET -eq 1 ]]; then
     export GASNET_DIR="$PWD"/deps/gasnet
     cat >>deps/env.sh <<EOF
 export GASNET_DIR="$GASNET_DIR"
-export GASNET="$GASNET_DIR"/release
+export GASNET="\$GASNET_DIR"/release
 export CONDUIT=$CONDUIT
 EOF
     git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
@@ -57,13 +59,15 @@ EOF
     rm -rf hwloc-1.11.10.tar.gz
 fi
 
-if [[ $USE_LEGION -eq 1 || $USE_REALM -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
     export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
-export LG_RT_DIR="$LEGION_DIR"/runtime
+export LEGION_DIR="$LEGION_DIR"
+export LG_RT_DIR="\$LEGION_DIR"/runtime
+export REGENT_DIR="\$LEGION_DIR"/language
 export USE_LIBDL=0
 EOF
-    git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+    git clone -b master https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
@@ -152,19 +156,25 @@ fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
     export SPARK_DIR="$PWD"/deps/spark
-    export SPARK_SWIG_DIR=$SPARK_DIR/swig-3.0.12
-    export JAVA_HOME="$SPARK_DIR"/jdk1.8.0_131
     cat >>deps/env.sh <<EOF
-export SPARK_DIR=$SPARK_DIR
-export SPARK_SRC_DIR=$SPARK_DIR/spark-2.3.0-bin-hadoop2.7  
-export SPARK_SBT_DIR=$SPARK_DIR/sbt/bin 
-export SPARK_SWIG_DIR=$SPARK_SWIG_DIR
-export SPARK_PROJ_DIR="$PWD"/spark
-export CORE_DIR="$PWD"/core
-export JAVA_HOME="$JAVA_HOME"
+export SPARK_DIR="$SPARK_DIR"
+# see spark/env.sh for Spark configuration
+EOF
+
+    mkdir -p "$SPARK_DIR"
+
+    cat >>"$SPARK_DIR"/env.sh <<EOF
+export SPARK_DIR="$SPARK_DIR"
+export SPARK_PREFIX="\$SPARK_DIR"/install
+export SPARK_SRC_DIR="\$SPARK_DIR"/spark-2.3.0-bin-hadoop2.7
+export SPARK_SBT_DIR="\$SPARK_DIR"/sbt/bin
+export SPARK_SWIG_DIR="\$SPARK_DIR"/swig-3.0.12
+export PATH="\$SPARK_PREFIX/bin:\$PATH"
+
+export JAVA_HOME="\$SPARK_DIR"/jdk1.8.0_131
 export PATH="\$JAVA_HOME/bin:\$PATH"
 EOF
-    mkdir -p "$SPARK_DIR"
+
     pushd "$SPARK_DIR"
     # don't install Scala--use 2.11.8 that comes with Spark 2.3.0
 
@@ -193,37 +203,42 @@ fi
 
 if [[ $USE_SWIFT -eq 1 ]]; then
     export SWIFT_DIR="$PWD"/deps/swift
-    export SWIFT_PREFIX="$SWIFT_DIR"/install
     cat >>deps/env.sh <<EOF
-export SWIFT_DIR=$SWIFT_DIR
-export SWIFT_PREFIX=$SWIFT_PREFIX
+export SWIFT_DIR="$SWIFT_DIR"
+# see swift/env.sh for Swift/T configuration
 EOF
-    mkdir -p "$SWIFT_DIR"
-    mkdir -p "$SWIFT_PREFIX"
-    mkdir -p "$SWIFT_PREFIX"/src
 
-    pushd "$SWIFT_PREFIX"/src
-    git clone git://anongit.freedesktop.org/git/xorg/util/modular util/modular
-    popd
+    mkdir -p "$SWIFT_DIR"
+
+    cat >>"$SWIFT_DIR"/env.sh <<EOF
+export SWIFT_DIR="$SWIFT_DIR"
+export SWIFT_PREFIX="\$SWIFT_DIR"/install
+export PATH="\$SWIFT_PREFIX"/bin:"\$SWIFT_PREFIX"/stc/bin:"\$SWIFT_PREFIX"/turbine/bin:"\$PATH"
+export LD_LIBRARY_PATH="\$SWIFT_PREFIX"/lib:"\$LD_LIBRARY_PATH"
+
+export JAVA_HOME="\$SWIFT_DIR"/java
+export PATH="\$JAVA_HOME"/bin:"\$PATH"
+
+export ANT_HOME="\$SWIFT_DIR"/ant
+export PATH="\$ANT_HOME"/bin:"\$PATH"
+EOF
 
     wget https://prdownloads.sourceforge.net/tcl/tcl8.6.8-src.tar.gz
     tar xfz tcl8.6.8-src.tar.gz -C "$SWIFT_DIR"
     rm tcl8.6.8-src.tar.gz
 
-    wget https://prdownloads.sourceforge.net/tcl/tk8.6.8-src.tar.gz
-    tar xfz tk8.6.8-src.tar.gz -C "$SWIFT_DIR"
-    rm tk8.6.8-src.tar.gz
-
     wget https://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz
     tar xfz swig-3.0.12.tar.gz -C "$SWIFT_DIR"
     rm swig-3.0.12.tar.gz
 
-    wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/10.0.2+13/19aef61b38124481863b1413dce1855f/jdk-10.0.2_linux-x64_bin.tar.gz
-    tar xfz jdk-10.0.2_linux-x64_bin.tar.gz -C "$SWIFT_DIR"
-    rm jdk-10.0.2_linux-x64_bin.tar.gz
+    wget https://download.java.net/java/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_linux-x64_bin.tar.gz
+    mkdir "$SWIFT_DIR"/java
+    tar xfz openjdk-10.0.2_linux-x64_bin.tar.gz -C "$SWIFT_DIR"/java --strip-components=1
+    rm openjdk-10.0.2_linux-x64_bin.tar.gz
 
     wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.5-bin.tar.gz
-    tar xfz apache-ant-1.10.5-bin.tar.gz -C "$SWIFT_DIR"
+    mkdir "$SWIFT_DIR"/ant
+    tar xfz apache-ant-1.10.5-bin.tar.gz -C "$SWIFT_DIR"/ant --strip-components=1
     rm apache-ant-1.10.5-bin.tar.gz
 
     wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz
@@ -238,3 +253,30 @@ EOF
     tar xfz swift-t-1.4.tar.gz -C "$SWIFT_DIR"
     rm swift-t-1.4.tar.gz
 fi
+
+(if [[ $USE_TENSORFLOW -eq 1 ]]; then
+    export TENSORFLOW_DIR="$PWD"/deps/tensorflow
+    cat >>deps/env.sh <<EOF
+export TENSORFLOW_DIR="$TENSORFLOW_DIR"
+# see tensorflow/env.sh for TensorFlow configuration
+EOF
+
+    mkdir -p "$TENSORFLOW_DIR"
+
+    cat >>"$TENSORFLOW_DIR"/env.sh <<EOF
+export TENSORFLOW_DIR="$TENSORFLOW_DIR"
+export CONDA_PREFIX="\$TENSORFLOW_DIR"/conda
+export PATH="\$CONDA_PREFIX"/bin:"\$PATH"
+EOF
+
+    source "$TENSORFLOW_DIR"/env.sh
+
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
+    rm Miniconda3-latest-Linux-x86_64.sh
+    conda update -y conda
+    # Hack: Try to install via pip to avoid compiler version incompatibility
+    # conda install -y tensorflow
+    conda install -y python=3.6
+    pip install tensorflow
+fi)

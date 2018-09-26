@@ -69,6 +69,7 @@ struct starpu_ddesc_s {
   starpu_data_handle_t *starpu_handle;   // scheduler (QUARK|StarPU) specific structure
 };
 
+extern bool starpu_enable_supertiling;
 
 starpu_ddesc_t* create_and_distribute_data(int rank, int world, int mb, int nb, int mt, int nt, int p, int q, int desc_id);
 

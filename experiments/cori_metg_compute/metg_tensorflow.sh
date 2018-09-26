@@ -6,14 +6,16 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-module unload PrgEnv-intel
-module load PrgEnv-gnu
-module load openmpi
-
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
+source ../../deps/tensorflow/env.sh
+
+export LD_LIBRARY_PATH="$PWD"/../../core:"$PWD"/../../tensorflow/ops:"$LD_LIBRARY_PATH"
+
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../starpu/main "${@:2}" -width $(( $1 * cores )) -core $cores -p 1 -field 2 -S
+    pushd ../../tensorflow
+    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none python task_bench.py "${@:2}" -width $(( $1 * cores ))
+    popd
 }
 
 function sweep {
@@ -28,6 +30,6 @@ function sweep {
 
 for n in $SLURM_JOB_NUM_NODES; do
     for t in stencil_1d; do
-        sweep launch $n $t > starpu_type_${t}_nodes_${n}.log
+        sweep launch $n $t > tensorflow_type_${t}_nodes_${n}.log
     done
 done

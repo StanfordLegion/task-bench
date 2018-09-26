@@ -43,6 +43,7 @@ typedef enum kernel_type_t {
   BUSY_WAIT,
   MEMORY_BOUND,
   COMPUTE_DGEMM,
+  MEMORY_DAXPY,
   COMPUTE_BOUND,
   COMPUTE_BOUND2,
   IO_BOUND,
@@ -52,7 +53,7 @@ typedef enum kernel_type_t {
 typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
-  long jump;      // memory kernel parameter
+  int sample;
 } kernel_t;
 
 typedef struct interval_t {

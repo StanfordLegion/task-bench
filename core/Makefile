@@ -1,6 +1,6 @@
 SLIB=libcore.a
 DLIB=libcore.so
-OBJS=core.o core_c.o core_kernel.o murmur_hash3.o
+OBJS=core.o core_c.o core_kernel.o murmur_hash3.o timer.o
 COBJS=core_random.o
 HEADERS=core.h core_c.h core_kernel.h core_random.h murmur_hash3.h timer.h
 
@@ -54,6 +54,7 @@ else
 	LDFLAGS += -L. -Wl,--whole-archive -lcore -Wl,--no-whole-archive
 endif
 
+include make_blas.mk
 
 .PHONY: all
 all: $(SLIB) $(DLIB) $(SLIB_SYMLINK)
