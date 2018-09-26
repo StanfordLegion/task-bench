@@ -301,7 +301,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   {
     last_stop_bar.wait();
 #ifndef NDEBUG
-    book ok =
+    bool ok =
 #endif
       last_stop_bar.get_result(&last_stop, sizeof(last_stop));
     assert(ok);
