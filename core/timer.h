@@ -17,6 +17,8 @@
 #ifndef TIMER_H
 #define TIMER_H
 
+#include <cstddef>
+
 #include <sys/time.h>
 
 struct Timer {
@@ -45,8 +47,5 @@ public:
     return time_elapsed;
   }
 };
-
-double Timer::time_elapsed = 0;
-
 
 #endif //TIMER_H

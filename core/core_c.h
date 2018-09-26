@@ -43,6 +43,7 @@ typedef enum kernel_type_t {
   BUSY_WAIT,
   MEMORY_BOUND,
   COMPUTE_DGEMM,
+  MEMORY_DAXPY,
   COMPUTE_BOUND,
   COMPUTE_BOUND2,
   IO_BOUND,
@@ -52,10 +53,8 @@ typedef enum kernel_type_t {
 typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
-  long jump;      // memory kernel parameter
+  int sample;
 } kernel_t;
-
-void kernel_execute(kernel_t kernel);
 
 typedef struct interval_t {
   // represents the INCLUSIVE interval from start to end
@@ -72,6 +71,7 @@ long interval_list_num_intervals(interval_list_t intervals);
 interval_t interval_list_interval(interval_list_t intervals, long index);
 
 typedef struct task_graph_t {
+  long graph_index;
   long timesteps;
   long max_width;
   dependence_type_t dependence;
@@ -105,6 +105,11 @@ void task_graph_execute_point_nonconst(task_graph_t graph, long timestep, long p
                                        char *output_ptr, size_t output_bytes,
                                        char **input_ptr, const size_t *input_bytes,
                                        size_t n_inputs);
+void task_graph_execute_point_scratch_nonconst(task_graph_t graph, long timestep, long point,
+                                               char *output_ptr, size_t output_bytes,
+                                               char **input_ptr, const size_t *input_bytes,
+                                               size_t n_inputs,
+                                               char *scratch_ptr, size_t scratch_bytes);
 
 typedef struct task_graph_list_t {
   void *impl;

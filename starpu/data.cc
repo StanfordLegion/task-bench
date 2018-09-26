@@ -24,6 +24,8 @@ static int tag_width = 31;
 static int tag_sep   = 24;
 static int _tag_mpi_initialized_ = 0;
 
+bool starpu_enable_supertiling = false;
+
 #define BLKLDD(A, k) A->get_blkldd( A,k )
 
 inline static int elem_size(int type)
@@ -42,8 +44,16 @@ inline static void* getaddr_ccrb(const starpu_ddesc_t *A, int m, int n)
   size_t offset = 0;
 
   assert( A->myrank == A->get_rankof( A, mm, nn) );
-  mm = mm / A->p;
-  nn = nn / A->q;
+  
+  if (starpu_enable_supertiling == false) {
+    mm = mm / A->p;
+    nn = nn / A->q;
+  } else {
+    int stp = A->mt / A->p;
+    int stq = A->nt / A->q;
+    mm = mm % stp;
+    nn = nn % stq;
+  }
 
   if (mm < (size_t)(A->llm1)) {
     if (nn < (size_t)(A->lln1))
@@ -57,6 +67,8 @@ inline static void* getaddr_ccrb(const starpu_ddesc_t *A, int m, int n)
     else
       offset = A->A22;
   }
+  
+//  printf("getaddr_ccrb m %d, n %d, mm %d, nn %d, offset %d, size %d\n", m, n, mm, nn, offset, offset*eltsize);
 
   return (void*)((intptr_t)A->mat + (offset*eltsize) );
 }
@@ -69,7 +81,16 @@ inline static int getblkldd_ccrb(const starpu_ddesc_t *A, int m)
 
 inline static int getrankof_2d(const starpu_ddesc_t *desc, int m, int n)
 {
-  return (m % desc->p) * desc->q + (n % desc->q);
+  if (starpu_enable_supertiling == false) {
+    return (m % desc->p) * desc->q + (n % desc->q);
+  } else {
+    int stp = desc->mt / desc->p;
+    int stq = desc->nt / desc->q;
+    int stm = m / stp;
+    int stn = n / stq;
+   // printf("getrankof_2d m %d, n %d, rank %d\n", m, n, (stm % desc->p) * desc->q + (stn % desc->q));
+    return (stm % desc->p) * desc->q + (stn % desc->q);
+  }
 }
 
 static void desc_init( starpu_ddesc_t *ddesc, int dtyp, int mb, int nb, int bsiz,
@@ -141,7 +162,10 @@ static void desc_init( starpu_ddesc_t *ddesc, int dtyp, int mb, int nb, int bsiz
     ddesc->lln  = 0;
     ddesc->llm1 = 0;
     ddesc->lln1 = 0;
+    assert(0);
   }
+  
+//  printf("desc_init llmt %d, llnt %d\n", ddesc->llmt, ddesc->llnt);
 
   ddesc->mat = NULL;
   ddesc->A21 = (size_t)(ddesc->llm - ddesc->llm%mb)*(size_t)(ddesc->lln - ddesc->lln%nb);

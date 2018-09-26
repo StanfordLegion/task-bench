@@ -104,7 +104,7 @@ def analyze(filename, nodes, cores, threshold, peak_flops, peak_bytes):
 
         # Perform linear interpolation if subsequent data point is an improvment:
         min_time = table['time_per_task'][min_i]
-        if table['time_per_task'][min_i + 1] < min_time:
+        if len(table['time_per_task']) > 1 and table['time_per_task'][min_i + 1] < min_time:
             min_time = numpy.interp(
                 threshold,
                 numpy.flip(table['efficiency'][min_i:min_i+2], 0),

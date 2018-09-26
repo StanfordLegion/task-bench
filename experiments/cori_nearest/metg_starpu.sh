@@ -3,7 +3,7 @@
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --exclusive
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --mail-type=ALL
 
 module unload PrgEnv-intel
@@ -13,7 +13,7 @@ module load openmpi
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../starpu/main "${@:2}" -width $(( $1 * cores )) -core $cores -p 1 -field 2
+    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../starpu/main "${@:2}" -width $(( $1 * cores )) -core $cores -p 1 -field 2 -S
 }
 
 function sweep {
