@@ -76,6 +76,8 @@ if [[ $USE_STARPU -eq 1 ]]; then
             mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 2 -core 2
             mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 4 -core 2
             mpirun -np 1 ./starpu/main -steps 9 -type $t $k -and -steps 9 -type $t $k -core 2
+            mpirun -np 4 ./starpu/main -steps 16 -width 8 -type $t $k -p 1 -core 2 -S
+            mpirun -np 4 ./starpu/main -steps 16 -width 8 -type $t $k -and -steps 16 -width 8 -type $t $k -core 2 -p 1 -S
         done
     done
 fi
