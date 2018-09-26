@@ -216,10 +216,10 @@ export SWIFT_PREFIX="\$SWIFT_DIR"/install
 export PATH="\$SWIFT_PREFIX"/bin:"\$SWIFT_PREFIX"/stc/bin:"\$SWIFT_PREFIX"/turbine/bin:"\$PATH"
 export LD_LIBRARY_PATH="\$SWIFT_PREFIX"/lib:"\$LD_LIBRARY_PATH"
 
-export JAVA_HOME="\$SWIFT_DIR"/jdk-10.0.2
+export JAVA_HOME="\$SWIFT_DIR"/java
 export PATH="\$JAVA_HOME"/bin:"\$PATH"
 
-export ANT_HOME="\$SWIFT_DIR"/apache-ant-1.10.5
+export ANT_HOME="\$SWIFT_DIR"/ant
 export PATH="\$ANT_HOME"/bin:"\$PATH"
 EOF
 
@@ -231,12 +231,14 @@ EOF
     tar xfz swig-3.0.12.tar.gz -C "$SWIFT_DIR"
     rm swig-3.0.12.tar.gz
 
-    wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/10.0.2+13/19aef61b38124481863b1413dce1855f/jdk-10.0.2_linux-x64_bin.tar.gz
-    tar xfz jdk-10.0.2_linux-x64_bin.tar.gz -C "$SWIFT_DIR"
-    rm jdk-10.0.2_linux-x64_bin.tar.gz
+    wget https://download.java.net/java/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_linux-x64_bin.tar.gz
+    mkdir "$SWIFT_DIR"/java
+    tar xfz openjdk-10.0.2_linux-x64_bin.tar.gz -C "$SWIFT_DIR"/java --strip-components=1
+    rm openjdk-10.0.2_linux-x64_bin.tar.gz
 
     wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.5-bin.tar.gz
-    tar xfz apache-ant-1.10.5-bin.tar.gz -C "$SWIFT_DIR"
+    mkdir "$SWIFT_DIR"/ant
+    tar xfz apache-ant-1.10.5-bin.tar.gz -C "$SWIFT_DIR"/ant --strip-components=1
     rm apache-ant-1.10.5-bin.tar.gz
 
     wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz
