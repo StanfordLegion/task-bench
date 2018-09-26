@@ -154,7 +154,7 @@ EOF
     rm -rf ompss-17.12.1.tar.gz
 fi
 
-if [[ $USE_SPARK -eq 1 ]]; then
+(if [[ $USE_SPARK -eq 1 ]]; then
     export SPARK_DIR="$PWD"/deps/spark
     cat >>deps/env.sh <<EOF
 export SPARK_DIR="$SPARK_DIR"
@@ -175,6 +175,8 @@ export JAVA_HOME="\$SPARK_DIR"/java
 export PATH="\$JAVA_HOME/bin:\$PATH"
 EOF
 
+    source "$SPARK_DIR"/env.sh
+
     pushd "$SPARK_DIR"
 
     # Java
@@ -192,7 +194,7 @@ EOF
     # SWIG
     wget https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
     mkdir "$SPARK_SWIG_DIR"
-    tar xfz swig-3.0.12.tar.gz -C "$SPARK_SRC_DIR" --strip-components=1
+    tar xfz swig-3.0.12.tar.gz -C "$SPARK_SWIG_DIR" --strip-components=1
     rm swig-3.0.12.tar.gz
 
     # SBT
@@ -202,7 +204,7 @@ EOF
     rm sbt-1.1.6.tgz
 
     popd
-fi
+fi)
 
 if [[ $USE_SWIFT -eq 1 ]]; then
     export SWIFT_DIR="$PWD"/deps/swift
