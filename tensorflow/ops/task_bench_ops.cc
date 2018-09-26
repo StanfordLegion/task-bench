@@ -1,5 +1,4 @@
 /* Copyright 2018 Stanford University
- * Copyright 2018 Los Alamos National Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,38 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef TIMER_H
-#define TIMER_H
+#include "tensorflow/core/framework/op.h"
+#include "tensorflow/core/framework/op_kernel.h"
+#include "tensorflow/core/framework/shape_inference.h"
 
-#include <cstddef>
+#include "core_c.h"
 
-#include <sys/time.h>
+#include "tf_core_wrapper.h"
 
-struct Timer {
-public:
-  static double time_elapsed;
-  
-  static inline double get_cur_time()
-  {
-    struct timeval tv;
-    double t;
+using namespace tensorflow;
 
-    gettimeofday(&tv,NULL);
-    t = tv.tv_sec + tv.tv_usec / 1e6;
-    return t;
-  }
-  
-  static inline double time_start()
-  {
-    time_elapsed = get_cur_time();
-    return time_elapsed;
-  }
-  
-  static inline double time_end()
-  {
-    time_elapsed = get_cur_time() - time_elapsed;
-    return time_elapsed;
-  }
-};
+REGISTER_OP("TaskBenchOp")
+    .Attr("n_inputs: int >= 0")
+    .Input("task_graph: uint8")
+    .Input("timestep: int32")
+    .Input("point: int32")
+    .Input("inputs: n_inputs * uint8")
+    .Output("output: uint8");
 
-#endif //TIMER_H
+REGISTER_KERNEL_BUILDER(Name("TaskBenchOp").Device(DEVICE_CPU), TaskBenchOp)

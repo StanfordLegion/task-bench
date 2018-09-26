@@ -29,8 +29,10 @@
 #include "core_kernel.h"
 #include "core_random.h"
 
+#ifdef DEBUG_CORE
 typedef unsigned long long TaskGraphMask;
 static std::atomic<TaskGraphMask> has_executed_graph;
+#endif
 
 void Kernel::execute(long graph_index, long timestep, long point,
                      char *scratch_ptr, size_t scratch_bytes) const
@@ -45,12 +47,17 @@ void Kernel::execute(long graph_index, long timestep, long point,
   case KernelType::MEMORY_BOUND:
     assert(scratch_ptr != NULL);
     assert(scratch_bytes > 0);
-    execute_kernel_memory(*this, scratch_ptr, scratch_bytes);
+    execute_kernel_memory(*this, scratch_ptr, scratch_bytes, timestep, sample);
     break;
   case KernelType::COMPUTE_DGEMM:
     assert(scratch_ptr != NULL);
     assert(scratch_bytes > 0);
     execute_kernel_dgemm(*this, scratch_ptr, scratch_bytes);
+    break;
+  case KernelType::MEMORY_DAXPY:
+    assert(scratch_ptr != NULL);
+    assert(scratch_bytes > 0);
+    execute_kernel_daxpy(*this, scratch_ptr, scratch_bytes, timestep, sample);
     break;  
   case KernelType::COMPUTE_BOUND:
     execute_kernel_compute(*this);
@@ -79,6 +86,7 @@ static const std::map<std::string, KernelType> &ktype_by_name()
     types["busy_wait"] = KernelType::BUSY_WAIT;
     types["memory_bound"] = KernelType::MEMORY_BOUND;
     types["compute_dgemm"] = KernelType::COMPUTE_DGEMM;
+    types["memory_daxpy"] = KernelType::MEMORY_DAXPY;
     types["compute_bound"] = KernelType::COMPUTE_BOUND;
     types["compute_bound2"] = KernelType::COMPUTE_BOUND2;
     types["io_bound"] = KernelType::IO_BOUND;
@@ -434,9 +442,11 @@ void TaskGraph::execute_point(long timestep, long point,
                               size_t n_inputs,
                               char *scratch_ptr, size_t scratch_bytes) const
 {
+#ifdef DEBUG_CORE
   // Validate graph_index
   assert(graph_index >= 0 && graph_index < sizeof(TaskGraphMask)*8);
   has_executed_graph |= 1 << graph_index;
+#endif
 
   // Validate timestep and point
   assert(0 <= timestep && timestep < timesteps);
@@ -505,7 +515,7 @@ static TaskGraph default_graph(long graph_index)
   graph.radix = 3;
   graph.period = -1;
   graph.fraction_connected = 0.25;
-  graph.kernel = {KernelType::EMPTY, 0, 0};
+  graph.kernel = {KernelType::EMPTY, 0, 16};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
   graph.scratch_bytes_per_task = 0;
 
@@ -521,6 +531,7 @@ void needs_argument(int i, int argc, const char *flag) {
 
 App::App(int argc, char **argv)
   : verbose(false)
+  , enable_graph_validation(true)
 {
   TaskGraph graph = default_graph(graphs.size());
 
@@ -528,6 +539,10 @@ App::App(int argc, char **argv)
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-v")) {
       verbose = true;
+    }
+
+    if (!strcmp(argv[i], "-skip-graph-validation")) {
+      enable_graph_validation = false;
     }
 
     if (!strcmp(argv[i], "-steps")) {
@@ -635,14 +650,14 @@ App::App(int argc, char **argv)
       graph.scratch_bytes_per_task = value;
     }
 
-    if (!strcmp(argv[i], "-jump")) {
-      needs_argument(i, argc, "-jump");
-      long value  = atol(argv[++i]);
+    if (!strcmp(argv[i], "-sample")) {
+      needs_argument(i, argc, "-sample");
+      int value  = atoi(argv[++i]);
       if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-jump %ld\" must be >= 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"-sample %ld\" must be >= 0\n", value);
         abort();
       }
-      graph.kernel.jump = value;
+      graph.kernel.sample = value;
     }
 
     if (!strcmp(argv[i], "-and")) {
@@ -665,10 +680,12 @@ App::App(int argc, char **argv)
 
 void App::check() const
 {
+#ifdef DEBUG_CORE
   if (graphs.size() >= sizeof(TaskGraphMask)*8) {
     fprintf(stderr, "error: Can only execute up to %lu task graphs\n", sizeof(TaskGraphMask)*8);
     abort();
   }
+#endif
 
   // Validate task graph is well-formed
   for (auto g : graphs) {
@@ -777,6 +794,9 @@ long long flops_per_task(const TaskGraph &g)
     long N = sqrt(g.scratch_bytes_per_task / (3 * sizeof(double))); 
     return 2 * N * N * N * g.kernel.iterations;
   }
+  
+  case KernelType::MEMORY_DAXPY:
+    return 0;
 
   case KernelType::COMPUTE_BOUND:
     return 2 * 64 * g.kernel.iterations + 64;
@@ -801,7 +821,10 @@ long long bytes_per_task(const TaskGraph &g)
     return 0;
 
   case KernelType::MEMORY_BOUND:
-    return g.scratch_bytes_per_task * g.kernel.iterations;
+    return g.scratch_bytes_per_task * g.kernel.iterations / g.kernel.sample;
+
+  case KernelType::MEMORY_DAXPY:
+    return g.scratch_bytes_per_task * g.kernel.iterations / g.kernel.sample;
 
   case KernelType::COMPUTE_DGEMM:
   case KernelType::COMPUTE_BOUND:
@@ -820,9 +843,12 @@ void App::report_timing(double elapsed_seconds) const
   long long num_deps = 0;
   long long flops = 0;
   long long bytes = 0;
-  const TaskGraphMask executed = has_executed_graph.load();
   for (auto g : graphs) {
-    assert(executed & (1 << g.graph_index) != 0);
+#ifdef DEBUG_CORE
+    if (enable_graph_validation) {
+      assert(has_executed_graph.load() & (1 << g.graph_index) != 0);
+    }
+#endif
     for (long t = 0; t < g.timesteps; ++t) {
       long offset = g.offset_at_timestep(t);
       long width = g.width_at_timestep(t);
@@ -849,4 +875,8 @@ void App::report_timing(double elapsed_seconds) const
   printf("Elapsed Time %e seconds\n", elapsed_seconds);
   printf("FLOP/s %e\n", flops/elapsed_seconds);
   printf("B/s %e\n", bytes/elapsed_seconds);
+
+#ifdef DEBUG_CORE
+  printf("Task Graph Execution Mask %llx\n", has_executed_graph.load());
+#endif
 }

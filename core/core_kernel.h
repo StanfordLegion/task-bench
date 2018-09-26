@@ -25,10 +25,15 @@ void execute_kernel_empty(const Kernel &kernel);
 long long execute_kernel_busy_wait(const Kernel &kernel);
 
 void execute_kernel_memory(const Kernel &kernel,
-                           char *scratch_ptr, size_t scratch_bytes);
+                           char *scratch_large_ptr, size_t scratch_large_bytes, 
+                           long timestep, int sample);
 
 void execute_kernel_dgemm(const Kernel &kernel,
-                           char *scratch_ptr, size_t scratch_bytes);
+                          char *scratch_ptr, size_t scratch_bytes);
+
+void execute_kernel_daxpy(const Kernel &kernel,
+                          char *scratch_large_ptr, size_t scratch_large_bytes, 
+                          long timestep, int sample);
 
 double execute_kernel_compute(const Kernel &kernel);
 

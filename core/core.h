@@ -62,6 +62,7 @@ struct TaskGraph : public task_graph_t {
 struct App {
   std::vector<TaskGraph> graphs;
   bool verbose;
+  bool enable_graph_validation;
 
   App(int argc, char **argv);
   void check() const;

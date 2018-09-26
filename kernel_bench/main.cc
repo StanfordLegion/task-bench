@@ -55,9 +55,11 @@ void *execute_task(void *tr)
 {
   task_args_t *task_arg = (task_args_t *)tr;
   
-  bind_thread(task_arg->tid+1);
+  bind_thread(task_arg->tid);
   
   TaskGraph g(task_arg->graph);
+  
+  assert(task_arg->scratch_ptr != NULL);
   
   // warm up
   for (int i = 0; i < 10; i++) {
