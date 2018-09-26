@@ -268,20 +268,44 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   Event::merge_events(events).wait();
 
   double first_start;
-  first_start_bar.wait();
-  assert(first_start_bar.get_result(&first_start, sizeof(first_start)));
+  {
+    first_start_bar.wait();
+#ifndef NDEBUG
+    bool ok =
+#endif
+      first_start_bar.get_result(&first_start, sizeof(first_start));
+    assert(ok);
+  }
 
   double last_start;
-  last_start_bar.wait();
-  assert(last_start_bar.get_result(&last_start, sizeof(last_start)));
+  {
+    last_start_bar.wait();
+#ifndef NDEBUG
+    bool ok =
+#endif
+      last_start_bar.get_result(&last_start, sizeof(last_start));
+    assert(ok);
+  }
 
   double first_stop;
-  first_stop_bar.wait();
-  assert(first_stop_bar.get_result(&first_stop, sizeof(first_stop)));
+  {
+    first_stop_bar.wait();
+#ifndef NDEBUG
+    bool ok =
+#endif
+      first_stop_bar.get_result(&first_stop, sizeof(first_stop));
+    assert(ok);
+  }
 
   double last_stop;
-  last_stop_bar.wait();
-  assert(last_stop_bar.get_result(&last_stop, sizeof(last_stop)));
+  {
+    last_stop_bar.wait();
+#ifndef NDEBUG
+    book ok =
+#endif
+      last_stop_bar.get_result(&last_stop, sizeof(last_stop));
+    assert(ok);
+  }
 
   long long num_tasks = procs.size() * timesteps;
   double elapsed_seconds = last_stop - first_start;
