@@ -35,6 +35,8 @@ matrix:
   exclude:
     - compiler: clang
       env: USE_REGENT=1
+matrix:
+  exclude:    
     - compiler: clang
       env: USE_OMPSS2=1
 before_install:
