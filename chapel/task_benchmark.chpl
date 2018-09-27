@@ -52,7 +52,7 @@ var t: Timer;
       var depenGrid = init_depenGrid(totalWidth, (graph.output_bytes_per_task):int, totalSteps); // grid to recieve from 
       var tasksGrid = init_tasksGrid(totalWidth, (graph.output_bytes_per_task):int, totalSteps); // grid to send from
       var executeGrid = init_executeGrid(totalWidth, totalSteps);
-      
+
       execute_task_graph(task_graph_list_task_graph(graphs, i), depenGrid, tasksGrid, atomicGrid, executeGrid,
         tasksArray, totalWidth, totalSteps, app);
 
@@ -85,7 +85,7 @@ var t: Timer;
           var scratch_bytes = graph.scratch_bytes_per_task;
           var scratch_ptr = c_malloc(int(8), scratch_bytes);
 
-          for j in 1..totalSteps - 1 {
+          for j in 1..totalSteps {
             var input_ptr = get_input_space(maxDepen, graph.output_bytes_per_task);
             var tmpArray: [1..totalWidth][1..((graph.output_bytes_per_task):int)*totalSteps] int(8);
             // print_grid(tmpArray, totalWidth, totalSteps, (graph.output_bytes_per_task):int);
@@ -103,7 +103,7 @@ var t: Timer;
                 }
               }
               // writeln("done waiting on task: ", i);
-            }        
+            }
 
             var depenSet = task_graph_dependence_set_at_timestep(graph, j - 1 );
             var list = task_graph_reverse_dependencies(graph, depenSet, i - 1);
