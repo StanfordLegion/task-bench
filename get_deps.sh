@@ -176,9 +176,9 @@ EOF
     rm -rf gperf-3.0.4.tar.gz
     export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
     git clone https://github.com/bsc-pm/nanos6.git "$OMPSS2_NANOS6_SRC_DIR"
-    pushd "$OMPSS2_NANOS6_SRC_DIR"
-    patch -p1 -i $OMPSS2_BENCH_SRC/0001-Fixed-linking-errors-with-clang-5.patch
-    popd
+    #pushd "$OMPSS2_NANOS6_SRC_DIR"
+    #patch -p1 -i $OMPSS2_BENCH_SRC/0001-Fixed-linking-errors-with-clang-5.patch
+    #popd
     export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
     git clone https://github.com/bsc-pm/mcxx.git "$OMPSS2_MCXX_SRC_DIR"
     wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
