@@ -86,14 +86,6 @@ for n in $(( SLURM_JOB_NUM_NODES - 1 )); do
     done
 done
 
-
-for n in $SLURM_JOB_NUM_NODES; do
-    for t in stencil_1d; do
-        realNodeCount=$(($n - 1))
-        sweep $t > CORIspark_type_${t}_nodes_${realNodeCount}.log
-    done
-done
-
 ## --------------------------------------
 ## 4. Clean up
 ## --------------------------------------

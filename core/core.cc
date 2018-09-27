@@ -148,6 +148,10 @@ static const std::map<DependenceType, std::string> &name_by_dtype()
 
 long TaskGraph::offset_at_timestep(long timestep) const
 {
+  if (timestep < 0) {
+    return 0;
+  }
+
   switch (dependence) {
   case DependenceType::TRIVIAL:
   case DependenceType::NO_COMM:
@@ -171,6 +175,10 @@ long TaskGraph::offset_at_timestep(long timestep) const
 
 long TaskGraph::width_at_timestep(long timestep) const
 {
+  if (timestep < 0) {
+    return 0;
+  }
+
   switch (dependence) {
   case DependenceType::TRIVIAL:
   case DependenceType::NO_COMM:
@@ -455,8 +463,8 @@ void TaskGraph::execute_point(long timestep, long point,
   long width = width_at_timestep(timestep);
   assert(offset <= point && point < offset+width);
 
-  long last_offset = timestep > 0 ? offset_at_timestep(timestep-1) : 0;
-  long last_width = timestep > 0 ? width_at_timestep(timestep-1) : 0;
+  long last_offset = offset_at_timestep(timestep-1);
+  long last_width = width_at_timestep(timestep-1);
 
   // Validate input
   {
