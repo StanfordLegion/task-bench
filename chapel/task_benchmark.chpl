@@ -52,11 +52,14 @@ proc main(args: [] string) {
   var task_completed = make_task_completed(n_graphs, max_width, max_timesteps);
   var task_used = make_task_completed(n_graphs, max_width, max_timesteps);
 
-  // task_completed[.., .., ..] = 0;
-  // task_used[.., .., ..] = 0;
+  task_completed[.., .., ..].write(0);
+  task_used[.., .., ..].write(0);
 
   // Run once for warmup.
-  // execute_task_graphs(graphs, task_result, task_completed, task_used);
+  execute_task_graphs(graphs, task_result, task_completed, task_used);
+
+  task_completed[.., .., ..].write(0);
+  task_used[.., .., ..].write(0);
 
   t.start();
   execute_task_graphs(graphs, task_result, task_completed, task_used);
