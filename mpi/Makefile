@@ -18,7 +18,7 @@ include ../core/make_blas.mk
 
 all: nonblock basic bcast alltoall buffered_send
 
-alltoall: alltoallv.cc
+alltoall: alltoall.cc
 	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
 
 basic: basic.cc
@@ -30,7 +30,7 @@ bcast: bcast.cc
 buffered_send: buffered_send.cc
 	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
 
-nonblock: nonblocking.cc
+nonblock: nonblock.cc
 	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
 
 clean:
