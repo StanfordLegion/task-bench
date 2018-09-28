@@ -662,7 +662,7 @@ App::App(int argc, char **argv)
       needs_argument(i, argc, "-sample");
       int value  = atoi(argv[++i]);
       if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-sample %ld\" must be >= 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"-sample %d\" must be >= 0\n", value);
         abort();
       }
       graph.kernel.sample = value;
