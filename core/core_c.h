@@ -53,7 +53,7 @@ typedef enum kernel_type_t {
 typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
-  int sample;
+  int samples;
 } kernel_t;
 
 typedef struct interval_t {
