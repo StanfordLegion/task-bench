@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     for (auto graph : app.graphs) {
       // We use tags to encode the source and destination tasks, so we
       // can't encode graphs larger than half the tag size in bits.
-      assert(graph.max_width < sizeof(int)/2 * 8);
+      assert(graph.max_width < (1L << (sizeof(int)/2 * 8)));
 
       std::vector<char> scratch(graph.scratch_bytes_per_task);
 
