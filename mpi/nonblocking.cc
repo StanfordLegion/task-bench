@@ -13,11 +13,13 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+
 #include "core.h"
+
 #include "mpi.h"
-#include "timer.h"
 
 int main(int argc, char *argv[])
 {
@@ -38,11 +40,15 @@ int main(int argc, char *argv[])
     std::vector<MPI_Request> requests;
 
     for (auto graph : app.graphs) {
-      std::vector<char> output(graph.output_bytes_per_task);
+      // We use tags to encode the source and destination tasks, so we
+      // can't encode graphs larger than half the tag size in bits.
+      assert(graph.max_width < sizeof(int)/2 * 8);
+
       std::vector<char> scratch(graph.scratch_bytes_per_task);
 
       long first_point = rank * graph.max_width / n_ranks;
       long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
+      long n_points = last_point - first_point + 1;
 
       std::vector<int> rank_by_point(graph.max_width);
       for (int r = 0; r < n_ranks; ++r) {
@@ -64,30 +70,52 @@ int main(int argc, char *argv[])
         }
       }
 
-      std::vector<std::vector<char> > inputs(max_deps);
-      std::vector<const char *> input_ptr(max_deps);
-      std::vector<size_t> input_bytes(max_deps);
-      for (long dep = 0; dep < max_deps; ++dep) {
-        inputs[dep].resize(graph.output_bytes_per_task);
-        input_ptr[dep] = inputs[dep].data();
-        input_bytes[dep] = inputs[dep].size();
+      std::vector<std::vector<std::vector<char> > > inputs(n_points);
+      std::vector<std::vector<const char *> > input_ptr(n_points);
+      std::vector<std::vector<size_t> > input_bytes(n_points);
+      std::vector<long> n_inputs(n_points);
+      std::vector<std::vector<char> > outputs(n_points);
+      for (long point = first_point; point <= last_point; ++point) {
+        long point_index = point - first_point;
+
+        auto &point_inputs = inputs[point_index];
+        auto &point_input_ptr = input_ptr[point_index];
+        auto &point_input_bytes = input_bytes[point_index];
+
+        point_inputs.resize(max_deps);
+        point_input_ptr.resize(max_deps);
+        point_input_bytes.resize(max_deps);
+
+        for (long dep = 0; dep < max_deps; ++dep) {
+          point_inputs[dep].resize(graph.output_bytes_per_task);
+          point_input_ptr[dep] = point_inputs[dep].data();
+          point_input_bytes[dep] = point_inputs[dep].size();
+        }
+
+        auto &point_outputs = outputs[point_index];
+        point_outputs.resize(graph.output_bytes_per_task);
       }
 
       for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
+        long offset = graph.offset_at_timestep(timestep);
+        long width = graph.width_at_timestep(timestep);
+
+        long last_offset = graph.offset_at_timestep(timestep-1);
+        long last_width = graph.width_at_timestep(timestep-1);
+
+        long dset = graph.dependence_set_at_timestep(timestep);
+
+        requests.clear();
+
         for (long point = first_point; point <= last_point; ++point) {
+          long point_index = point - first_point;
 
-          long offset = graph.offset_at_timestep(timestep);
-          long width = graph.width_at_timestep(timestep);
+          auto &point_inputs = inputs[point_index];
+          auto &point_n_inputs = n_inputs[point_index];
+          auto &point_output = outputs[point_index];
 
-          long last_offset = graph.offset_at_timestep(timestep-1);
-          long last_width = graph.width_at_timestep(timestep-1);
-
-          long dset = graph.dependence_set_at_timestep(timestep);
-
-          requests.clear();
-
-          /* Receives */
-          long n_inputs = 0;
+          /* Receive */
+          point_n_inputs = 0;
           if (point >= offset && point < offset + width) {
             for (auto interval : graph.dependencies(dset, point)) {
               for (long dep = interval.first; dep <= interval.second; ++dep) {
@@ -95,11 +123,15 @@ int main(int argc, char *argv[])
                   continue;
                 }
 
+                int from = dep & 0xFF;
+                int to = point & 0xFF;
+                int tag = (from << 16) | to;
                 MPI_Request req;
-                MPI_Irecv(const_cast<char *>(inputs[n_inputs].data()), inputs[n_inputs].size(), MPI_BYTE,
-                          rank_by_point[dep], (int)point, MPI_COMM_WORLD, &req);
+                MPI_Irecv(point_inputs[point_n_inputs].data(),
+                          point_inputs[point_n_inputs].size(), MPI_BYTE,
+                          rank_by_point[dep], tag, MPI_COMM_WORLD, &req);
                 requests.push_back(req);
-                n_inputs++;
+                point_n_inputs++;
               }
             }
           }
@@ -112,20 +144,32 @@ int main(int argc, char *argv[])
                   continue;
                 }
 
+                int from = point & 0xFF;
+                int to = dep & 0xFF;
+                int tag = (from << 16) | to;
                 MPI_Request req;
-                MPI_Isend(output.data(), output.size(), MPI_BYTE,
-                          rank_by_point[dep], (int)dep, MPI_COMM_WORLD, &req);
+                MPI_Isend(point_output.data(), point_output.size(), MPI_BYTE,
+                          rank_by_point[dep], tag, MPI_COMM_WORLD, &req);
                 requests.push_back(req);
               }
             }
           }
+        }
 
-          MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+        MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+
+        for (long point = first_point; point <= last_point; ++point) {
+          long point_index = point - first_point;
+
+          auto &point_input_ptr = input_ptr[point_index];
+          auto &point_input_bytes = input_bytes[point_index];
+          auto &point_n_inputs = n_inputs[point_index];
+          auto &point_output = outputs[point_index];
 
           if (point >= offset && point < offset + width) {
             graph.execute_point(timestep, point,
-                                output.data(), output.size(),
-                                input_ptr.data(), input_bytes.data(), n_inputs,
+                                point_output.data(), point_output.size(),
+                                point_input_ptr.data(), point_input_bytes.data(), point_n_inputs,
                                 scratch.data(), scratch.size());
           }
         }

@@ -26,6 +26,8 @@ set -x
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     for t in $extended_types; do
         for k in "${kernels[@]}"; do
+            mpirun -np 1 ./mpi/nonblock -steps 9 -type $t $k
+            mpirun -np 2 ./mpi/nonblock -steps 9 -type $t $k
             mpirun -np 4 ./mpi/nonblock -steps 9 -type $t $k
             mpirun -np 4 ./mpi/nonblock -steps 9 -type $t $k -and -steps 9 -type $t $k
         done
