@@ -24,7 +24,7 @@ compute_kernels=("" "$compute_bound" "$imbalanced")
 set -x
 
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
-    for t in no_comm stencil_1d stencil_1d_periodic dom tree nearest all_to_all; do # FIXME: trivial fft random_nearest are broken
+    for t in $extended_types; do
         for k in "${kernels[@]}"; do
             mpirun -np 4 ./mpi/nonblock -steps 9 -type $t $k
             mpirun -np 4 ./mpi/nonblock -steps 9 -type $t $k -and -steps 9 -type $t $k
