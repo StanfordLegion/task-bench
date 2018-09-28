@@ -109,13 +109,51 @@ void execute_kernel_memory(const Kernel &kernel,
                            long timestep)
 {
 #if 1
-  for (long iter = 0; iter < kernel.iterations; iter++) {
-    size_t sample_bytes = scratch_bytes / kernel.samples;
-    int idx = (timestep * kernel.iterations + iter) % kernel.samples;
-    char *sample_ptr = scratch_ptr + idx * sample_bytes;
+  long iter = 0;
 
-    copy(sample_ptr, sample_bytes);
+  size_t sample_bytes = scratch_bytes / kernel.samples;
+
+  // Prologue
+  {
+    long start_idx = (timestep * kernel.iterations + iter) % kernel.samples;
+    long stop_idx = std::min((long)kernel.samples, start_idx + kernel.iterations);
+    long num_iter = stop_idx - start_idx;
+
+    if (num_iter > 0) {
+      char *sample_ptr = scratch_ptr + start_idx * sample_bytes;
+
+      copy(sample_ptr, num_iter * sample_bytes);
+
+      iter += num_iter;
+    }
   }
+
+  // Body
+  for ( ; iter + kernel.samples <= kernel.iterations; iter += kernel.samples) {
+    long start_idx = (timestep * kernel.iterations + iter) % kernel.samples;
+    long num_iter = kernel.samples;
+
+    char *sample_ptr = scratch_ptr + start_idx * sample_bytes;
+
+    copy(sample_ptr, num_iter * sample_bytes);
+  }
+
+  // Epilogue
+  {
+    long start_idx = (timestep * kernel.iterations + iter) % kernel.samples;
+    long stop_idx = start_idx + (kernel.iterations - iter);
+    long num_iter = stop_idx - start_idx;
+
+    if (num_iter > 0) {
+      char *sample_ptr = scratch_ptr + start_idx * sample_bytes;
+
+      copy(sample_ptr, num_iter * sample_bytes);
+
+      iter += num_iter;
+    }
+  }
+
+  assert(iter == kernel.iterations);
 #else
   long long N = scratch_bytes / 2;
   char *src = reinterpret_cast<char *>(scratch_ptr);
