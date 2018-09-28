@@ -187,8 +187,8 @@ proc execute_task_graph2(graph, task_result, task_completed, task_used) {
       {
         var n_war_deps = 0;
         if (point >= last_offset && point < last_offset + last_width) {
-          var last_dset = task_graph_dependence_set_at_timestep(graph, timestep-1);
-          var interval_list = task_graph_reverse_dependencies(graph, last_dset, point);
+          var dset = task_graph_dependence_set_at_timestep(graph, timestep);
+          var interval_list = task_graph_reverse_dependencies(graph, dset, point);
           var n_intervals = interval_list_num_intervals(interval_list);
           for i in 0..n_intervals-1 {
             var interval = interval_list_interval(interval_list, i);
