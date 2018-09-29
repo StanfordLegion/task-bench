@@ -40,10 +40,6 @@ int main(int argc, char *argv[])
     std::vector<MPI_Request> requests;
 
     for (auto graph : app.graphs) {
-      // We use tags to encode the source and destination tasks, so we
-      // can't encode graphs larger than half the tag size in bits.
-      assert(graph.max_width < (1L << (sizeof(int)/2 * 8)));
-
       std::vector<char> scratch(graph.scratch_bytes_per_task);
 
       long first_point = rank * graph.max_width / n_ranks;
@@ -51,11 +47,16 @@ int main(int argc, char *argv[])
       long n_points = last_point - first_point + 1;
 
       std::vector<int> rank_by_point(graph.max_width);
+      std::vector<int> tag_bits_by_point(graph.max_width);
       for (int r = 0; r < n_ranks; ++r) {
         long r_first_point = r * graph.max_width / n_ranks;
         long r_last_point = (r + 1) * graph.max_width / n_ranks - 1;
         for (long p = r_first_point; p <= r_last_point; ++p) {
           rank_by_point[p] = r;
+          tag_bits_by_point[p] = p - r_first_point;
+          // Has to fit in 7 bits because MPI only guarrantees that
+          // tags can use 15 bits.
+          assert((tag_bits_by_point[p] & ~0x7F) == 0);
         }
       }
 
@@ -123,9 +124,9 @@ int main(int argc, char *argv[])
                   continue;
                 }
 
-                int from = dep & 0xFF;
-                int to = point & 0xFF;
-                int tag = (from << 16) | to;
+                int from = tag_bits_by_point[dep];
+                int to = tag_bits_by_point[point];
+                int tag = (from << 8) | to;
                 MPI_Request req;
                 MPI_Irecv(point_inputs[point_n_inputs].data(),
                           point_inputs[point_n_inputs].size(), MPI_BYTE,
@@ -144,9 +145,9 @@ int main(int argc, char *argv[])
                   continue;
                 }
 
-                int from = point & 0xFF;
-                int to = dep & 0xFF;
-                int tag = (from << 16) | to;
+                int from = tag_bits_by_point[point];
+                int to = tag_bits_by_point[dep];
+                int tag = (from << 8) | to;
                 MPI_Request req;
                 MPI_Isend(point_output.data(), point_output.size(), MPI_BYTE,
                           rank_by_point[dep], tag, MPI_COMM_WORLD, &req);
