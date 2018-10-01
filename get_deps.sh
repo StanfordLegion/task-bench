@@ -136,7 +136,9 @@ export CHPL_LLVM=system
 EOF
     fi
 
-    git clone https://github.com/chapel-lang/chapel.git "$CHPL_HOME"
+    wget https://github.com/chapel-lang/chapel/releases/download/1.18.0/chapel-1.18.0.tar.gz
+    mkdir "$CHPL_HOME"
+    tar xfz chapel-1.18.0.tar.gz -C "$CHPL_HOME" --strip-components 1
 fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then
