@@ -9,7 +9,9 @@
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
 function launch {
-    ../../chapel/task_benchmark -nl $1 -- "${@:2}" -width $(( $1 * cores ))
+    # FIXME: The --exclusive flag which Chapel adds internally is causing a non-deterministic startup hang.
+    # ../../chapel/task_benchmark -nl $1 -- "${@:2}" -width $(( $1 * cores ))
+    srun --nodes=$1 --ntasks=$1 --ntasks-per-node=1 --cpus-per-task=$(( cores * 2 )) --kill-on-bad-exit  ../../chapel/task_benchmark_real -nl $1 -- "${@:2}" -width $(( $1 * cores ))
 }
 
 function sweep {
