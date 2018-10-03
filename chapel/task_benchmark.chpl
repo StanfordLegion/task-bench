@@ -173,7 +173,9 @@ proc execute_task_graph2(graph, task_result, task_completed, task_used) {
 
             task_completed[graph_index, dep, timestep-1].waitFor(1);
 
-            inputs[n_inputs, ..] = task_result[graph_index, dep, ..];
+            serial {
+              inputs[n_inputs, ..] = task_result[graph_index, dep, ..];
+            }
 
             task_used[graph_index, dep, timestep].add(1);
 
