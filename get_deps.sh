@@ -182,7 +182,7 @@ EOF
     #popd
     
     wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
-    tar -zxvf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
+    tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
     rm -rf boost_1_68_0.tar.gz 
 fi
 
