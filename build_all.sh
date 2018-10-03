@@ -208,7 +208,8 @@ if [[ $USE_OMPSS2 -eq 1 ]]; then
     mkdir -p build
     cd build
     PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_NANOS6_PREFIX --with-boost=$BOOST_PREFIX --without-nanos6-mercurium
-    make all -j$THREADS
+    make -j$THREADS
+    #make all -j$THREADS
     #make check -j$THREADS
     make install
     popd
