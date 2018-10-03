@@ -13,10 +13,10 @@ function launch {
 }
 
 function sweep {
-    for s in 0 1 2 3 4; do
+    for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13; do
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
-                $1 $2 -kernel memory_bound -iter $(( 1 << (5-s) )) -scratch $((1024*1024*16)) -type $3 -steps 1000
+                $1 $2 -kernel memory_bound -iter $(( 1 << (14-s) )) -scratch $((1024*1024*8)) -sample 1024 -type $3 -steps 1000
             fi
         done
     done

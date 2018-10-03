@@ -165,10 +165,10 @@ export USE_OMPSS2=$USE_OMPSS2
 export OMPSS2_DL_DIR=$OMPSS2_DL_DIR
 export OMPSS2_GPERF_SRC_DIR=$OMPSS2_DL_DIR/gperf-3.0.4
 export OMPSS2_GPERF_PREFIX=$OMPSS2_DL_DIR/gperf-3.0.4/install
-export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
-export OMPSS2_NANOS6_PREFIX=$OMPSS2_DL_DIR/nanos6/install
-export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
-export OMPSS2_MCXX_PREFIX=$OMPSS2_DL_DIR/mcxx/install
+export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/ompss2-release/nanos6
+export OMPSS2_NANOS6_PREFIX=$OMPSS2_DL_DIR/ompss2-release/nanos6/install
+export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/ompss2-release/mcxx
+export OMPSS2_MCXX_PREFIX=$OMPSS2_DL_DIR/ompss2-release/mcxx/install
 export BOOST_SRC_DIR=$OMPSS2_DL_DIR/boost_1_68_0
 export BOOST_PREFIX=$OMPSS2_DL_DIR/boost_1_68_0/install
 EOF
@@ -177,11 +177,10 @@ EOF
     tar -zxf gperf-3.0.4.tar.gz -C "$OMPSS2_DL_DIR"
     rm -rf gperf-3.0.4.tar.gz
     git clone --recursive https://github.com/bsc-pm/ompss-2-releases.git "$OMPSS2_DL_DIR/ompss2-release"
-    export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/ompss2-release/nanos6
     #pushd "$OMPSS2_NANOS6_SRC_DIR"
     #patch -p1 -i $OMPSS2_BENCH_SRC/0001-Fixed-linking-errors-with-clang-5.patch
     #popd
-    export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/ompss2-release/mcxx
+    
     wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
     tar -zxvf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
     rm -rf boost_1_68_0.tar.gz 
