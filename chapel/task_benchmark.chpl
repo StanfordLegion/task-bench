@@ -95,7 +95,8 @@ proc execute_task_graphs(graphs, task_result, task_completed, task_used) {
   coforall loc in Locales {
     on loc {
       coforall graph in graphs {
-        execute_task_graph2(graph, task_result, task_completed, task_used);
+        const loc_graph = graph;
+        execute_task_graph2(loc_graph, task_result, task_completed, task_used);
       }
     }
   }
