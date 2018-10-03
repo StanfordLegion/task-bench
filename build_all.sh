@@ -199,8 +199,8 @@ if [[ $USE_OMPSS2 -eq 1 ]]; then
     popd
 
     pushd "$BOOST_SRC_DIR"
-    ./bootstrap.sh --prefix=$BOOST_PREFIX
-    ./b2 install
+    #./bootstrap.sh --prefix=$BOOST_PREFIX
+    #./b2 install
     popd
 
     pushd "$OMPSS2_NANOS6_SRC_DIR"

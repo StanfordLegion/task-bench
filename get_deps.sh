@@ -176,15 +176,14 @@ EOF
     wget http://ftp.gnu.org/gnu/gperf/gperf-3.0.4.tar.gz
     tar -zxf gperf-3.0.4.tar.gz -C "$OMPSS2_DL_DIR"
     rm -rf gperf-3.0.4.tar.gz
-    export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
-    git clone https://github.com/bsc-pm/nanos6.git "$OMPSS2_NANOS6_SRC_DIR"
+    git clone --recursive https://github.com/bsc-pm/ompss-2-releases.git "$OMPSS2_DL_DIR/ompss2-release"
+    export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/ompss2-release/nanos6
     #pushd "$OMPSS2_NANOS6_SRC_DIR"
     #patch -p1 -i $OMPSS2_BENCH_SRC/0001-Fixed-linking-errors-with-clang-5.patch
     #popd
-    export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
-    git clone https://github.com/bsc-pm/mcxx.git "$OMPSS2_MCXX_SRC_DIR"
+    export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/ompss2-release/mcxx
     wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
-    tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
+    tar -zxvf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
     rm -rf boost_1_68_0.tar.gz 
 fi
 
