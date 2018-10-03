@@ -59,7 +59,9 @@ void *execute_task(void *tr)
   
   TaskGraph g(task_arg->graph);
   
-  assert(task_arg->scratch_ptr != NULL);
+  if (g.kernel.type == MEMORY_BOUND) {
+    assert(task_arg->scratch_ptr != NULL);
+  }
   
   // warm up
   for (int i = 0; i < 10; i++) {
@@ -70,7 +72,7 @@ void *execute_task(void *tr)
   
   *(task_arg->time_start) = Timer::get_cur_time();
   for (int i = 0; i < task_arg->nb_tasks; i++) {
-    g.execute_point(i, task_arg->tid, task_arg->output_ptr, task_arg->output_bytes, NULL, NULL, 0, task_arg->scratch_ptr, task_arg->scratch_bytes);
+    g.execute_point(i%g.timesteps, task_arg->tid, task_arg->output_ptr, task_arg->output_bytes, NULL, NULL, 0, task_arg->scratch_ptr, task_arg->scratch_bytes);
   }
   *(task_arg->time_end) = Timer::get_cur_time();
   
