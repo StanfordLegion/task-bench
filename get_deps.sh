@@ -167,8 +167,8 @@ export OMPSS2_GPERF_SRC_DIR=$OMPSS2_DL_DIR/gperf-3.0.4
 export OMPSS2_GPERF_PREFIX=$OMPSS2_DL_DIR/gperf-3.0.4/install
 export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
 export OMPSS2_NANOS6_PREFIX=$OMPSS2_DL_DIR/nanos6/install
-export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
-export OMPSS2_MCXX_PREFIX=$OMPSS2_DL_DIR/mcxx/install
+export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx-2.2.0
+export OMPSS2_MCXX_PREFIX=$OMPSS2_DL_DIR/mcxx-2.2.0/install
 export BOOST_SRC_DIR=$OMPSS2_DL_DIR/boost_1_68_0
 export BOOST_PREFIX=$OMPSS2_DL_DIR/boost_1_68_0/install
 EOF
@@ -176,16 +176,19 @@ EOF
     wget http://ftp.gnu.org/gnu/gperf/gperf-3.0.4.tar.gz
     tar -zxf gperf-3.0.4.tar.gz -C "$OMPSS2_DL_DIR"
     rm -rf gperf-3.0.4.tar.gz
+
     export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/nanos6
     git clone https://github.com/bsc-pm/nanos6.git "$OMPSS2_NANOS6_SRC_DIR"
     #pushd "$OMPSS2_NANOS6_SRC_DIR"
     #patch -p1 -i $OMPSS2_BENCH_SRC/0001-Fixed-linking-errors-with-clang-5.patch
     #popd
+    
     export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/mcxx
     #git clone https://github.com/bsc-pm/mcxx.git "$OMPSS2_MCXX_SRC_DIR"
     wget https://pm.bsc.es/sites/default/files/ftp/mcxx/snapshots/mcxx-2.2.0-2018-08-26.tar.gz
-    tar -zxf mcxx-2.2.0-2018-08-26.tar.gz -C "$OMPSS2_MCXX_SRC_DIR"
+    tar -zxf mcxx-2.2.0-2018-08-26.tar.gz -C "$OMPSS2_DL_DIR"
     rm -rf mcxx-2.2.0-2018-08-26.tar.gz   
+    
     wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
     tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
     rm -rf boost_1_68_0.tar.gz 
