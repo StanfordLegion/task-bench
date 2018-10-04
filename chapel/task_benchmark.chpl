@@ -172,7 +172,10 @@ proc execute_task_graph2(graph, task_result, task_completed, task_used) {
               continue;
             }
 
-            task_completed[graph_index, dep, timestep-1].waitFor(1);
+            // task_completed[graph_index, dep, timestep-1].waitFor(1);
+            while (task_completed[graph_index, dep, timestep-1].read() != 1) {
+              chpl_task_yield();
+            }
 
             for offset in 0..(output_bytes/8)-1 {
               inputs[n_inputs, offset] = task_result[graph_index, dep, offset];
@@ -209,7 +212,10 @@ proc execute_task_graph2(graph, task_result, task_completed, task_used) {
           interval_list_destroy(interval_list);
         }
 
-        task_used[graph_index, point, timestep].waitFor(n_war_deps);
+        // task_used[graph_index, point, timestep].waitFor(n_war_deps);
+        while (task_used[graph_index, point, timestep].read() != n_war_deps) {
+          chpl_task_yield();
+        }
       }
 
       // Execute task.
