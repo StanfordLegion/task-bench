@@ -149,13 +149,17 @@ fi
 fi)
 
 (if [[ $USE_CHAPEL -eq 1 ]]; then
-     export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM:$PATH"
-     pushd "$CHPL_HOME"
-     make -j$THREADS
-     popd
+    if [[ -n $CRAYPE_VERSION ]]; then
+        module load craype-hugepages16M
+    fi
 
-     make -C chapel clean
-     make -C chapel
+    export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM:$PATH"
+    pushd "$CHPL_HOME"
+    make -j$THREADS
+    popd
+
+    make -C chapel clean
+    make -C chapel
 fi)
 
 if [[ $USE_OPENMP -eq 1 ]]; then

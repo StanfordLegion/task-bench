@@ -18,6 +18,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -102,12 +103,12 @@ void task_graph_execute_point_scratch(task_graph_t graph, long timestep, long po
 
 // FIXME: input_ptr should be const, but this breaks Chapel
 void task_graph_execute_point_nonconst(task_graph_t graph, long timestep, long point,
-                                       char *output_ptr, size_t output_bytes,
-                                       char **input_ptr, const size_t *input_bytes,
+                                       int64_t *output_ptr, size_t output_bytes,
+                                       int64_t **input_ptr, const size_t *input_bytes,
                                        size_t n_inputs);
 void task_graph_execute_point_scratch_nonconst(task_graph_t graph, long timestep, long point,
-                                               char *output_ptr, size_t output_bytes,
-                                               char **input_ptr, const size_t *input_bytes,
+                                               int64_t *output_ptr, size_t output_bytes,
+                                               int64_t **input_ptr, const size_t *input_bytes,
                                                size_t n_inputs,
                                                char *scratch_ptr, size_t scratch_bytes);
 
