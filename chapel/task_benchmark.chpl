@@ -49,20 +49,20 @@ proc main(args: [] string) {
   }
 
   var task_result = make_task_result(n_graphs, max_width, max_output_bytes);
-  var task_completed = make_task_completed(n_graphs, max_width, max_timesteps);
-  var task_used = make_task_completed(n_graphs, max_width, max_timesteps);
+  var task_ready = make_task_atomics(n_graphs, max_width, max_timesteps);
+  var task_used = make_task_atomics(n_graphs, max_width, max_timesteps);
 
-  task_completed[.., .., ..].write(0);
+  task_ready[.., .., ..].write(0);
   task_used[.., .., ..].write(0);
 
   // Run once for warmup.
-  execute_task_graphs(graphs, task_result, task_completed, task_used);
+  execute_task_graphs(graphs, task_result, task_ready, task_used);
 
-  task_completed[.., .., ..].write(0);
+  task_ready[.., .., ..].write(0);
   task_used[.., .., ..].write(0);
 
   t.start();
-  execute_task_graphs(graphs, task_result, task_completed, task_used);
+  execute_task_graphs(graphs, task_result, task_ready, task_used);
   t.stop();
   app_report_timing(app, t.elapsed());
 }
@@ -79,7 +79,7 @@ proc make_task_result(n_graphs, max_width, max_output_bytes) {
   return result;
 }
 
-proc make_task_completed(n_graphs, max_width, max_timesteps) {
+proc make_task_atomics(n_graphs, max_width, max_timesteps) {
   const space = {0..n_graphs-1, 0..max_width-1, 0..max_timesteps-1};
   const locale_space = {0..0, 0..numLocales-1, 0..0};
   var targets: [locale_space] locale;
@@ -91,18 +91,18 @@ proc make_task_completed(n_graphs, max_width, max_timesteps) {
   return result;
 }
 
-proc execute_task_graphs(graphs, task_result, task_completed, task_used) {
+proc execute_task_graphs(graphs, task_result, task_ready, task_used) {
   coforall loc in Locales {
     on loc {
       coforall graph in graphs {
         const loc_graph = graph;
-        execute_task_graph2(loc_graph, task_result, task_completed, task_used);
+        execute_task_graph2(loc_graph, task_result, task_ready, task_used);
       }
     }
   }
 }
 
-proc execute_task_graph2(graph, task_result, task_completed, task_used) {
+proc execute_task_graph2(graph, task_result, task_ready, task_used) {
   const graph_index = graph.graph_index;
 
   // Figure out which set of points have been assigned to this locale.
@@ -157,11 +157,15 @@ proc execute_task_graph2(graph, task_result, task_completed, task_used) {
       var last_offset = task_graph_offset_at_timestep(graph, timestep-1):int(64);
       var last_width = task_graph_width_at_timestep(graph, timestep-1):int(64);
 
+      var next_offset = task_graph_offset_at_timestep(graph, timestep+1):int(64);
+      var next_width = task_graph_width_at_timestep(graph, timestep+1):int(64);
+
       // Fetch inputs for this timestep.
       var n_inputs = 0;
 
       // RAW dependencies: copy data from last timestep.
       {
+        var n_raw_deps = 0;
         var dset = task_graph_dependence_set_at_timestep(graph, timestep);
         var interval_list = task_graph_dependencies(graph, dset, point);
         var n_intervals = interval_list_num_intervals(interval_list);
@@ -172,9 +176,17 @@ proc execute_task_graph2(graph, task_result, task_completed, task_used) {
               continue;
             }
 
-            // task_completed[graph_index, dep, timestep-1].waitFor(1);
-            while (task_completed[graph_index, dep, timestep-1].read() != 1) {
-              chpl_task_yield();
+            n_raw_deps += 1;
+          }
+        }
+
+        task_ready[graph_index, point, timestep].waitFor(n_raw_deps);
+
+        for i in 0..n_intervals-1 {
+          var interval = interval_list_interval(interval_list, i);
+          for dep in interval.start..interval.end {
+            if (dep < last_offset || dep >= last_offset + last_width) {
+              continue;
             }
 
             for offset in 0..(output_bytes/8)-1 {
@@ -189,6 +201,7 @@ proc execute_task_graph2(graph, task_result, task_completed, task_used) {
             n_inputs += 1;
           }
         }
+
         interval_list_destroy(interval_list);
       }
 
@@ -212,10 +225,7 @@ proc execute_task_graph2(graph, task_result, task_completed, task_used) {
           interval_list_destroy(interval_list);
         }
 
-        // task_used[graph_index, point, timestep].waitFor(n_war_deps);
-        while (task_used[graph_index, point, timestep].read() != n_war_deps) {
-          chpl_task_yield();
-        }
+        task_used[graph_index, point, timestep].waitFor(n_war_deps);
       }
 
       // Execute task.
@@ -225,8 +235,23 @@ proc execute_task_graph2(graph, task_result, task_completed, task_used) {
         input_ptr, input_bytes, n_inputs: uint(64),
         scratch_ptr, scratch_bytes: uint(64));
 
-      // Mark task completed.
-      task_completed[graph_index, point, timestep].write(1);
+      // Mark dependencies as ready.
+      if (timestep + 1 < timesteps) { // FIXME: Wouldn't need this check if offset/width took into account max timesteps.
+        var dset = task_graph_dependence_set_at_timestep(graph, timestep + 1);
+        var interval_list = task_graph_reverse_dependencies(graph, dset, point);
+        var n_intervals = interval_list_num_intervals(interval_list);
+        for i in 0..n_intervals-1 {
+          var interval = interval_list_interval(interval_list, i);
+          for dep in interval.start..interval.end {
+            if (dep < next_offset || dep >= next_offset + next_width) {
+              continue;
+            }
+
+            task_ready[graph_index, dep, timestep+1].add(1);
+          }
+        }
+        interval_list_destroy(interval_list);
+      }
     }
 
     c_free(scratch_ptr);
