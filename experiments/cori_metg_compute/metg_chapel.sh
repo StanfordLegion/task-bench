@@ -9,6 +9,7 @@
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
 # Assumes binary build with craype-hugepages16M
+module load craype-hugepages16M
 export HUGETLB_NO_RESERVE=yes
 export CHPL_JE_MALLOC_CONF=purge:decay,lg_chunk:24
 
