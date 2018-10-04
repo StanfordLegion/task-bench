@@ -68,14 +68,14 @@ proc main(args: [] string) {
 }
 
 proc make_task_result(n_graphs, max_width, max_output_bytes) {
-  const space = {0..n_graphs-1, 0..max_width-1, 0..max_output_bytes-1};
+  const space = {0..n_graphs-1, 0..max_width-1, 0..(max_output_bytes/8)-1};
   const locale_space = {0..0, 0..numLocales-1, 0..0};
   var targets: [locale_space] locale;
   forall i in 0..numLocales-1 {
     targets[0, i, 0] = Locales[i];
   }
   const D: domain(3) dmapped Block(boundingBox=space, targetLocales=targets) = space;
-  var result: [D] int(8);
+  var result: [D] int(64);
   return result;
 }
 
@@ -127,14 +127,14 @@ proc execute_task_graph2(graph, task_result, task_completed, task_used) {
 
     var output_bytes = graph.output_bytes_per_task:int(64);
 
-    var inputs: [{0..max_deps-1, 0..output_bytes-1}] int(8);
+    var inputs: [{0..max_deps-1, 0..(output_bytes/8)-1}] int(64);
 
     var scratch_bytes = graph.scratch_bytes_per_task;
     var scratch_ptr = c_malloc(int(8), scratch_bytes);
 
     // Initialize input_ptr and input_bytes... these don't need to
     // change because we can just set n_inputs dynamically.
-    var input_ptr = c_malloc(c_ptr(int(8)), max_deps);
+    var input_ptr = c_malloc(c_ptr(int(64)), max_deps);
     var input_bytes = c_malloc(uint(64), max_deps);
     for dep in 0..max_deps-1 {
         input_ptr[dep] = c_ptrTo(inputs[dep, 0]);
