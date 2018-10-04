@@ -26,6 +26,7 @@ typedef Realm::Rect<1, coord_t> Rect1;
 struct CreateRegionArgs {
 public:
   Rect1 bounds;
+  unsigned num_fields;
   Realm::Memory memory;
   Realm::Processor dest_proc;
   // Warning: Pointers live on dest_proc
@@ -58,7 +59,7 @@ public:
 
 struct ShardArgs {
 public:
-  long taskid;
+  long proc_index;
   Realm::Barrier sync;
   Realm::Barrier first_start;
   Realm::Barrier last_start;
@@ -66,12 +67,16 @@ public:
   Realm::Barrier last_stop;
 };
 
-struct CommArgs {
+TYPE_IS_SERIALIZABLE(ShardArgs);
+
+struct LeafArgs {
 public:
   long taskid, timestep, num_deps;
   long dset;
   size_t output_bytes, scratch_bytes;
   char *output_ptr, *scratch_ptr;
 };
+
+TYPE_IS_SERIALIZABLE(LeafArgs);
 
 #endif

@@ -24,14 +24,11 @@
 #include "realm.h"
 
 #include "core.h"
-#include "timer.h"
-
-#define OUT_INDEX 0
-#define IN_INDEX 1
-#define NUM_OUTPUT_REGIONS 5
-#define NUM_INPUT_REGIONS 5
 
 using namespace Realm;
+using namespace Realm::Serialization;
+
+TYPE_IS_SERIALIZABLE(TaskGraph);
 
 // Hack: Track argc/argv in globals to avoid needing to serialize arguments to top_level task.
 static int global_argc = 0;
@@ -44,7 +41,7 @@ enum {
   CREATE_BARRIER_TASK      = Processor::TASK_ID_FIRST_AVAILABLE + 3,
   CREATE_BARRIER_DONE_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 4,
   SHARD_TASK               = Processor::TASK_ID_FIRST_AVAILABLE + 5,
-  COMM_TASK                = Processor::TASK_ID_FIRST_AVAILABLE + 6,
+  LEAF_TASK                = Processor::TASK_ID_FIRST_AVAILABLE + 6,
 };
 
 enum {
@@ -53,8 +50,7 @@ enum {
 };
 
 enum {
-  FID_INPUT = 101,
-  FID_OUTPUT = 102,
+  FID_FIRST = 100,
 };
 
 #define DECLARE_REDUCTION(CLASS, T, U, APPLY_OP, FOLD_OP, ID)                  \
@@ -115,26 +111,6 @@ DECLARE_REDUCTION(RedopMax, double, int, std::max, std::max, DBL_MIN)
 
 #undef DECLARE_REDUCTION
 
-long num_dependencies(TaskGraph &graph, long dset, long taskid)
-{
-  long num_deps = 0;
-  auto deps = graph.dependencies(dset, taskid);
-  for (auto interval : deps) {
-    for (long i = interval.first; i <= interval.second; i++) num_deps++;
-  }
-  return num_deps;
-}
-
-long num_rev_dependencies(TaskGraph &graph, long dset, long taskid)
-{
-  long num_deps = 0;
-  auto deps = graph.reverse_dependencies(dset, taskid);
-  for (auto interval : deps) {
-    for (long i = interval.first; i <= interval.second; i++) num_deps++;
-  }
-  return num_deps;
-}
-
 Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
            Event wait_for)
 {
@@ -157,14 +133,184 @@ Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
       src_fields, dst_fields, ProfilingRequestSet(), wait_for);
 }
 
-void get_base(RegionInstance inst, char *&base)
+char * get_base(RegionInstance inst, FieldID fid)
 {
   AffineAccessor<char, 1, coord_t> acc =
-      AffineAccessor<char, 1, coord_t>(inst, FID_INPUT);
-  base = reinterpret_cast<char *>(
+      AffineAccessor<char, 1, coord_t>(inst, fid);
+  return reinterpret_cast<char *>(
       acc.ptr(inst.get_indexspace<1, coord_t>().bounds.lo));
 }
 
+void leaf_task(const void *args, size_t arglen, const void *userdata,
+               size_t userlen, Processor p)
+{
+}
+
+void shard_task(const void *args, size_t arglen, const void *userdata,
+               size_t userlen, Processor p)
+{
+  ShardArgs a;
+  std::vector<TaskGraph> graphs;
+  std::vector<std::vector<RegionInstance> > task_results;
+  std::vector<std::vector<Barrier> > raw_barriers;
+  std::vector<std::vector<Barrier> > war_barriers;
+  {
+    FixedBufferDeserializer ser(args, arglen);
+    ser >> a;
+    ser >> graphs;
+    ser >> task_results;
+    ser >> raw_barriers;
+    ser >> war_barriers;
+
+    assert(ser.bytes_left() == 0);
+  }
+
+}
+
+void top_level_task(const void *args, size_t arglen, const void *userdata,
+                    size_t userlen, Processor p)
+{
+  assert(global_argv != NULL);
+  App app(global_argc, global_argv);
+  auto &graphs = app.graphs;
+
+  const long num_fields = 2;
+
+  app.display();
+
+  Machine machine = Machine::get_machine();
+
+  std::vector<Processor> procs;
+  {
+    Machine::ProcessorQuery query(machine);
+    query.only_kind(Processor::LOC_PROC);
+    procs.insert(procs.end(), query.begin(), query.end());
+  }
+
+  std::map<Processor, Memory> proc_sysmems;
+  std::map<Processor, Memory> proc_regmems;
+  {
+    std::vector<Machine::ProcessorMemoryAffinity> proc_mem_affinities;
+    machine.get_proc_mem_affinity(proc_mem_affinities);
+
+    for (size_t i = 0; i < proc_mem_affinities.size(); ++i) {
+      Machine::ProcessorMemoryAffinity &affinity = proc_mem_affinities[i];
+      if (affinity.p.kind() == Processor::LOC_PROC) {
+        if (affinity.m.kind() == Memory::SYSTEM_MEM) {
+          proc_sysmems[affinity.p] = affinity.m;
+          if (proc_regmems.find(affinity.p) == proc_regmems.end())
+            proc_regmems[affinity.p] = affinity.m;
+        } else if (affinity.m.kind() == Memory::REGDMA_MEM)
+          proc_regmems[affinity.p] = affinity.m;
+      }
+    }
+  }
+
+  std::vector<Event> events;
+  std::vector<std::vector<RegionInstance> > task_results(graphs.size());
+  {
+    for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+      auto graph = graphs.at(graph_index);
+
+      task_results.at(graph_index).resize(graph.max_width);
+
+      Rect1 bounds(Point1(0), Point1(graph.output_bytes_per_task - 1));
+
+      for (size_t proc_index = 0; proc_index < procs.size(); ++proc_index) {
+        auto proc = procs.at(proc_index);
+        auto memory = proc_sysmems.at(proc);
+
+        long first_point = proc_index * graph.max_width / procs.size();
+        long last_point = (proc_index + 1) * graph.max_width / procs.size() - 1;
+        for (long point = first_point; point <= last_point; ++point) {
+          CreateRegionArgs args;
+          args.bounds = bounds;
+          args.num_fields = num_fields;
+          args.memory = memory;
+          args.dest_proc = p;
+          args.dest_inst = &task_results.at(graph_index).at(point);
+          events.push_back(proc.spawn(CREATE_REGION_TASK, &args, sizeof(args)));
+        }
+      }
+    }
+  }
+
+  std::vector<std::vector<Barrier> > raw_barriers(graphs.size());
+  std::vector<std::vector<Barrier> > war_barriers(graphs.size());
+  {
+    for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+      auto graph = graphs.at(graph_index);
+
+      raw_barriers.at(graph_index).resize(graph.max_width);
+      war_barriers.at(graph_index).resize(graph.max_width);
+
+      for (size_t proc_index = 0; proc_index < procs.size(); ++proc_index) {
+        auto proc = procs.at(proc_index);
+
+        long first_point = proc_index * graph.max_width / procs.size();
+        long last_point = (proc_index + 1) * graph.max_width / procs.size() - 1;
+        for (long point = first_point; point <= last_point; ++point) {
+          CreateBarrierArgs args;
+          args.expected_arrivals = graph.max_width;
+          args.dest_proc = p;
+          args.dest_barrier = &raw_barriers.at(graph_index).at(point);
+          events.push_back(proc.spawn(CREATE_BARRIER_TASK, &args, sizeof(args)));
+
+          args.dest_barrier = &war_barriers.at(graph_index).at(point);
+          events.push_back(proc.spawn(CREATE_BARRIER_TASK, &args, sizeof(args)));
+        }
+      }
+    }
+  }
+
+  Event::merge_events(events).wait();
+  events.clear();
+
+  Barrier sync_bar = Barrier::create_barrier(procs.size());
+
+  Barrier first_start_bar =
+      Barrier::create_barrier(procs.size(), REDOP_MIN, &RedopMin::identity,
+                              sizeof(RedopMin::identity));
+  Barrier last_start_bar =
+      Barrier::create_barrier(procs.size(), REDOP_MAX, &RedopMax::identity,
+                              sizeof(RedopMax::identity));
+  Barrier first_stop_bar =
+      Barrier::create_barrier(procs.size(), REDOP_MIN, &RedopMin::identity,
+                              sizeof(RedopMin::identity));
+  Barrier last_stop_bar =
+      Barrier::create_barrier(procs.size(), REDOP_MAX, &RedopMax::identity,
+                              sizeof(RedopMax::identity));
+
+  for (size_t proc_index = 0; proc_index < procs.size(); ++proc_index) {
+    auto proc = procs.at(proc_index);
+
+    ShardArgs args;
+    args.proc_index = proc_index;
+    args.sync = sync_bar;
+    args.first_start = first_start_bar;
+    args.last_start = last_start_bar;
+    args.first_stop = first_stop_bar;
+    args.last_stop = last_stop_bar;
+
+    DynamicBufferSerializer ser(4096);
+    ser << args;
+    ser << graphs;
+    ser << task_results;
+    ser << raw_barriers;
+    ser << war_barriers;
+    events.push_back(
+      proc.spawn(SHARD_TASK, ser.get_buffer(), ser.bytes_used()));
+  }
+
+  Event::merge_events(events).wait();
+  events.clear();
+
+  double elapsed = 0;
+
+  app.report_timing(elapsed);
+}
+
+#if 0
 void comm_task(const void *args, size_t arglen, const void *userdata,
                size_t userlen, Processor p)
 {
@@ -181,228 +327,6 @@ void comm_task(const void *args, size_t arglen, const void *userdata,
                       a.scratch_ptr, a.scratch_bytes);
 }
 
-void deserialize_byte_array(
-    ShardArgs &args,
-    std::vector<std::vector<std::vector<std::vector<std::vector<Barrier> > > > >
-        &graph_recv_bars,
-    std::vector<std::vector<std::vector<std::vector<RegionInstance> > > >
-        &tasks_for_each_graph,
-    std::vector<TaskGraph> &graphs, const void *byte_array, long &num_tasks)
-{
-  void *walking_pointer = (void *)byte_array;
-  /* Get the ShardArgs */
-  args = *(ShardArgs *)walking_pointer;
-  walking_pointer = (ShardArgs *)walking_pointer + 1;
-  num_tasks = *(long *)walking_pointer;
-  walking_pointer = (long *)walking_pointer + 1;
-
-  /* Graphs */
-  long num_graphs = *(long *)walking_pointer;
-  walking_pointer = (long *)walking_pointer + 1;
-  for (long i = 0; i < num_graphs; i++) {
-    TaskGraph graph = *(TaskGraph *)walking_pointer;
-    walking_pointer = (TaskGraph *)walking_pointer + 1;
-    graphs.push_back(graph);
-  }
-  /* Region Instances */
-  std::vector<std::vector<std::vector<std::vector<RegionInstance> > > >
-      tasks_for_each_graph_copy;
-  for (int graph_num = 0; graph_num < num_graphs; graph_num++) {
-    TaskGraph graph = graphs[graph_num];
-    std::vector<std::vector<std::vector<RegionInstance> > > regions_per_task;
-    long graph_num_tasks = graph.max_width;
-    for (long taskid = 0; taskid < graph_num_tasks; taskid++) {
-      std::vector<std::vector<RegionInstance> > regions_per_dset;
-      for (long dset = 0; dset < graph.max_dependence_sets(); dset++) {
-        std::vector<RegionInstance> regions;
-        long num_deps = num_dependencies(graph, dset, taskid);
-        for (long dep = 0;
-             dep < (num_deps * NUM_INPUT_REGIONS) + NUM_OUTPUT_REGIONS;
-             dep++)  // extra for output
-        {
-          RegionInstance reg = *(RegionInstance *)walking_pointer;
-          walking_pointer = (RegionInstance *)walking_pointer + 1;
-          regions.push_back(reg);
-        }
-        regions_per_dset.push_back(regions);
-      }
-      regions_per_task.push_back(regions_per_dset);
-    }
-    tasks_for_each_graph_copy.push_back(regions_per_task);
-  }
-  tasks_for_each_graph = tasks_for_each_graph_copy;
-
-  /* Recv Barriers */
-  std::vector<std::vector<std::vector<std::vector<std::vector<Barrier> > > > >
-      graph_recv_bars_copy;
-  for (long graph_num = 0; graph_num < num_graphs; graph_num++) {
-    TaskGraph graph = graphs[graph_num];
-    std::vector<std::vector<std::vector<std::vector<Barrier> > > >
-        barriers_per_task;
-    for (long taskid = 0; taskid < num_tasks; taskid++) {
-      std::vector<std::vector<std::vector<Barrier> > > barriers_per_dset;
-      for (long dset = 0; dset < graph.max_dependence_sets(); dset++) {
-        std::vector<std::vector<Barrier> > in_out_bars;
-        for (long index = OUT_INDEX; index <= IN_INDEX; index++) {
-          std::vector<Barrier> barriers;
-          long num_deps = num_dependencies(graph, dset, taskid);
-          long num_rev_deps = num_rev_dependencies(graph, dset, taskid);
-          if (index == IN_INDEX) {
-            for (long dep_num = 0; dep_num < num_deps * NUM_INPUT_REGIONS;
-                 dep_num++) {
-              Barrier bar = *(Barrier *)walking_pointer;
-              walking_pointer = (Barrier *)walking_pointer + 1;
-              barriers.push_back(bar);
-            }
-          } else {
-            for (long dep_num = 0; dep_num < num_rev_deps * NUM_INPUT_REGIONS;
-                 dep_num++) {
-              Barrier bar = *(Barrier *)walking_pointer;
-              walking_pointer = (Barrier *)walking_pointer + 1;
-              barriers.push_back(bar);
-            }
-          }
-
-          in_out_bars.push_back(barriers);
-        }
-        barriers_per_dset.push_back(in_out_bars);
-      }
-      barriers_per_task.push_back(barriers_per_dset);
-    }
-    graph_recv_bars_copy.push_back(barriers_per_task);
-  }
-  graph_recv_bars = graph_recv_bars_copy;
-}
-
-/* Get the size of the byte array for the comm_task function */
-size_t get_byte_array_size(long num_deps)
-{
-  size_t size = sizeof(char *) * num_deps;  // input_ptrs
-  size += sizeof(size_t) * num_deps;        // input_bytes
-  return size;
-}
-
-/* Find the index of taskid in inter's reverse_dependencies */
-long alt_find_index(long inter, TaskGraph &graph, long taskid, long dset)
-{
-  long index = 0;
-  auto rev_deps = graph.reverse_dependencies(dset, inter);
-  for (auto interval : rev_deps) {
-    for (long rev = interval.first; rev <= interval.second; rev++) {
-      if (rev == taskid) return index;
-      index++;
-    }
-  }
-  return -1;
-}
-
-/* Find the index of taskid in inter's dependencies */
-long find_index(long inter, TaskGraph &graph, long taskid, long dset)
-{
-  long index = 0;
-  auto deps = graph.dependencies(dset, inter);
-  for (auto interval : deps) {
-    for (long dep = interval.first; dep <= interval.second; dep++) {
-      if (dep == taskid) return index;
-      index++;
-    }
-  }
-  return -1;
-}
-
-/* Create the byte array that will be passed into the comm_task */
-void *serialize_comm_array(CommArgs &args, TaskGraph &graph,
-                           std::vector<char *> &input_ptrs,
-                           std::vector<size_t> &input_bytes,
-                           size_t size_of_byte_array)
-{
-  void *resulting_array =
-      malloc(size_of_byte_array + sizeof(CommArgs) + sizeof(TaskGraph));
-  void *walking_pointer = resulting_array;
-
-  /* CommArgs */
-  *(CommArgs *)walking_pointer = args;
-  walking_pointer = (CommArgs *)walking_pointer + 1;
-
-  /* Graph */
-  *(TaskGraph *)walking_pointer = graph;
-  walking_pointer = (TaskGraph *)walking_pointer + 1;
-
-  /* Input Ptrs */
-  for (auto data : input_ptrs) {
-    *(char **)walking_pointer = data;
-    walking_pointer = (char **)walking_pointer + 1;
-  }
-
-  /* Input Bytes */
-  for (auto input : input_bytes) {
-    *(size_t *)walking_pointer = input;
-    walking_pointer = (size_t *)walking_pointer + 1;
-  }
-  return resulting_array;
-}
-
-/* Find the output locations for taskid, at dset, in k_input */
-void get_output_locations(
-    std::vector<RegionInstance> &output_locations,
-    std::vector<std::vector<std::vector<RegionInstance> > >
-        &tasks_for_each_graph,
-    std::vector<std::pair<long, long> > &rev_deps, TaskGraph &graph, long taskid,
-    long dset, long k_input)
-{
-  for (auto interval : rev_deps) {
-    for (long inter = interval.first; inter <= interval.second; inter++) {
-      long index = find_index(inter, graph, taskid, dset);
-      long num_deps = num_dependencies(graph, dset, inter);
-      assert(index != -1);
-      output_locations.push_back(
-          tasks_for_each_graph[inter][dset][index + (k_input * num_deps)]);
-    }
-  }
-}
-
-/* Determine what the task must wait on before executing point. Will include
- * barriers that mark the data being received and the output_barrier. */
-std::vector<Event> create_recv_barriers(std::vector<Barrier> &recv_barriers,
-                                        TaskGraph &graph, long timestep,
-                                        Barrier output_bar, long k_input,
-                                        long num_deps, long taskid)
-{
-  std::vector<long> deps;
-  for (auto interval :
-       graph.dependencies(graph.dependence_set_at_timestep(timestep), taskid)) {
-    for (long inter = interval.first; inter <= interval.second; inter++)
-      deps.push_back(inter);
-  }
-
-  std::vector<Event> result_vec;
-
-  for (long bar_num = 0; bar_num < num_deps; bar_num++) {
-    if (deps[bar_num] < graph.width_at_timestep(timestep - 1) +
-                            graph.offset_at_timestep(timestep - 1) &&
-        deps[bar_num] >= graph.offset_at_timestep(timestep - 1)) {
-      Barrier bar = recv_barriers[bar_num + (k_input * num_deps)];
-      result_vec.push_back((Event)bar.get_previous_phase());
-    }
-  }
-  if (timestep >= NUM_OUTPUT_REGIONS) result_vec.push_back((Event)output_bar);
-  return result_vec;
-}
-
-/* Creates the char ** pointer that is needed for execute_point */
-void create_input_array(std::vector<RegionInstance> &input_ptrs,
-                        std::vector<char *> &input_array, long k_input,
-                        long num_deps)
-{
-  for (long region = 0; region < num_deps; region++) {
-    RegionInstance new_region = input_ptrs[region + (k_input * num_deps)];
-    char *input_data;
-    get_base(new_region, input_data);
-    input_array.push_back(input_data);
-  }
-}
-
-/* This will launch a comm_task for each time_step */
 void shard_task(const void *args, size_t arglen, const void *userdata,
                 size_t userlen, Processor p)
 {
@@ -719,6 +643,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   a.first_stop.arrive(1, Event::NO_EVENT, &time_elapsed, sizeof(time_elapsed));
   a.last_stop.arrive(1, Event::NO_EVENT, &time_elapsed, sizeof(time_elapsed));
 }
+#endif
 
 void create_region_done_task(const void *args, size_t arglen,
                              const void *userdata, size_t userlen, Processor p)
@@ -740,8 +665,9 @@ void create_region_task(const void *args, size_t arglen, const void *userdata,
   const CreateRegionArgs &a = *reinterpret_cast<const CreateRegionArgs *>(args);
 
   std::map<FieldID, size_t> field_sizes;
-  field_sizes[FID_INPUT] = sizeof(char);
-  field_sizes[FID_OUTPUT] = sizeof(char);
+  for (unsigned fid = FID_FIRST; fid < FID_FIRST + a.num_fields; ++fid) {
+    field_sizes[fid] = sizeof(char);
+  }
   RegionInstance inst = RegionInstance::NO_INST;
   RegionInstance::create_instance(inst, a.memory, a.bounds, field_sizes,
                                   0 /*SOA*/, ProfilingRequestSet())
@@ -785,72 +711,7 @@ void create_barrier_task(const void *args, size_t arglen, const void *userdata,
   a.dest_proc.spawn(CREATE_BARRIER_DONE_TASK, &done, sizeof(done)).wait();
 }
 
-void *serialized_array(
-    ShardArgs &args,
-    std::vector<std::vector<std::vector<std::vector<std::vector<Barrier> > > > >
-        &graph_recv_bars,
-    std::vector<std::vector<std::vector<std::vector<RegionInstance> > > >
-        &tasks_for_each_graph,
-    size_t size_of_byte_array, std::vector<TaskGraph> &graphs, int num_tasks)
-{
-  void *resulting_array = malloc(sizeof(ShardArgs) + size_of_byte_array);
-  void *walking_pointer = resulting_array;
-  /* Shard Args */
-  *(ShardArgs *)walking_pointer = args;
-  walking_pointer = (ShardArgs *)walking_pointer + 1;
-
-  *(long *)walking_pointer = num_tasks;
-  walking_pointer = (long *)walking_pointer + 1;
-
-  *(long *)walking_pointer = graphs.size();
-  walking_pointer = (long *)walking_pointer + 1;
-
-  /* Graphs */
-  for (auto graph : graphs) {
-    *(TaskGraph *)walking_pointer = graph;
-    walking_pointer = (TaskGraph *)walking_pointer + 1;
-  }
-
-  /* Region Instances */
-  for (auto per_task : tasks_for_each_graph) {
-    for (auto per_dset : per_task) {
-      for (auto all_inputs : per_dset) {
-        for (auto region : all_inputs) {
-          *(RegionInstance *)walking_pointer = region;
-          walking_pointer = (RegionInstance *)walking_pointer + 1;
-        }
-      }
-    }
-  }
-
-  /* Barriers */
-  for (auto task_barriers : graph_recv_bars) {
-    for (auto per_dset : task_barriers) {
-      for (auto out_in : per_dset) {
-        for (auto barriers : out_in) {
-          for (auto bar : barriers) {
-            *(Barrier *)walking_pointer = bar;
-            walking_pointer = (Barrier *)walking_pointer + 1;
-          }
-        }
-      }
-    }
-  }
-  return resulting_array;
-}
-
-void deserialize_top_array(const void *args, std::vector<TaskGraph> &graphs)
-{
-  long num_graphs = *(long *)args;
-  args = (long *)args + 1;
-
-  for (long graph_num = 0; graph_num < num_graphs; graph_num++) {
-    TaskGraph graph = *(TaskGraph *)args;
-    args = (TaskGraph *)args + 1;
-    graphs.push_back(graph);
-  }
-}
-
+#if 0
 void top_level_task(const void *args, size_t arglen, const void *userdata,
                     size_t userlen, Processor p)
 {
@@ -1052,22 +913,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
 
   app.report_timing(last_stop - first_start);
 }
-
-void *create_byte_array_main(App &config, size_t size_of_byte_array,
-                             long num_graphs)
-{
-  void *resulting_array = malloc(size_of_byte_array);
-  void *walking_pointer = resulting_array;
-
-  *(long *)walking_pointer = num_graphs;
-  walking_pointer = (long *)walking_pointer + 1;
-
-  for (auto graph : config.graphs) {
-    *(TaskGraph *)walking_pointer = graph;
-    walking_pointer = (TaskGraph *)walking_pointer + 1;
-  }
-  return resulting_array;
-}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -1081,7 +927,7 @@ int main(int argc, char **argv)
   rt.register_task(CREATE_BARRIER_TASK, create_barrier_task);
   rt.register_task(CREATE_BARRIER_DONE_TASK, create_barrier_done_task);
   rt.register_task(SHARD_TASK, shard_task);
-  rt.register_task(COMM_TASK, comm_task);
+  rt.register_task(LEAF_TASK, leaf_task);
   rt.register_reduction<RedopMin>(REDOP_MIN);
   rt.register_reduction<RedopMax>(REDOP_MAX);
 
