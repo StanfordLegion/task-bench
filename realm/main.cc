@@ -35,13 +35,11 @@ static int global_argc = 0;
 static char **global_argv = NULL;
 
 enum {
-  TOP_LEVEL_TASK           = Processor::TASK_ID_FIRST_AVAILABLE + 0,
-  CREATE_REGION_TASK       = Processor::TASK_ID_FIRST_AVAILABLE + 1,
-  CREATE_REGION_DONE_TASK  = Processor::TASK_ID_FIRST_AVAILABLE + 2,
-  CREATE_BARRIER_TASK      = Processor::TASK_ID_FIRST_AVAILABLE + 3,
-  CREATE_BARRIER_DONE_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 4,
-  SHARD_TASK               = Processor::TASK_ID_FIRST_AVAILABLE + 5,
-  LEAF_TASK                = Processor::TASK_ID_FIRST_AVAILABLE + 6,
+  TOP_LEVEL_TASK = Processor::TASK_ID_FIRST_AVAILABLE,
+  CREATE_BARRIER_TASK,
+  CREATE_BARRIER_DONE_TASK,
+  SHARD_TASK,
+  LEAF_TASK,
 };
 
 enum {
@@ -112,12 +110,12 @@ DECLARE_REDUCTION(RedopMax, double, int, std::max, std::max, DBL_MIN)
 #undef DECLARE_REDUCTION
 
 Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
-           Event wait_for)
+           size_t value_size, Event wait_for)
 {
   CopySrcDstField src_field;
   src_field.inst = src_inst;
   src_field.field_id = fid;
-  src_field.size = sizeof(char);
+  src_field.size = value_size;
 
   std::vector<CopySrcDstField> src_fields;
   src_fields.push_back(src_field);
@@ -125,15 +123,31 @@ Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
   CopySrcDstField dst_field;
   dst_field.inst = dst_inst;
   dst_field.field_id = fid;
-  dst_field.size = sizeof(char);
+  dst_field.size = value_size;
 
   std::vector<CopySrcDstField> dst_fields;
   dst_fields.push_back(dst_field);
+
   return dst_inst.get_indexspace<1, coord_t>().copy(
       src_fields, dst_fields, ProfilingRequestSet(), wait_for);
 }
 
-char * get_base(RegionInstance inst, FieldID fid)
+Event fill(RegionInstance dst_inst, FieldID fid,
+           const void *value, size_t value_size,
+           Event wait_for)
+{
+  CopySrcDstField dst_field;
+  dst_field.inst = dst_inst;
+  dst_field.field_id = fid;
+  dst_field.size = value_size;
+
+  std::vector<CopySrcDstField> dst_fields;
+  dst_fields.push_back(dst_field);
+  return dst_inst.get_indexspace<1, coord_t>().fill(
+      dst_fields, ProfilingRequestSet(), value, value_size, wait_for);
+}
+
+char *get_base(RegionInstance inst, FieldID fid)
 {
   AffineAccessor<char, 1, coord_t> acc =
       AffineAccessor<char, 1, coord_t>(inst, fid);
@@ -152,18 +166,177 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   ShardArgs a;
   std::vector<TaskGraph> graphs;
   std::vector<std::vector<RegionInstance> > task_results;
-  std::vector<std::vector<Barrier> > raw_barriers;
-  std::vector<std::vector<Barrier> > war_barriers;
+  std::vector<std::vector<RegionInstance> > raw_exchange;
+  std::vector<std::vector<RegionInstance> > war_exchange;
   {
     FixedBufferDeserializer ser(args, arglen);
     ser >> a;
     ser >> graphs;
     ser >> task_results;
-    ser >> raw_barriers;
-    ser >> war_barriers;
+    ser >> raw_exchange;
+    ser >> war_exchange;
 
     assert(ser.bytes_left() == 0);
   }
+
+  long proc_index = a.proc_index;
+  long num_procs = a.num_procs;
+  long num_fields = a.num_fields;
+  Memory sysmem = a.sysmem;
+  // Memory regmem = a.regmem;
+  Barrier sync = a.sync;
+  // Barrier first_start = a.first_start;
+  // Barrier last_start = a.last_start;
+  // Barrier first_stop = a.first_stop;
+  // Barrier last_stop = a.last_stop;
+
+  // Figure out who we're going to be communicating with.
+
+  // graph -> point -> [remote point]
+  std::vector<std::vector<std::set<long> > > raw_exchange_points(graphs.size());
+  std::vector<std::vector<std::set<long> > > war_exchange_points(graphs.size());
+
+  // graph -> [remote point]
+  std::vector<std::set<long> > raw_all_points(graphs.size());
+  std::vector<std::set<long> > war_all_points(graphs.size());
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    long first_point = proc_index * graph.max_width / num_procs;
+    long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+
+    raw_exchange_points.at(graph_index).resize(last_point - first_point + 1);
+    war_exchange_points.at(graph_index).resize(last_point - first_point + 1);
+
+    for (long point = first_point; point <= last_point; ++point) {
+      long max_dset = graph.max_dependence_sets();
+      for (long dset = 0; dset < max_dset; ++dset) {
+        for (auto interval : graph.dependencies(dset, point)) {
+          for (long dep = interval.first; dep <= interval.second; ++dep) {
+            raw_exchange_points.at(graph_index).at(point - first_point).insert(dep);
+            raw_all_points.at(graph_index).insert(dep);
+          }
+        }
+        for (auto interval : graph.reverse_dependencies(dset, point)) {
+          for (long dep = interval.first; dep <= interval.second; ++dep) {
+            war_exchange_points.at(graph_index).at(point - first_point).insert(dep);
+            war_all_points.at(graph_index).insert(dep);
+          }
+        }
+      }
+    }
+  }
+
+  // Create barriers.
+
+  // graph -> point -> field -> remote point -> barrier
+  std::vector<std::vector<std::vector<std::map<long, Barrier> > > > raw_in(graphs.size());
+  std::vector<std::vector<std::vector<std::map<long, Barrier> > > > war_in(graphs.size());
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    long first_point = proc_index * graph.max_width / num_procs;
+    long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+
+    raw_in.at(graph_index).resize(last_point - first_point + 1);
+    war_in.at(graph_index).resize(last_point - first_point + 1);
+
+    for (long point = first_point; point <= last_point; ++point) {
+      auto &raw_points = raw_exchange_points.at(graph_index).at(point - first_point);
+      auto &war_points = raw_exchange_points.at(graph_index).at(point - first_point);
+
+      raw_in.at(graph_index).at(point - first_point).resize(num_fields);
+      war_in.at(graph_index).at(point - first_point).resize(num_fields);
+
+      for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+        const Barrier no_barrier = Barrier::NO_BARRIER;
+        fill(raw_exchange.at(graph_index).at(point), fid,
+             &no_barrier, sizeof(no_barrier), Event::NO_EVENT)
+          .wait();
+        fill(war_exchange.at(graph_index).at(point), fid,
+             &no_barrier, sizeof(no_barrier), Event::NO_EVENT)
+          .wait();
+
+        AffineAccessor<Barrier, 1, coord_t> raw =
+          AffineAccessor<Barrier, 1, coord_t>(raw_exchange.at(graph_index).at(point), fid);
+        AffineAccessor<Barrier, 1, coord_t> war =
+          AffineAccessor<Barrier, 1, coord_t>(war_exchange.at(graph_index).at(point), fid);
+
+        for (auto dep : raw_points) {
+          Barrier bar = Barrier::create_barrier(1);
+          raw_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST)[dep] = bar;
+          raw[dep] = bar;
+        }
+        for (auto dep : war_points) {
+          Barrier bar = Barrier::create_barrier(1);
+          war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST)[dep] = bar;
+          war[dep] = Barrier::create_barrier(1);
+        }
+      }
+    }
+  }
+
+  // Perform barrier exchange.
+  sync.arrive(1);
+  sync.wait();
+  sync = sync.advance_barrier();
+
+  // graph -> remote point -> instance
+  std::vector<std::map<long, RegionInstance> > raw_local_out;
+  std::vector<std::map<long, RegionInstance> > war_local_out;
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    Rect1 bounds(Point1(0), Point1(graph.max_width - 1));
+
+    std::map<FieldID, size_t> field_sizes;
+    for (unsigned fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+      field_sizes[fid] = sizeof(Barrier);
+    }
+
+    for (auto &dep : raw_all_points.at(graph_index)) {
+      RegionInstance inst;
+      RegionInstance::create_instance(inst, sysmem, bounds, field_sizes,
+                                      0 /*SOA*/, ProfilingRequestSet())
+        .wait();
+      raw_local_out.at(graph_index)[dep] = inst;
+    }
+
+    for (auto &dep : war_all_points.at(graph_index)) {
+      RegionInstance inst;
+      RegionInstance::create_instance(inst, sysmem, bounds, field_sizes,
+                                      0 /*SOA*/, ProfilingRequestSet())
+        .wait();
+      war_local_out.at(graph_index)[dep] = inst;
+    }
+  }
+
+  std::vector<Event> events;
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    for (auto &dep : raw_all_points.at(graph_index)) {
+      for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+        events.push_back(
+          copy(raw_exchange.at(graph_index).at(dep),
+               raw_local_out.at(graph_index).at(dep),
+               fid, sizeof(Barrier), Event::NO_EVENT));
+      }
+    }
+
+    for (auto &dep : war_all_points.at(graph_index)) {
+      for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+        events.push_back(
+          copy(war_exchange.at(graph_index).at(dep),
+               war_local_out.at(graph_index).at(dep),
+               fid, sizeof(Barrier), Event::NO_EVENT));
+      }
+    }
+  }
+  Event::merge_events(events).wait();
+  events.clear();
+
+  sync.arrive(1);
+  sync.wait();
+  sync = sync.advance_barrier();
 
 }
 
@@ -174,7 +347,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   App app(global_argc, global_argv);
   auto &graphs = app.graphs;
 
-  const long num_fields = 2;
+  const long num_fields = 5;
 
   app.display();
 
@@ -186,6 +359,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     query.only_kind(Processor::LOC_PROC);
     procs.insert(procs.end(), query.begin(), query.end());
   }
+  long num_procs = procs.size();
 
   std::map<Processor, Memory> proc_sysmems;
   std::map<Processor, Memory> proc_regmems;
@@ -209,6 +383,11 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   std::vector<Event> events;
   std::vector<std::vector<RegionInstance> > task_results(graphs.size());
   {
+    std::map<FieldID, size_t> field_sizes;
+    for (unsigned fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+      field_sizes[fid] = sizeof(char);
+    }
+
     for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
       auto graph = graphs.at(graph_index);
 
@@ -216,48 +395,50 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
 
       Rect1 bounds(Point1(0), Point1(graph.output_bytes_per_task - 1));
 
-      for (size_t proc_index = 0; proc_index < procs.size(); ++proc_index) {
+      for (long proc_index = 0; proc_index < num_procs; ++proc_index) {
         auto proc = procs.at(proc_index);
-        auto memory = proc_sysmems.at(proc);
+        auto memory = proc_regmems.at(proc);
 
-        long first_point = proc_index * graph.max_width / procs.size();
-        long last_point = (proc_index + 1) * graph.max_width / procs.size() - 1;
+        long first_point = proc_index * graph.max_width / num_procs;
+        long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
         for (long point = first_point; point <= last_point; ++point) {
-          CreateRegionArgs args;
-          args.bounds = bounds;
-          args.num_fields = num_fields;
-          args.memory = memory;
-          args.dest_proc = p;
-          args.dest_inst = &task_results.at(graph_index).at(point);
-          events.push_back(proc.spawn(CREATE_REGION_TASK, &args, sizeof(args)));
+          events.push_back(
+            RegionInstance::create_instance(task_results.at(graph_index).at(point), memory, bounds, field_sizes,
+                                            0 /*SOA*/, ProfilingRequestSet()));
         }
       }
     }
   }
 
-  std::vector<std::vector<Barrier> > raw_barriers(graphs.size());
-  std::vector<std::vector<Barrier> > war_barriers(graphs.size());
+  std::vector<std::vector<RegionInstance> > raw_exchange(graphs.size());
+  std::vector<std::vector<RegionInstance> > war_exchange(graphs.size());
   {
+    std::map<FieldID, size_t> field_sizes;
+    for (unsigned fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+      field_sizes[fid] = sizeof(Barrier);
+    }
+
     for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
       auto graph = graphs.at(graph_index);
 
-      raw_barriers.at(graph_index).resize(graph.max_width);
-      war_barriers.at(graph_index).resize(graph.max_width);
+      raw_exchange.at(graph_index).resize(graph.max_width);
+      war_exchange.at(graph_index).resize(graph.max_width);
 
-      for (size_t proc_index = 0; proc_index < procs.size(); ++proc_index) {
+      Rect1 bounds(Point1(0), Point1(graph.max_width - 1));
+
+      for (long proc_index = 0; proc_index < num_procs; ++proc_index) {
         auto proc = procs.at(proc_index);
+        auto memory = proc_sysmems.at(proc);
 
-        long first_point = proc_index * graph.max_width / procs.size();
-        long last_point = (proc_index + 1) * graph.max_width / procs.size() - 1;
+        long first_point = proc_index * graph.max_width / num_procs;
+        long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
         for (long point = first_point; point <= last_point; ++point) {
-          CreateBarrierArgs args;
-          args.expected_arrivals = graph.max_width;
-          args.dest_proc = p;
-          args.dest_barrier = &raw_barriers.at(graph_index).at(point);
-          events.push_back(proc.spawn(CREATE_BARRIER_TASK, &args, sizeof(args)));
-
-          args.dest_barrier = &war_barriers.at(graph_index).at(point);
-          events.push_back(proc.spawn(CREATE_BARRIER_TASK, &args, sizeof(args)));
+          events.push_back(
+            RegionInstance::create_instance(raw_exchange.at(graph_index).at(point), memory, bounds, field_sizes,
+                                            0 /*SOA*/, ProfilingRequestSet()));
+          events.push_back(
+            RegionInstance::create_instance(war_exchange.at(graph_index).at(point), memory, bounds, field_sizes,
+                                            0 /*SOA*/, ProfilingRequestSet()));
         }
       }
     }
@@ -266,26 +447,30 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   Event::merge_events(events).wait();
   events.clear();
 
-  Barrier sync_bar = Barrier::create_barrier(procs.size());
+  Barrier sync_bar = Barrier::create_barrier(num_procs);
 
   Barrier first_start_bar =
-      Barrier::create_barrier(procs.size(), REDOP_MIN, &RedopMin::identity,
+      Barrier::create_barrier(num_procs, REDOP_MIN, &RedopMin::identity,
                               sizeof(RedopMin::identity));
   Barrier last_start_bar =
-      Barrier::create_barrier(procs.size(), REDOP_MAX, &RedopMax::identity,
+      Barrier::create_barrier(num_procs, REDOP_MAX, &RedopMax::identity,
                               sizeof(RedopMax::identity));
   Barrier first_stop_bar =
-      Barrier::create_barrier(procs.size(), REDOP_MIN, &RedopMin::identity,
+      Barrier::create_barrier(num_procs, REDOP_MIN, &RedopMin::identity,
                               sizeof(RedopMin::identity));
   Barrier last_stop_bar =
-      Barrier::create_barrier(procs.size(), REDOP_MAX, &RedopMax::identity,
+      Barrier::create_barrier(num_procs, REDOP_MAX, &RedopMax::identity,
                               sizeof(RedopMax::identity));
 
-  for (size_t proc_index = 0; proc_index < procs.size(); ++proc_index) {
+  for (long proc_index = 0; proc_index < num_procs; ++proc_index) {
     auto proc = procs.at(proc_index);
 
     ShardArgs args;
     args.proc_index = proc_index;
+    args.num_procs = num_procs;
+    args.num_fields = num_fields;
+    args.sysmem = proc_sysmems[proc];
+    args.regmem = proc_regmems[proc];
     args.sync = sync_bar;
     args.first_start = first_start_bar;
     args.last_start = last_start_bar;
@@ -296,8 +481,8 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     ser << args;
     ser << graphs;
     ser << task_results;
-    ser << raw_barriers;
-    ser << war_barriers;
+    ser << raw_exchange;
+    ser << war_exchange;
     events.push_back(
       proc.spawn(SHARD_TASK, ser.get_buffer(), ser.bytes_used()));
   }
@@ -645,42 +830,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 }
 #endif
 
-void create_region_done_task(const void *args, size_t arglen,
-                             const void *userdata, size_t userlen, Processor p)
-{
-  assert(arglen == sizeof(CreateRegionDoneArgs));
-  const CreateRegionDoneArgs &a =
-      *reinterpret_cast<const CreateRegionDoneArgs *>(args);
-
-  // We had better be on the destination proc, otherwise these
-  // pointer won't be valid.
-  assert(a.dest_proc == p);
-  *a.dest_inst = a.inst;
-}
-
-void create_region_task(const void *args, size_t arglen, const void *userdata,
-                        size_t userlen, Processor p)
-{
-  assert(arglen == sizeof(CreateRegionArgs));
-  const CreateRegionArgs &a = *reinterpret_cast<const CreateRegionArgs *>(args);
-
-  std::map<FieldID, size_t> field_sizes;
-  for (unsigned fid = FID_FIRST; fid < FID_FIRST + a.num_fields; ++fid) {
-    field_sizes[fid] = sizeof(char);
-  }
-  RegionInstance inst = RegionInstance::NO_INST;
-  RegionInstance::create_instance(inst, a.memory, a.bounds, field_sizes,
-                                  0 /*SOA*/, ProfilingRequestSet())
-      .wait();
-  // Send the instance back to the requesting node
-  // Important: Don't return until this is complete
-  CreateRegionDoneArgs done;
-  done.inst = inst;
-  done.dest_proc = a.dest_proc;
-  done.dest_inst = a.dest_inst;
-  a.dest_proc.spawn(CREATE_REGION_DONE_TASK, &done, sizeof(done)).wait();
-}
-
 void create_barrier_done_task(const void *args, size_t arglen,
                              const void *userdata, size_t userlen, Processor p)
 {
@@ -922,8 +1071,6 @@ int main(int argc, char **argv)
   rt.init(&argc, &argv);
 
   rt.register_task(TOP_LEVEL_TASK, top_level_task);
-  rt.register_task(CREATE_REGION_TASK, create_region_task);
-  rt.register_task(CREATE_REGION_DONE_TASK, create_region_done_task);
   rt.register_task(CREATE_BARRIER_TASK, create_barrier_task);
   rt.register_task(CREATE_BARRIER_DONE_TASK, create_barrier_done_task);
   rt.register_task(SHARD_TASK, shard_task);

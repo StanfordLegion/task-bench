@@ -23,23 +23,8 @@ typedef long long int coord_t;
 typedef Realm::Point<1, coord_t> Point1;
 typedef Realm::Rect<1, coord_t> Rect1;
 
-struct CreateRegionArgs {
-public:
-  Rect1 bounds;
-  unsigned num_fields;
-  Realm::Memory memory;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::RegionInstance *dest_inst;
-};
-
-struct CreateRegionDoneArgs {
-public:
-  Realm::RegionInstance inst;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::RegionInstance *dest_inst;
-};
+typedef Realm::Point<2, coord_t> Point2;
+typedef Realm::Rect<2, coord_t> Rect2;
 
 struct CreateBarrierArgs {
 public:
@@ -60,6 +45,10 @@ public:
 struct ShardArgs {
 public:
   long proc_index;
+  long num_procs;
+  long num_fields;
+  Realm::Memory sysmem;
+  Realm::Memory regmem;
   Realm::Barrier sync;
   Realm::Barrier first_start;
   Realm::Barrier last_start;
