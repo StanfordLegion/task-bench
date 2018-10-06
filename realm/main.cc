@@ -504,7 +504,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   unsigned long long start_time = 0, stop_time = 0;
   std::vector<Event> preconditions;
   std::vector<std::pair<Event, Barrier *> > postconditions;
-  std::vector<Barrier *> advance;
   for (long rep = 0; rep < 1; ++rep) {
     start_time = Clock::current_time_in_nanoseconds();
     for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
@@ -534,7 +533,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           long n_inputs = 0;
           preconditions.clear();
           postconditions.clear();
-          advance.clear();
           for (auto interval : graph.dependencies(dset, point)) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
               Barrier &ready = raw_in.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep);
@@ -543,8 +541,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                      timestep, graph_index, point, last_fid, n_inputs, dep,
                      ready.get_previous_phase().id);
               Event postcondition = Event::NO_EVENT;
-
-              advance.push_back(&ready);
 
               if (dep >= last_offset && dep < last_offset + last_width) {
                 char *data = result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST);
@@ -582,7 +578,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
               for (long dep = interval.first; dep <= interval.second; ++dep) {
                 Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
                 preconditions.push_back(ready.get_previous_phase());
-                advance.push_back(&ready);
               }
             }
           }
@@ -638,12 +633,24 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
             }
             Barrier *dst = trigger.second;
             dst->arrive(1, src);
-            *dst = dst->advance_barrier();
           }
 
-          for (auto bar : advance) {
-            *bar = bar->advance_barrier();
+          for (auto &bar : raw_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST)) {
+            bar.second = bar.second.advance_barrier();
           }
+
+          for (auto &bar : war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST)) {
+            bar.second = bar.second.advance_barrier();
+          }
+
+          for (auto &bar : raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST)) {
+            bar.second = bar.second.advance_barrier();
+          }
+
+          for (auto &bar : war_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST)) {
+            bar.second = bar.second.advance_barrier();
+          }
+
         }
       }
     }
