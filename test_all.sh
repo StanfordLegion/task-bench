@@ -57,6 +57,11 @@ if [[ $USE_REALM -eq 1 ]]; then
             ./realm/task_bench -steps 9 -type $t $k -ll:cpu 1
             ./realm/task_bench -steps 9 -type $t $k -ll:cpu 2
             ./realm/task_bench -steps 9 -type $t $k -ll:cpu 4
+            if [[ $USE_GASNET -eq 1 ]]; then
+                mpirun -np 2 ./realm/task_bench -steps 9 -type $t $k -ll:cpu 1
+                mpirun -np 2 ./realm/task_bench -steps 9 -type $t $k -ll:cpu 2
+                mpirun -np 4 ./realm/task_bench -steps 9 -type $t $k -ll:cpu 1
+            fi
             ./realm/task_bench -steps 9 -type $t $k -and -steps 9 -type $t $k -ll:cpu 2
         done
     done
