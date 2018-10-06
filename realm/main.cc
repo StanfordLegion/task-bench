@@ -260,7 +260,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 
     for (long point = first_point; point <= last_point; ++point) {
       auto &raw_points = raw_exchange_points.at(graph_index).at(point - first_point);
-      auto &war_points = raw_exchange_points.at(graph_index).at(point - first_point);
+      auto &war_points = war_exchange_points.at(graph_index).at(point - first_point);
 
       raw_in.at(graph_index).at(point - first_point).resize(num_fields);
       war_in.at(graph_index).at(point - first_point).resize(num_fields);
@@ -287,7 +287,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
         for (auto dep : war_points) {
           Barrier bar = Barrier::create_barrier(1);
           war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST)[dep] = bar;
-          war[dep] = Barrier::create_barrier(1);
+          war[dep] = bar;
         }
       }
     }
@@ -365,7 +365,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 
     for (long point = first_point; point <= last_point; ++point) {
       auto &raw_points = raw_exchange_points.at(graph_index).at(point - first_point);
-      auto &war_points = raw_exchange_points.at(graph_index).at(point - first_point);
+      auto &war_points = war_exchange_points.at(graph_index).at(point - first_point);
 
       raw_out.at(graph_index).at(point - first_point).resize(num_fields);
       war_out.at(graph_index).at(point - first_point).resize(num_fields);
@@ -544,8 +544,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 
               if (dep >= last_offset && dep < last_offset + last_width) {
                 char *data = result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST);
-                printf("t %ld g %ld p %ld fid %ld slot %ld dep %ld input pointer %p\n",
-                       timestep, graph_index, point, last_fid, n_inputs, dep, data);
                 if (data) {
                   // Data available locally
                 } else if (point >= offset && point < offset + width) {
@@ -563,6 +561,9 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
               }
 
               preconditions.push_back(precondition);
+              printf("WAR_OUT t %ld g %ld p %ld fid %ld dep %ld POSTCONDITION " IDFMT "\n",
+                     timestep, graph_index, point, last_fid, dep,
+                     war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep).id);
               postconditions.push_back(
                 std::pair<Event, Barrier *>(
                   postcondition,
@@ -573,12 +574,12 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                  timestep, graph_index, point, n_inputs);
 
           // WAR dependencies
-          if (timestep >= num_fields) {
-            for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
-              for (long dep = interval.first; dep <= interval.second; ++dep) {
-                Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
-                preconditions.push_back(ready.get_previous_phase());
-              }
+          for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
+            for (long dep = interval.first; dep <= interval.second; ++dep) {
+              Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
+              printf("WAR_IN  t %ld g %ld p %ld fid %ld dep %ld precondition " IDFMT "\n",
+                     timestep, graph_index, point, fid, dep, ready.get_previous_phase().id);
+              preconditions.push_back(ready.get_previous_phase());
             }
           }
 
@@ -608,10 +609,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
             leaf_args.scratch_bytes = 0;
             leaf_args.n_inputs = n_inputs;
 
-            printf("t %ld g %ld p %ld fid %ld output pointer %p\n",
-                   timestep, graph_index, point, fid, leaf_args.output_ptr);
-
-
             FixedBufferSerializer ser(leaf_buffer, leaf_bufsize);
             ser << leaf_args;
             ser << input_ptr;
@@ -639,15 +636,15 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
             bar.second = bar.second.advance_barrier();
           }
 
-          for (auto &bar : war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST)) {
-            bar.second = bar.second.advance_barrier();
-          }
-
           for (auto &bar : raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST)) {
             bar.second = bar.second.advance_barrier();
           }
 
-          for (auto &bar : war_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST)) {
+          for (auto &bar : war_in.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST)) {
+            bar.second = bar.second.advance_barrier();
+          }
+
+          for (auto &bar : war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST)) {
             bar.second = bar.second.advance_barrier();
           }
 
