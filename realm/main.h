@@ -28,22 +28,6 @@ typedef Realm::Rect<1, coord_t> Rect1;
 typedef Realm::Point<2, coord_t> Point2;
 typedef Realm::Rect<2, coord_t> Rect2;
 
-struct CreateBarrierArgs {
-public:
-  unsigned expected_arrivals;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::Barrier *dest_barrier;
-};
-
-struct CreateBarrierDoneArgs {
-public:
-  Realm::Barrier barrier;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::Barrier *dest_barrier;
-};
-
 struct ShardArgs {
 public:
   long proc_index;
