@@ -52,7 +52,7 @@ if [[ $USE_LEGION -eq 1 ]]; then
 fi
 
 if [[ $USE_REALM -eq 1 ]]; then
-    for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree nearest all_to_all; do # FIXME: fft random_nearest
+    for t in $extended_types; do
         for k in "${compute_kernels[@]}"; do
             ./realm/task_bench -steps 9 -type $t $k -ll:cpu 1
             ./realm/task_bench -steps 9 -type $t $k -ll:cpu 2
