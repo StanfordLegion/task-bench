@@ -104,8 +104,10 @@ enum {
     } while (!__sync_bool_compare_and_swap(target, oldval.as_U, newval.as_U)); \
   }
 
-DECLARE_REDUCTION(RedopMin, double, int, std::min, std::min, DBL_MAX)
-DECLARE_REDUCTION(RedopMax, double, int, std::max, std::max, DBL_MIN)
+DECLARE_REDUCTION(RedopMin, unsigned long long, unsigned long long,
+                  std::min, std::min, std::numeric_limits<unsigned long long>::max())
+DECLARE_REDUCTION(RedopMax, unsigned long long, unsigned long long,
+                  std::max, std::max, std::numeric_limits<unsigned long long>::min())
 
 #undef DECLARE_REDUCTION
 
@@ -158,6 +160,21 @@ char *get_base(RegionInstance inst, FieldID fid)
 void leaf_task(const void *args, size_t arglen, const void *userdata,
                size_t userlen, Processor p)
 {
+  LeafArgs a;
+  std::vector<uintptr_t> input_ptr;
+  std::vector<size_t> input_bytes;
+  {
+    FixedBufferDeserializer ser(args, arglen);
+    ser >> a;
+    ser >> input_ptr;
+    ser >> input_bytes;
+    assert(ser.bytes_left() == 0);
+  }
+
+  a.graph.execute_point(a.timestep, a.point,
+                        a.output_ptr, a.output_bytes,
+                        (const char **)input_ptr.data(), (size_t *)input_bytes.data(), a.n_inputs,
+                        a.scratch_ptr, a.scratch_bytes);
 }
 
 void shard_task(const void *args, size_t arglen, const void *userdata,
@@ -183,12 +200,12 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   long num_procs = a.num_procs;
   long num_fields = a.num_fields;
   Memory sysmem = a.sysmem;
-  // Memory regmem = a.regmem;
+  Memory regmem = a.regmem;
   Barrier sync = a.sync;
-  // Barrier first_start = a.first_start;
-  // Barrier last_start = a.last_start;
-  // Barrier first_stop = a.first_stop;
-  // Barrier last_stop = a.last_stop;
+  Barrier first_start = a.first_start;
+  Barrier last_start = a.last_start;
+  Barrier first_stop = a.first_stop;
+  Barrier last_stop = a.last_stop;
 
   // Figure out who we're going to be communicating with.
 
@@ -282,8 +299,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   sync = sync.advance_barrier();
 
   // graph -> remote point -> instance
-  std::vector<std::map<long, RegionInstance> > raw_local_out;
-  std::vector<std::map<long, RegionInstance> > war_local_out;
+  std::vector<std::map<long, RegionInstance> > raw_local_out(graphs.size());
+  std::vector<std::map<long, RegionInstance> > war_local_out(graphs.size());
   for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
     auto graph = graphs.at(graph_index);
 
@@ -334,10 +351,315 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   Event::merge_events(events).wait();
   events.clear();
 
+  // graph -> point -> field -> remote point -> barrier
+  std::vector<std::vector<std::vector<std::map<long, Barrier> > > > raw_out(graphs.size());
+  std::vector<std::vector<std::vector<std::map<long, Barrier> > > > war_out(graphs.size());
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    long first_point = proc_index * graph.max_width / num_procs;
+    long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+
+    raw_out.at(graph_index).resize(last_point - first_point + 1);
+    war_out.at(graph_index).resize(last_point - first_point + 1);
+
+    for (long point = first_point; point <= last_point; ++point) {
+      auto &raw_points = raw_exchange_points.at(graph_index).at(point - first_point);
+      auto &war_points = raw_exchange_points.at(graph_index).at(point - first_point);
+
+      raw_out.at(graph_index).at(point - first_point).resize(num_fields);
+      war_out.at(graph_index).at(point - first_point).resize(num_fields);
+
+      for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+        for (auto dep : raw_points) {
+          AffineAccessor<Barrier, 1, coord_t> raw =
+            AffineAccessor<Barrier, 1, coord_t>(raw_local_out.at(graph_index).at(dep), fid);
+          Barrier bar = raw[point];
+          assert(bar != Barrier::NO_BARRIER);
+          raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST)[dep] = bar;
+        }
+        for (auto dep : war_points) {
+          AffineAccessor<Barrier, 1, coord_t> war =
+            AffineAccessor<Barrier, 1, coord_t>(war_local_out.at(graph_index).at(dep), fid);
+          Barrier bar = war[point];
+          assert(bar != Barrier::NO_BARRIER);
+          war_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST)[dep] = bar;
+        }
+      }
+    }
+  }
+
+  // Create local input regions
+
+  // graph -> point -> max deps
+  std::vector<std::vector<long> > max_deps(graphs.size());
+  long all_max_deps = 0;
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    long first_point = proc_index * graph.max_width / num_procs;
+    long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+
+    max_deps.at(graph_index).resize(last_point - first_point + 1, 0);
+
+    for (long point = first_point; point <= last_point; ++point) {
+      long max_dset = graph.max_dependence_sets();
+      for (long dset = 0; dset < max_dset; ++dset) {
+        long deps = 0;
+        for (auto interval : graph.dependencies(dset, point)) {
+          deps += interval.second - interval.first + 1;
+        }
+        max_deps.at(graph_index).at(point - first_point) = std::max(
+          max_deps.at(graph_index).at(point - first_point),
+          deps);
+        all_max_deps = std::max(all_max_deps, deps);
+      }
+    }
+  }
+
+  // graph -> point -> dep -> instance
+  std::vector<std::vector<std::vector<RegionInstance> > > inputs(graphs.size());
+  // graph -> point -> dep -> field -> base pointer
+  std::vector<std::vector<std::vector<std::vector<char *> > > > input_base(graphs.size());
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    Rect1 bounds(Point1(0), Point1(graph.output_bytes_per_task - 1));
+
+    std::map<FieldID, size_t> field_sizes;
+    for (unsigned fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+      field_sizes[fid] = sizeof(char);
+    }
+
+    long first_point = proc_index * graph.max_width / num_procs;
+    long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+
+    inputs.at(graph_index).resize(last_point - first_point + 1);
+    input_base.at(graph_index).resize(last_point - first_point + 1);
+
+    for (long point = first_point; point <= last_point; ++point) {
+      long deps = max_deps.at(graph_index).at(point - first_point);
+
+      inputs.at(graph_index).at(point - first_point).resize(deps);
+      input_base.at(graph_index).at(point - first_point).resize(deps);
+
+      for (long dep = 0; dep < deps; ++dep) {
+        RegionInstance &inst = inputs.at(graph_index).at(point - first_point).at(dep);
+        RegionInstance::create_instance(inst, sysmem, bounds, field_sizes,
+                                        0 /*SOA*/, ProfilingRequestSet())
+          .wait();
+
+        input_base.at(graph_index).at(point - first_point).at(dep).resize(num_fields);
+        for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+          input_base.at(graph_index).at(point - first_point).at(dep).at(fid - FID_FIRST) =
+            get_base(inst, fid);
+        }
+      }
+    }
+  }
+
+  // graph -> point -> field -> base pointer
+  std::vector<std::vector<std::vector<char *> > > result_base(graphs.size());
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    result_base.at(graph_index).resize(graph.max_width);
+
+    for (long point = 0; point < graph.max_width; ++point) {
+
+      result_base.at(graph_index).at(point).resize(num_fields, NULL);
+
+      auto &inst = task_results.at(graph_index).at(point);
+      if (inst.get_location() == sysmem || inst.get_location() == regmem) {
+        for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+          result_base.at(graph_index).at(point).at(fid - FID_FIRST) =
+            get_base(inst, fid);
+        }
+      }
+    }
+  }
+
+  std::vector<uintptr_t> input_ptr(all_max_deps, 0);
+  std::vector<size_t> input_bytes(all_max_deps, 0);
+
+  // Statically allocate buffer to use for task input
+  size_t leaf_bufsize = 0;
+  {
+    LeafArgs leaf_args;
+    ByteCountSerializer ser;
+    ser << leaf_args;
+    ser << input_ptr;
+    ser << input_bytes;
+    leaf_bufsize = ser.bytes_used();
+  }
+  void *leaf_buffer = malloc(leaf_bufsize);
+  assert(leaf_buffer);
+
+  // Sync again to avoid staggered start
   sync.arrive(1);
   sync.wait();
   sync = sync.advance_barrier();
 
+  // Main loop
+  unsigned long long start_time = 0, stop_time = 0;
+  std::vector<Event> preconditions;
+  std::vector<std::pair<Event, Barrier *> > postconditions;
+  std::vector<Barrier *> advance;
+  for (long rep = 0; rep < 1; ++rep) {
+    start_time = Clock::current_time_in_nanoseconds();
+    for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+      auto graph = graphs.at(graph_index);
+
+      std::fill(input_bytes.begin(), input_bytes.end(), graph.output_bytes_per_task);
+
+      long first_point = proc_index * graph.max_width / num_procs;
+      long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+
+      for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
+        long dset = graph.dependence_set_at_timestep(timestep);
+        long next_dset = graph.dependence_set_at_timestep(timestep + 1);
+        long last_field_dset = graph.dependence_set_at_timestep(timestep - num_fields);
+
+        long offset = graph.offset_at_timestep(timestep);
+        long width = graph.width_at_timestep(timestep);
+
+        long last_offset = graph.offset_at_timestep(timestep-1);
+        long last_width = graph.width_at_timestep(timestep-1);
+
+        long fid = FID_FIRST + timestep % num_fields;
+        long last_fid = FID_FIRST + (timestep + num_fields - 1) % num_fields;
+
+        for (long point = first_point; point <= last_point; ++point) {
+          // Copy inputs
+          long n_inputs = 0;
+          preconditions.clear();
+          postconditions.clear();
+          advance.clear();
+          for (auto interval : graph.dependencies(dset, point)) {
+            for (long dep = interval.first; dep <= interval.second; ++dep) {
+              Barrier &ready = raw_in.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep);
+              Event precondition = ready.get_previous_phase();
+              printf("t %ld g %ld p %ld fid %ld slot %ld dep %ld precondition " IDFMT "\n",
+                     timestep, graph_index, point, last_fid, n_inputs, dep,
+                     ready.get_previous_phase().id);
+              Event postcondition = Event::NO_EVENT;
+
+              advance.push_back(&ready);
+
+              if (dep >= last_offset && dep < last_offset + last_width) {
+                char *data = result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST);
+                printf("t %ld g %ld p %ld fid %ld slot %ld dep %ld input pointer %p\n",
+                       timestep, graph_index, point, last_fid, n_inputs, dep, data);
+                if (data) {
+                  // Data available locally
+                } else if (point >= offset && point < offset + width) {
+                  printf("copy\n");
+                  // Only copy if data is remote and needed for task execution
+                  precondition = postcondition = copy(
+                    task_results.at(graph_index).at(dep),
+                    inputs.at(graph_index).at(point - first_point).at(n_inputs),
+                    last_fid, graph.output_bytes_per_task,
+                    precondition);
+                  data = input_base.at(graph_index).at(point - first_point).at(n_inputs).at(last_fid - FID_FIRST);
+                }
+                input_ptr.at(n_inputs) = reinterpret_cast<uintptr_t>(data);
+                n_inputs++;
+              }
+
+              preconditions.push_back(precondition);
+              postconditions.push_back(
+                std::pair<Event, Barrier *>(
+                  postcondition,
+                  &war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep)));
+            }
+          }
+          printf("t %ld g %ld p %ld n_inputs %ld\n",
+                 timestep, graph_index, point, n_inputs);
+
+          // WAR dependencies
+          if (timestep >= num_fields) {
+            for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
+              for (long dep = interval.first; dep <= interval.second; ++dep) {
+                Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
+                preconditions.push_back(ready.get_previous_phase());
+                advance.push_back(&ready);
+              }
+            }
+          }
+
+          // RAW dependencies
+          for (auto interval : graph.reverse_dependencies(next_dset, point)) {
+            for (long dep = interval.first; dep <= interval.second; ++dep) {
+              Barrier &complete = raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
+              postconditions.push_back(
+                std::pair<Event, Barrier *>(
+                  Event::NO_EVENT,
+                  &complete));
+              printf("t %ld g %ld p %ld dep %ld complete " IDFMT "\n",
+                     timestep, graph_index, point, dep, complete.id);
+            }
+          }
+
+          // Launch task
+          Event task_postcondition = Event::NO_EVENT;
+          if (point >= offset && point < offset + width) {
+            LeafArgs leaf_args;
+            leaf_args.point = point;
+            leaf_args.timestep = timestep;
+            leaf_args.graph = graph;
+            leaf_args.output_ptr = result_base.at(graph_index).at(point).at(fid - FID_FIRST);
+            leaf_args.output_bytes = graph.output_bytes_per_task;
+            leaf_args.scratch_ptr = NULL;
+            leaf_args.scratch_bytes = 0;
+            leaf_args.n_inputs = n_inputs;
+
+            printf("t %ld g %ld p %ld fid %ld output pointer %p\n",
+                   timestep, graph_index, point, fid, leaf_args.output_ptr);
+
+
+            FixedBufferSerializer ser(leaf_buffer, leaf_bufsize);
+            ser << leaf_args;
+            ser << input_ptr;
+            ser << input_bytes;
+            assert(ser.bytes_left() == 0);
+
+            task_postcondition =
+              p.spawn(LEAF_TASK, leaf_buffer, leaf_bufsize,
+                      Event::merge_events(preconditions));
+
+            // FIXME: Figure out which tasks we actually need to wait on
+            events.push_back(task_postcondition);
+          }
+
+          for (auto trigger : postconditions) {
+            Event src = trigger.first;
+            if (src == Event::NO_EVENT) {
+              src = task_postcondition;
+            }
+            Barrier *dst = trigger.second;
+            dst->arrive(1, src);
+            *dst = dst->advance_barrier();
+          }
+
+          for (auto bar : advance) {
+            *bar = bar->advance_barrier();
+          }
+        }
+      }
+    }
+
+    Event::merge_events(events).wait();
+    events.clear();
+
+    stop_time = Clock::current_time_in_nanoseconds();
+  }
+
+  first_start.arrive(1, Event::NO_EVENT, &start_time, sizeof(start_time));
+  last_start.arrive(1, Event::NO_EVENT, &start_time, sizeof(start_time));
+  first_stop.arrive(1, Event::NO_EVENT, &stop_time, sizeof(stop_time));
+  last_stop.arrive(1, Event::NO_EVENT, &stop_time, sizeof(stop_time));
+
+  free(leaf_buffer);
 }
 
 void top_level_task(const void *args, size_t arglen, const void *userdata,
@@ -490,9 +812,47 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   Event::merge_events(events).wait();
   events.clear();
 
-  double elapsed = 0;
+  unsigned long long first_start;
+  {
+    first_start_bar.wait();
+#ifndef NDEBUG
+    bool ok =
+#endif
+      first_start_bar.get_result(&first_start, sizeof(first_start));
+    assert(ok);
+  }
 
-  app.report_timing(elapsed);
+  unsigned long long last_start;
+  {
+    last_start_bar.wait();
+#ifndef NDEBUG
+    bool ok =
+#endif
+      last_start_bar.get_result(&last_start, sizeof(last_start));
+    assert(ok);
+  }
+
+  unsigned long long first_stop;
+  {
+    first_stop_bar.wait();
+#ifndef NDEBUG
+    bool ok =
+#endif
+      first_stop_bar.get_result(&first_stop, sizeof(first_stop));
+    assert(ok);
+  }
+
+  unsigned long long last_stop;
+  {
+    last_stop_bar.wait();
+#ifndef NDEBUG
+    bool ok =
+#endif
+      last_stop_bar.get_result(&last_stop, sizeof(last_stop));
+    assert(ok);
+  }
+
+  app.report_timing((last_stop - first_start)/1e9);
 }
 
 #if 0

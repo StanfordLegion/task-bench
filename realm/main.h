@@ -18,6 +18,8 @@
 
 #include "realm.h"
 
+#include "core.h"
+
 typedef long long int coord_t;
 
 typedef Realm::Point<1, coord_t> Point1;
@@ -54,16 +56,25 @@ public:
   Realm::Barrier last_start;
   Realm::Barrier first_stop;
   Realm::Barrier last_stop;
+  // std::vector<TaskGraph> graphs;
+  // std::vector<std::vector<RegionInstance> > task_results;
+  // std::vector<std::vector<RegionInstance> > raw_exchange;
+  // std::vector<std::vector<RegionInstance> > war_exchange;
 };
 
 TYPE_IS_SERIALIZABLE(ShardArgs);
 
 struct LeafArgs {
 public:
-  long taskid, timestep, num_deps;
-  long dset;
-  size_t output_bytes, scratch_bytes;
-  char *output_ptr, *scratch_ptr;
+  long point, timestep;
+  TaskGraph graph;
+  char *output_ptr;
+  size_t output_bytes;
+  char *scratch_ptr;
+  size_t scratch_bytes;
+  long n_inputs;
+  // std::vector<uintptr_t> input_ptr;
+  // std::vector<size_t> input_bytes;
 };
 
 TYPE_IS_SERIALIZABLE(LeafArgs);
