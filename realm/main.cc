@@ -311,7 +311,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       field_sizes[fid] = sizeof(Barrier);
     }
 
-    for (auto &dep : raw_all_points.at(graph_index)) {
+    for (auto &dep : war_all_points.at(graph_index)) {
       RegionInstance inst;
       RegionInstance::create_instance(inst, sysmem, bounds, field_sizes,
                                       0 /*SOA*/, ProfilingRequestSet())
@@ -319,7 +319,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       raw_local_out.at(graph_index)[dep] = inst;
     }
 
-    for (auto &dep : war_all_points.at(graph_index)) {
+    for (auto &dep : raw_all_points.at(graph_index)) {
       RegionInstance inst;
       RegionInstance::create_instance(inst, sysmem, bounds, field_sizes,
                                       0 /*SOA*/, ProfilingRequestSet())
@@ -330,7 +330,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 
   std::vector<Event> events;
   for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
-    for (auto &dep : raw_all_points.at(graph_index)) {
+    for (auto &dep : war_all_points.at(graph_index)) {
       for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
         events.push_back(
           copy(raw_exchange.at(graph_index).at(dep),
@@ -339,7 +339,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       }
     }
 
-    for (auto &dep : war_all_points.at(graph_index)) {
+    for (auto &dep : raw_all_points.at(graph_index)) {
       for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
         events.push_back(
           copy(war_exchange.at(graph_index).at(dep),
@@ -371,14 +371,14 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       war_out.at(graph_index).at(point - first_point).resize(num_fields);
 
       for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
-        for (auto dep : raw_points) {
+        for (auto dep : war_points) {
           AffineAccessor<Barrier, 1, coord_t> raw =
             AffineAccessor<Barrier, 1, coord_t>(raw_local_out.at(graph_index).at(dep), fid);
           Barrier bar = raw[point];
           assert(bar != Barrier::NO_BARRIER);
           raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST)[dep] = bar;
         }
-        for (auto dep : war_points) {
+        for (auto dep : raw_points) {
           AffineAccessor<Barrier, 1, coord_t> war =
             AffineAccessor<Barrier, 1, coord_t>(war_local_out.at(graph_index).at(dep), fid);
           Barrier bar = war[point];
