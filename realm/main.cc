@@ -244,6 +244,46 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     }
   }
 
+  // graph -> point -> dset -> [remote point]
+  std::vector<std::vector<std::vector<std::vector<long> > > > raw_points_not_in_dset(graphs.size());
+  std::vector<std::vector<std::vector<std::vector<long> > > > war_points_not_in_dset(graphs.size());
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    long first_point = proc_index * graph.max_width / num_procs;
+    long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+
+    raw_points_not_in_dset.at(graph_index).resize(last_point - first_point + 1);
+    war_points_not_in_dset.at(graph_index).resize(last_point - first_point + 1);
+
+    for (long point = first_point; point <= last_point; ++point) {
+      long max_dset = graph.max_dependence_sets();
+
+      raw_points_not_in_dset.at(graph_index).at(point - first_point).resize(max_dset);
+      war_points_not_in_dset.at(graph_index).at(point - first_point).resize(max_dset);
+
+      for (long dset = 0; dset < max_dset; ++dset) {
+        std::set<long> raw_points = raw_exchange_points.at(graph_index).at(point - first_point);
+        std::set<long> war_points = war_exchange_points.at(graph_index).at(point - first_point);
+
+        for (auto interval : graph.dependencies(dset, point)) {
+          for (long dep = interval.first; dep <= interval.second; ++dep) {
+            raw_points.erase(dep);
+          }
+        }
+        for (auto interval : graph.reverse_dependencies(dset, point)) {
+          for (long dep = interval.first; dep <= interval.second; ++dep) {
+            war_points.erase(dep);
+          }
+        }
+
+        raw_points_not_in_dset.at(graph_index).at(point - first_point).at(dset).assign(raw_points.begin(), raw_points.end());
+        war_points_not_in_dset.at(graph_index).at(point - first_point).at(dset).assign(war_points.begin(), war_points.end());
+      }
+    }
+  }
+
+
   // Create barriers.
 
   // graph -> point -> field -> remote point -> barrier
@@ -570,6 +610,12 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                   &war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep)));
             }
           }
+          // Also need to arrive at any points not included in this
+          // dset, otherwise we'll deadlock.
+          for (long dep : raw_points_not_in_dset.at(graph_index).at(point - first_point).at(dset)) {
+            war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep).arrive(1);
+          }
+
           printf("t %ld g %ld p %ld n_inputs %ld\n",
                  timestep, graph_index, point, n_inputs);
 
@@ -594,6 +640,11 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
               printf("t %ld g %ld p %ld dep %ld complete " IDFMT "\n",
                      timestep, graph_index, point, dep, complete.id);
             }
+          }
+          // Also need to arrive at any points not included in this
+          // dset, otherwise we'll deadlock.
+          for (long dep : war_points_not_in_dset.at(graph_index).at(point - first_point).at(next_dset)) {
+            raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep).arrive(1);
           }
 
           // Launch task
