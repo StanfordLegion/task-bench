@@ -520,6 +520,16 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   std::vector<uintptr_t> input_ptr(all_max_deps, 0);
   std::vector<size_t> input_bytes(all_max_deps, 0);
 
+  size_t max_scratch_bytes = 0;
+  for (auto graph : graphs) {
+    max_scratch_bytes = std::max(max_scratch_bytes, graph.scratch_bytes_per_task);
+  }
+
+  // It's ok to use only a single scratch buffer because the tasks
+  // will be effectively serialized on this processor.
+  char *scratch_ptr = reinterpret_cast<char *>(malloc(max_scratch_bytes));
+  assert(scratch_ptr);
+
   // Statically allocate buffer to use for task input
   size_t leaf_bufsize = 0;
   {
@@ -640,8 +650,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
             leaf_args.graph = graph;
             leaf_args.output_ptr = result_base.at(graph_index).at(point).at(fid - FID_FIRST);
             leaf_args.output_bytes = graph.output_bytes_per_task;
-            leaf_args.scratch_ptr = NULL;
-            leaf_args.scratch_bytes = 0;
+            leaf_args.scratch_ptr = scratch_ptr;
+            leaf_args.scratch_bytes = graph.scratch_bytes_per_task;
             leaf_args.n_inputs = n_inputs;
 
             FixedBufferSerializer ser(leaf_buffer, leaf_bufsize);
@@ -699,6 +709,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   last_stop.arrive(1, Event::NO_EVENT, &stop_time, sizeof(stop_time));
 
   free(leaf_buffer);
+  free(scratch_ptr);
 }
 
 void top_level_task(const void *args, size_t arglen, const void *userdata,

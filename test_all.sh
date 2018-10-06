@@ -53,7 +53,7 @@ fi
 
 if [[ $USE_REALM -eq 1 ]]; then
     for t in $extended_types; do
-        for k in "${compute_kernels[@]}"; do
+        for k in "${kernels[@]}"; do
             ./realm/task_bench -steps 9 -type $t $k -ll:cpu 1
             ./realm/task_bench -steps 9 -type $t $k -ll:cpu 2
             ./realm/task_bench -steps 9 -type $t $k -ll:cpu 4
