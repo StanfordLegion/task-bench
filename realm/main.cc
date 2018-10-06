@@ -517,7 +517,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
         long dset = graph.dependence_set_at_timestep(timestep);
         long next_dset = graph.dependence_set_at_timestep(timestep + 1);
-        long last_field_dset = graph.dependence_set_at_timestep(timestep - num_fields);
+        long last_field_dset = graph.dependence_set_at_timestep(std::max(timestep - num_fields + 1, 0L));
 
         long offset = graph.offset_at_timestep(timestep);
         long width = graph.width_at_timestep(timestep);
