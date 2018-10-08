@@ -471,6 +471,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     std::vector<Barrier> output_barriers(NUM_OUTPUT_REGIONS,
                                          Barrier::NO_BARRIER);
 
+    start_time = Timer::get_cur_time();
     for (size_t graph_num = 0; graph_num < graphs.size(); graph_num++) {
       TaskGraph graph = graphs[graph_num];
       size_t output_bytes = graph.output_bytes_per_task;
@@ -709,7 +710,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
         }
       }
     }
-    start_time = Timer::get_cur_time();
     Event::merge_events(events).wait();
     time_elapsed = Timer::get_cur_time();
   }
