@@ -160,6 +160,9 @@ fi)
 
     make -C chapel clean
     make -C chapel
+
+    make -C chapel_nested_arrays clean
+    make -C chapel_nested_arrays
 fi)
 
 if [[ $USE_OPENMP -eq 1 ]]; then
