@@ -18,60 +18,49 @@
 
 #include "realm.h"
 
+#include "core.h"
+
 typedef long long int coord_t;
 
 typedef Realm::Point<1, coord_t> Point1;
 typedef Realm::Rect<1, coord_t> Rect1;
 
-struct CreateRegionArgs {
-public:
-  Rect1 bounds;
-  Realm::Memory memory;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::RegionInstance *dest_inst;
-};
-
-struct CreateRegionDoneArgs {
-public:
-  Realm::RegionInstance inst;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::RegionInstance *dest_inst;
-};
-
-struct CreateBarrierArgs {
-public:
-  unsigned expected_arrivals;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::Barrier *dest_barrier;
-};
-
-struct CreateBarrierDoneArgs {
-public:
-  Realm::Barrier barrier;
-  Realm::Processor dest_proc;
-  // Warning: Pointers live on dest_proc
-  Realm::Barrier *dest_barrier;
-};
+typedef Realm::Point<2, coord_t> Point2;
+typedef Realm::Rect<2, coord_t> Rect2;
 
 struct ShardArgs {
 public:
-  long taskid;
+  long proc_index;
+  long num_procs;
+  long num_fields;
+  Realm::Memory sysmem;
+  Realm::Memory regmem;
   Realm::Barrier sync;
   Realm::Barrier first_start;
   Realm::Barrier last_start;
   Realm::Barrier first_stop;
   Realm::Barrier last_stop;
+  // std::vector<TaskGraph> graphs;
+  // std::vector<std::vector<RegionInstance> > task_results;
+  // std::vector<std::vector<RegionInstance> > raw_exchange;
+  // std::vector<std::vector<RegionInstance> > war_exchange;
 };
 
-struct CommArgs {
+TYPE_IS_SERIALIZABLE(ShardArgs);
+
+struct LeafArgs {
 public:
-  long taskid, timestep, num_deps;
-  long dset;
-  size_t output_bytes, scratch_bytes;
-  char *output_ptr, *scratch_ptr;
+  long point, timestep;
+  TaskGraph graph;
+  char *output_ptr;
+  size_t output_bytes;
+  char *scratch_ptr;
+  size_t scratch_bytes;
+  long n_inputs;
+  // std::vector<uintptr_t> input_ptr;
+  // std::vector<size_t> input_bytes;
 };
+
+TYPE_IS_SERIALIZABLE(LeafArgs);
 
 #endif
