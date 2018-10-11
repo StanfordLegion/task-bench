@@ -311,7 +311,7 @@ OmpSsApp::~OmpSsApp()
   free(matrix);
   matrix = NULL;
   
-  for (int j = 0; j < nb_workers; j++) {
+  for (int j = 0; j < (nb_workers+1); j++) {
     if (extra_local_memory[j] != NULL) {
       free(extra_local_memory[j]);
       extra_local_memory[j] = NULL;
