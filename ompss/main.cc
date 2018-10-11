@@ -75,7 +75,7 @@ int ompss_get_thread_num()
 #if defined(OMPSS) 
   return omp_get_thread_num();
 #elif defined(OMPSS2)
-  return syscall(SYS_gettid) - main_tid;
+  return abs(syscall(SYS_gettid) - main_tid);
 #endif
 }
 
@@ -98,7 +98,7 @@ void task1(tile_t *tile_out, payload_t payload)
   std::vector<size_t> input_bytes;
   input_ptrs.push_back((char*)tile_out->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
-  
+ 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else  

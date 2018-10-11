@@ -144,8 +144,8 @@ fi
 if [[ $USE_OMPSS2 -eq 1 ]]; then
     for t in $basic_types; do
         for k in "${kernels[@]}"; do
-            taskset -c 0-1 ./ompss2/main -steps 9 -type $t $k
-            taskset -c 0-1 ./ompss2/main -steps 9 -type $t $k -and -steps 9 -type $t $k
+            taskset -c 0-3 ./ompss2/main -steps 9 -type $t $k -worker 4
+            taskset -c 0-3 ./ompss2/main -steps 9 -type $t $k -and -steps 9 -type $t $k -worker 4
         done
     done
 fi
