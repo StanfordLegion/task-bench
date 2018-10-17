@@ -26,6 +26,8 @@
 
 #define USE_CORE_VERIFICATION
 
+#define MAX_NUM_ARGS 10
+
 typedef struct tile_s {
   float dep;
   char *output_buff;
@@ -50,7 +52,7 @@ typedef struct matrix_s {
 
 char **extra_local_memory;
 
-void task1(tile_t *tile_out, payload_t payload)
+static inline void task1(tile_t *tile_out, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -70,7 +72,7 @@ void task1(tile_t *tile_out, payload_t payload)
 #endif  
 }
 
-void task2(tile_t *tile_out, tile_t *tile_in1, payload_t payload)
+static inline void task2(tile_t *tile_out, tile_t *tile_in1, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -90,7 +92,7 @@ void task2(tile_t *tile_out, tile_t *tile_in1, payload_t payload)
 #endif
 }
 
-void task3(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, payload_t payload)
+static inline void task3(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -112,7 +114,7 @@ void task3(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, payload_t paylo
 #endif
 }
 
-void task4(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, payload_t payload)
+static inline void task4(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -136,7 +138,7 @@ void task4(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
 #endif
 }
 
-void task5(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, payload_t payload)
+static inline void task5(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -162,7 +164,7 @@ void task5(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
 #endif
 }
 
-void task6(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, payload_t payload)
+static inline void task6(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -196,7 +198,7 @@ struct OpenMPApp : public App {
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
 private:
-  void insert_task(std::vector<task_args_t> args, payload_t payload, size_t graph_id);
+  void insert_task(task_args_t *args, int num_args, payload_t payload, size_t graph_id);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
   int nb_workers;
@@ -303,7 +305,7 @@ void OpenMPApp::execute_main_loop()
         }
         
       }
-      #pragma omp taskwait
+//      #pragma omp taskwait
     }
     #pragma omp barrier
   }
@@ -319,55 +321,57 @@ void OpenMPApp::execute_timestep(size_t idx, long t)
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
   
-  std::vector<task_args_t> args;
+  task_args_t args[MAX_NUM_ARGS];
   payload_t payload;
-  task_args_t task_args;
-
+  int num_args = 0;
+  int ct = 0;  
+  
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);   
-    int num_args;    
+    num_args = 0;
+    ct = 0;    
     
     if (deps.size() == 0) {
       num_args = 1;
       debug_printf(1, "%d[%d] ", x, num_args);
-      task_args.x = x;
-      task_args.y = t % nb_fields;
-      args.push_back(task_args);
+      args[ct].x = x;
+      args[ct].y = t % nb_fields;
+      ct ++;
     } else {
       if (t == 0) {
         num_args = 1;
         debug_printf(1, "%d[%d] ", x, num_args);
-        task_args.x = x;
-        task_args.y = t % nb_fields;
-        args.push_back(task_args);
+        args[ct].x = x;
+        args[ct].y = t % nb_fields;
+        ct ++;
       } else {
         num_args = 1;
-        task_args.x = x;
-        task_args.y = t % nb_fields;
-        args.push_back(task_args);
+        args[ct].x = x;
+        args[ct].y = t % nb_fields;
+        ct ++;
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
           debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
-            task_args.x = i;
-            task_args.y = (t-1) % nb_fields;
-            args.push_back(task_args);
+            args[ct].x = i;
+            args[ct].y = (t-1) % nb_fields;
+            ct ++;
           }
         }
       }
     }
     
+    assert(num_args == ct);
+    
     payload.y = t;
     payload.x = x;
     payload.graph = g;
-    insert_task(args, payload, idx);
-    args.clear();
+    insert_task(args, num_args, payload, idx);
   }
 }
 
-void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, size_t graph_id)
+void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, size_t graph_id)
 {
-  int num_args = args.size();
   tile_t *mat = matrix[graph_id].data;
   int x0 = args[0].x;
   int y0 = args[0].y;
@@ -375,7 +379,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
   switch(num_args) {
   case 1:
   {
-    #pragma omp task depend(inout: mat[y0 * matrix[graph_id].N + x0])
+    #pragma omp task depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
       task1(&mat[y0 * matrix[graph_id].N + x0], payload);
     break;
   }
@@ -384,7 +388,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
   {
     int x1 = args[1].x;
     int y1 = args[1].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
+    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
       task2(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], payload);
     break;
@@ -396,7 +400,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
     int y1 = args[1].y;
     int x2 = args[2].x;
     int y2 = args[2].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
+    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
       task3(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], payload);
@@ -411,7 +415,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
     int y2 = args[2].y;
     int x3 = args[3].x;
     int y3 = args[3].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
+    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
       task4(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -429,7 +433,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
     int y3 = args[3].y;
     int x4 = args[4].x;
     int y4 = args[4].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
+    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
       task5(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -450,7 +454,7 @@ void OpenMPApp::insert_task(std::vector<task_args_t> args, payload_t payload, si
     int y4 = args[4].y;
     int x5 = args[5].x;
     int y5 = args[5].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
+    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
       task6(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
