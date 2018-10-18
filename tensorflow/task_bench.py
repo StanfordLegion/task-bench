@@ -22,6 +22,7 @@ import cffi
 import subprocess
 import time
 
+import numpy as np
 import tensorflow as tf
 
 core_header = subprocess.check_output(
@@ -85,8 +86,14 @@ def execute_task_graph(graph):
 
     graph_tensor = build_task_graph_tensor(graph)
 
+    feed = {}
+
+    dummy_name = "dummy_%s" % graph.graph_index
+    dummy = tf.placeholder(tf.uint8, shape=(graph.output_bytes_per_task,), name=dummy_name)
+    feed["%s:0" % dummy_name] = np.zeros(graph.output_bytes_per_task, dtype=np.uint8)
+
     outputs = []
-    last_row = []
+    last_row = None
     for timestep in range(0, graph.timesteps):
         offset = c.task_graph_offset_at_timestep(graph, timestep)
         width = c.task_graph_width_at_timestep(graph, timestep)
@@ -95,25 +102,29 @@ def execute_task_graph(graph):
         for point in range(0, offset):
             row.append(None)
         for point in range(offset, offset + width):
-            with tf.name_scope("timestep-" + str(timestep) + "_point-" + str(point)):
-                inputs = []
-                for dep in task_graph_dependencies(graph, timestep, point):
-                    inputs.append(outputs[timestep - 1][dep])
-                row.append(kernel_op(graph_tensor, timestep, point, inputs))
+            inputs = []
+            for dep in task_graph_dependencies(graph, timestep, point):
+                inputs.append(last_row[dep])
+            if len(inputs) == 0:
+                # Add a dummy to tasks with no input so that they can't be constant-folded.
+                inputs.append(dummy)
+            op = kernel_op(graph_tensor, timestep, point, inputs)
+            row.append(op)
+            outputs.append(op)
         for point in range(offset + width, graph.max_width):
             row.append(None)
         assert(len(row) == graph.max_width)
-        outputs.append(row)
+        last_row = row
 
-    sess.run(outputs[timestep][offset : offset + width])
+    sess.run(outputs, feed_dict=feed)
 
 def execute_task_bench():
     app = app_create(sys.argv)
     task_graphs = app_task_graphs(app)
-    start_time = time.time()
+    start_time = time.perf_counter()
     for task_graph in task_graphs:
         execute_task_graph(task_graph)
-    total_time = time.time() - start_time
+    total_time = time.perf_counter() - start_time
     c.app_report_timing(app, total_time)
 
 
