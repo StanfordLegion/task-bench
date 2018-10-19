@@ -123,8 +123,13 @@ fi)
 (if [[ $USE_X10 -eq 1 ]]; then
     source "$X10_DIR"/env.sh
 
+    ANT_FLAGS=("-DX10RT_MPI=true")
+    if [[ -n $CRAYPE_VERSION ]]; then
+        ANT_FLAGS+=("-DCROSS_COMPILE_MODULES=true")
+    fi
+
     pushd "$X10_DIR"/x10/x10.dist
-    ant -DX10RT_MPI=true dist # squeakyclean dist
+    ant "${ANT_FLAGS[@]}" dist # squeakyclean dist
     popd
 
     make -C x10 clean
