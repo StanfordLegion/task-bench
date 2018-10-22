@@ -406,8 +406,8 @@ void create_input_array(std::vector<RegionInstance> &input_ptrs,
 void shard_task(const void *args, size_t arglen, const void *userdata,
                 size_t userlen, Processor p)
 {
-  std::vector<Events> window_events;
-  std::vector<Events> last_window_events;
+  std::vector<Event> window_events;
+  std::vector<Event> last_window_events;
   constexpr long window_size = 16;
 
   std::vector<std::vector<std::vector<std::vector<std::vector<Barrier> > > > >
