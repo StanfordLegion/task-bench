@@ -24,8 +24,8 @@ else
 endif
 
 #check AVX support
-HAVE_AVX2 ?= $(filter-out 0,$(shell grep " avx2 " /proc/cpuinfo | wc -l))
-HAVE_AVX ?= $(filter-out 0,$(shell grep " avx " /proc/cpuinfo | wc -l))
+HAVE_AVX2 ?= $(shell grep " avx2 " /proc/cpuinfo | wc -l)
+HAVE_AVX ?= $(shell grep " avx " /proc/cpuinfo | wc -l)
 ifneq ($(strip $(HAVE_AVX2)),0)
 	HAVE_AVX2 = 1
 endif
