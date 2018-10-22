@@ -406,6 +406,10 @@ void create_input_array(std::vector<RegionInstance> &input_ptrs,
 void shard_task(const void *args, size_t arglen, const void *userdata,
                 size_t userlen, Processor p)
 {
+  std::vector<Events> window_events;
+  std::vector<Events> last_window_events;
+  constexpr long window_size = 16;
+
   std::vector<std::vector<std::vector<std::vector<std::vector<Barrier> > > > >
       graph_recv_bars;
   std::vector<std::vector<std::vector<std::vector<RegionInstance> > > >
@@ -467,7 +471,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     sync.arrive(1);
     sync.wait();
     sync = sync.advance_barrier();
-    std::vector<Event> events;
     std::vector<Barrier> output_barriers(NUM_OUTPUT_REGIONS,
                                          Barrier::NO_BARRIER);
 
@@ -477,6 +480,12 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       size_t output_bytes = graph.output_bytes_per_task;
 
       for (long timestep = 0L; timestep < graph.timesteps; timestep++) {
+        if (timestep % window_size == 0) {
+          Event::merge_events(last_window_events).wait();
+          last_window_events.swap(window_events);
+          window_events.clear();
+        }
+
         long dset = graph.dependence_set_at_timestep(timestep);
         long new_dset = graph.dependence_set_at_timestep(timestep + 1);
         long new_k_input = (timestep + 1) % NUM_INPUT_REGIONS;
@@ -524,7 +533,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                       sizeof(CommArgs) + size_of_byte_array + sizeof(TaskGraph),
                       timestep != 0 ? Event::merge_events(recv_barriers)
                                     : Event::NO_EVENT);
-          events.push_back(executed_point);
+          window_events.push_back(executed_point);
 
           /* Signal to dependencies that you are ready to recv again */
 
@@ -578,7 +587,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                         graph_recv_bars[graph_num][taskid][new_dset][OUT_INDEX]
                                        [index + (new_k_input * num_rev_deps)],
                         executed_point));
-                events.push_back(copy_done);
+                window_events.push_back(copy_done);
                 long recv_index = find_index(inter, graph, taskid, new_dset);
                 graph_recv_bars[graph_num][inter][new_dset][IN_INDEX]
                                [recv_index + (new_k_input * inter_num_deps)]
@@ -710,7 +719,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
         }
       }
     }
-    Event::merge_events(events).wait();
+    Event::merge_events(last_window_events).wait();
+    Event::merge_events(window_events).wait();
     time_elapsed = Timer::get_cur_time();
   }
   // printf("taskid: %d, total_time: %f\n", taskid, time_elapsed - start_time);
