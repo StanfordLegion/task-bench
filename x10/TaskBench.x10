@@ -118,10 +118,10 @@ public class TaskBench {
 
       char **input_ptr = new char *[n_inputs];
       size_t *input_bytes = new size_t[n_inputs];
-      assert(inputs->FMGL(size) >= n_inputs);
+      assert(n_inputs <= inputs->FMGL(size));
       for (x10_long i = 0; i < n_inputs; ++i) {
-        assert(inputs[i].FMGL(size) == tg.output_bytes_per_task);
-        input_ptr[i] = (char *)inputs[i].raw;
+        assert((*inputs)[i]->FMGL(size) == tg.output_bytes_per_task);
+        input_ptr[i] = (char *)((*inputs)[i]->raw);
         input_bytes[i] = tg.output_bytes_per_task;
       }
 
@@ -188,8 +188,8 @@ public class TaskBench {
           val last_offset = timestep > 0 ? offset_at_timestep(graph_index)(timestep-1) : 0;
           val last_width = timestep > 0 ? width_at_timestep(graph_index)(timestep-1) : 0;
 
-          val next_offset = offset_at_timestep(graph_index)(timestep+1);
-          val next_width = width_at_timestep(graph_index)(timestep+1);
+          val next_offset = timestep + 1 < timesteps(graph_index) ? offset_at_timestep(graph_index)(timestep+1) : 0;
+          val next_width = timestep + 1 < timesteps(graph_index) ? width_at_timestep(graph_index)(timestep+1) : 0;
 
           // Fetch inputs for this timestep.
           var n_inputs:Long = 0;
@@ -286,9 +286,31 @@ public class TaskBench {
   }
 
   private def execute() {
+    val local_plh = plh; // Make local so that it's not copied by at statements.
+
     var start_time:Long = 0;
     var stop_time:Long = 0;
     for (iter in 0..1) {
+      finish for (p in Place.places()) {
+        async at (p) {
+          val remote_pi = local_plh();
+          for (graph_result in remote_pi.task_result) {
+            for (point_result in graph_result) {
+              point_result.fill(0uy);
+            }
+          }
+          for (graph_ready in remote_pi.task_ready) {
+            for (point_ready in graph_ready) {
+              point_ready.fill(0);
+            }
+          }
+          for (graph_used in remote_pi.task_used) {
+            for (point_used in graph_used) {
+              point_used.fill(0);
+            }
+          }
+        }
+      }
       start_time = Timer.nanoTime();
       finish for (p in Place.places()) {
         async at (p) {
@@ -384,9 +406,9 @@ public class TaskBench {
         auto graph_dset_at_timestep = ::x10::lang::Rail<x10_long>::_make((x10_long)graph.timesteps);
 
         for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
-          ::x10aux::nullCheck(graph_width_at_timestep)->::x10::lang::Rail<x10_long>::__set((x10_long)graph_index, (x10_long)graph.width_at_timestep(timestep));
-          ::x10aux::nullCheck(graph_offset_at_timestep)->::x10::lang::Rail<x10_long>::__set((x10_long)graph_index, (x10_long)graph.offset_at_timestep(timestep));
-          ::x10aux::nullCheck(graph_dset_at_timestep)->::x10::lang::Rail<x10_long>::__set((x10_long)graph_index, (x10_long)graph.dependence_set_at_timestep(timestep));
+          ::x10aux::nullCheck(graph_width_at_timestep)->::x10::lang::Rail<x10_long>::__set((x10_long)timestep, (x10_long)graph.width_at_timestep(timestep));
+          ::x10aux::nullCheck(graph_offset_at_timestep)->::x10::lang::Rail<x10_long>::__set((x10_long)timestep, (x10_long)graph.offset_at_timestep(timestep));
+          ::x10aux::nullCheck(graph_dset_at_timestep)->::x10::lang::Rail<x10_long>::__set((x10_long)timestep, (x10_long)graph.dependence_set_at_timestep(timestep));
         }
 
         ::x10aux::nullCheck(width_at_timestep)->::x10::lang::Rail<::x10::lang::Rail<x10_long>*>::__set((x10_long)graph_index, graph_width_at_timestep);
@@ -404,7 +426,7 @@ public class TaskBench {
         for (long point = 0; point < graph.max_width; ++point) {
           auto point_deps = ::x10::lang::Rail<::x10::lang::Rail<x10_long>*>::_make((x10_long)max_dsets);
           for (long dset = 0; dset < max_dsets; ++dset) {
-            long ndeps;
+            long ndeps = 0;
             for (auto interval : graph.dependencies(dset, point)) {
               ndeps += interval.second - interval.first + 1;
             }
@@ -430,7 +452,7 @@ public class TaskBench {
         for (long point = 0; point < graph.max_width; ++point) {
           auto point_rev_deps = ::x10::lang::Rail<::x10::lang::Rail<x10_long>*>::_make((x10_long)max_rev_dsets);
           for (long rev_dset = 0; rev_dset < max_rev_dsets; ++rev_dset) {
-            long nrev_deps;
+            long nrev_deps = 0;
             for (auto interval : graph.reverse_dependencies(rev_dset, point)) {
               nrev_deps += interval.second - interval.first + 1;
             }
