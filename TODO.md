@@ -13,7 +13,6 @@
   * Potential Implementations
       * DARMA
       * OCR
-      * X10
       * Dask
       * Ray
       * Nimbus

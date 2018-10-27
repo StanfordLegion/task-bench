@@ -13,7 +13,8 @@ Implementations:
 [Spark](spark),
 [StarPU](starpu),
 [Swift/T](swift),
-[TensorFlow](tensorflow)
+[TensorFlow](tensorflow),
+[X10](x10)
 
 ## Quickstart
 
