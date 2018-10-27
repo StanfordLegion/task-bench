@@ -243,7 +243,7 @@ public class TaskBench {
             if (point >= last_offset && point < last_offset + last_width) {
               val dset = dset_at_timestep(graph_index)(timestep);
               for (dep in rev_deps(graph_index)(point)(dset)) {
-                if (dep < last_offset || dep >= last_offset + last_width) {
+                if (dep < offset || dep >= offset + width) {
                   continue;
                 }
                 n_war_deps++;

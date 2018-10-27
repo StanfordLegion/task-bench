@@ -125,7 +125,7 @@ fi
 (if [[ $USE_X10 -eq 1 ]]; then
     source "$X10_DIR"/env.sh
 
-    for t in trivial no_comm stencil_1d stencil_1d_periodic nearest all_to_all fft random_nearest; do # dom  tree
+    for t in $extended_types; do
         for k in "${kernels[@]}"; do
             mpirun -np 1 ./x10/main -steps 9 -type $t $k
             mpirun -np 2 ./x10/main -steps 9 -type $t $k
