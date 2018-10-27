@@ -169,7 +169,8 @@ EOF
     tar xfz apache-ant-1.10.5-bin.tar.gz -C "$X10_DIR"
     rm apache-ant-1.10.5-bin.tar.gz
 
-    git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
+    # git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
+    git clone -b fix-compile-bug https://github.com/elliottslaughter/x10.git "$X10_DIR"/x10
 fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then
