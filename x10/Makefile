@@ -4,7 +4,7 @@ X10FLAGS ?=
 X10FLAGS += -x10rt mpi
 
 ifeq ($(strip $(DEBUG)),0)
-	X10FLAGS += -O3
+	X10FLAGS += -O3 -NO_CHECKS
 else
 	X10FLAGS += -g -O0
 endif

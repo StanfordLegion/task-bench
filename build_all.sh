@@ -166,6 +166,9 @@ fi)
     source "$X10_DIR"/env.sh
 
     ANT_FLAGS=("-DX10RT_MPI=true")
+    if [[ ${DEBUG:-0} -eq 0 ]]; then
+        ANT_FLAGS+=("-Doptimize=true" "-DNO_CHECKS=true")
+    fi
     if [[ -n $CRAYPE_VERSION ]]; then
         ANT_FLAGS+=("-DCROSS_COMPILE_MODULES=true")
     fi
