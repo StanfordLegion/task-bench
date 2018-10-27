@@ -1,5 +1,26 @@
 # A Task Benchmark [![Build Status](https://travis-ci.org/StanfordLegion/task-bench.svg?branch=master)](https://travis-ci.org/StanfordLegion/task-bench)
 
+**Please contact the authors before publishing any results obtained
+with Task Bench.**
+
+Corresponding authors:
+
+  * Elliott Slaughter <slaughter@cs.stanford.edu>
+  * Wei Wu <wwu@lanl.gov>
+
+Task Bench is a configurable benchmark for evaluating the efficiency
+and performance of parallel and distributed programming models,
+runtimes, and languages. It is primarily intended for evaluating
+task-based models, in which the basic unit of execution is a task, but
+it can be implemented in any parallel system. The benchmark consists
+of a configurable task graph (which can be thought of as a grid with
+tasks along the x-axis and time along the y-axis), with configurable
+dependencies between tasks. Tasks execute a configurable set of
+kernels, which allow the execution to be compute-bound, memory-bound,
+communication-bound, or runtime overhead-bound (with empty tasks).
+
+The following configurations are currently supported:
+
 Implementations:
 [Charm++](charm++),
 [Chapel](chapel),
@@ -15,6 +36,24 @@ Implementations:
 [Swift/T](swift),
 [TensorFlow](tensorflow),
 [X10](x10)
+
+Dependence patterns:
+trivial,
+no_comm,
+stencil_1d,
+stencil_1d_periodic,
+dom,
+tree,
+fft,
+all_to_all,
+nearest,
+random_nearest
+
+Kernels:
+compute-bound,
+memory-bound,
+load-imbalanced compute-bound,
+empty
 
 ## Quickstart
 
