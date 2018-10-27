@@ -130,8 +130,7 @@ fi
             mpirun -np 1 ./x10/main -steps 9 -type $t $k
             mpirun -np 2 ./x10/main -steps 9 -type $t $k
             mpirun -np 4 ./x10/main -steps 9 -type $t $k
-            # FIXME: X10 can't run multiple task graphs
-            # mpirun -np 4 ./x10/main -steps 9 -type $t $k -and -steps 9 -type $t $k
+            mpirun -np 4 ./x10/main -steps 9 -type $t $k -and -steps 9 -type $t $k
         done
     done
 fi)
