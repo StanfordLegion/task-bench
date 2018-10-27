@@ -23,6 +23,7 @@ export USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
 export USE_PARSEC=${USE_PARSEC:-$DEFAULT_FEATURES}
 export USE_CHARM=${USE_CHARM:-$DEFAULT_FEATURES}
 export USE_CHAPEL=${USE_CHAPEL:-$DEFAULT_FEATURES}
+export USE_X10=${USE_X10:-$DEFAULT_FEATURES}
 export USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
 export USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
 export USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
@@ -139,6 +140,36 @@ EOF
     wget https://github.com/chapel-lang/chapel/releases/download/1.18.0/chapel-1.18.0.tar.gz
     mkdir "$CHPL_HOME"
     tar xfz chapel-1.18.0.tar.gz -C "$CHPL_HOME" --strip-components 1
+fi
+
+if [[ $USE_X10 -eq 1 ]]; then
+    export X10_DIR="$PWD"/deps/x10
+    cat >>deps/env.sh <<EOF
+export X10_DIR=$X10_DIR
+EOF
+
+    mkdir -p "$X10_DIR"
+
+    cat >>"$X10_DIR"/env.sh <<EOF
+export X10_DIR="$X10_DIR"
+export PATH="\$X10_DIR"/x10/x10.dist/bin:"\$PATH"
+
+export JAVA_HOME="\$X10_DIR"/jdk1.8.0_131
+export PATH="\$JAVA_HOME"/bin:"\$PATH"
+
+export ANT_HOME="\$X10_DIR"/apache-ant-1.10.5
+export PATH="\$ANT_HOME"/bin:"\$PATH"
+EOF
+
+    wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
+    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$X10_DIR"
+    rm jdk-8u131-linux-x64.tar.gz
+
+    wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.5-bin.tar.gz
+    tar xfz apache-ant-1.10.5-bin.tar.gz -C "$X10_DIR"
+    rm apache-ant-1.10.5-bin.tar.gz
+
+    git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
 fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then

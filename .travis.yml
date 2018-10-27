@@ -25,6 +25,7 @@ env:
     - USE_PARSEC=1 TASKBENCH_USE_HWLOC=1
     - USE_CHARM=1
     - USE_CHAPEL=1
+    - USE_X10=1
     - USE_OPENMP=1
     - USE_SPARK=1
     - USE_OMPSS=1

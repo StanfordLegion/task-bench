@@ -122,6 +122,20 @@ if [[ $USE_CHAPEL -eq 1 ]]; then
     done
 fi
 
+(if [[ $USE_X10 -eq 1 ]]; then
+    source "$X10_DIR"/env.sh
+
+    for t in trivial no_comm stencil_1d stencil_1d_periodic nearest all_to_all fft random_nearest; do # dom  tree
+        for k in "${kernels[@]}"; do
+            mpirun -np 1 ./x10/main -steps 9 -type $t $k
+            mpirun -np 2 ./x10/main -steps 9 -type $t $k
+            mpirun -np 4 ./x10/main -steps 9 -type $t $k
+            # FIXME: X10 can't run multiple task graphs
+            # mpirun -np 4 ./x10/main -steps 9 -type $t $k -and -steps 9 -type $t $k
+        done
+    done
+fi)
+
 if [[ $USE_OPENMP -eq 1 ]]; then
     export LD_LIBRARY_PATH=/usr/local/clang/lib:$LD_LIBRARY_PATH
     for t in $basic_types; do
