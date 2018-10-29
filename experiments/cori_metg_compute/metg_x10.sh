@@ -8,6 +8,8 @@
 
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
+export X10RT_MPI_THREAD_SERIALIZED=1 # MPI doesn't support MPI_THREAD_MULTIPLE
+
 function launch {
     srun -n $(( $1 * cores )) -N $1 --ntasks-per-node=$cores --cpus-per-task=1 --cpu_bind cores ../../x10/main "${@:2}" -width $(( $1 * cores ))
 }
