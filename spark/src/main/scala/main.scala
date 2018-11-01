@@ -21,7 +21,7 @@ import org.apache.spark.SparkFiles
 object Main {
     //globals 
     var NUM_PARTITIONS = 10;  
-    val oldPartitioner = new HashPartitioner(NUM_PARTITIONS);
+    var oldPartitioner = new HashPartitioner(NUM_PARTITIONS);
     val CHECKPOINT_INTERVAL = 5;
     val MATERIALIZE_INTERVAL = 90;
     val ordering = new math.Ordering[Array[Byte]] {
@@ -56,11 +56,13 @@ object Main {
         val numSlurmNodes = sys.env.get("SLURM_JOB_NUM_NODES");
         if (numSlurmNodes != None) {    //otherwise, in CI, presumably
             val numWorkerNodes = numSlurmNodes.get.toInt - 1; //NOTE: this only works for SLURM; assumes separate node for master
-            val numWorkerCores = sys.env("SLURM_CPUS_ON_NODE").toInt * numWorkerNodes;
+            val numWorkerCores = sys.env("SLURM_CPUS_ON_NODE").toInt * numWorkerNodes / 2;
             //val numWorkerCores = spark.sparkContext.getConf.get("spark.cores.max").toInt;
             NUM_PARTITIONS = numWorkerCores - 2 * numWorkerNodes; 
+            //NUM_PARTITIONS = 30;
         }
         println("Num partitions: " +  NUM_PARTITIONS);
+        oldPartitioner = new HashPartitioner(NUM_PARTITIONS);
         spark.sparkContext.setLogLevel("ERROR");
 
         System.loadLibrary("core_c");
