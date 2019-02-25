@@ -1,4 +1,4 @@
-/* Copyright 2018 Los Alamos National Laboratory
+/* Copyright 2019 Los Alamos National Laboratory
  * Copyright 2009-2018 The University of Tennessee and The University 
  *                     of Tennessee Research Foundation
  *
