@@ -10,7 +10,7 @@ total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 cores=$(( $total_cores - 2 ))
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../realm/task_bench "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 0
+    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../realm${VARIANT+.}$VARIANT/task_bench "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 0
 }
 
 function sweep {
@@ -24,7 +24,7 @@ function sweep {
 }
 
 for n in $SLURM_JOB_NUM_NODES; do
-    for t in stencil_1d; do
-        sweep launch $n $t > realm_type_${t}_nodes_${n}.log
+    for t in ${PATTERN:-stencil_1d}; do
+        sweep launch $n $t > realm${VARIANT+.}${VARIANT}_type_${t}_nodes_${n}.log
     done
 done
