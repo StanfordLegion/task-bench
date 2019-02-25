@@ -1,6 +1,5 @@
 #!/bin/bash
-#SBATCH --nodes=1
-#SBATCH --account=m2872
+#SBATCH --account=m2294
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --exclusive

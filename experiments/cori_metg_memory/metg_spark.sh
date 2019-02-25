@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --cpus-per-task=16 
 #SBATCH --ntasks-per-node=2
-#SBATCH --account=m2872
+#SBATCH --account=m2294
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --exclusive
