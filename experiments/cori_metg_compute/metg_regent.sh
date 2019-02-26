@@ -10,26 +10,17 @@ total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 cores=$(( $total_cores - 2 ))
 
 function launch_util_0 {
-    memoize=
-    if [[ $1 -le 1 ]]; then
-        memoize="-dm:memoize -lg:parallel_replay $cores"
-    fi
-    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../regent/main.shard30 "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 0 $memoize -scratch 64
+    memoize="-dm:memoize -lg:parallel_replay $cores"
+    time srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../regent/main.shard30 "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 0 -ll:io 1 $memoize -scratch 64
 }
 
 function launch_util_1 {
-    memoize=
-    if [[ $1 -le 1 ]]; then
-        memoize="-dm:memoize"
-    fi
+    memoize="-dm:memoize"
     srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../regent/main.shard30 "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize -scratch 64
 }
 
 function launch_util_2 {
-    memoize=
-    if [[ $1 -le 1 ]]; then
-        memoize="-dm:memoize"
-    fi
+    memoize="-dm:memoize"
     srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../regent/main.shard30 "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 2 $memoize -scratch 64
 }
 
