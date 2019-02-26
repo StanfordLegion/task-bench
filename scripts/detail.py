@@ -36,7 +36,7 @@ def parse_filename(filename):
     return {
         'name': ' '.join(fields[:type_idx]),
         'type': ' '.join(fields[type_idx+1:node_idx]),
-        'nodes': int(' '.join(fields[node_idx+1:])),
+        'nodes': int(fields[node_idx+1]),
     }
 
 def driver(machine, threshold):
