@@ -36,7 +36,7 @@ def parse_filename(filename):
     return {
         'name': ' '.join(fields[:type_idx]),
         'type': ' '.join(fields[type_idx+1:node_idx]),
-        'nodes': ' '.join(fields[node_idx+1:]),
+        'nodes': int(' '.join(fields[node_idx+1:])),
     }
 
 def driver(machine, threshold):
@@ -50,7 +50,7 @@ def driver(machine, threshold):
     for filename in log_filenames:
         prefix = parse_filename(filename)
         try:
-            data = metg_chart.analyze(filename, int(prefix['nodes']), params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=False)
+            data = metg_chart.analyze(filename, prefix['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=False)
         except:
             data = {}
         for values in zip(*list(data.values())):

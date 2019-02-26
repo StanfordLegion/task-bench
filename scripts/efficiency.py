@@ -36,10 +36,10 @@ def parse_filename(filename):
     return {
         'name': ' '.join(fields[:type_idx]),
         'type': ' '.join(fields[type_idx+1:node_idx]),
-        'nodes': ' '.join(fields[node_idx+1:]),
+        'nodes': int(' '.join(fields[node_idx+1:])),
     }
 
-def driver(machine, threshold):
+def driver(nodes, machine, threshold):
     params = get_machine_parameters(machine)
 
     header = ['efficiency']
@@ -47,6 +47,8 @@ def driver(machine, threshold):
     log_filenames = glob.glob('**/*.log', recursive=True)
     for filename in log_filenames:
         prefix = parse_filename(filename)
+        if prefix['nodes'] != nodes:
+            continue
         if prefix['name'] not in header:
             header.append(prefix['name'])
 
@@ -54,8 +56,10 @@ def driver(machine, threshold):
     out.writeheader()
     for filename in log_filenames:
         prefix = parse_filename(filename)
+        if prefix['nodes'] != nodes:
+            continue
         try:
-            data = metg_chart.analyze(filename, int(prefix['nodes']), params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=False)
+            data = metg_chart.analyze(filename, prefix['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=False)
         except:
             data = {}
         for values in zip(*list(data.values())):
@@ -68,6 +72,7 @@ def driver(machine, threshold):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-n', '--nodes', required=True)
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     args = parser.parse_args()
