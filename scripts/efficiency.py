@@ -72,7 +72,7 @@ def driver(nodes, machine, threshold):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--nodes', required=True)
+    parser.add_argument('-n', '--nodes', type=int, required=True)
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     args = parser.parse_args()
