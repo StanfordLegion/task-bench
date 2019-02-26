@@ -50,10 +50,12 @@ def group_by(keys, values):
     if last_group is not None:
         yield (last_key, last_group)
 
-def analyze(filename, nodes, cores, threshold, peak_flops, peak_bytes):
+def analyze(filename, nodes, cores, threshold, peak_flops, peak_bytes, summary=True):
     compute = collections.OrderedDict([
         ('scale_factor', lambda t: t['iterations'][0] / t['iterations']),
         ('time_per_task', lambda t: t['elapsed'] / t['tasks'] * nodes * cores * 1000),
+        ('flops_per_second', lambda t: t['flops'] / t['elapsed']),
+        ('bytes_per_second', lambda t: t['bytes'] / t['elapsed']),
     ])
 
     if peak_flops:
@@ -95,7 +97,7 @@ def analyze(filename, nodes, cores, threshold, peak_flops, peak_bytes):
         table[k] = f(table)
 
     min_time = None
-    if any(table['efficiency'] >= threshold):
+    if summary and any(table['efficiency'] >= threshold):
         # Find smallest task granularity above efficiency threshold:
         min_i, min_efficiency = min(
             filter(lambda x: x[1] >= threshold,
@@ -114,6 +116,9 @@ def analyze(filename, nodes, cores, threshold, peak_flops, peak_bytes):
     for k, c in table.items():
         if any(isinstance(x, float) for x in c):
             table[k] = ['%e' % x for x in c]
+
+    if not summary:
+        return table
 
     out_filename = os.path.splitext(filename)[0] + '.csv'
     with open(out_filename, 'w') as f:
