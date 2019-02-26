@@ -56,9 +56,13 @@ fi
 if [[ -n $CRAYPE_VERSION ]]; then
     export HOST_CC=gcc HOST_CXX=g++
 fi
-if [[ $USE_LEGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion clean
+fi
+if [[ $USE_REGENT -eq 1 ]]; then
     make -C regent clean
+fi
+if [[ $USE_REALM -eq 1 ]]; then
     make -C realm clean
 fi
 if [[ $USE_REGENT -eq 1 ]]; then
