@@ -11,12 +11,12 @@ cores=$(( $total_cores - 2 ))
 
 function launch_util_0 {
     memoize="-dm:memoize -lg:parallel_replay $cores"
-    time srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../regent/main.shard30 "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 0 -ll:io 1 $memoize -scratch 64
+    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../regent/main.shard30 "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:io 1 -ll:util 0 -lg:replay_on_cpus $memoize -scratch 64
 }
 
 function launch_util_1 {
     memoize="-dm:memoize"
-    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../regent/main.shard30 "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize -scratch 64
+    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../regent/main.shard30 "${@:2}" -width $(( $1 * cores )) -ll:cpu $cores -ll:io 1 -ll:util 1 -ll:pin_util $memoize -scratch 64
 }
 
 function launch_util_2 {
