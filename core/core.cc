@@ -324,9 +324,8 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
     break;
   case DependenceType::SPREAD:
     {
-      long spread = (max_width + radix - 1)/radix;
       for (long i = 0; i < radix; ++i) {
-        long dep = (point - i*spread - (i>0 ? dset : 0)) % max_width;
+        long dep = (point - i*max_width/radix - (i>0 ? dset : 0)) % max_width;
         if (dep < 0) dep += max_width;
         deps.push_back(std::pair<long, long>(dep, dep));
       }
@@ -425,9 +424,8 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
     break;
   case DependenceType::SPREAD:
     {
-      long spread = (max_width + radix - 1)/radix;
       for (long i = 0; i < radix; ++i) {
-        long dep = (point + i*spread + (i>0 ? dset : 0)) % max_width;
+        long dep = (point + i*max_width/radix + (i>0 ? dset : 0)) % max_width;
         deps.push_back(std::pair<long, long>(dep, dep));
       }
     }
@@ -730,6 +728,14 @@ void App::check() const
       abort();
     }
 
+    // This is required to avoid wrapping around with later dependence sets.
+    long spread = (g.max_width + g.radix - 1) / g.radix;
+    if (g.dependence == DependenceType::SPREAD && g.period > spread) {
+      fprintf(stderr, "error: Graph type \"%s\" requires a period that is at most %ld\n",
+              name_by_dtype().at(g.dependence).c_str(), spread);
+      abort();
+    }
+
     for (long t = 0; t < g.timesteps; ++t) {
       long offset = g.offset_at_timestep(t);
       long width = g.width_at_timestep(t);
@@ -806,6 +812,20 @@ void App::display() const
           }
           printf("\n");
         }
+#ifdef EXTRA_VERBOSE
+        printf("      Reverse Dependencies (offset %ld, width %ld):\n",
+               g.offset_at_timestep(t), g.width_at_timestep(t));
+        for (long p = offset; p < offset + width; ++p) {
+          printf("        Point %ld:", p);
+          auto deps = g.reverse_dependencies(dset, p);
+          for (auto dep : deps) {
+            for (long dp = dep.first; dp <= dep.second; ++dp) {
+              printf(" %ld", dp);
+            }
+          }
+          printf("\n");
+        }
+#endif
       }
     }
   }
