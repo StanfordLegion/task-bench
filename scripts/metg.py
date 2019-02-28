@@ -44,12 +44,14 @@ def driver(dependence, machine, threshold, csv_dialect):
             metg = chart_metg.analyze(filename, row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
         except:
             metg = float('inf')
+        # Have to use float('inf') as a sentinel here to be comparable.
         if metg is None: metg = float('inf')
         table[row['nodes']][row['name']] = min(metg, table[row['nodes']][row['name']])
 
     out = csv.DictWriter(sys.stdout, header, dialect=csv_dialect)
     out.writeheader()
     for nodes, row in table.items():
+        row = {k: None if v == float('inf') else v for k, v in row.items()}
         row['nodes'] = nodes
         out.writerow(row)
 
