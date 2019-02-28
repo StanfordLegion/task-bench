@@ -10,7 +10,7 @@ fi
 
 source deps/env.sh
 
-basic_types="trivial no_comm stencil_1d stencil_1d_periodic dom tree fft nearest random_nearest"
+basic_types="trivial no_comm stencil_1d stencil_1d_periodic dom tree fft nearest spread random_nearest"
 extended_types="$basic_types all_to_all"
 
 compute_bound="-kernel compute_bound -iter 1024"
