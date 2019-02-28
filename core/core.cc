@@ -34,6 +34,10 @@ typedef unsigned long long TaskGraphMask;
 static std::atomic<TaskGraphMask> has_executed_graph;
 #endif
 
+static bool needs_period(DependenceType dtype) {
+  return dtype == DependenceType::SPREAD || dtype == DependenceType::RANDOM_NEAREST;
+}
+
 void Kernel::execute(long graph_index, long timestep, long point,
                      char *scratch_ptr, size_t scratch_bytes) const
 {
@@ -216,8 +220,8 @@ long TaskGraph::max_dependence_sets() const
     return (long)ceil(log2(max_width));
   case DependenceType::ALL_TO_ALL:
   case DependenceType::NEAREST:
-  case DependenceType::SPREAD:
     return 1;
+  case DependenceType::SPREAD:
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
     return period;
@@ -247,8 +251,8 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
     return (timestep + max_dependence_sets() - 1) % max_dependence_sets();
   case DependenceType::ALL_TO_ALL:
   case DependenceType::NEAREST:
-  case DependenceType::SPREAD:
     return 0;
+  case DependenceType::SPREAD:
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
     return timestep % max_dependence_sets();
@@ -316,6 +320,16 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
       deps.push_back(std::pair<long, long>(std::max(0L, point - (radix-1)/2),
                                            std::min(point + radix/2,
                                                     max_width-1)));
+    }
+    break;
+  case DependenceType::SPREAD:
+    {
+      long spread = (max_width + radix - 1)/radix;
+      for (long i = 0; i < radix; ++i) {
+        long dep = (point - i*spread - (i>0 ? dset : 0)) % max_width;
+        if (dep < 0) dep += max_width;
+        deps.push_back(std::pair<long, long>(dep, dep));
+      }
     }
     break;
   case DependenceType::RANDOM_NEAREST:
@@ -407,6 +421,15 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
       deps.push_back(std::pair<long, long>(std::max(0L, point - radix/2),
                                            std::min(point + (radix-1)/2,
                                                     max_width-1)));
+    }
+    break;
+  case DependenceType::SPREAD:
+    {
+      long spread = (max_width + radix - 1)/radix;
+      for (long i = 0; i < radix; ++i) {
+        long dep = (point + i*spread + (i>0 ? dset : 0)) % max_width;
+        deps.push_back(std::pair<long, long>(dep, dep));
+      }
     }
     break;
   case DependenceType::RANDOM_NEAREST:
@@ -671,7 +694,7 @@ App::App(int argc, char **argv)
     if (!strcmp(argv[i], "-and")) {
       // Hack: set default value of period for random graph
       if (graph.period < 0) {
-        graph.period = graph.dependence == DependenceType::RANDOM_NEAREST ? 3 : 0;
+        graph.period = needs_period(graph.dependence) ? 3 : 0;
       }
       graphs.push_back(graph);
       graph = default_graph(graphs.size());
@@ -679,7 +702,7 @@ App::App(int argc, char **argv)
   }
 
   if (graph.period < 0) {
-    graph.period = graph.dependence == DependenceType::RANDOM_NEAREST ? 3 : 0;
+    graph.period = needs_period(graph.dependence) ? 3 : 0;
   }
   graphs.push_back(graph);
 
@@ -697,11 +720,11 @@ void App::check() const
 
   // Validate task graph is well-formed
   for (auto g : graphs) {
-    if (g.dependence == DependenceType::RANDOM_NEAREST && g.period == 0) {
+    if (needs_period(g.dependence) && g.period == 0) {
       fprintf(stderr, "error: Graph type \"%s\" requires a non-zero period (specify with -period)\n",
               name_by_dtype().at(g.dependence).c_str());
       abort();
-    } else if (g.dependence != DependenceType::RANDOM_NEAREST && g.period != 0) {
+    } else if (!needs_period(g.dependence) && g.period != 0) {
       fprintf(stderr, "error: Graph type \"%s\" does not support user-configurable period\n",
               name_by_dtype().at(g.dependence).c_str());
       abort();

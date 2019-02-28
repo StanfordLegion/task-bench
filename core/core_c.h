@@ -77,7 +77,7 @@ typedef struct task_graph_t {
   long max_width;
   dependence_type_t dependence;
   long radix; // max number of dependencies in nearest/spread/random patterns
-  long period; // period of repetition in random pattern
+  long period; // period of repetition in spread/random pattern
   double fraction_connected; // fraction of connected nodes in random pattern
   kernel_t kernel;
   size_t output_bytes_per_task;

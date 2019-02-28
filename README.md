@@ -47,6 +47,7 @@ tree,
 fft,
 all_to_all,
 nearest,
+spread,
 random_nearest
 
 Kernels:
