@@ -25,7 +25,7 @@ import sys
 import chart_metg
 import chart_util as util
 
-def driver(nodes, machine, threshold, csv_dialect):
+def driver(dependence, machine, threshold, csv_dialect):
     params = util.get_machine_parameters(machine)
 
     header = ['nodes']
@@ -35,7 +35,7 @@ def driver(nodes, machine, threshold, csv_dialect):
     log_filenames = glob.glob('**/*.log', recursive=True)
     for filename in log_filenames:
         row = util.parse_filename(filename)
-        if row['nodes'] != nodes:
+        if row['type'] != dependence:
             continue
         if row['name'] not in header:
             header.append(row['name'])
@@ -53,7 +53,7 @@ def driver(nodes, machine, threshold, csv_dialect):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--nodes', type=int, required=True)
+    parser.add_argument('-d', '--dependence', required=True)
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--csv-dialect', default='excel-tab')
