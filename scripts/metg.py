@@ -26,11 +26,12 @@ import chart_metg
 import chart_util as util
 
 def driver(dependence, machine, threshold, csv_dialect):
+    dependence = dependence.replace('_', ' ')
     params = util.get_machine_parameters(machine)
 
     header = ['nodes']
 
-    table = collections.defaultdict(dict)
+    table = collections.defaultdict(lambda: collections.defaultdict(lambda: float('inf')))
 
     log_filenames = glob.glob('**/*.log', recursive=True)
     for filename in log_filenames:
@@ -43,11 +44,12 @@ def driver(dependence, machine, threshold, csv_dialect):
             metg = chart_metg.analyze(filename, row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
         except:
             metg = float('inf')
-        table[row['nodes']][row['name']] = min(metg, table[row['nodes']].get(row['name'], float('inf')))
+        if metg is None: metg = float('inf')
+        table[row['nodes']][row['name']] = min(metg, table[row['nodes']][row['name']])
 
     out = csv.DictWriter(sys.stdout, header, dialect=csv_dialect)
     out.writeheader()
-    for nodes, row in table:
+    for nodes, row in table.items():
         row['nodes'] = nodes
         out.writerow(row)
 
