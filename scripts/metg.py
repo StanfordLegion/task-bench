@@ -30,7 +30,7 @@ def driver(dependence, machine, threshold, csv_dialect):
 
     header = ['nodes']
 
-    table = collections.DefaultDict(dict)
+    table = collections.defaultdict(dict)
 
     log_filenames = glob.glob('**/*.log', recursive=True)
     for filename in log_filenames:
