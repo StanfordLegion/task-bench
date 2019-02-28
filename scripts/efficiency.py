@@ -21,7 +21,7 @@ import glob
 import os
 import sys
 
-import metg_chart
+import chart_metg
 import chart_util as util
 
 def driver(nodes, machine, threshold, csv_dialect):
@@ -44,7 +44,7 @@ def driver(nodes, machine, threshold, csv_dialect):
         if prefix['nodes'] != nodes:
             continue
         try:
-            data = metg_chart.analyze(filename, prefix['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=False)
+            data = chart_metg.analyze(filename, prefix['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=False)
         except:
             data = {}
         for values in zip(*list(data.values())):

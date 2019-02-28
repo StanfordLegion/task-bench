@@ -21,7 +21,7 @@ import glob
 import os
 import sys
 
-import metg_chart
+import chart_metg
 import chart_util as util
 
 def driver(machine, threshold, csv_dialect):
@@ -35,7 +35,7 @@ def driver(machine, threshold, csv_dialect):
     for filename in log_filenames:
         row = util.parse_filename(filename)
         try:
-            metg = metg_chart.analyze(filename, row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
+            metg = chart_metg.analyze(filename, row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
         except:
             metg = 'error'
         row['metg'] = metg

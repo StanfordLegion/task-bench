@@ -16,5 +16,5 @@ while IFS= read -r -d $'\0'; do
 done < <(find . -name '*_nodes_'"$n"'.log' -print0)
 
 for f in "${files[@]}"; do
-    (set -x; "$script_dir"/metg_chart.py "$f" -c $c -n $n $peak_flops $peak_bytes)
+    (set -x; "$script_dir"/chart_metg.py "$f" -c $c -n $n $peak_flops $peak_bytes)
 done
