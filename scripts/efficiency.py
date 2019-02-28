@@ -39,7 +39,7 @@ def parse_filename(filename):
         'nodes': int(fields[node_idx+1]),
     }
 
-def driver(nodes, machine, threshold):
+def driver(nodes, machine, threshold, csv_dialect):
     params = get_machine_parameters(machine)
 
     header = ['efficiency']
@@ -52,7 +52,7 @@ def driver(nodes, machine, threshold):
         if prefix['name'] not in header:
             header.append(prefix['name'])
 
-    out = csv.DictWriter(sys.stdout, header, dialect='excel-tab')
+    out = csv.DictWriter(sys.stdout, header, dialect=csv_dialect)
     out.writeheader()
     for filename in log_filenames:
         prefix = parse_filename(filename)
@@ -75,5 +75,6 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--nodes', type=int, required=True)
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
+    parser.add_argument('--csv-dialect', default='excel-tab')
     args = parser.parse_args()
     driver(**vars(args))
