@@ -27,7 +27,7 @@ import chart_util as util
 def driver(nodes, machine, threshold, csv_dialect):
     params = util.get_machine_parameters(machine)
 
-    header = ['efficiency']
+    header = []
 
     log_filenames = glob.glob('**/*.log', recursive=True)
     for filename in log_filenames:
@@ -36,6 +36,12 @@ def driver(nodes, machine, threshold, csv_dialect):
             continue
         if prefix['name'] not in header:
             header.append(prefix['name'])
+
+    # FIXME: This isn't actually the criteria we'd like to sort on,
+    # we'd prefer to sort so that the list of names roughly parallels
+    # the order of the bars in the graph.
+    header.sort()
+    header.insert(0, 'efficiency')
 
     out = csv.DictWriter(sys.stdout, header, dialect=csv_dialect)
     out.writeheader()

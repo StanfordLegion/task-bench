@@ -29,7 +29,7 @@ def driver(dependence, machine, threshold, csv_dialect):
     dependence = dependence.replace('_', ' ')
     params = util.get_machine_parameters(machine)
 
-    header = ['nodes']
+    header = []
 
     table = collections.defaultdict(lambda: collections.defaultdict(lambda: float('inf')))
 
@@ -48,9 +48,16 @@ def driver(dependence, machine, threshold, csv_dialect):
         if metg is None: metg = float('inf')
         table[row['nodes']][row['name']] = min(metg, table[row['nodes']][row['name']])
 
+    # FIXME: This isn't actually the criteria we'd like to sort on,
+    # we'd prefer to sort so that the list of names roughly parallels
+    # the order of the bars in the graph.
+    header.sort()
+    header.insert(0, 'nodes')
+
     out = csv.DictWriter(sys.stdout, header, dialect=csv_dialect)
     out.writeheader()
-    for nodes, row in table.items():
+    for nodes in sorted(table.keys()):
+        row = table[nodes]
         row = {k: None if v == float('inf') else v for k, v in row.items()}
         row['nodes'] = nodes
         out.writerow(row)
