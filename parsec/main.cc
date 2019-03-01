@@ -22,6 +22,7 @@
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <interfaces/superscalar/insert_function.h>
 #include <parsec/arena.h>
+#include <parsec/interfaces/superscalar/insert_function_internal.h>
 
 /* timings */
 #if defined( PARSEC_HAVE_MPI)
@@ -30,15 +31,9 @@
 #include "timer.h"
 
 #define MAX_ARGS  4
-
 #define VERBOSE_LEVEL 0
-
 #define USE_CORE_VERIFICATION
-
-//#define ENABLE_PRUNE_MPI_TASK_INSERT
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT) 
-#include <interfaces/superscalar/insert_function_internal.h>
-#endif
+#define ENABLE_PRUNE_MPI_TASK_INSERT
 
 //#define TRACK_NB_TASKS
 #if defined (TRACK_NB_TASKS)  
@@ -310,9 +305,6 @@ struct ParsecApp : public App {
   void debug_printf(int verbose_level, const char *format, ...);
 private:
   void insert_task(int num_args, payload_t payload, std::vector<parsec_dtd_tile_t*> &args);
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT) 
-  int desc_islocal(const parsec_dtd_tile_t *A);
-#endif
 private:
   parsec_context_t* parsec;
   parsec_taskpool_t *dtd_tp;
@@ -331,59 +323,32 @@ private:
   int nb_fields;
 };
 
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT) 
-int ParsecApp::desc_islocal(const parsec_dtd_tile_t *A)
-{
-  return (rank == A->rank);
-}
-#endif
-
 void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_dtd_tile_t*> &args)
 { 
   nb_tasks ++;
   switch(num_args) {
   case 1:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(args[0]) == 1) 
-#endif
-    {
-     // printf("insert %d\n", rank);
       parsec_dtd_taskpool_insert_task(dtd_tp, test_task1,    0,  "test_task1",
                                       sizeof(payload_t), &payload, VALUE,
                                       PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                       PARSEC_DTD_ARG_END);
-    }
     break;
   case 2:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(args[0]) == 1 || desc_islocal(args[1]) == 1)
-#endif
-    {
       parsec_dtd_taskpool_insert_task(dtd_tp, test_task2,    0,  "test_task2",
                                       sizeof(payload_t), &payload, VALUE,
                                       PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                       PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                       PARSEC_DTD_ARG_END);
-    }
     break;
   case 3:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(args[0]) == 1 || desc_islocal(args[1]) == 1 || desc_islocal(args[2]) == 1) 
-#endif
-    {
       parsec_dtd_taskpool_insert_task(dtd_tp, test_task3,    0,  "test_task3",
                                       sizeof(payload_t), &payload, VALUE,
                                       PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                       PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
                                       PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                       PARSEC_DTD_ARG_END);
-    }
     break;
   case 4:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(args[0]) == 1 || desc_islocal(args[1]) == 1 || desc_islocal(args[2]) == 1 || desc_islocal(args[3]) == 1)
-#endif
-    {
       parsec_dtd_taskpool_insert_task(dtd_tp, test_task4,    0,  "test_task4",
                                       sizeof(payload_t), &payload, VALUE,
                                       PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
@@ -391,13 +356,8 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                       PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
                                       PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                       PARSEC_DTD_ARG_END);
-    }
     break;
   case 5:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(args[0]) == 1 || desc_islocal(args[1]) == 1 || desc_islocal(args[2]) == 1 || desc_islocal(args[3]) == 1)
-#endif
-    {
       parsec_dtd_taskpool_insert_task(dtd_tp, test_task5,    0,  "test_task5",
                                       sizeof(payload_t), &payload, VALUE,
                                       PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
@@ -406,13 +366,8 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                       PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
                                       PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                       PARSEC_DTD_ARG_END);
-    }
     break;
   case 6:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(args[0]) == 1 || desc_islocal(args[1]) == 1 || desc_islocal(args[2]) == 1 || desc_islocal(args[3]) == 1)
-#endif
-    {
       parsec_dtd_taskpool_insert_task(dtd_tp, test_task6,    0,  "test_task6",
                                       sizeof(payload_t), &payload, VALUE,
                                       PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
@@ -422,7 +377,6 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                       PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
                                       PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                       PARSEC_DTD_ARG_END);
-    }
     break;
   default:
     assert(false && "unexpected num_args");
@@ -661,6 +615,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args;    
+    int has_task = 0;
     
     if (deps.size() == 0) {
       num_args = 1;
@@ -669,25 +624,56 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     } else {
       if (t == 0) {
         num_args = 1;
-        debug_printf(1, "%d[%d] ", x, num_args);
+        debug_printf(1, "%d[%d]\n ", x, num_args);
         args.push_back(TILE_OF_MAT(C, t%nb_fields, x)); 
       } else {
         num_args = 1;
         args.push_back(TILE_OF_MAT(C, t%nb_fields, x));
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
-          debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          debug_printf(1, "(%d, %d): [%d, %d, %d] \n", x, t, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
             args.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));  
+#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
+            if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t-1)%nb_fields, i))
+                has_task = 1;
+#endif
           }
         }
       }
     }
+
+#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
+    if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, t%nb_fields, x))
+        has_task = 1;
+
+    if( t < g.timesteps-1 && has_task != 1 ){
+        long dset_r = g.dependence_set_at_timestep(t+1);
+        std::vector<std::pair<long, long> > rdeps = g.reverse_dependencies(dset_r, x);
+        for (std::pair<long, long> rdep : rdeps) {
+            debug_printf(1, "R: (%d, %d): [%d, %d] \n", x, t, rdep.first, rdep.second); 
+            for (int i = rdep.first; i <= rdep.second; i++) {
+                if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t+1)%nb_fields, i))
+                    has_task = 1;
+            }
+        }
+    }
+
+    ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1;
+    debug_printf(1, "rank: %d, has_task: %d, x: %d, t: %d, task_id: %d\n", rank , has_task, x, t, mat.NT * t + x + 1);
+#endif
+
     payload.i = t;
     payload.j = x;
     payload.graph = g;
     payload.graph_id = idx;
-    insert_task(num_args, payload, args); 
+    
+#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
+    if( has_task )
+#endif
+    {
+        insert_task(num_args, payload, args); 
+    }
     args.clear();
   }
   debug_printf(1, "\n");
@@ -708,7 +694,7 @@ void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
 
 int main(int argc, char ** argv)
 {
-  printf("pid %d\n", getpid());
+  //printf("pid %d\n", getpid());
   //sleep(10);
   ParsecApp app(argc, argv);
   app.execute_main_loop();
