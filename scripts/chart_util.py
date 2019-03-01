@@ -25,10 +25,12 @@ def get_machine_parameters(machine):
 
 def parse_filename(filename):
     fields = os.path.splitext(os.path.basename(filename))[0].split('_')
+    graph_idx = fields.index('ngraphs')
     type_idx = fields.index('type')
     node_idx = fields.index('nodes')
     return {
-        'name': ' '.join(fields[:type_idx]),
+        'name': ' '.join(fields[:graph_idx]),
+        'ngraphs': int(' '.join(fields[graph_idx+1:type_idx])),
         'type': ' '.join(fields[type_idx+1:node_idx]),
         'nodes': int(fields[node_idx+1]),
     }
