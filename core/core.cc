@@ -890,11 +890,13 @@ long long bytes_per_task(const TaskGraph &g)
 
 void App::report_timing(double elapsed_seconds) const
 {
-  long long num_tasks = 0;
-  long long num_deps = 0;
+  long long total_num_tasks = 0;
+  long long total_num_deps = 0;
   long long flops = 0;
   long long bytes = 0;
   for (auto g : graphs) {
+    long long num_tasks = 0;
+    long long num_deps = 0;
 #ifdef DEBUG_CORE
     if (enable_graph_validation) {
       assert(has_executed_graph.load() & (1 << g.graph_index) != 0);
@@ -915,12 +917,14 @@ void App::report_timing(double elapsed_seconds) const
       }
     }
 
+    total_num_tasks += num_tasks;
+    total_num_deps += num_deps;
     flops += flops_per_task(g) * num_tasks;
     bytes += bytes_per_task(g) * num_tasks;
   }
 
-  printf("Total Tasks %lld\n", num_tasks);
-  printf("Total Dependencies %lld\n", num_deps);
+  printf("Total Tasks %lld\n", total_num_tasks);
+  printf("Total Dependencies %lld\n", total_num_deps);
   printf("Total FLOPs %lld\n", flops);
   printf("Total Bytes %lld\n", bytes);
   printf("Elapsed Time %e seconds\n", elapsed_seconds);
