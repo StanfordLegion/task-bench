@@ -14,7 +14,7 @@ export LD_LIBRARY_PATH="$PWD"/../../core:"$PWD"/../../tensorflow/ops:"$LD_LIBRAR
 
 function launch {
     pushd ../../tensorflow
-    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none python task_bench.py "${@:2}"
+    srun -n $1 -N $1 --cpus-per-task=$(( cores * 2 )) --cpu_bind none python task_bench.py "${@:2}"
     popd
 }
 

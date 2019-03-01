@@ -14,7 +14,7 @@ total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 cores=$(( $total_cores - 1 ))
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../openmp/main "${@:2}" -worker $total_cores -field 2
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../openmp/main "${@:2}" -worker $total_cores -field 2
 }
 
 function repeat {

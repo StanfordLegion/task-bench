@@ -13,7 +13,7 @@ module load PrgEnv-gnu
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../parsec/main "${@:2}" -field 2 -c $cores -p 1 -S $cores
+    srun -n $1 -N $1 --cpus-per-task=$(( cores * 2 )) --cpu_bind none ../../parsec/main "${@:2}" -field 2 -c $cores -p 1 -S $cores
 }
 
 function repeat {

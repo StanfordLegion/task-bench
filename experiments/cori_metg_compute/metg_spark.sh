@@ -1,6 +1,4 @@
 #!/bin/bash
-#SBATCH --cpus-per-task=16 
-#SBATCH --ntasks-per-node=2
 #SBATCH --account=m2294
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
@@ -46,16 +44,16 @@ echo $MASTER_URL
 ## --------------------------------------
 
 # get the resource details from the Slurm job
-export SPARK_WORKER_CORES=${SLURM_CPUS_PER_TASK:-1}
-export SPARK_MEM=$(( ${SLURM_MEM_PER_CPU:-4096} * ${SLURM_CPUS_PER_TASK:-1} ))M
+export SPARK_WORKER_CORES=$cores
+export SPARK_MEM=$(( ${SLURM_MEM_PER_CPU:-4096} * $cores ))M
 export SPARK_DAEMON_MEMORY=$SPARK_MEM
 export SPARK_WORKER_MEMORY=$SPARK_MEM
 export SPARK_EXECUTOR_MEMORY=$SPARK_MEM
 
 # start the workers on each non-master node allocated to the job
 export SPARK_NO_DAEMONIZE=1
-nWorkerNodes=$((SLURM_JOB_NUM_NODES - 1))
-srun  -r1 --nodes=$nWorkerNodes --ntasks=$((2 * $nWorkerNodes)) --output=$SPARK_LOG_DIR/spark-%j-workers.out --label \
+nWorkerNodes=$(( SLURM_JOB_NUM_NODES - 1 ))
+srun -r1 -n $(( nWorkerNodes * 2 )) -N $nWorkerNodes --cpus-per-task=$(( cores * 2 / 2 )) --ntasks-per-node=2 --cpu_bind cores --output=$SPARK_LOG_DIR/spark-%j-workers.out --label \
     $SPARK_SRC_DIR/sbin/start-slave.sh ${MASTER_URL} & 
 
 function launch {

@@ -14,7 +14,7 @@ function launch_util_0 {
     if [[ $1 -le 1 ]]; then
         memoize="-dm:memoize -lg:parallel_replay $cores"
     fi
-    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 0 $memoize
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 0 $memoize
 }
 
 function launch_util_1 {
@@ -22,7 +22,7 @@ function launch_util_1 {
     if [[ $1 -le 1 ]]; then
         memoize="-dm:memoize"
     fi
-    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize
 }
 
 function launch_util_2 {
@@ -30,7 +30,7 @@ function launch_util_2 {
     if [[ $1 -le 1 ]]; then
         memoize="-dm:memoize"
     fi
-    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 2 $memoize
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 2 $memoize
 }
 
 function repeat {

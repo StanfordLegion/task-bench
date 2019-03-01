@@ -13,7 +13,7 @@ module load openmpi
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$cores --cpu_bind none ../../starpu/main "${@:2}" -core $cores -p 1 -field 2 -S
+    srun -n $1 -N $1 --cpus-per-task=$(( cores * 2 )) --cpu_bind none ../../starpu/main "${@:2}" -core $cores -p 1 -field 2 -S
 }
 
 function repeat {
