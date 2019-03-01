@@ -80,7 +80,7 @@ EOF
     wget http://starpu.gforge.inria.fr/files/starpu-1.2.4/starpu-1.2.4.tar.gz
     mkdir -p "$STARPU_DL_DIR"
     tar -zxf starpu-1.2.4.tar.gz -C "$STARPU_DL_DIR"
-    rm -rf starpu-1.2.4.tar.gz
+    rm starpu-1.2.4.tar.gz
 fi
 
 if [[ $USE_PARSEC -eq 1 ]]; then
@@ -100,8 +100,15 @@ export CHARM_VERSION=${CHARM_VERSION:-netlrts-linux-x86_64}
 export CHARM_DIR=$CHARM_DIR
 export CHARM_SMP_DIR=$CHARM_SMP_DIR
 EOF
-    git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_DIR"
-    git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_SMP_DIR"
+    mkdir "$CHARM_DIR"
+    mkdir "$CHARM_SMP_DIR"
+    wget https://charm.cs.illinois.edu/distrib/charm-6.9.0.tar.gz
+    tar xfz charm-6.9.0.tar.gz -C "$CHARM_DIR" --strip-components 1
+    tar xfz charm-6.9.0.tar.gz -C "$CHARM_SMP_DIR" --strip-components 1
+    rm charm-6.9.0.tar.gz
+
+    # git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_DIR"
+    # git clone http://charm.cs.illinois.edu/gerrit/charm "$CHARM_SMP_DIR"
 fi
 
 if [[ $USE_CHAPEL -eq 1 ]]; then
@@ -140,6 +147,7 @@ EOF
     wget https://github.com/chapel-lang/chapel/releases/download/1.18.0/chapel-1.18.0.tar.gz
     mkdir "$CHPL_HOME"
     tar xfz chapel-1.18.0.tar.gz -C "$CHPL_HOME" --strip-components 1
+    rm chapel-1.18.0.tar.gz
 fi
 
 if [[ $USE_X10 -eq 1 ]]; then
