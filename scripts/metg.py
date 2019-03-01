@@ -25,7 +25,7 @@ import sys
 import chart_metg
 import chart_util as util
 
-def driver(dependence, machine, threshold, csv_dialect):
+def driver(ngraphs, dependence, machine, threshold, csv_dialect):
     dependence = dependence.replace('_', ' ')
     params = util.get_machine_parameters(machine)
 
@@ -36,7 +36,7 @@ def driver(dependence, machine, threshold, csv_dialect):
     log_filenames = glob.glob('**/*.log', recursive=True)
     for filename in log_filenames:
         row = util.parse_filename(filename)
-        if row['type'] != dependence:
+        if row['ngraphs'] != ngraphs or row['type'] != dependence:
             continue
         if row['name'] not in header:
             header.append(row['name'])
@@ -64,6 +64,7 @@ def driver(dependence, machine, threshold, csv_dialect):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-g', '--ngraphs', required=True)
     parser.add_argument('-d', '--dependence', required=True)
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)

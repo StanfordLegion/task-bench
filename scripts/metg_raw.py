@@ -27,7 +27,7 @@ import chart_util as util
 def driver(machine, threshold, csv_dialect):
     params = util.get_machine_parameters(machine)
 
-    header = ['name', 'type', 'nodes', 'metg']
+    header = ['name', 'ngraphs', 'type', 'nodes', 'metg']
 
     log_filenames = glob.glob('**/*.log', recursive=True)
     out = csv.DictWriter(sys.stdout, header, dialect=csv_dialect)
