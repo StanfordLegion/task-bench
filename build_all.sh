@@ -64,6 +64,7 @@ if [[ $USE_REGENT -eq 1 ]]; then
 fi
 if [[ $USE_REALM -eq 1 ]]; then
     make -C realm clean
+    make -C realm_old clean
 fi
 if [[ $USE_REGENT -eq 1 ]]; then
     pushd "$REGENT_DIR"
@@ -97,6 +98,7 @@ if [[ $USE_LEGION -eq 1 ]]; then
 fi
 if [[ $USE_REALM -eq 1 ]]; then
     make -C realm -j$THREADS
+    make -C realm_old -j$THREADS
 fi
 )
 
