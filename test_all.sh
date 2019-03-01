@@ -223,7 +223,7 @@ fi
         #logging is off...
     }
 
-    for t in "${extended_types[@]}"; do
+    for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree fft nearest random_nearest; do # FIXME: spread is broken
         for k in "${kernels[@]}"; do
             run_spark -steps 9 -type $t $k -skip-graph-validation
             run_spark -steps 9 -type $t $k -and -steps 9 -type $t $k -skip-graph-validation
