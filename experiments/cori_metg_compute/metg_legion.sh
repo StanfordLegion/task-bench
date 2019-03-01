@@ -50,7 +50,7 @@ function sweep {
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
                 local args
-                repeat args ${NGRAPHS:-1} -kernel compute_bound -iter $(( 1 << (26-s) )) -type $3 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores ))
+                repeat args $3 -kernel compute_bound -iter $(( 1 << (26-s) )) -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores ))
                 $1 $2 "${args[@]}"
             fi
         done
@@ -58,9 +58,11 @@ function sweep {
 }
 
 for n in $SLURM_JOB_NUM_NODES; do
-    for t in ${PATTERN:-stencil_1d}; do
-        sweep launch_util_0 $n $t > legion_util_0_type_${t}_nodes_${n}.log
-        # sweep launch_util_1 $n $t > legion_util_1_type_${t}_nodes_${n}.log
-        # sweep launch_util_2 $n $t > legion_util_2_type_${t}_nodes_${n}.log
+    for g in ${NGRAPHS:-1}; do
+        for t in ${PATTERN:-stencil_1d}; do
+            sweep launch_util_0 $n $g $t > legion_util_0_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_1 $n $g $t > legion_util_1_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_2 $n $g $t > legion_util_2_ngraphs_${g}_type_${t}_nodes_${n}.log
+        done
     done
 done
