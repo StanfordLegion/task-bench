@@ -547,7 +547,8 @@ static TaskGraph default_graph(long graph_index)
   graph.kernel = {KernelType::EMPTY, 0, 16};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
   graph.scratch_bytes_per_task = 0;
-
+  graph.nb_fields = 0;
+  
   return graph;
 }
 
@@ -688,6 +689,16 @@ App::App(int argc, char **argv)
       }
       graph.kernel.samples = value;
     }
+    
+    if (!strcmp(argv[i], "-field")) {
+      needs_argument(i, argc, "-field");
+      int value  = atoi(argv[++i]);
+      if (value < 0) {
+        fprintf(stderr, "error: Invalid flag \"-field %d\" must be > 1\n", value);
+        abort();
+      }
+      graph.nb_fields = value;
+    }
 
     if (!strcmp(argv[i], "-and")) {
       // Hack: set default value of period for random graph
@@ -702,8 +713,17 @@ App::App(int argc, char **argv)
   if (graph.period < 0) {
     graph.period = needs_period(graph.dependence) ? 3 : 0;
   }
+  
   graphs.push_back(graph);
 
+  // check nb_fields, if not set by user, set it to timesteps
+  for (int j = 0; j < graphs.size(); j++) {
+    TaskGraph &g = graphs[j];
+    if (g.nb_fields == 0) {
+      g.nb_fields = g.timesteps;
+    }
+  }
+  
   check();
 }
 

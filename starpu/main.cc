@@ -287,8 +287,6 @@ private:
   int Q;
   int MB;
   matrix_t mat_array[10];
-  int nb_fields;
-  int nb_fields_arg;
 };
 
 void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_data_handle_t> &args, std::vector<std::pair<long, long>> &args_loc)
@@ -433,9 +431,6 @@ void StarPUApp::parse_argument(int argc, char **argv)
     if (!strcmp(argv[i], "-p")) {
       P = atoi(argv[++i]);
     }
-    if (!strcmp(argv[i], "-field")) {
-      nb_fields_arg = atoi(argv[++i]);
-    }
     if (!strcmp(argv[i], "-S")) {
       starpu_enable_supertiling = true;
     }
@@ -480,7 +475,6 @@ StarPUApp::StarPUApp(int argc, char **argv)
   P = 1;
   MB = 2;
   nb_cores = 1;
-  nb_fields = 0;
   
   parse_argument(argc, argv);
   
@@ -511,21 +505,15 @@ StarPUApp::StarPUApp(int argc, char **argv)
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
     
-    if (nb_fields_arg > 0) {
-      nb_fields = nb_fields_arg;
-    } else {
-      nb_fields = graph.timesteps;
-    }
-    
     MB_cal = sqrt(graph.output_bytes_per_task / sizeof(float));
     if (MB_cal > MB) {
       MB = MB_cal;
     }
     
     mat.NT = graph.max_width;
-    mat.MT = nb_fields;
+    mat.MT = graph.nb_fields;
   
-    debug_printf(0, "mb %d, mt %d, nt %d, timesteps %d, enable_supertiling %d\n", MB, mat.MT, mat.NT, graph.timesteps, starpu_enable_supertiling);
+    debug_printf(0, "mb %d, mt %d, nt %d, timesteps %d, enable_supertiling %d, nb_fields %d\n", MB, mat.MT, mat.NT, graph.timesteps, starpu_enable_supertiling, graph.nb_fields);
     assert (graph.output_bytes_per_task <= sizeof(float) * MB * MB);
 
     mat.ddescA = create_and_distribute_data(rank, world, MB, MB, mat.MT, mat.NT, P, Q, i);
@@ -545,7 +533,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
     }
   }
   
-  debug_printf(0, "max_scratch_bytes_per_task %lld, nb_fields %d\n", max_scratch_bytes_per_task, nb_fields);
+  debug_printf(0, "max_scratch_bytes_per_task %lld\n", max_scratch_bytes_per_task);
 }
 
 StarPUApp::~StarPUApp()
@@ -611,6 +599,7 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
   matrix_t &mat = mat_array[idx];
+  int nb_fields = g.nb_fields;
   
   std::vector<starpu_data_handle_t> args;
   std::vector<std::pair<long, long>> args_loc;

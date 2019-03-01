@@ -328,7 +328,6 @@ private:
   int scheduler;
   int iparam[IPARAM_SIZEOF];
   int nb_tasks;
-  int nb_fields;
 };
 
 #if defined (ENABLE_PRUNE_MPI_TASK_INSERT) 
@@ -447,16 +446,6 @@ ParsecApp::ParsecApp(int argc, char **argv)
   iparam[IPARAM_N] = 4;
   iparam[IPARAM_M] = 4;
   
-  nb_fields = 0;
-  
-  int nb_fields_arg = 0;
-  
-  for (int i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "-field")) {
-      nb_fields_arg = atol(argv[++i]);
-    }
-  }
-  
  // parse_arguments(&argc, &argv, iparam);
   
   parsec = setup_parsec(argc, argv, iparam);
@@ -482,12 +471,6 @@ ParsecApp::ParsecApp(int argc, char **argv)
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
     
-    if (nb_fields_arg > 0) {
-      nb_fields = nb_fields_arg;
-    } else {
-      nb_fields = graph.timesteps;
-    }
-    
     MB_cal = sqrt(graph.output_bytes_per_task / sizeof(float));
     
     if (MB_cal > iparam[IPARAM_MB]) {
@@ -496,7 +479,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
     }
     
     iparam[IPARAM_N] = graph.max_width * iparam[IPARAM_MB];
-    iparam[IPARAM_M] = nb_fields * iparam[IPARAM_MB];
+    iparam[IPARAM_M] = graph.nb_fields * iparam[IPARAM_MB];
   
     parse_arguments(&argc, &argv, iparam);
     
@@ -504,7 +487,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
     
     PASTE_CODE_IPARAM_LOCALS_MAT(iparam);
     
-    debug_printf(0, "output_bytes_per_task %d, mb %d, nb %d\n", graph.output_bytes_per_task, mat.MB, mat.NB);
+    debug_printf(0, "output_bytes_per_task %d, mb %d, nb %d, nb_fields %d\n", graph.output_bytes_per_task, mat.MB, mat.NB, graph.nb_fields);
   
     assert(graph.output_bytes_per_task <= sizeof(float) * mat.MB * mat.NB);
   
@@ -615,7 +598,7 @@ void ParsecApp::execute_main_loop()
     const TaskGraph &g = graphs[i];
     matrix_t &mat = mat_array[i];
 
-    debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d, timesteps %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, nb_fields, g.timesteps);
+    debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d, timesteps %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, g.nb_fields, g.timesteps);
 
     for (y = 0; y < g.timesteps; y++) {
       execute_timestep(i, y);
@@ -652,6 +635,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
   matrix_t &mat = mat_array[idx];
+  int nb_fields = g.nb_fields;
   
   std::vector<parsec_dtd_tile_t*> args;
   std::vector<std::pair<long, long>> args_loc;

@@ -185,7 +185,6 @@ private:
   void debug_printf(int verbose_level, const char *format, ...);
 private:
   int nb_workers;
-  int nb_fields;
   //matrix_t *matrix;
 };
 
@@ -195,14 +194,10 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   : App(argc, argv)
 { 
   nb_workers = 1;
-  nb_fields = 0;
   
   for (int k = 1; k < argc; k++) {
     if (!strcmp(argv[k], "-worker")) {
       nb_workers = atol(argv[++k]);
-    }
-    if (!strcmp(argv[k], "-field")) {
-      nb_fields = atol(argv[++k]);
     }
   }
   
@@ -213,10 +208,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   for (unsigned i = 0; i < graphs.size(); i++) {
     TaskGraph &graph = graphs[i];
     
-    if (nb_fields == 0) {
-      nb_fields = graph.timesteps;
-    }
-    matrix[i].M = nb_fields;
+    matrix[i].M = graph.nb_fields;
     matrix[i].N = graph.max_width;
     matrix[i].data = (tile_t*)malloc(sizeof(tile_t) * matrix[i].M * matrix[i].N);
   
@@ -228,7 +220,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
     
-    printf("graph id %d, M = %d, N = %d\n", i, matrix[i].M, matrix[i].N);
+    printf("graph id %d, M = %d, N = %d\n, nb_fields %d", i, matrix[i].M, matrix[i].N, graph.nb_fields);
   }
   
   extra_local_memory = (char**)malloc(sizeof(char*) * (nb_workers+1));
@@ -303,6 +295,7 @@ void OmpSsApp::execute_timestep(size_t idx, long t)
   long offset = g.offset_at_timestep(t);
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
+  int nb_fields = g.nb_fields;
   
   std::vector<task_args_t> args;
   payload_t payload;
