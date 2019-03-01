@@ -16,14 +16,28 @@ export CHPL_JE_MALLOC_CONF=purge:decay,lg_chunk:24
 function launch {
     # FIXME: The --exclusive flag which Chapel adds internally is causing a non-deterministic startup hang.
     # ../../chapel/task_benchmark -nl $1 -- "${@:2}" -width $(( $1 * cores ))
-    srun --nodes=$1 --ntasks=$1 --ntasks-per-node=1 --cpus-per-task=$(( cores * 2 )) --kill-on-bad-exit  ../../chapel/task_benchmark_real -nl $1 -- "${@:2}" -width $(( $1 * cores ))
+    srun --nodes=$1 --ntasks=$1 --ntasks-per-node=1 --cpus-per-task=$(( cores * 2 )) --kill-on-bad-exit  ../../chapel/task_benchmark_real -nl $1 -- "${@:2}"
+}
+
+function repeat {
+    local -n result=$1
+    local n=$2
+    result=()
+    for i in $(seq 1 $n); do
+        result+=("${@:3}")
+        if (( i < n )); then
+            result+=("-and")
+        fi
+    done
 }
 
 function sweep {
     for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
-                $1 $2 -kernel compute_bound -iter $(( 1 << (26-s) )) -type $3 -radix ${RADIX:-5} -steps 1000
+                local args
+                repeat args ${NGRAPHS:-1} -kernel compute_bound -iter $(( 1 << (26-s) )) -type $3 -radix ${RADIX:-5} -steps 1000 -width $(( $2 * cores ))
+                $1 $2 "${args[@]}"
             fi
         done
     done
