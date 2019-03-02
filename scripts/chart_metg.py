@@ -73,8 +73,8 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
         for k, (p, t) in _columns.items())
 
     for column in ('iterations', 'steps', 'width'):
-        assert(table[column].size() % ngraphs == 0)
-        elts = numpy.split(table[column], table[column].size() / ngraphs)
+        assert(table[column].size % ngraphs == 0)
+        elts = numpy.split(table[column], table[column].size / ngraphs)
         assert all(same(elt) for elt in elts)
         table[column] = table[column][::ngraphs]
 
