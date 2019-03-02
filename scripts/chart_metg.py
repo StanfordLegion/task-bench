@@ -83,7 +83,7 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
     assert same(table['steps'])
     assert same(table['width'])
     assert same(table['tasks'])
-    assert all(table['tasks'] == table['steps'] * table['width'])
+    assert all(table['tasks'] == ngraphs * table['steps'] * table['width'])
 
     # Group by iteration count and compute statistics:
     table['iterations'], table['elapsed'], table['std'], table['reps'], table['flops'], table['bytes'], same_flops, same_bytes = list(map(
