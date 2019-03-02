@@ -35,7 +35,7 @@ def driver(machine, threshold, csv_dialect):
     for filename in log_filenames:
         prefix = util.parse_filename(filename)
         try:
-            data = chart_metg.analyze(filename, prefix['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=False)
+            data = chart_metg.analyze(filename, prefix['ngraphs'], prefix['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=False)
         except:
             data = {}
         for values in zip(*list(data.values())):

@@ -51,7 +51,7 @@ def driver(ngraphs, dependence, nodes, machine, threshold, csv_dialect):
         if prefix['ngraphs'] != ngraphs or prefix['type'] != dependence or prefix['nodes'] != nodes:
             continue
         try:
-            data = chart_metg.analyze(filename, prefix['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=False)
+            data = chart_metg.analyze(filename, prefix['ngraphs'], prefix['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=False)
         except:
             data = {}
         for values in zip(*list(data.values())):

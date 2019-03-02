@@ -35,7 +35,7 @@ def driver(machine, threshold, csv_dialect):
     for filename in log_filenames:
         row = util.parse_filename(filename)
         try:
-            metg = chart_metg.analyze(filename, row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
+            metg = chart_metg.analyze(filename, row['ngraphs'], row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
         except:
             metg = 'error'
         row['metg'] = metg

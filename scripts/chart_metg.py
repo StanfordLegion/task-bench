@@ -50,7 +50,7 @@ def group_by(keys, values):
     if last_group is not None:
         yield (last_key, last_group)
 
-def analyze(filename, nodes, cores, threshold, peak_flops, peak_bytes, summary=True):
+def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, summary=True):
     compute = collections.OrderedDict([
         ('scale_factor', lambda t: t['iterations'][0] / t['iterations']),
         ('time_per_task', lambda t: t['elapsed'] / t['tasks'] * nodes * cores * 1000),
@@ -71,6 +71,12 @@ def analyze(filename, nodes, cores, threshold, peak_flops, peak_bytes, summary=T
     table = collections.OrderedDict(
         (k, numpy.asarray([t(m.group(1)) for m in re.finditer(p, text)]))
         for k, (p, t) in _columns.items())
+
+    for column in ('iterations', 'steps', 'width'):
+        assert(table[column].size() % ngraphs == 0)
+        elts = numpy.split(table[column], table[column].size() / ngraphs)
+        assert all(same(elt) for elt in elts)
+        table[column] = table[column][::ngraphs]
 
     # Check consistency of data:
     assert same([len(column) for column in table.values()])
@@ -128,12 +134,12 @@ def analyze(filename, nodes, cores, threshold, peak_flops, peak_bytes, summary=T
 
     return min_time
 
-def driver(inputs, summary, nodes, cores, threshold, peak_flops, peak_bytes):
+def driver(inputs, summary, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes):
     if peak_flops is not None and peak_bytes is not None:
         raise Exception('Can specify at most one --peak-* flag')
     min_times = []
     for filename in inputs:
-        min_times.append(analyze(filename, nodes, cores, threshold, peak_flops, peak_bytes))
+        min_times.append(analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes))
     if summary:
         with open(summary, 'w') as f:
             out = csv.writer(f)
@@ -144,8 +150,9 @@ def driver(inputs, summary, nodes, cores, threshold, peak_flops, peak_bytes):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('inputs', nargs='+')
-    parser.add_argument('-c', '--cores', type=int, required=True)
+    parser.add_argument('-g', '--ngraphs', type=int, required=True)
     parser.add_argument('-n', '--nodes', type=int, required=True)
+    parser.add_argument('-c', '--cores', type=int, required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--peak-compute-bandwidth', type=float, default=None,
                         dest='peak_flops',

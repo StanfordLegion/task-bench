@@ -41,7 +41,7 @@ def driver(ngraphs, dependence, machine, threshold, csv_dialect):
         if row['name'] not in header:
             header.append(row['name'])
         try:
-            metg = chart_metg.analyze(filename, row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
+            metg = chart_metg.analyze(filename, row['ngraphs'], row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
         except:
             metg = float('inf')
         # Have to use float('inf') as a sentinel here to be comparable.
