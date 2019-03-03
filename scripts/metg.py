@@ -21,6 +21,7 @@ import csv
 import glob
 import os
 import sys
+import traceback
 
 import chart_metg
 import chart_util as util
@@ -42,8 +43,9 @@ def driver(ngraphs, dependence, machine, threshold, csv_dialect):
             header.append(row['name'])
         try:
             metg = chart_metg.analyze(filename, row['ngraphs'], row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
-        except Exception as e:
-            print('%s: %s' % (filename, e), file=sys.stderr)
+        except:
+            print('%s:' % filename, file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
             metg = float('inf')
         # Have to use float('inf') as a sentinel here to be comparable.
         if metg is None: metg = float('inf')

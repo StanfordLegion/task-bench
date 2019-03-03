@@ -20,6 +20,7 @@ import csv
 import glob
 import os
 import sys
+import traceback
 
 import chart_metg
 import chart_util as util
@@ -36,8 +37,9 @@ def driver(machine, threshold, csv_dialect):
         row = util.parse_filename(filename)
         try:
             metg = chart_metg.analyze(filename, row['ngraphs'], row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
-        except Exception as e:
-            print('%s: %s' % (filename, e), file=sys.stderr)
+        except:
+            print('%s:' % filename, file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
             metg = 'error'
         row['metg'] = metg
         out.writerow(row)
