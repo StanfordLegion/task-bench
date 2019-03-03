@@ -255,12 +255,226 @@ static void task6(void *descr[], void *cl_arg)
 #endif
 }
 
+static void task7(void *descr[], void *cl_arg)
+{
+  float *in1, *in2, *in3, *in4, *in5, *in6, *out;
+  payload_t payload;
+  in1 = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
+  in2 = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
+  in3 = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
+  in4 = (float *)STARPU_MATRIX_GET_PTR(descr[3]);
+  in5 = (float *)STARPU_MATRIX_GET_PTR(descr[4]);
+  in6 = (float *)STARPU_MATRIX_GET_PTR(descr[5]);
+  out = (float *)STARPU_MATRIX_GET_PTR(descr[6]);
+  starpu_codelet_unpack_args(cl_arg, &payload);
+  
+  int tid = starpu_worker_get_id();
+
+#if defined (USE_CORE_VERIFICATION)  
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)out;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)in1);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in2);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in3);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in4);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in5);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in6);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  
+  
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+
+#else
+  int rank;
+  starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
+
+  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + 1.0;
+  printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, out %.2f, local_mem %p\n", 
+    payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *in6, *out, extra_local_memory[tid]);
+#endif
+}
+
+static void task8(void *descr[], void *cl_arg)
+{
+  float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *out;
+  payload_t payload;
+  in1 = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
+  in2 = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
+  in3 = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
+  in4 = (float *)STARPU_MATRIX_GET_PTR(descr[3]);
+  in5 = (float *)STARPU_MATRIX_GET_PTR(descr[4]);
+  in6 = (float *)STARPU_MATRIX_GET_PTR(descr[5]);
+  in7 = (float *)STARPU_MATRIX_GET_PTR(descr[6]);
+  out = (float *)STARPU_MATRIX_GET_PTR(descr[7]);
+  starpu_codelet_unpack_args(cl_arg, &payload);
+  
+  int tid = starpu_worker_get_id();
+
+#if defined (USE_CORE_VERIFICATION)  
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)out;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)in1);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in2);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in3);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in4);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in5);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in6);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in7);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  
+  
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+
+#else
+  int rank;
+  starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
+
+  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + 1.0;
+  printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, out %.2f, local_mem %p\n", 
+    payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *out, extra_local_memory[tid]);
+#endif
+}
+
+static void task9(void *descr[], void *cl_arg)
+{
+  float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *out;
+  payload_t payload;
+  in1 = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
+  in2 = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
+  in3 = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
+  in4 = (float *)STARPU_MATRIX_GET_PTR(descr[3]);
+  in5 = (float *)STARPU_MATRIX_GET_PTR(descr[4]);
+  in6 = (float *)STARPU_MATRIX_GET_PTR(descr[5]);
+  in7 = (float *)STARPU_MATRIX_GET_PTR(descr[6]);
+  in8 = (float *)STARPU_MATRIX_GET_PTR(descr[7]);
+  out = (float *)STARPU_MATRIX_GET_PTR(descr[8]);
+  starpu_codelet_unpack_args(cl_arg, &payload);
+  
+  int tid = starpu_worker_get_id();
+
+#if defined (USE_CORE_VERIFICATION)  
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)out;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)in1);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in2);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in3);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in4);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in5);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in6);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in7);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in8);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  
+  
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+
+#else
+  int rank;
+  starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
+
+  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + *in8 + 1.0;
+  printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, out %.2f, local_mem %p\n", 
+    payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *out, extra_local_memory[tid]);
+#endif
+}
+
+static void task10(void *descr[], void *cl_arg)
+{
+  float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *in9, *out;
+  payload_t payload;
+  in1 = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
+  in2 = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
+  in3 = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
+  in4 = (float *)STARPU_MATRIX_GET_PTR(descr[3]);
+  in5 = (float *)STARPU_MATRIX_GET_PTR(descr[4]);
+  in6 = (float *)STARPU_MATRIX_GET_PTR(descr[5]);
+  in7 = (float *)STARPU_MATRIX_GET_PTR(descr[6]);
+  in8 = (float *)STARPU_MATRIX_GET_PTR(descr[7]);
+  in9 = (float *)STARPU_MATRIX_GET_PTR(descr[8]);
+  out = (float *)STARPU_MATRIX_GET_PTR(descr[9]);
+  starpu_codelet_unpack_args(cl_arg, &payload);
+  
+  int tid = starpu_worker_get_id();
+
+#if defined (USE_CORE_VERIFICATION)  
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)out;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)in1);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in2);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in3);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in4);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in5);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in6);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in7);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in8);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in9);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  
+  
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+
+#else
+  int rank;
+  starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
+
+  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + *in8 + *in9 + 1.0;
+  printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, in9 %.2f, out %.2f, local_mem %p\n", 
+    payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *in9, *out, extra_local_memory[tid]);
+#endif
+}
+
 struct starpu_codelet cl_task1; 
 struct starpu_codelet cl_task2;
 struct starpu_codelet cl_task3;
 struct starpu_codelet cl_task4;
 struct starpu_codelet cl_task5;
 struct starpu_codelet cl_task6;
+struct starpu_codelet cl_task7;
+struct starpu_codelet cl_task8;
+struct starpu_codelet cl_task9;
+struct starpu_codelet cl_task10;
 
 typedef struct matrix_s {
   int MT;
@@ -385,7 +599,7 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
           STARPU_RW, args[0],
           STARPU_CALLBACK,  callback,
           STARPU_PRIORITY,  0,
-          STARPU_NAME, "task4",
+          STARPU_NAME, "task5",
           0);
     }
     break;
@@ -410,7 +624,127 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
           STARPU_RW, args[0],
           STARPU_CALLBACK,  callback,
           STARPU_PRIORITY,  0,
-          STARPU_NAME, "task4",
+          STARPU_NAME, "task6",
+          0);
+    }
+    break;
+  case 7:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
+       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
+       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
+       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1 ||
+       desc_islocal(descA, args_loc[4].first, args_loc[4].second) == 1 ||
+       desc_islocal(descA, args_loc[5].first, args_loc[5].second) == 1 ||
+       desc_islocal(descA, args_loc[6].first, args_loc[6].second) == 1)    
+#endif    
+    {
+      starpu_mpi_insert_task(
+          MPI_COMM_WORLD, &(cl_task7),
+          STARPU_VALUE,    &payload, sizeof(payload_t),
+          STARPU_R, args[1],
+          STARPU_R, args[2],
+          STARPU_R, args[3],
+          STARPU_R, args[4],
+          STARPU_R, args[5],
+          STARPU_R, args[6],
+          STARPU_RW, args[0],
+          STARPU_CALLBACK,  callback,
+          STARPU_PRIORITY,  0,
+          STARPU_NAME, "task7",
+          0);
+    }
+    break;
+  case 8:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
+       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
+       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
+       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1 ||
+       desc_islocal(descA, args_loc[4].first, args_loc[4].second) == 1 ||
+       desc_islocal(descA, args_loc[5].first, args_loc[5].second) == 1 ||
+       desc_islocal(descA, args_loc[6].first, args_loc[6].second) == 1 ||
+       desc_islocal(descA, args_loc[7].first, args_loc[7].second) == 1)    
+#endif    
+    {
+      starpu_mpi_insert_task(
+          MPI_COMM_WORLD, &(cl_task8),
+          STARPU_VALUE,    &payload, sizeof(payload_t),
+          STARPU_R, args[1],
+          STARPU_R, args[2],
+          STARPU_R, args[3],
+          STARPU_R, args[4],
+          STARPU_R, args[5],
+          STARPU_R, args[6],
+          STARPU_R, args[7],
+          STARPU_RW, args[0],
+          STARPU_CALLBACK,  callback,
+          STARPU_PRIORITY,  0,
+          STARPU_NAME, "task8",
+          0);
+    }
+    break;
+  case 9:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
+       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
+       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
+       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1 ||
+       desc_islocal(descA, args_loc[4].first, args_loc[4].second) == 1 ||
+       desc_islocal(descA, args_loc[5].first, args_loc[5].second) == 1 ||
+       desc_islocal(descA, args_loc[6].first, args_loc[6].second) == 1 ||
+       desc_islocal(descA, args_loc[7].first, args_loc[7].second) == 1 ||
+       desc_islocal(descA, args_loc[8].first, args_loc[8].second) == 1)    
+#endif    
+    {
+      starpu_mpi_insert_task(
+          MPI_COMM_WORLD, &(cl_task9),
+          STARPU_VALUE,    &payload, sizeof(payload_t),
+          STARPU_R, args[1],
+          STARPU_R, args[2],
+          STARPU_R, args[3],
+          STARPU_R, args[4],
+          STARPU_R, args[5],
+          STARPU_R, args[6],
+          STARPU_R, args[7],
+          STARPU_R, args[8],
+          STARPU_RW, args[0],
+          STARPU_CALLBACK,  callback,
+          STARPU_PRIORITY,  0,
+          STARPU_NAME, "task9",
+          0);
+    }
+    break;
+  case 10:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
+       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
+       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
+       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1 ||
+       desc_islocal(descA, args_loc[4].first, args_loc[4].second) == 1 ||
+       desc_islocal(descA, args_loc[5].first, args_loc[5].second) == 1 ||
+       desc_islocal(descA, args_loc[6].first, args_loc[6].second) == 1 ||
+       desc_islocal(descA, args_loc[7].first, args_loc[7].second) == 1 ||
+       desc_islocal(descA, args_loc[8].first, args_loc[8].second) == 1 ||
+       desc_islocal(descA, args_loc[9].first, args_loc[9].second) == 1)    
+#endif    
+    {
+      starpu_mpi_insert_task(
+          MPI_COMM_WORLD, &(cl_task10),
+          STARPU_VALUE,    &payload, sizeof(payload_t),
+          STARPU_R, args[1],
+          STARPU_R, args[2],
+          STARPU_R, args[3],
+          STARPU_R, args[4],
+          STARPU_R, args[5],
+          STARPU_R, args[6],
+          STARPU_R, args[7],
+          STARPU_R, args[8],
+          STARPU_R, args[9],
+          STARPU_RW, args[0],
+          STARPU_CALLBACK,  callback,
+          STARPU_PRIORITY,  0,
+          STARPU_NAME, "task10",
           0);
     }
     break;
@@ -469,6 +803,26 @@ StarPUApp::StarPUApp(int argc, char **argv)
   cl_task6.cpu_funcs[0]  = task6;                                       
   cl_task6.nbuffers  = 6;                                           
   cl_task6.name      = "task6";
+  
+  cl_task7.where     = STARPU_CPU;                                   
+  cl_task7.cpu_funcs[0]  = task7;                                       
+  cl_task7.nbuffers  = 7;                                           
+  cl_task7.name      = "task7";
+  
+  cl_task8.where     = STARPU_CPU;                                   
+  cl_task8.cpu_funcs[0]  = task8;                                       
+  cl_task8.nbuffers  = 8;                                           
+  cl_task8.name      = "task8";
+  
+  cl_task9.where     = STARPU_CPU;                                   
+  cl_task9.cpu_funcs[0]  = task9;                                       
+  cl_task9.nbuffers  = 9;                                           
+  cl_task9.name      = "task9";
+  
+  cl_task10.where     = STARPU_CPU;                                   
+  cl_task10.cpu_funcs[0]  = task10;                                       
+  cl_task10.nbuffers  = 10;                                           
+  cl_task10.name      = "task10";
   
   int i;
   
