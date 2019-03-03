@@ -36,7 +36,8 @@ def driver(machine, threshold, csv_dialect):
         row = util.parse_filename(filename)
         try:
             metg = chart_metg.analyze(filename, row['ngraphs'], row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
-        except:
+        except Exception as e:
+            print('%s: %s' % (filename, e), file=sys.stderr)
             metg = 'error'
         row['metg'] = metg
         out.writerow(row)
