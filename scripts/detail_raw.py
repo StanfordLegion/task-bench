@@ -46,7 +46,7 @@ class Parser(util.Parser):
 
 def driver(machine, threshold, csv_dialect):
     parser = Parser(csv_dialect)
-    parser.parse(machine, threshold, True, verbose)
+    parser.parse(machine, threshold, False, verbose)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

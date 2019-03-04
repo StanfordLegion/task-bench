@@ -102,13 +102,37 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
     for k, f in compute.items():
         table[k] = f(table)
 
+    # Post-process table for output:
+    result = collections.OrderedDict()
+    for k, c in table.items():
+        if any(isinstance(x, float) for x in c):
+            result[k] = ['%e' % x for x in c]
+        else:
+            result[k] = table[k]
+
+    if not summary:
+        return result
+
+    out_filename = os.path.splitext(filename)[0] + '.csv'
+    with open(out_filename, 'w') as f:
+        out = csv.writer(f)
+        out.writerow(result.keys())
+        out.writerows(zip(*list(result.values())))
+
+    # Compute minimum efficient task granularity:
     min_time = None
-    if summary and any(table['efficiency'] >= threshold):
+    if summary:
+        assert any(table['efficiency'] >= threshold), "no data above threshold, maybe run was truncated?"
+        assert any(table['efficiency'] < threshold), "no data below threshold, maybe run was truncated?"
+
         # Find smallest task granularity above efficiency threshold:
         min_i, min_efficiency = min(
             filter(lambda x: x[1] >= threshold,
                    enumerate(table['efficiency'])),
             key=lambda x: table['time_per_task'][x[0]])
+
+        if min_i > 0:
+            assert table['reps'][min_i] >= table['reps'][min_i - 1], "final data point has fewer reps, maybe run was truncated?"
 
         # Perform linear interpolation if subsequent data point is an improvment:
         min_time = table['time_per_task'][min_i]
@@ -117,20 +141,6 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
                 threshold,
                 numpy.flip(table['efficiency'][min_i:min_i+2], 0),
                 numpy.flip(table['time_per_task'][min_i:min_i+2], 0))
-
-    # Post-process table for output:
-    for k, c in table.items():
-        if any(isinstance(x, float) for x in c):
-            table[k] = ['%e' % x for x in c]
-
-    if not summary:
-        return table
-
-    out_filename = os.path.splitext(filename)[0] + '.csv'
-    with open(out_filename, 'w') as f:
-        out = csv.writer(f)
-        out.writerow(table.keys())
-        out.writerows(zip(*list(table.values())))
 
     return min_time
 

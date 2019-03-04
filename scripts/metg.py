@@ -39,9 +39,6 @@ class Parser(util.Parser):
         if row['name'] not in self.header:
             self.header.append(row['name'])
 
-        # Have to use float('inf') as a sentinel here to be comparable.
-        if data is None:
-            data = float('inf')
         self.table[row['nodes']][row['name']] = min(data, self.table[row['nodes']][row['name']])
 
     def error_value(self):

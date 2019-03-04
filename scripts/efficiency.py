@@ -63,7 +63,7 @@ class Parser(util.Parser):
 
 def driver(ngraphs, dependence, nodes, machine, threshold, csv_dialect, verbose):
     parser = Parser(ngraphs, dependence, nodes, csv_dialect)
-    parser.parse(machine, threshold, True, verbose)
+    parser.parse(machine, threshold, False, verbose)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

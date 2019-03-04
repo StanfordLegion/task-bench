@@ -2,6 +2,8 @@
 
 root_dir="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 
+set -x
+
 "$root_dir"/metg.py -m cori -g 1 -d no_comm --csv excel "$@" > metg_no_comm.csv
 "$root_dir"/metg.py -m cori -g 1 -d stencil_1d --csv excel "$@" > metg_stencil.csv
 "$root_dir"/metg.py -m cori -g 1 -d nearest --csv excel "$@" > metg_nearest.csv
