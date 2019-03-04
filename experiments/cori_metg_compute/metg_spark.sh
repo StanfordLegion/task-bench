@@ -3,7 +3,7 @@
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --exclusive
-#SBATCH --time=01:00:00
+#SBATCH --time=06:00:00
 #SBATCH --mail-type=ALL
 
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
@@ -23,8 +23,8 @@ export LD_LIBRARY_PATH="$SPARK_PROJ_DIR:$CORE_DIR:$LD_LIBRARY_PATH"
 export SPARK_IDENT_STRING=$SLURM_JOBID
 
 # prepare directories
-export SPARK_WORKER_DIR=${SPARK_WORKER_DIR:-$HOME/.spark/worker}
-export SPARK_LOG_DIR=${SPARK_LOG_DIR:-$HOME/.spark/logs}
+export SPARK_WORKER_DIR=${SPARK_WORKER_DIR:-$SCRATCH/spark/worker}
+export SPARK_LOG_DIR=${SPARK_LOG_DIR:-$SCRATCH/spark/logs}
 export SPARK_LOCAL_DIRS=${SPARK_LOCAL_DIRS:-/tmp/spark}
 mkdir -p $SPARK_LOG_DIR $SPARK_WORKER_DIR
 
@@ -44,8 +44,8 @@ echo $MASTER_URL
 ## --------------------------------------
 
 # get the resource details from the Slurm job
-export SPARK_WORKER_CORES=$cores
-export SPARK_MEM=$(( ${SLURM_MEM_PER_CPU:-4096} * $cores ))M
+export SPARK_WORKER_CORES=$(( cores / 2 ))
+export SPARK_MEM=$(( ${SLURM_MEM_PER_CPU:-4096} * $SPARK_WORKER_CORES ))M
 export SPARK_DAEMON_MEMORY=$SPARK_MEM
 export SPARK_WORKER_MEMORY=$SPARK_MEM
 export SPARK_EXECUTOR_MEMORY=$SPARK_MEM
@@ -85,7 +85,7 @@ function sweep {
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
                 local args
-                repeat args $3 -kernel compute_bound -iter $(( 1 << (26-s) )) -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores ))
+                repeat args $3 -kernel compute_bound -iter $(( 1 << (28-s) )) -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores ))
                 $1 $2 "${args[@]}"
             fi
         done
