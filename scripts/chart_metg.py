@@ -73,17 +73,17 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
         for k, (p, t) in _columns.items())
 
     for column in ('iterations', 'steps', 'width'):
-        assert(table[column].size % ngraphs == 0)
+        assert table[column].size % ngraphs == 0, "number of graphs is not divisible by ngraphs"
         elts = numpy.split(table[column], table[column].size / ngraphs)
-        assert all(same(elt) for elt in elts)
+        assert all(same(elt) for elt in elts), "graphs are not identical"
         table[column] = table[column][::ngraphs]
 
     # Check consistency of data:
-    assert same([len(column) for column in table.values()])
-    assert same(table['steps'])
-    assert same(table['width'])
-    assert same(table['tasks'])
-    assert all(table['tasks'] == ngraphs * table['steps'] * table['width'])
+    assert same([len(column) for column in table.values()]), "columns are uneven"
+    assert same(table['steps']), "steps are not identical"
+    assert same(table['width']), "widths are not identical"
+    assert same(table['tasks']), "tasks are not identical"
+    assert all(table['tasks'] == ngraphs * table['steps'] * table['width']), "mismatch in tasks vs steps * width"
 
     # Group by iteration count and compute statistics:
     table['iterations'], table['elapsed'], table['std'], table['reps'], table['flops'], table['bytes'], same_flops, same_bytes = list(map(
@@ -92,8 +92,8 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
               for k, vs in group_by(table['iterations'], zip(table['elapsed'], table['flops'], table['bytes']))
               for elapsed, flops, bytes in [zip(*vs)]])))
 
-    assert all(same_flops)
-    assert all(same_bytes)
+    assert all(same_flops), "flops are not identical"
+    assert all(same_bytes), "bytes are not identical"
 
     for column in ('steps', 'width', 'tasks'):
         table[column] = numpy.resize(table[column], table['iterations'].shape)

@@ -15,7 +15,12 @@
 # limitations under the License.
 #
 
+import glob
 import os
+import sys
+import traceback
+
+import chart_metg
 
 def get_machine_parameters(machine):
     if machine == 'cori':
@@ -34,3 +39,43 @@ def parse_filename(filename):
         'type': ' '.join(fields[type_idx+1:node_idx]),
         'nodes': int(fields[node_idx+1]),
     }
+
+class Parser:
+    def filter(self, row):
+        return True
+
+    def process(self, row, data):
+        raise Exception('process() must be customized by the subclass')
+
+    def error_value(self):
+        raise Exception('error_value() must be customized by the subclass')
+
+    def complete(self):
+        raise Exception('complete() must be customized by the subclass')
+
+    def parse(self, machine, threshold, summary, verbose):
+        params = get_machine_parameters(machine)
+
+        has_exception = False
+        log_filenames = glob.glob('**/*.log', recursive=True)
+        for filename in log_filenames:
+            row = parse_filename(filename)
+            if not self.filter(row):
+                continue
+            try:
+                data = chart_metg.analyze(filename, row['ngraphs'], row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=summary)
+            except Exception as e:
+                if verbose:
+                    print('%s:' % filename, file=sys.stderr)
+                    traceback.print_exc(file=sys.stderr)
+                else:
+                    print('%s: %s: %s' % (filename, type(e).__name__, e), file=sys.stderr)
+                data = self.error_value()
+                has_exception = True
+            self.process(row, data)
+
+        self.complete()
+
+        if has_exception and not verbose:
+            print('Errors were encountered while parsing. Run with -v to see full error messages.', file=sys.stderr)
+            print(file=sys.stderr)

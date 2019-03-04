@@ -17,37 +17,39 @@
 
 import argparse
 import csv
-import glob
 import os
 import sys
-import traceback
 
-import chart_metg
 import chart_util as util
 
-def driver(machine, threshold, csv_dialect):
-    params = util.get_machine_parameters(machine)
+class Parser(util.Parser):
+    def __init__(self, csv_dialect):
+        self.csv_dialect = csv_dialect
 
-    header = ['name', 'ngraphs', 'type', 'nodes', 'metg']
+        self.header = ['name', 'ngraphs', 'type', 'nodes', 'metg']
+        self.table = []
 
-    log_filenames = glob.glob('**/*.log', recursive=True)
-    out = csv.DictWriter(sys.stdout, header, dialect=csv_dialect)
-    out.writeheader()
-    for filename in log_filenames:
-        row = util.parse_filename(filename)
-        try:
-            metg = chart_metg.analyze(filename, row['ngraphs'], row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
-        except:
-            print('%s:' % filename, file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
-            metg = 'error'
-        row['metg'] = metg
-        out.writerow(row)
+    def process(self, row, data):
+        self.table.append({'metg': data, **row})
+
+    def error_value(self):
+        return 'error'
+
+    def complete(self):
+        out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
+        out.writeheader()
+        for row in self.table:
+            out.writerow(row)
+
+def driver(machine, threshold, csv_dialect, verbose):
+    parser = Parser(csv_dialect)
+    parser.parse(machine, threshold, True, verbose)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--csv-dialect', default='excel-tab')
+    parser.add_argument('-v', '--verbose', action='store_true')
     args = parser.parse_args()
     driver(**vars(args))

@@ -17,39 +17,42 @@
 
 import argparse
 import csv
-import glob
 import os
 import sys
-import traceback
 
-import chart_metg
 import chart_util as util
 
-def driver(machine, threshold, csv_dialect):
-    params = util.get_machine_parameters(machine)
+class Parser(util.Parser):
+    def __init__(self, csv_dialect):
+        self.csv_dialect = csv_dialect
 
-    header = ['name', 'ngraphs', 'type', 'nodes', 'steps', 'width', 'tasks', 'iterations', 'flops', 'bytes', 'elapsed', 'scale_factor', 'time_per_task', 'efficiency', 'reps', 'std', 'flops_per_second', 'bytes_per_second']
+        self.header = ['name', 'ngraphs', 'type', 'nodes', 'steps', 'width', 'tasks', 'iterations', 'flops', 'bytes', 'elapsed', 'scale_factor', 'time_per_task', 'efficiency', 'reps', 'std', 'flops_per_second', 'bytes_per_second']
+        self.table = []
 
-    log_filenames = glob.glob('**/*.log', recursive=True)
-    out = csv.DictWriter(sys.stdout, header, dialect=csv_dialect)
-    out.writeheader()
-    for filename in log_filenames:
-        prefix = util.parse_filename(filename)
-        try:
-            data = chart_metg.analyze(filename, prefix['ngraphs'], prefix['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=False)
-        except:
-            print('%s:' % filename, file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
-            data = {}
+    def process(self, row, data):
         for values in zip(*list(data.values())):
-            row = dict(zip(data.keys(), values))
-            row.update(prefix)
+            result = dict(zip(data.keys(), values))
+            result.update(row)
+            self.table.append(result)
+
+    def error_value(self):
+        return {}
+
+    def complete(self):
+        out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
+        out.writeheader()
+        for row in self.table:
             out.writerow(row)
+
+def driver(machine, threshold, csv_dialect):
+    parser = Parser(csv_dialect)
+    parser.parse(machine, threshold, True, verbose)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--csv-dialect', default='excel-tab')
+    parser.add_argument('-v', '--verbose', action='store_true')
     args = parser.parse_args()
     driver(**vars(args))
