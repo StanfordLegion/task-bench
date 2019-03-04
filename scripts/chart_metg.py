@@ -72,6 +72,8 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
         (k, numpy.asarray([t(m.group(1)) for m in re.finditer(p, text)]))
         for k, (p, t) in _columns.items())
 
+    assert table['tasks'].size > 0, "logs are empty"
+
     for column in ('iterations', 'steps', 'width'):
         assert table[column].size % ngraphs == 0, "number of graphs is not divisible by ngraphs"
         elts = numpy.split(table[column], table[column].size / ngraphs)
