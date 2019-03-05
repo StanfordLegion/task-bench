@@ -246,6 +246,9 @@ fi
     pushd "$SPARK_PROJ_DIR"
     "$SPARK_SBT_DIR"/sbt assembly
     popd
+
+    # Hack: configure logging (needs to be located in $SPARK_HOME which auto-detects to $SPARK_SRC_DIR)
+    cp "$SPARK_PROJ_DIR"/log4j.properties "$SPARK_SRC_DIR"/conf/log4j.properties
 fi)
 
 (if [[ $USE_SWIFT -eq 1 ]]; then
