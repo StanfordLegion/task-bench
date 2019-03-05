@@ -14,7 +14,7 @@ total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 cores=$(( $total_cores - 1 ))
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../openmp/main "${@:2}" -worker $total_cores -field 2
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../openmp/main "${@:2}" -worker $total_cores
 }
 
 function repeat {
@@ -34,7 +34,7 @@ function sweep {
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
                 local args
-                repeat args $3 -kernel compute_bound -iter $(( 1 << (26-s) )) -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores ))
+                repeat args $3 -kernel compute_bound -iter $(( 1 << (26-s) )) -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores )) -field 2
                 $1 $2 "${args[@]}"
             fi
         done
