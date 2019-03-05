@@ -509,244 +509,149 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
   starpu_ddesc_t *descA = mat_array[payload.graph_id].ddescA;
   switch(num_args) {
   case 1:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1) 
-#endif
-    { 
-      starpu_mpi_insert_task(
-          MPI_COMM_WORLD, &(cl_task1),
-          STARPU_VALUE,    &payload, sizeof(payload_t),
-          STARPU_RW, args[0],
-          STARPU_CALLBACK,  callback,
-          STARPU_PRIORITY,  0,
-          STARPU_NAME, "task1",
-          0);
-    }
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task1),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_RW, args[0],
+        STARPU_CALLBACK,  callback,
+        STARPU_PRIORITY,  0,
+        STARPU_NAME, "task1",
+        0);
     break;
   case 2:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
-       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1) 
-#endif    
-    {
-      starpu_mpi_insert_task(
-          MPI_COMM_WORLD, &(cl_task2),
-          STARPU_VALUE,    &payload, sizeof(payload_t),
-          STARPU_R, args[1],
-          STARPU_RW, args[0],
-          STARPU_CALLBACK,  callback,
-          STARPU_PRIORITY,  0,
-          STARPU_NAME, "task2",
-          0);
-    }
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task2),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_RW, args[0],
+        STARPU_CALLBACK,  callback,
+        STARPU_PRIORITY,  0,
+        STARPU_NAME, "task2",
+        0);
     break;
   case 3:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
-       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
-       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1) 
-#endif    
-    {
-      starpu_mpi_insert_task(
-          MPI_COMM_WORLD, &(cl_task3),
-          STARPU_VALUE,    &payload, sizeof(payload_t),
-          STARPU_R, args[1],
-          STARPU_R, args[2],
-          STARPU_RW, args[0],
-          STARPU_CALLBACK,  callback,
-          STARPU_PRIORITY,  0,
-          STARPU_NAME, "task3",
-          0);
-    }
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task3),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_RW, args[0],
+        STARPU_CALLBACK,  callback,
+        STARPU_PRIORITY,  0,
+        STARPU_NAME, "task3",
+        0);
     break;
   case 4:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
-       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
-       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
-       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1) 
-#endif    
-    {
-      starpu_mpi_insert_task(
-          MPI_COMM_WORLD, &(cl_task4),
-          STARPU_VALUE,    &payload, sizeof(payload_t),
-          STARPU_R, args[1],
-          STARPU_R, args[2],
-          STARPU_R, args[3],
-          STARPU_RW, args[0],
-          STARPU_CALLBACK,  callback,
-          STARPU_PRIORITY,  0,
-          STARPU_NAME, "task4",
-          0);
-    }
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task4),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_RW, args[0],
+        STARPU_CALLBACK,  callback,
+        STARPU_PRIORITY,  0,
+        STARPU_NAME, "task4",
+        0);
     break;
   case 5:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
-       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
-       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
-       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1 ||
-       desc_islocal(descA, args_loc[4].first, args_loc[4].second) == 1)  
-#endif    
-    {
-      starpu_mpi_insert_task(
-          MPI_COMM_WORLD, &(cl_task5),
-          STARPU_VALUE,    &payload, sizeof(payload_t),
-          STARPU_R, args[1],
-          STARPU_R, args[2],
-          STARPU_R, args[3],
-          STARPU_R, args[4],
-          STARPU_RW, args[0],
-          STARPU_CALLBACK,  callback,
-          STARPU_PRIORITY,  0,
-          STARPU_NAME, "task5",
-          0);
-    }
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task5),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_RW, args[0],
+        STARPU_CALLBACK,  callback,
+        STARPU_PRIORITY,  0,
+        STARPU_NAME, "task5",
+        0);
     break;
   case 6:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
-       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
-       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
-       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1 ||
-       desc_islocal(descA, args_loc[4].first, args_loc[4].second) == 1 ||
-       desc_islocal(descA, args_loc[5].first, args_loc[5].second) == 1)    
-#endif    
-    {
-      starpu_mpi_insert_task(
-          MPI_COMM_WORLD, &(cl_task6),
-          STARPU_VALUE,    &payload, sizeof(payload_t),
-          STARPU_R, args[1],
-          STARPU_R, args[2],
-          STARPU_R, args[3],
-          STARPU_R, args[4],
-          STARPU_R, args[5],
-          STARPU_RW, args[0],
-          STARPU_CALLBACK,  callback,
-          STARPU_PRIORITY,  0,
-          STARPU_NAME, "task6",
-          0);
-    }
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task6),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_R, args[5],
+        STARPU_RW, args[0],
+        STARPU_CALLBACK,  callback,
+        STARPU_PRIORITY,  0,
+        STARPU_NAME, "task6",
+        0);
     break;
   case 7:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
-       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
-       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
-       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1 ||
-       desc_islocal(descA, args_loc[4].first, args_loc[4].second) == 1 ||
-       desc_islocal(descA, args_loc[5].first, args_loc[5].second) == 1 ||
-       desc_islocal(descA, args_loc[6].first, args_loc[6].second) == 1)    
-#endif    
-    {
-      starpu_mpi_insert_task(
-          MPI_COMM_WORLD, &(cl_task7),
-          STARPU_VALUE,    &payload, sizeof(payload_t),
-          STARPU_R, args[1],
-          STARPU_R, args[2],
-          STARPU_R, args[3],
-          STARPU_R, args[4],
-          STARPU_R, args[5],
-          STARPU_R, args[6],
-          STARPU_RW, args[0],
-          STARPU_CALLBACK,  callback,
-          STARPU_PRIORITY,  0,
-          STARPU_NAME, "task7",
-          0);
-    }
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task7),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_R, args[5],
+        STARPU_R, args[6],
+        STARPU_RW, args[0],
+        STARPU_CALLBACK,  callback,
+        STARPU_PRIORITY,  0,
+        STARPU_NAME, "task7",
+        0);
     break;
   case 8:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
-       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
-       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
-       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1 ||
-       desc_islocal(descA, args_loc[4].first, args_loc[4].second) == 1 ||
-       desc_islocal(descA, args_loc[5].first, args_loc[5].second) == 1 ||
-       desc_islocal(descA, args_loc[6].first, args_loc[6].second) == 1 ||
-       desc_islocal(descA, args_loc[7].first, args_loc[7].second) == 1)    
-#endif    
-    {
-      starpu_mpi_insert_task(
-          MPI_COMM_WORLD, &(cl_task8),
-          STARPU_VALUE,    &payload, sizeof(payload_t),
-          STARPU_R, args[1],
-          STARPU_R, args[2],
-          STARPU_R, args[3],
-          STARPU_R, args[4],
-          STARPU_R, args[5],
-          STARPU_R, args[6],
-          STARPU_R, args[7],
-          STARPU_RW, args[0],
-          STARPU_CALLBACK,  callback,
-          STARPU_PRIORITY,  0,
-          STARPU_NAME, "task8",
-          0);
-    }
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task8),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_R, args[5],
+        STARPU_R, args[6],
+        STARPU_R, args[7],
+        STARPU_RW, args[0],
+        STARPU_CALLBACK,  callback,
+        STARPU_PRIORITY,  0,
+        STARPU_NAME, "task8",
+        0);
     break;
   case 9:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
-       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
-       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
-       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1 ||
-       desc_islocal(descA, args_loc[4].first, args_loc[4].second) == 1 ||
-       desc_islocal(descA, args_loc[5].first, args_loc[5].second) == 1 ||
-       desc_islocal(descA, args_loc[6].first, args_loc[6].second) == 1 ||
-       desc_islocal(descA, args_loc[7].first, args_loc[7].second) == 1 ||
-       desc_islocal(descA, args_loc[8].first, args_loc[8].second) == 1)    
-#endif    
-    {
-      starpu_mpi_insert_task(
-          MPI_COMM_WORLD, &(cl_task9),
-          STARPU_VALUE,    &payload, sizeof(payload_t),
-          STARPU_R, args[1],
-          STARPU_R, args[2],
-          STARPU_R, args[3],
-          STARPU_R, args[4],
-          STARPU_R, args[5],
-          STARPU_R, args[6],
-          STARPU_R, args[7],
-          STARPU_R, args[8],
-          STARPU_RW, args[0],
-          STARPU_CALLBACK,  callback,
-          STARPU_PRIORITY,  0,
-          STARPU_NAME, "task9",
-          0);
-    }
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task9),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_R, args[5],
+        STARPU_R, args[6],
+        STARPU_R, args[7],
+        STARPU_R, args[8],
+        STARPU_RW, args[0],
+        STARPU_CALLBACK,  callback,
+        STARPU_PRIORITY,  0,
+        STARPU_NAME, "task9",
+        0);
     break;
   case 10:
-#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(descA, args_loc[0].first, args_loc[0].second) == 1 ||
-       desc_islocal(descA, args_loc[1].first, args_loc[1].second) == 1 ||
-       desc_islocal(descA, args_loc[2].first, args_loc[2].second) == 1 ||
-       desc_islocal(descA, args_loc[3].first, args_loc[3].second) == 1 ||
-       desc_islocal(descA, args_loc[4].first, args_loc[4].second) == 1 ||
-       desc_islocal(descA, args_loc[5].first, args_loc[5].second) == 1 ||
-       desc_islocal(descA, args_loc[6].first, args_loc[6].second) == 1 ||
-       desc_islocal(descA, args_loc[7].first, args_loc[7].second) == 1 ||
-       desc_islocal(descA, args_loc[8].first, args_loc[8].second) == 1 ||
-       desc_islocal(descA, args_loc[9].first, args_loc[9].second) == 1)    
-#endif    
-    {
-      starpu_mpi_insert_task(
-          MPI_COMM_WORLD, &(cl_task10),
-          STARPU_VALUE,    &payload, sizeof(payload_t),
-          STARPU_R, args[1],
-          STARPU_R, args[2],
-          STARPU_R, args[3],
-          STARPU_R, args[4],
-          STARPU_R, args[5],
-          STARPU_R, args[6],
-          STARPU_R, args[7],
-          STARPU_R, args[8],
-          STARPU_R, args[9],
-          STARPU_RW, args[0],
-          STARPU_CALLBACK,  callback,
-          STARPU_PRIORITY,  0,
-          STARPU_NAME, "task10",
-          0);
-    }
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task10),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_R, args[5],
+        STARPU_R, args[6],
+        STARPU_R, args[7],
+        STARPU_R, args[8],
+        STARPU_R, args[9],
+        STARPU_RW, args[0],
+        STARPU_CALLBACK,  callback,
+        STARPU_PRIORITY,  0,
+        STARPU_NAME, "task10",
+        0);
     break;
   default:
     assert(false && "unexpected num_args");
@@ -962,7 +867,10 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
-    int num_args;    
+    int num_args; 
+#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
+    int has_task = 0;   
+#endif
     
     if (deps.size() == 0) {
       num_args = 1;
@@ -985,15 +893,46 @@ void StarPUApp::execute_timestep(size_t idx, long t)
           for (int i = dep.first; i <= dep.second; i++) {
             args.push_back(starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, i ));
             args_loc.push_back(std::make_pair((t-1)%nb_fields, i));
+#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
+            if(desc_islocal(mat.ddescA, (t-1)%nb_fields, i)) {
+              has_task = 1;
+            }
+#endif
           }
         }
       }
     }
+    
+#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
+    if(desc_islocal(mat.ddescA, t%nb_fields, x))
+      has_task = 1;
+
+    long dset_r = g.dependence_set_at_timestep(t+1);
+    std::vector<std::pair<long, long> > rdeps = g.reverse_dependencies(dset_r, x);
+    if( t < g.timesteps-1 && has_task != 1 ){
+      for (std::pair<long, long> rdep : rdeps) {
+        debug_printf(1, "R: (%d, %d): [%d, %d] \n", x, t, rdep.first, rdep.second); 
+          for (int i = rdep.first; i <= rdep.second; i++) {
+            if(desc_islocal(mat.ddescA, (t+1)%nb_fields, i)) {
+              has_task = 1;
+            }
+          }
+      }
+    }
+
+    debug_printf(1, "rank: %d, has_task: %d, x: %d, t: %d, task_id: %d\n", rank , has_task, x, t, mat.NT * t + x + 1);
+#endif
+    
     payload.i = t;
     payload.j = x;
     payload.graph = g;
     payload.graph_id = idx;
-    insert_task(num_args, payload, args, args_loc); 
+#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
+    if(has_task)
+#endif
+    {
+      insert_task(num_args, payload, args, args_loc); 
+    }
     args.clear();
     args_loc.clear();
   }
