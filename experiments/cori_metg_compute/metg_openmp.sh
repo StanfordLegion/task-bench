@@ -8,7 +8,7 @@
 
 module unload PrgEnv-intel
 module load PrgEnv-gnu
-export OMP_PROC_BIND=spread
+#export OMP_PROC_BIND=spread
 
 total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 cores=$(( $total_cores - 1 ))
