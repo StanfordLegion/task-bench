@@ -904,12 +904,13 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     }
     
 #ifdef ENABLE_PRUNE_MPI_TASK_INSERT
-    if(desc_islocal(mat.ddescA, t%nb_fields, x))
+    if(desc_islocal(mat.ddescA, t%nb_fields, x)) {
       has_task = 1;
+    }
 
-    long dset_r = g.dependence_set_at_timestep(t+1);
-    std::vector<std::pair<long, long> > rdeps = g.reverse_dependencies(dset_r, x);
     if( t < g.timesteps-1 && has_task != 1 ){
+      long dset_r = g.dependence_set_at_timestep(t+1);
+      std::vector<std::pair<long, long> > rdeps = g.reverse_dependencies(dset_r, x);
       for (std::pair<long, long> rdep : rdeps) {
         debug_printf(1, "R: (%d, %d): [%d, %d] \n", x, t, rdep.first, rdep.second); 
           for (int i = rdep.first; i <= rdep.second; i++) {
