@@ -55,7 +55,7 @@ colors = [
     'green',
     'red',
     'fuchsia',
-    'yellow',
+    # 'yellow',
     'black',
     'orange',
     'purple',

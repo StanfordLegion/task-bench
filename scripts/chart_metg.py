@@ -124,7 +124,7 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
     # Compute minimum efficient task granularity:
     min_time = None
     if summary:
-        assert any(table['efficiency'] >= threshold), "no data above threshold, maybe run was truncated?"
+        assert any(table['efficiency'] >= threshold), "no data above threshold, was run properly configured?"
         assert any(table['efficiency'] < threshold), "no data below threshold, maybe run was truncated?"
 
         # Find smallest task granularity above efficiency threshold:
@@ -133,8 +133,8 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
                    enumerate(table['efficiency'])),
             key=lambda x: table['time_per_task'][x[0]])
 
-        if min_i > 0:
-            assert table['reps'][min_i] >= table['reps'][min_i - 1], "final data point has fewer reps, maybe run was truncated?"
+        assert min_i + 1 < len(table['reps']), "no data following the point above the threshold"
+        assert table['reps'][min_i + 1] >= table['reps'][min_i], "final data point has fewer reps, maybe run was truncated?"
 
         # Perform linear interpolation if subsequent data point is an improvment:
         min_time = table['time_per_task'][min_i]
