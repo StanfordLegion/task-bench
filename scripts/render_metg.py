@@ -47,7 +47,7 @@ markers = [
     'H',
     '2',
     '>'
-]
+] * 2
 
 colors = [
     # Built in colors
