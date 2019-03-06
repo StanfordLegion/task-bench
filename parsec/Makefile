@@ -22,7 +22,7 @@ endif
 #PLASMA_DIR = /sw/plasma/2.8.0g
 
 # Include directories
-INC        = -I$(PARSEC_DIR)/include -I$(PARSEC_DIR)/include/parsec -I../core
+INC        = -I$(PARSEC_DIR)/include -I$(PARSEC_DIR)/include/parsec -I$(PARSEC_DIR)/../ -I../core
 INC_EXT    = -I$(HWLOC_DIR)/include 
 
 # Location of the libraries.

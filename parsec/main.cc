@@ -22,7 +22,6 @@
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <interfaces/superscalar/insert_function.h>
 #include <parsec/arena.h>
-#include <parsec/interfaces/superscalar/insert_function_internal.h>
 
 /* timings */
 #if defined( PARSEC_HAVE_MPI)
@@ -34,6 +33,10 @@
 #define VERBOSE_LEVEL 0
 #define USE_CORE_VERIFICATION
 #define ENABLE_PRUNE_MPI_TASK_INSERT
+
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT) 		
+#include <interfaces/superscalar/insert_function_internal.h>		
+#endif
 
 //#define TRACK_NB_TASKS
 #if defined (TRACK_NB_TASKS)  
@@ -328,55 +331,55 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
   nb_tasks ++;
   switch(num_args) {
   case 1:
-      parsec_dtd_taskpool_insert_task(dtd_tp, test_task1,    0,  "test_task1",
-                                      sizeof(payload_t), &payload, VALUE,
-                                      PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
-                                      PARSEC_DTD_ARG_END);
+    parsec_dtd_taskpool_insert_task(dtd_tp, test_task1,    0,  "test_task1",
+                                    sizeof(payload_t), &payload, VALUE,
+                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
+                                    PARSEC_DTD_ARG_END);
     break;
   case 2:
-      parsec_dtd_taskpool_insert_task(dtd_tp, test_task2,    0,  "test_task2",
-                                      sizeof(payload_t), &payload, VALUE,
-                                      PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
-                                      PARSEC_DTD_ARG_END);
+    parsec_dtd_taskpool_insert_task(dtd_tp, test_task2,    0,  "test_task2",
+                                    sizeof(payload_t), &payload, VALUE,
+                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
+                                    PARSEC_DTD_ARG_END);
     break;
   case 3:
-      parsec_dtd_taskpool_insert_task(dtd_tp, test_task3,    0,  "test_task3",
-                                      sizeof(payload_t), &payload, VALUE,
-                                      PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
-                                      PARSEC_DTD_ARG_END);
+    parsec_dtd_taskpool_insert_task(dtd_tp, test_task3,    0,  "test_task3",
+                                    sizeof(payload_t), &payload, VALUE,
+                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
+                                    PARSEC_DTD_ARG_END);
     break;
   case 4:
-      parsec_dtd_taskpool_insert_task(dtd_tp, test_task4,    0,  "test_task4",
-                                      sizeof(payload_t), &payload, VALUE,
-                                      PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
-                                      PARSEC_DTD_ARG_END);
+    parsec_dtd_taskpool_insert_task(dtd_tp, test_task4,    0,  "test_task4",
+                                    sizeof(payload_t), &payload, VALUE,
+                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
+                                    PARSEC_DTD_ARG_END);
     break;
   case 5:
-      parsec_dtd_taskpool_insert_task(dtd_tp, test_task5,    0,  "test_task5",
-                                      sizeof(payload_t), &payload, VALUE,
-                                      PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
-                                      PARSEC_DTD_ARG_END);
+    parsec_dtd_taskpool_insert_task(dtd_tp, test_task5,    0,  "test_task5",
+                                    sizeof(payload_t), &payload, VALUE,
+                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
+                                    PARSEC_DTD_ARG_END);
     break;
   case 6:
-      parsec_dtd_taskpool_insert_task(dtd_tp, test_task6,    0,  "test_task6",
-                                      sizeof(payload_t), &payload, VALUE,
-                                      PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
-                                      PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
-                                      PARSEC_DTD_ARG_END);
+    parsec_dtd_taskpool_insert_task(dtd_tp, test_task6,    0,  "test_task6",
+                                    sizeof(payload_t), &payload, VALUE,
+                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
+                                    PARSEC_DTD_ARG_END);
     break;
   default:
     assert(false && "unexpected num_args");
@@ -615,7 +618,9 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args;    
+#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
     int has_task = 0;
+#endif
     
     if (deps.size() == 0) {
       num_args = 1;
@@ -635,8 +640,9 @@ void ParsecApp::execute_timestep(size_t idx, long t)
           for (int i = dep.first; i <= dep.second; i++) {
             args.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));  
 #ifdef ENABLE_PRUNE_MPI_TASK_INSERT
-            if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t-1)%nb_fields, i))
-                has_task = 1;
+            if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t-1)%nb_fields, i)) {
+              has_task = 1;
+            }
 #endif
           }
         }
@@ -644,8 +650,9 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     }
 
 #ifdef ENABLE_PRUNE_MPI_TASK_INSERT
-    if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, t%nb_fields, x))
-        has_task = 1;
+    if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, t%nb_fields, x)) {
+      has_task = 1;
+    }
 
     if( t < g.timesteps-1 && has_task != 1 ){
         long dset_r = g.dependence_set_at_timestep(t+1);
@@ -654,7 +661,9 @@ void ParsecApp::execute_timestep(size_t idx, long t)
             debug_printf(1, "R: (%d, %d): [%d, %d] \n", x, t, rdep.first, rdep.second); 
             for (int i = rdep.first; i <= rdep.second; i++) {
                 if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t+1)%nb_fields, i))
-                    has_task = 1;
+                {
+                  has_task = 1;
+                }
             }
         }
     }
