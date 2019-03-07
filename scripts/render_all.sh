@@ -1,6 +1,6 @@
 #!/bin/bash
 
-root_dir="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 "$root_dir"/metg.py -m cori -g 1 -d no_comm --csv excel "$@" > metg_no_comm.csv
 "$root_dir"/metg.py -m cori -g 1 -d stencil_1d --csv excel "$@" > metg_stencil.csv
