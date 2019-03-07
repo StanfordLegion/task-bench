@@ -180,6 +180,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 {
   ShardArgs a;
   std::vector<TaskGraph> graphs;
+  std::vector<std::vector<RegionInstance> > task_results;
   std::vector<std::vector<RegionInstance> > task_inputs;
   std::vector<std::vector<RegionInstance> > raw_exchange;
   std::vector<std::vector<RegionInstance> > war_exchange;
@@ -187,6 +188,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     FixedBufferDeserializer ser(args, arglen);
     ser >> a;
     ser >> graphs;
+    ser >> task_results;
     ser >> task_inputs;
     ser >> raw_exchange;
     ser >> war_exchange;
@@ -591,38 +593,23 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     }
   }
 
-  // Create local output regions.
-
-  // graph -> point -> instance
-  std::vector<std::vector<RegionInstance> > results(graphs.size());
   // graph -> point -> field -> base pointer
   std::vector<std::vector<std::vector<char *> > > result_base(graphs.size());
   for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
     auto graph = graphs.at(graph_index);
 
-    Rect1 bounds(Point1(0), Point1(graph.output_bytes_per_task - 1));
+    result_base.at(graph_index).resize(graph.max_width);
 
-    std::map<FieldID, size_t> field_sizes;
-    for (unsigned fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
-      field_sizes[fid] = sizeof(char);
-    }
+    for (long point = 0; point < graph.max_width; ++point) {
 
-    long first_point = proc_index * graph.max_width / num_procs;
-    long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+      result_base.at(graph_index).at(point).resize(num_fields, NULL);
 
-    results.at(graph_index).resize(last_point - first_point + 1);
-    result_base.at(graph_index).resize(last_point - first_point + 1);
-
-    for (long point = first_point; point <= last_point; ++point) {
-      RegionInstance &inst = results.at(graph_index).at(point - first_point);
-      RegionInstance::create_instance(inst, regmem, bounds, field_sizes,
-                                      0 /*SOA*/, ProfilingRequestSet())
-        .wait();
-
-      result_base.at(graph_index).at(point - first_point).resize(num_fields);
-      for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
-        result_base.at(graph_index).at(point - first_point).at(fid - FID_FIRST) =
-          get_base(inst, fid);
+      auto &inst = task_results.at(graph_index).at(point);
+      if (inst.get_location() == sysmem || inst.get_location() == regmem) {
+        for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+          result_base.at(graph_index).at(point).at(fid - FID_FIRST) =
+            get_base(inst, fid);
+        }
       }
     }
   }
@@ -701,11 +688,10 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
               preconditions.push_back(ready.get_previous_phase());
 
               if (dep >= last_offset && dep < last_offset + last_width) {
-                char *data = NULL;
+                char *data = result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST);
                 if (point >= offset && point < offset + width) {
-                  if (first_point <= dep && dep <= last_point) {
+                  if (data) {
                     // Data available locally
-                    data = result_base.at(graph_index).at(dep - first_point).at(last_fid - FID_FIRST);
                   } else {
                     // Data is remote
                     data = input_base.at(graph_index).at(point - first_point).at(slot).at(last_fid - FID_FIRST);
@@ -750,7 +736,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
             leaf_args.point = point;
             leaf_args.timestep = timestep;
             leaf_args.graph = graph;
-            leaf_args.output_ptr = result_base.at(graph_index).at(point - first_point).at(fid - FID_FIRST);
+            leaf_args.output_ptr = result_base.at(graph_index).at(point).at(fid - FID_FIRST);
             leaf_args.output_bytes = graph.output_bytes_per_task;
             leaf_args.scratch_ptr = scratch_ptr;
             leaf_args.scratch_bytes = graph.scratch_bytes_per_task;
@@ -780,10 +766,10 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
               Event postcondition = task_postcondition;
               if (dep >= next_offset && dep < next_offset + next_width) {
                 // Only copy when the dependent task doesn't live in the same address space.
-                if (!(first_point <= dep && dep <= last_point)) {
+                if (!result_base.at(graph_index).at(dep).at(fid - FID_FIRST)) {
                   long slot = remote_input_slot.at(graph_index).at(point - first_point).at(next_dset).at(dep);
                   postcondition = copy(
-                    results.at(graph_index).at(point - first_point),
+                    task_results.at(graph_index).at(point),
                     remote_inputs
                       .at(graph_index)
                       .at(point - first_point)
@@ -910,6 +896,35 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   }
 
   std::vector<Event> events;
+  std::vector<std::vector<RegionInstance> > task_results(graphs.size());
+  {
+    std::map<FieldID, size_t> field_sizes;
+    for (unsigned fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+      field_sizes[fid] = sizeof(char);
+    }
+
+    for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+      auto graph = graphs.at(graph_index);
+
+      task_results.at(graph_index).resize(graph.max_width);
+
+      Rect1 bounds(Point1(0), Point1(graph.output_bytes_per_task - 1));
+
+      for (long proc_index = 0; proc_index < num_procs; ++proc_index) {
+        auto proc = procs.at(proc_index);
+        auto memory = proc_regmems.at(proc);
+
+        long first_point = proc_index * graph.max_width / num_procs;
+        long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+        for (long point = first_point; point <= last_point; ++point) {
+          events.push_back(
+            RegionInstance::create_instance(task_results.at(graph_index).at(point), memory, bounds, field_sizes,
+                                            0 /*SOA*/, ProfilingRequestSet()));
+        }
+      }
+    }
+  }
+
   std::vector<std::vector<RegionInstance> > task_inputs(graphs.size());
   {
     std::map<FieldID, size_t> field_sizes;
@@ -1007,6 +1022,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     DynamicBufferSerializer ser(4096);
     ser << args;
     ser << graphs;
+    ser << task_results;
     ser << task_inputs;
     ser << raw_exchange;
     ser << war_exchange;
