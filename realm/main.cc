@@ -674,7 +674,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
         long dset = graph.dependence_set_at_timestep(timestep);
         long next_dset = graph.dependence_set_at_timestep(timestep + 1);
-        // long last_field_dset = graph.dependence_set_at_timestep(std::max(timestep - num_fields + 1, 0L));
+        long last_field_dset = graph.dependence_set_at_timestep(std::max(timestep - num_fields + 1, 0L));
 
         long offset = graph.offset_at_timestep(timestep);
         long width = graph.width_at_timestep(timestep);
@@ -722,14 +722,20 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           //     (In this case the dependency catches on the copy.)
 
           // WAR dependencies (part 1)
-          for (auto interval : graph.reverse_dependencies(next_dset, point)) {
+          for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
               Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
               if (dep >= next_offset && dep < next_offset + next_width) {
+                // FIXME: This dependency is being generated too aggressively,
+                // it's technically only supposed to apply when a copy
+                // *wasn't* issued (i.e. the dependency is local), but doing
+                // so somehow messed up the dependencies with the last use of
+                // the same field.
+
                 // Only copy when the dependent task doesn't live in the same address space.
-                if (first_point <= dep && dep <= last_point) {
+                // if (first_point <= dep && dep <= last_point) {
                   preconditions.push_back(ready.get_previous_phase());
-                }
+                // }
               }
             }
           }
@@ -761,13 +767,12 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
             events.push_back(task_postcondition);
           }
 
-          // FIXME: Elliott: make sure to handle all four directions of dependencies here
-
           // WAR dependencies (part 2)
           // RAW dependencies
           for (auto interval : graph.reverse_dependencies(next_dset, point)) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
-              Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
+              // FIXME: This is currently handled at the task, see note above.
+              // Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
               Barrier &complete = raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
               Event postcondition = task_postcondition;
               if (dep >= next_offset && dep < next_offset + next_width) {
@@ -782,7 +787,10 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                       .at(dep)
                       .at(slot),
                     fid, graph.output_bytes_per_task,
-                    Event::merge_events(ready.get_previous_phase(), task_postcondition));
+                    // Event::merge_events(ready.get_previous_phase(),
+                    task_postcondition
+                    // )
+                    );
                 }
               }
               complete.arrive(1, postcondition);
