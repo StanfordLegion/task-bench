@@ -661,7 +661,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   // Main loop
   unsigned long long start_time = 0, stop_time = 0;
   std::vector<Event> preconditions;
-  std::vector<std::pair<Event, Barrier *> > postconditions;
   for (long rep = 0; rep < 1; ++rep) {
     start_time = Clock::current_time_in_nanoseconds();
     for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
@@ -693,7 +692,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           // Gather inputs
           long n_inputs = 0, slot = 0;
           preconditions.clear();
-          postconditions.clear();
           for (auto interval : graph.dependencies(dset, point)) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
               Barrier &ready = raw_in.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep);
@@ -799,25 +797,14 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           // WAR dependencies
           for (auto interval : graph.dependencies(dset, point)) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
-              postconditions.push_back(
-                std::pair<Event, Barrier *>(
-                  task_postcondition,
-                  &war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep)));
+              Barrier &complete = war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep);
+              complete.arrive(1, task_postcondition);
             }
           }
           // Also need to arrive at any points not included in this
           // dset, otherwise we'll deadlock.
           for (long dep : raw_points_not_in_dset.at(graph_index).at(point - first_point).at(dset)) {
-            war_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep).arrive(1);
-          }
-
-          for (auto trigger : postconditions) {
-            Event src = trigger.first;
-            if (src == Event::NO_EVENT) {
-              src = task_postcondition;
-            }
-            Barrier *dst = trigger.second;
-            dst->arrive(1, src);
+            war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep).arrive(1);
           }
 
           for (auto &bar : raw_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST)) {
