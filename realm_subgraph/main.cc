@@ -220,6 +220,7 @@ void leaf_task(const void *args, size_t arglen, const void *userdata,
 }
 
 static Event define_subgraph(Subgraph &subgraph,
+                             bool replayable,
                              Processor p,
                              const TaskGraph &graph, size_t graph_index,
                              long start_timestep, long stop_timestep,
@@ -266,7 +267,6 @@ static Event define_subgraph(Subgraph &subgraph,
   size_t next_precondition = 0;
   size_t next_postcondition = 0;
 
-  // Elliott
   for (long timestep = start_timestep; timestep < stop_timestep; ++timestep) {
     long dset = graph.dependence_set_at_timestep(timestep);
     long next_dset = graph.dependence_set_at_timestep(timestep + 1);
@@ -359,8 +359,8 @@ static Event define_subgraph(Subgraph &subgraph,
         task.args = ByteArray(leaf_buffer, leaf_bufsize);
         task.prs = ProfilingRequestSet();
 
-        definition.tasks.push_back(task);
         task_postcondition = definition.tasks.size();
+        definition.tasks.push_back(task);
 
         SubgraphDefinition::Interpolation interp;
         interp.offset = global_timestep_offset.at(timestep - start_timestep);
@@ -412,6 +412,7 @@ static Event define_subgraph(Subgraph &subgraph,
             // Only copy when the dependent task doesn't live in the same address space.
             if (!result_base.at(graph_index).at(dep).at(fid - FID_FIRST)) {
               long slot = remote_input_slot.at(graph_index).at(point - first_point).at(next_dset).at(dep);
+              copy_postcondition = definition.copies.size();
               definition.copies.push_back(copy_desc(
                 task_results.at(graph_index).at(point),
                 remote_inputs
@@ -420,7 +421,6 @@ static Event define_subgraph(Subgraph &subgraph,
                   .at(dep)
                   .at(slot),
                 fid, graph.output_bytes_per_task));
-              copy_postcondition = definition.copies.size();
 
               // SubgraphDefinition::Dependency ready_dep;
               // ready_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_EXT_PRECOND;
@@ -449,8 +449,8 @@ static Event define_subgraph(Subgraph &subgraph,
           arrival.count = 1;
           arrival.reduce_value = ByteArray();
 
-          definition.arrivals.push_back(arrival);
           size_t arrival_precondition = definition.arrivals.size();
+          definition.arrivals.push_back(arrival);
 
           SubgraphDefinition::Interpolation interp;
           interp.offset = complete_offset;
@@ -491,8 +491,8 @@ static Event define_subgraph(Subgraph &subgraph,
         arrival.count = 1;
         arrival.reduce_value = ByteArray();
 
-        definition.arrivals.push_back(arrival);
         size_t arrival_precondition = definition.arrivals.size();
+        definition.arrivals.push_back(arrival);
 
         SubgraphDefinition::Interpolation interp;
         interp.offset = barrier_offset;
@@ -518,8 +518,8 @@ static Event define_subgraph(Subgraph &subgraph,
           arrival.count = 1;
           arrival.reduce_value = ByteArray();
 
-          definition.arrivals.push_back(arrival);
           size_t arrival_precondition = definition.arrivals.size();
+          definition.arrivals.push_back(arrival);
 
           SubgraphDefinition::Interpolation interp;
           interp.offset = complete_offset;
@@ -555,8 +555,8 @@ static Event define_subgraph(Subgraph &subgraph,
         arrival.count = 1;
         arrival.reduce_value = ByteArray();
 
-        definition.arrivals.push_back(arrival);
         size_t arrival_precondition = definition.arrivals.size();
+        definition.arrivals.push_back(arrival);
 
         SubgraphDefinition::Interpolation interp;
         interp.offset = barrier_offset;
@@ -573,10 +573,17 @@ static Event define_subgraph(Subgraph &subgraph,
     }
   }
 
+  if (replayable) {
+    definition.concurrency_mode = SubgraphDefinition::ConcurrencyMode::INSTANTIATION_ORDER;
+  } else {
+    definition.concurrency_mode = SubgraphDefinition::ConcurrencyMode::ONE_SHOT;
+  }
+
   return Subgraph::create_subgraph(subgraph, definition, ProfilingRequestSet());
 }
 
 static Event instantiate_subgraph(Subgraph &subgraph,
+                                  const Event &subgraph_ready,
                                   const TaskGraph &graph, size_t graph_index,
                                   long start_timestep, long stop_timestep,
                                   long first_point, long last_point,
@@ -597,7 +604,6 @@ static Event instantiate_subgraph(Subgraph &subgraph,
 
   std::vector<Event> preconditions;
 
-  // Elliott
   for (long timestep = start_timestep; timestep < stop_timestep; ++timestep) {
     long dset = graph.dependence_set_at_timestep(timestep);
     long next_dset = graph.dependence_set_at_timestep(timestep + 1);
@@ -708,7 +714,8 @@ static Event instantiate_subgraph(Subgraph &subgraph,
   return subgraph.instantiate(global_ser.get_buffer(), global_ser.bytes_used(),
                               ProfilingRequestSet(),
                               preconditions,
-                              events);
+                              events,
+                              subgraph_ready);
 }
 
 void shard_task(const void *args, size_t arglen, const void *userdata,
@@ -1197,75 +1204,77 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       // and calculate a period such that we know it can be reused
       // (assuming the graph does not change offset/width over time).
       Subgraph subgraph = Subgraph::NO_SUBGRAPH;
+      Event ready = Event::NO_EVENT;
 
       long period = lcm(num_fields, graph.timestep_period());
 
       for (long start_timestep = 0; start_timestep < graph.timesteps; start_timestep += period) {
         long stop_timestep = start_timestep + period;
 
-        bool use_subgraph = stop_timestep <= graph.timesteps;
+        bool replay = stop_timestep <= graph.timesteps;
 
         // Currently we only generate subgraphs for full-width task graphs.
-        if (use_subgraph) {
+        if (replay) {
           for (long timestep = start_timestep; timestep < stop_timestep; ++timestep) {
             long offset = graph.offset_at_timestep(timestep);
             long width = graph.width_at_timestep(timestep);
             if (offset != 0 || width != graph.max_width) {
-              use_subgraph = false;
+              replay = false;
               break;
             }
           }
         }
 
-        Subgraph *current_subgraph;
+        Subgraph temp_subgraph = Subgraph::NO_SUBGRAPH;
+        Event temp_ready = Event::NO_EVENT;
 
-        if (use_subgraph) {
-          current_subgraph = &subgraph;
-        } else {
-          current_subgraph = new Subgraph;
-        }
+        Subgraph &current_subgraph = replay ? subgraph : temp_subgraph;
+        Event &current_ready = replay ? ready : temp_ready;
 
         // Define the subgraph.
-        define_subgraph(subgraph,
-                        p,
-                        graph, graph_index,
-                        start_timestep, stop_timestep,
-                        first_point, last_point,
-                        num_fields,
-                        task_results,
-                        remote_inputs,
-                        remote_input_slot,
-                        raw_points_not_in_dset,
-                        war_points_not_in_dset,
-                        result_base,
-                        input_base,
-                        input_ptr,
-                        input_bytes,
-                        scratch_ptr,
-                        leaf_buffer,
-                        leaf_bufsize);
+        if (!current_subgraph.exists()) {
+          // FIXME: Am I actually required to track the ready event of this subgraph??
+          current_ready = define_subgraph(current_subgraph,
+                                          replay,
+                                          p,
+                                          graph, graph_index,
+                                          start_timestep, std::min(stop_timestep, graph.timesteps),
+                                          first_point, last_point,
+                                          num_fields,
+                                          task_results,
+                                          remote_inputs,
+                                          remote_input_slot,
+                                          raw_points_not_in_dset,
+                                          war_points_not_in_dset,
+                                          result_base,
+                                          input_base,
+                                          input_ptr,
+                                          input_bytes,
+                                          scratch_ptr,
+                                          leaf_buffer,
+                                          leaf_bufsize);
+        }
 
         // Replay the subgraph.
         std::vector<Event> postconditions;
-        instantiate_subgraph(subgraph,
-                             graph, graph_index,
-                             start_timestep, stop_timestep,
-                             first_point, last_point,
-                             num_fields,
-                             raw_in,
-                             war_in,
-                             raw_out,
-                             war_out,
-                             raw_points_not_in_dset,
-                             war_points_not_in_dset,
-                             postconditions);
+        // FIXME: Am I actually required to track the instantiation event of this subgraph?
+        events.push_back(
+          instantiate_subgraph(current_subgraph,
+                               current_ready,
+                               graph, graph_index,
+                               start_timestep, stop_timestep,
+                               first_point, last_point,
+                               num_fields,
+                               raw_in,
+                               war_in,
+                               raw_out,
+                               war_out,
+                               raw_points_not_in_dset,
+                               war_points_not_in_dset,
+                               postconditions));
 
         // FIXME: Figure out a way to declare this more concisely
         events.insert(events.end(), postconditions.begin(), postconditions.end());
-
-        if (!use_subgraph) {
-          delete current_subgraph;
-        }
       }
     }
 
