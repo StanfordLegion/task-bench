@@ -565,6 +565,7 @@ void ParsecApp::execute_main_loop()
   if (rank == 0) {
     Timer::time_start();
   }
+#if 0
   /* start parsec context */
   parsec_context_start(parsec);
   
@@ -588,7 +589,8 @@ void ParsecApp::execute_main_loop()
 
   /* Waiting on all handle and turning everything off for this context */
   parsec_context_wait( parsec );
-  
+#endif
+
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
     double elapsed = Timer::time_end();
@@ -617,12 +619,18 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   payload_t payload;
   
   debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
-  int first_point = rank * g.max_width / nodes;
-  int last_point = (rank + 1) * g.max_width / nodes - 1;
+  int first_point = rank * g.max_width / nodes - 1;
+  int last_point = (rank + 1) * g.max_width / nodes - 1 + 1;
 //  printf("first point %d, last point %d, rank %d, cores %d\n", first_point, last_point, rank, cores);
   
+  if (first_point < 0) {
+    first_point = 0;
+  }
+  if (last_point >= g.max_width) {
+    last_point = g.max_width-1;
+  }
   for (int x = first_point; x <= last_point; x++) {    
-  //for (int x = offset; x <= offset+width-1; x++) {
+ // for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args;   
 
@@ -663,7 +671,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
       continue;
     }
 #endif
-   /* 
+    
     if (deps.size() == 0) {
       num_args = 1;
       debug_printf(1, "%d[%d] ", x, num_args);
@@ -692,7 +700,6 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     payload.graph_id = idx;
     insert_task(num_args, payload, args); 
     args.clear();
-    */
   }
   debug_printf(1, "\n");
 }
