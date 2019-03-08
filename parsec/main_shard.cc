@@ -621,18 +621,44 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   int first_point = rank * g.max_width / nodes;
   int last_point = (rank + 1) * g.max_width / nodes - 1;
   
- // int first_point = 0;
-//  int last_point = g.max_width-1;
+  bool insert_self = true;
+  if (first_point > offset+width-1) {
+    insert_self = false;
+  }
+  if (last_point < offset) {
+    insert_self = false;
+  }
+  if (first_point < offset) {
+    first_point = offset;
+  }
+  if (last_point > offset+width-1) {
+    last_point = offset+width-1;
+  }
   
   
-  printf("rank %d, timestep %d, first %d, last %d\n", rank, t, first_point, last_point);
+  
+  debug_printf(0, "rank %d, timestep %d, first %d, last %d\n", rank, t, first_point, last_point);
   
   std::set<int> dep_points_set;
   
-  if (t < g.timesteps-1) {
+  for (int ii = first_point; ii <= last_point; ii++) {
+    dep_points_set.insert(ii);
+  }
+  if (t != g.timesteps-1) {
+    int first_point_next = rank * g.max_width / nodes;
+    int last_point_next = (rank + 1) * g.max_width / nodes - 1;
+    long offset_next = g.offset_at_timestep(t+1);
+    long width_next = g.width_at_timestep(t+1);
+    
+    if (first_point_next < offset_next) {
+      first_point_next = offset_next;
+    }
+    if (last_point_next > offset_next+width_next-1) {
+      last_point_next = offset_next+width_next-1;
+    }
+    debug_printf(0, "rank %d, timestep %d, first_next %d, last_next %d\n", rank, t, first_point_next, last_point_next);
     long dset_next = g.dependence_set_at_timestep(t+1);
-    for (int ii = first_point; ii <= last_point; ii++) {
-      dep_points_set.insert(ii);
+    for (int ii = first_point_next; ii <= last_point_next; ii++) {
       std::vector<std::pair<long, long> > deps_next = g.dependencies(dset_next, ii);
       for (std::pair<long, long> dep_next : deps_next) {
         for (int i = dep_next.first; i <= dep_next.second; i++) {
@@ -640,10 +666,21 @@ void ParsecApp::execute_timestep(size_t idx, long t)
         }
       }
     }
-  } else {
+  } 
+  if (t != 0) {
+    int first_point_prev = rank * g.max_width / nodes;
+    int last_point_prev = (rank + 1) * g.max_width / nodes - 1;
+    long offset_prev = g.offset_at_timestep(t-1);
+    long width_prev = g.width_at_timestep(t-1);
+    
+    if (first_point_prev < offset_prev) {
+      first_point_prev = offset_prev;
+    }
+    if (last_point_prev > offset_prev+width_prev-1) {
+      last_point_prev = offset_prev+width_prev-1;
+    }
     long dset_prev = g.dependence_set_at_timestep(t);
-    for (int ii = first_point; ii <= last_point; ii++) {
-      dep_points_set.insert(ii);
+    for (int ii = first_point_prev; ii <= last_point_prev; ii++) {
       std::vector<std::pair<long, long> > deps_prev = g.reverse_dependencies(dset_prev, ii);
       for (std::pair<long, long> dep_prev : deps_prev) {
         for (int i = dep_prev.first; i <= dep_prev.second; i++) {
@@ -654,46 +691,47 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   }
   
   std::set <int> :: iterator itr; 
-  printf("\nrank %d, timestep %d, set size %d\n", rank, t, dep_points_set.size());
+//  printf("\nrank %d, timestep %d, set size %d\n", rank, t, dep_points_set.size());
   for (itr = dep_points_set.begin(); itr != dep_points_set.end(); ++itr) {
     x = *itr;
-    printf("rank %d [x:%d, t:%d], ", rank, x, t);
-    std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
-    int num_args = 0;    
+    if (x >= offset && x <= offset+width-1) { // ONLY for DOM
+      debug_printf(0, "rank %d [x:%d, t:%d], ", rank, x, t);
+      std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
+      int num_args = 0;    
     
-    if (deps.size() == 0) {
-      num_args = 1;
-      debug_printf(1, "%d[%d] ", x, num_args);
-      args.push_back(TILE_OF_MAT(C, t%nb_fields, x)); 
-    } else {
-      if (t == 0) {
+      if (deps.size() == 0) {
         num_args = 1;
-        debug_printf(1, "%d[%d]\n ", x, num_args);
+        debug_printf(1, "%d[%d] ", x, num_args);
         args.push_back(TILE_OF_MAT(C, t%nb_fields, x)); 
       } else {
-        num_args = 1;
-        args.push_back(TILE_OF_MAT(C, t%nb_fields, x));
-        for (std::pair<long, long> dep : deps) {
-          num_args += dep.second - dep.first + 1;
-          debug_printf(1, "(%d, %d): [%d, %d, %d] \n", x, t, num_args, dep.first, dep.second); 
-          for (int i = dep.first; i <= dep.second; i++) {
-            args.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));  
+        if (t == 0) {
+          num_args = 1;
+          debug_printf(1, "%d[%d]\n ", x, num_args);
+          args.push_back(TILE_OF_MAT(C, t%nb_fields, x)); 
+        } else {
+          num_args = 1;
+          args.push_back(TILE_OF_MAT(C, t%nb_fields, x));
+          for (std::pair<long, long> dep : deps) {
+            num_args += dep.second - dep.first + 1;
+            debug_printf(1, "(%d, %d): [%d, %d, %d] \n", x, t, num_args, dep.first, dep.second); 
+            for (int i = dep.first; i <= dep.second; i++) {
+              args.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));  
+            }
           }
         }
       }
-    }
     
-    ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1;
+      ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1;
 
-    payload.i = t;
-    payload.j = x;
-    payload.graph = g;
-    payload.graph_id = idx;
-    insert_task(num_args, payload, args); 
-    args.clear();
+      payload.i = t;
+      payload.j = x;
+      payload.graph = g;
+      payload.graph_id = idx;
+      insert_task(num_args, payload, args); 
+      args.clear();
+    }
   }
-  printf("\n");
-  debug_printf(1, "\n");
+  debug_printf(0, "\n");
 }
 
 void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
@@ -701,7 +739,7 @@ void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
   if (verbose_level > VERBOSE_LEVEL) {
     return;
   }
-  if (rank == 1) {
+  if (rank == 0) {
     va_list args;
     va_start(args, format);
     vprintf(format, args);
@@ -712,7 +750,7 @@ void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
 int main(int argc, char ** argv)
 {
   //printf("pid %d\n", getpid());
-  //sleep(10);
+ // sleep(10);
   ParsecApp app(argc, argv);
   app.execute_main_loop();
 

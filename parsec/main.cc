@@ -625,10 +625,10 @@ int first_point = rank * g.max_width / nodes - 1;
  if (last_point >= g.max_width) {
    last_point = g.max_width-1;
  }
- for (int x = first_point; x <= last_point; x++) {
+ //for (int x = first_point; x <= last_point; x++) {
   
   //debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
-  //for (int x = offset; x <= offset+width-1; x++) {
+ for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args;    
 #ifdef ENABLE_PRUNE_MPI_TASK_INSERT

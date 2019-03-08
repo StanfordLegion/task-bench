@@ -482,6 +482,9 @@ void TaskGraph::execute_point(long timestep, long point,
 
   long offset = offset_at_timestep(timestep);
   long width = width_at_timestep(timestep);
+  if (offset > point || point >= offset+width) {
+    printf("ts %d, offset %ld, point %d, offset_width %d\n", timestep, offset, point, offset+width);
+  }
   assert(offset <= point && point < offset+width);
 
   long last_offset = offset_at_timestep(timestep-1);

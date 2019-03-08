@@ -118,11 +118,9 @@ fi
 if [[ $USE_PARSEC -eq 1 ]]; then
     for t in "${basic_types[@]}"; do
         for k in "${kernels[@]}"; do
-            mpirun -np 1 ./parsec/main -steps 9 -type $t $k -c 2
-            mpirun -np 4 ./parsec/main -steps 9 -type $t $k -p 1 -c 2
-            mpirun -np 4 ./parsec/main -steps 9 -type $t $k -p 2 -c 2
-            mpirun -np 4 ./parsec/main -steps 9 -type $t $k -p 4 -c 2
-            mpirun -np 1 ./parsec/main -steps 9 -type $t $k -and -steps 9 -type $t $k -c 2
+            mpirun -np 1 ./parsec/main_shard -steps 9 -type $t $k -c 2
+            mpirun -np 4 ./parsec/main_shard -width 16 -steps 20 -type $t $k -p 1 -c 2 -S 4
+            mpirun -np 1 ./parsec/main_shard -steps 9 -type $t $k -and -steps 9 -type $t $k -c 2
         done
     done
 fi
