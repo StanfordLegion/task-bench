@@ -702,6 +702,21 @@ void ParsecApp::execute_timestep(size_t idx, long t, int *is_inserted)
       }
     }
 
+    /* Insert local task */
+    payload.i = t;
+    payload.j = x;
+    payload.graph = g;
+    payload.graph_id = idx;
+    ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1;
+    debug_printf(1, "Self: rank: %d, x: %d, t: %d, task_id: %d\n", rank , x, t, mat.NT * t + x + 1);
+
+    if( 0 == is_inserted[t*g.max_width+x] ){
+        insert_task(num_args, payload, args);
+        is_inserted[t*g.max_width+x] = 1;
+        debug_printf(1, "Self: rank %d insert (%d, %d) \n", rank, t, x);
+    }
+    args.clear();
+
     /* Check every successors */
     if( t < g.timesteps-1 ){
         long dset_r = g.dependence_set_at_timestep(t+1);
@@ -747,21 +762,6 @@ void ParsecApp::execute_timestep(size_t idx, long t, int *is_inserted)
             }
         }
     } /* Finish checking all successors */
-
-    /* Insert local task */
-    payload.i = t;
-    payload.j = x;
-    payload.graph = g;
-    payload.graph_id = idx;
-    ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1;
-    debug_printf(1, "Self: rank: %d, x: %d, t: %d, task_id: %d\n", rank , x, t, mat.NT * t + x + 1);
-
-    if( 0 == is_inserted[t*g.max_width+x] ){
-        insert_task(num_args, payload, args);
-        is_inserted[t*g.max_width+x] = 1;
-        debug_printf(1, "Self: rank %d insert (%d, %d) \n", rank, t, x);
-    }
-    args.clear();
 
   } /* End of x for loop */
 
