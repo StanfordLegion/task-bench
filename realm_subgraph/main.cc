@@ -391,8 +391,8 @@ static Event define_subgraph(Subgraph &subgraph,
           // FIXME: This is currently handled at the task, see note above.
           // size_t ready_offset = global_ser.bytes_used();
           // global_ser << Barrier::NO_BARRIER;
-          size_t complete_offset = global_ser.bytes_used();
           global_ser << Barrier::NO_BARRIER;
+          size_t complete_offset = global_ser.bytes_used() - sizeof(Barrier);
 
           size_t copy_postcondition = SIZE_MAX;
           if (dep >= next_offset && dep < next_offset + next_width) {
@@ -470,8 +470,8 @@ static Event define_subgraph(Subgraph &subgraph,
       for (long dep : war_points_not_in_dset.at(graph_index).at(point - first_point).at(next_dset)) {
         (void)dep; // unused
 
-        size_t barrier_offset = global_ser.bytes_used();
         global_ser << Barrier::NO_BARRIER;
+        size_t barrier_offset = global_ser.bytes_used() - sizeof(Barrier);
 
         SubgraphDefinition::ArrivalDesc arrival;
         arrival.barrier = Barrier::NO_BARRIER; // to be interpolated
@@ -497,8 +497,8 @@ static Event define_subgraph(Subgraph &subgraph,
       // WAR dependencies
       for (auto interval : graph.dependencies(dset, point)) {
         for (long dep = interval.first; dep <= interval.second; ++dep) {
-          size_t complete_offset = global_ser.bytes_used();
           global_ser << Barrier::NO_BARRIER;
+          size_t complete_offset = global_ser.bytes_used() - sizeof(Barrier);
 
           SubgraphDefinition::ArrivalDesc arrival;
           arrival.barrier = Barrier::NO_BARRIER, // to be interpolated
@@ -534,8 +534,8 @@ static Event define_subgraph(Subgraph &subgraph,
       for (long dep : raw_points_not_in_dset.at(graph_index).at(point - first_point).at(dset)) {
         (void)dep; // unused
 
-        size_t barrier_offset = global_ser.bytes_used();
         global_ser << Barrier::NO_BARRIER;
+        size_t barrier_offset = global_ser.bytes_used() - sizeof(Barrier);
 
         SubgraphDefinition::ArrivalDesc arrival;
         arrival.barrier = Barrier::NO_BARRIER, // to be interpolated
@@ -1213,6 +1213,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           }
         }
 
+        stop_timestep = std::min(stop_timestep, graph.timesteps);
+
         Subgraph temp_subgraph = Subgraph::NO_SUBGRAPH;
         Event temp_ready = Event::NO_EVENT;
 
@@ -1226,7 +1228,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                                           replay,
                                           p,
                                           graph, graph_index,
-                                          start_timestep, std::min(stop_timestep, graph.timesteps),
+                                          start_timestep, stop_timestep,
                                           first_point, last_point,
                                           num_fields,
                                           task_results,
