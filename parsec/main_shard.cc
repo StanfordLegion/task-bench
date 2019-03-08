@@ -635,9 +635,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     last_point = offset+width-1;
   }
   
-  
-  
-  debug_printf(0, "rank %d, timestep %d, first %d, last %d\n", rank, t, first_point, last_point);
+  debug_printf(1, "rank %d, timestep %d, first %d, last %d\n", rank, t, first_point, last_point);
   
   std::set<int> dep_points_set;
   
@@ -656,7 +654,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     if (last_point_next > offset_next+width_next-1) {
       last_point_next = offset_next+width_next-1;
     }
-    debug_printf(0, "rank %d, timestep %d, first_next %d, last_next %d\n", rank, t, first_point_next, last_point_next);
+    debug_printf(1, "rank %d, timestep %d, first_next %d, last_next %d\n", rank, t, first_point_next, last_point_next);
     long dset_next = g.dependence_set_at_timestep(t+1);
     for (int ii = first_point_next; ii <= last_point_next; ii++) {
       std::vector<std::pair<long, long> > deps_next = g.dependencies(dset_next, ii);
@@ -695,7 +693,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   for (itr = dep_points_set.begin(); itr != dep_points_set.end(); ++itr) {
     x = *itr;
     if (x >= offset && x <= offset+width-1) { // ONLY for DOM
-      debug_printf(0, "rank %d [x:%d, t:%d], ", rank, x, t);
+      debug_printf(1, "rank %d [x:%d, t:%d], ", rank, x, t);
       std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
       int num_args = 0;    
     
@@ -731,7 +729,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
       args.clear();
     }
   }
-  debug_printf(0, "\n");
+  debug_printf(1, "\n");
 }
 
 void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
