@@ -625,6 +625,16 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, t%nb_fields, x)) {
       has_task = 1;
     }
+    
+    if (deps.size() != 0 && t != 0 && has_task != 1) {
+      for (std::pair<long, long> dep : deps) {
+        for (int i = dep.first; i <= dep.second; i++) {
+          if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t-1)%nb_fields, i)) {
+            has_task = 1;
+          }
+        }
+      }
+    }
 
     if( t < g.timesteps-1 && has_task != 1 ){
       long dset_r = g.dependence_set_at_timestep(t+1);
@@ -634,16 +644,6 @@ void ParsecApp::execute_timestep(size_t idx, long t)
         for (int i = rdep.first; i <= rdep.second; i++) {
           if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t+1)%nb_fields, i))
           {
-            has_task = 1;
-          }
-        }
-      }
-    }
-    
-    if (deps.size() != 0 && t != 0) {
-      for (std::pair<long, long> dep : deps) {
-        for (int i = dep.first; i <= dep.second; i++) {
-          if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t-1)%nb_fields, i)) {
             has_task = 1;
           }
         }
