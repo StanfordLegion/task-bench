@@ -617,9 +617,15 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   payload_t payload;
   
   debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
-  for (int x = offset; x <= offset+width-1; x++) {
+  int first_point = rank * g.max_width / nodes;
+  int last_point = (rank + 1) * g.max_width / nodes - 1;
+//  printf("first point %d, last point %d, rank %d, cores %d\n", first_point, last_point, rank, cores);
+  
+  for (int x = first_point; x <= last_point; x++) {    
+  //for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
-    int num_args;    
+    int num_args;   
+
 #ifdef ENABLE_PRUNE_MPI_TASK_INSERT
     int has_task = 0;
     if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, t%nb_fields, x)) {
@@ -657,7 +663,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
       continue;
     }
 #endif
-    
+   /* 
     if (deps.size() == 0) {
       num_args = 1;
       debug_printf(1, "%d[%d] ", x, num_args);
@@ -684,8 +690,9 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     payload.j = x;
     payload.graph = g;
     payload.graph_id = idx;
- //   insert_task(num_args, payload, args); 
+    insert_task(num_args, payload, args); 
     args.clear();
+    */
   }
   debug_printf(1, "\n");
 }
