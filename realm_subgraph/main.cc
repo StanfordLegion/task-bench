@@ -265,7 +265,6 @@ static Event define_subgraph(Subgraph &subgraph,
 
   std::vector<size_t> preconditions;
   size_t next_precondition = 0;
-  size_t next_postcondition = 0;
 
   for (long timestep = start_timestep; timestep < stop_timestep; ++timestep) {
     long dset = graph.dependence_set_at_timestep(timestep);
@@ -383,18 +382,6 @@ static Event define_subgraph(Subgraph &subgraph,
 
           definition.dependencies.push_back(precondition_dep);
         }
-
-        size_t external_postcondition = next_postcondition++;
-
-        SubgraphDefinition::Dependency postcondition_dep;
-        postcondition_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_TASK;
-        postcondition_dep.src_op_index = task_postcondition;
-        postcondition_dep.src_op_port = 0;
-        postcondition_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_EXT_POSTCOND;
-        postcondition_dep.tgt_op_index = external_postcondition;
-        postcondition_dep.tgt_op_port = 0;
-
-        definition.dependencies.push_back(postcondition_dep);
       }
 
       // WAR dependencies (part 2)
@@ -593,8 +580,7 @@ static Event instantiate_subgraph(Subgraph &subgraph,
                                   std::vector<std::vector<std::vector<std::map<long, Barrier> > > > &raw_out,
                                   std::vector<std::vector<std::vector<std::map<long, Barrier> > > > &war_out,
                                   const std::vector<std::vector<std::vector<std::vector<long> > > > &raw_points_not_in_dset,
-                                  const std::vector<std::vector<std::vector<std::vector<long> > > > &war_points_not_in_dset,
-                                  std::vector<Event> &events)
+                                  const std::vector<std::vector<std::vector<std::vector<long> > > > &war_points_not_in_dset)
 {
   DynamicBufferSerializer global_ser(4096); // FIXME: dynamic allocation
 
@@ -711,10 +697,11 @@ static Event instantiate_subgraph(Subgraph &subgraph,
     }
   }
 
+  std::vector<Event> postconditions;
   return subgraph.instantiate(global_ser.get_buffer(), global_ser.bytes_used(),
                               ProfilingRequestSet(),
                               preconditions,
-                              events,
+                              postconditions,
                               subgraph_ready);
 }
 
@@ -1205,6 +1192,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       // (assuming the graph does not change offset/width over time).
       Subgraph subgraph = Subgraph::NO_SUBGRAPH;
       Event ready = Event::NO_EVENT;
+      Event postcondition = Event::NO_EVENT;
 
       long period = lcm(num_fields, graph.timestep_period());
 
@@ -1256,25 +1244,28 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
         }
 
         // Replay the subgraph.
-        std::vector<Event> postconditions;
-        // FIXME: Am I actually required to track the instantiation event of this subgraph?
-        events.push_back(
-          instantiate_subgraph(current_subgraph,
-                               current_ready,
-                               graph, graph_index,
-                               start_timestep, stop_timestep,
-                               first_point, last_point,
-                               num_fields,
-                               raw_in,
-                               war_in,
-                               raw_out,
-                               war_out,
-                               raw_points_not_in_dset,
-                               war_points_not_in_dset,
-                               postconditions));
+        postcondition = instantiate_subgraph(current_subgraph,
+                                             current_ready,
+                                             graph, graph_index,
+                                             start_timestep, stop_timestep,
+                                             first_point, last_point,
+                                             num_fields,
+                                             raw_in,
+                                             war_in,
+                                             raw_out,
+                                             war_out,
+                                             raw_points_not_in_dset,
+                                             war_points_not_in_dset);
 
-        // FIXME: Figure out a way to declare this more concisely
-        events.insert(events.end(), postconditions.begin(), postconditions.end());
+        if (!replay) {
+          current_subgraph.destroy(postcondition);
+        }
+      }
+
+      events.push_back(postcondition);
+
+      if (!subgraph.exists()) {
+        subgraph.destroy(postcondition);
       }
     }
 
