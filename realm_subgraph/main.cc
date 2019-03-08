@@ -409,25 +409,27 @@ static Event define_subgraph(Subgraph &subgraph,
                   .at(slot),
                 fid, graph.output_bytes_per_task));
 
-              // SubgraphDefinition::Dependency ready_dep;
-              // ready_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_EXT_PRECOND;
-              // ready_dep.src_op_index = ready;
-              // ready_dep.src_op_port = 0;
-              // ready_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_COPY;
-              // ready_dep.tgt_op_index = copy_postcondition;
-              // ready_dep.tgt_op_port = 0;
+              if (task_postcondition != SIZE_MAX) {
+                // SubgraphDefinition::Dependency ready_dep;
+                // ready_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_EXT_PRECOND;
+                // ready_dep.src_op_index = ready;
+                // ready_dep.src_op_port = 0;
+                // ready_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_COPY;
+                // ready_dep.tgt_op_index = copy_postcondition;
+                // ready_dep.tgt_op_port = 0;
 
-              // definition.dependencies.push_back(ready_dep);
+                // definition.dependencies.push_back(ready_dep);
 
-              SubgraphDefinition::Dependency task_dep;
-              task_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_TASK;
-              task_dep.src_op_index = task_postcondition;
-              task_dep.src_op_port = 0;
-              task_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_COPY;
-              task_dep.tgt_op_index = copy_postcondition;
-              task_dep.tgt_op_port = 0;
+                SubgraphDefinition::Dependency task_dep;
+                task_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_TASK;
+                task_dep.src_op_index = task_postcondition;
+                task_dep.src_op_port = 0;
+                task_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_COPY;
+                task_dep.tgt_op_index = copy_postcondition;
+                task_dep.tgt_op_port = 0;
 
-              definition.dependencies.push_back(task_dep);
+                definition.dependencies.push_back(task_dep);
+              }
             }
           }
 
@@ -449,20 +451,22 @@ static Event define_subgraph(Subgraph &subgraph,
 
           definition.interpolations.push_back(interp);
 
-          SubgraphDefinition::Dependency arrival_dep;
-          if (copy_postcondition != SIZE_MAX) {
-            arrival_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_COPY;
-            arrival_dep.src_op_index = copy_postcondition;
-          } else {
-            arrival_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_TASK;
-            arrival_dep.src_op_index = task_postcondition;
-          }
-          arrival_dep.src_op_port = 0;
-          arrival_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_ARRIVAL;
-          arrival_dep.tgt_op_index = arrival_precondition;
-          arrival_dep.tgt_op_port = 0;
+          if (task_postcondition != SIZE_MAX) {
+            SubgraphDefinition::Dependency arrival_dep;
+            if (copy_postcondition != SIZE_MAX) {
+              arrival_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_COPY;
+              arrival_dep.src_op_index = copy_postcondition;
+            } else {
+              arrival_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_TASK;
+              arrival_dep.src_op_index = task_postcondition;
+            }
+            arrival_dep.src_op_port = 0;
+            arrival_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_ARRIVAL;
+            arrival_dep.tgt_op_index = arrival_precondition;
+            arrival_dep.tgt_op_port = 0;
 
-          definition.dependencies.push_back(arrival_dep);
+            definition.dependencies.push_back(arrival_dep);
+          }
         }
       }
       // Also need to arrive at any points not included in this
@@ -518,15 +522,17 @@ static Event define_subgraph(Subgraph &subgraph,
 
           definition.interpolations.push_back(interp);
 
-          SubgraphDefinition::Dependency arrival_dep;
-          arrival_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_TASK;
-          arrival_dep.src_op_index = task_postcondition;
-          arrival_dep.src_op_port = 0;
-          arrival_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_ARRIVAL;
-          arrival_dep.tgt_op_index = arrival_precondition;
-          arrival_dep.tgt_op_port = 0;
+          if (task_postcondition != SIZE_MAX) {
+            SubgraphDefinition::Dependency arrival_dep;
+            arrival_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_TASK;
+            arrival_dep.src_op_index = task_postcondition;
+            arrival_dep.src_op_port = 0;
+            arrival_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_ARRIVAL;
+            arrival_dep.tgt_op_index = arrival_precondition;
+            arrival_dep.tgt_op_port = 0;
 
-          definition.dependencies.push_back(arrival_dep);
+            definition.dependencies.push_back(arrival_dep);
+          }
         }
       }
       // Also need to arrive at any points not included in this
