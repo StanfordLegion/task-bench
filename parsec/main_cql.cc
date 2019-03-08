@@ -306,7 +306,7 @@ struct ParsecApp : public App {
   ParsecApp(int argc, char **argv);
   ~ParsecApp();
   void execute_main_loop();
-  void execute_timestep(size_t idx, long t, int *is_inserted);
+  void execute_timestep(size_t idx, long t, int8_t *is_inserted);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
   void insert_task(int num_args, payload_t payload, std::vector<parsec_dtd_tile_t*> &args);
@@ -576,7 +576,7 @@ void ParsecApp::execute_main_loop()
 
     debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d, timesteps %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, nb_fields, g.timesteps);
  
-    int *is_inserted = (int *)calloc(g.timesteps * g.max_width, sizeof(int));
+    int8_t *is_inserted = (int8_t *)calloc(g.timesteps * g.max_width, sizeof(int8_t));
 
     for (y = 0; y < g.timesteps; y++) {
       execute_timestep(i, y, is_inserted);
@@ -606,7 +606,7 @@ void ParsecApp::execute_main_loop()
 #endif
 }
 
-void ParsecApp::execute_timestep(size_t idx, long t, int *is_inserted)
+void ParsecApp::execute_timestep(size_t idx, long t, int8_t *is_inserted)
 {
   const TaskGraph &g = graphs[idx];
   long offset = g.offset_at_timestep(t);
