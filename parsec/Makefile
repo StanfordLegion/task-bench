@@ -36,7 +36,7 @@ CFLAGS += $(INC)
 
 include ../core/make_blas.mk
 
-TARGET = main
+TARGET = main main_shard
 all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
@@ -46,8 +46,14 @@ common.o: common.cc common.h
 
 main.o: main.cc ../core/timer.h
 	$(CC) -c $(CFLAGS) $<
+	
+main_shard.o: main_shard.cc ../core/timer.h
+	$(CC) -c $(CFLAGS) $<
 
 main: main.o common.o 
+	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
+	
+main_shard: main_shard.o common.o 
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 
 
