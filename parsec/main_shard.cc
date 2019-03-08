@@ -621,6 +621,10 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   int first_point = rank * g.max_width / nodes;
   int last_point = (rank + 1) * g.max_width / nodes - 1;
   
+ // int first_point = 0;
+//  int last_point = g.max_width-1;
+  
+  
   printf("rank %d, timestep %d, first %d, last %d\n", rank, t, first_point, last_point);
   
   std::set<int> dep_points_set;
@@ -628,6 +632,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   if (t < g.timesteps-1) {
     long dset_next = g.dependence_set_at_timestep(t+1);
     for (int ii = first_point; ii <= last_point; ii++) {
+      dep_points_set.insert(ii);
       std::vector<std::pair<long, long> > deps_next = g.dependencies(dset_next, ii);
       for (std::pair<long, long> dep_next : deps_next) {
         for (int i = dep_next.first; i <= dep_next.second; i++) {
@@ -638,12 +643,11 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   } else {
     long dset_prev = g.dependence_set_at_timestep(t);
     for (int ii = first_point; ii <= last_point; ii++) {
+      dep_points_set.insert(ii);
       std::vector<std::pair<long, long> > deps_prev = g.reverse_dependencies(dset_prev, ii);
       for (std::pair<long, long> dep_prev : deps_prev) {
         for (int i = dep_prev.first; i <= dep_prev.second; i++) {
           dep_points_set.insert(i);
-          if (rank ==1)
-            printf("i %d ", i);
         }
       }
     }
@@ -655,7 +659,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     x = *itr;
     printf("rank %d [x:%d, t:%d], ", rank, x, t);
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
-    int num_args;    
+    int num_args = 0;    
     
     if (deps.size() == 0) {
       num_args = 1;
@@ -678,6 +682,8 @@ void ParsecApp::execute_timestep(size_t idx, long t)
         }
       }
     }
+    
+    ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1;
 
     payload.i = t;
     payload.j = x;
@@ -686,7 +692,8 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     insert_task(num_args, payload, args); 
     args.clear();
   }
-  debug_printf(0, "\n");
+  printf("\n");
+  debug_printf(1, "\n");
 }
 
 void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
@@ -694,7 +701,7 @@ void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
   if (verbose_level > VERBOSE_LEVEL) {
     return;
   }
-  if (rank == 0) {
+  if (rank == 1) {
     va_list args;
     va_start(args, format);
     vprintf(format, args);
