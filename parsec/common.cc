@@ -199,6 +199,7 @@ void parse_arguments(int *_argc, char*** _argv, int* iparam)
 
     do {
 #if defined(PARSEC_HAVE_GETOPT_LONG)
+      opterr = 0;
         c = getopt_long_only(argc, argv, "",
                         long_options, &opt);
 #else
