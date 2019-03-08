@@ -264,6 +264,7 @@ static Event define_subgraph(Subgraph &subgraph,
 
   std::vector<size_t> preconditions;
   size_t next_precondition = 0;
+  size_t next_postcondition = 0;
 
   // Elliott
   for (long timestep = start_timestep; timestep < stop_timestep; ++timestep) {
@@ -382,6 +383,18 @@ static Event define_subgraph(Subgraph &subgraph,
 
           definition.dependencies.push_back(precondition_dep);
         }
+
+        size_t external_postcondition = next_postcondition++;
+
+        SubgraphDefinition::Dependency postcondition_dep;
+        postcondition_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_TASK;
+        postcondition_dep.src_op_index = task_postcondition;
+        postcondition_dep.src_op_port = 0;
+        postcondition_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_EXT_POSTCOND;
+        postcondition_dep.tgt_op_index = external_postcondition;
+        postcondition_dep.tgt_op_port = 0;
+
+        definition.dependencies.push_back(postcondition_dep);
       }
 
       // WAR dependencies (part 2)
