@@ -565,7 +565,7 @@ void ParsecApp::execute_main_loop()
   if (rank == 0) {
     Timer::time_start();
   }
-#if 0
+#if 1
   /* start parsec context */
   parsec_context_start(parsec);
   
@@ -621,7 +621,6 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   int first_point = rank * g.max_width / nodes - 1;
   int last_point = (rank + 1) * g.max_width / nodes - 1 + 1;
-//  printf("first point %d, last point %d, rank %d, cores %d\n", first_point, last_point, rank, cores);
   
   if (first_point < 0) {
     first_point = 0;
@@ -629,6 +628,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   if (last_point >= g.max_width) {
     last_point = g.max_width-1;
   }
+    printf("first point %d, last point %d, rank %d, cores %d\n", first_point, last_point, rank, cores);
   for (int x = first_point; x <= last_point; x++) {    
  // for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
