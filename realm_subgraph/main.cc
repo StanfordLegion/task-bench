@@ -1264,13 +1264,12 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                                              war_out,
                                              raw_points_not_in_dset,
                                              war_points_not_in_dset);
+        events.push_back(postcondition);
 
         if (!replay) {
           current_subgraph.destroy(postcondition);
         }
       }
-
-      events.push_back(postcondition);
 
       if (!subgraph.exists()) {
         subgraph.destroy(postcondition);
