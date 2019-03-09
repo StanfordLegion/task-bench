@@ -682,8 +682,11 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
         long last_offset = graph.offset_at_timestep(timestep-1);
         long last_width = graph.width_at_timestep(timestep-1);
 
-        long next_offset = graph.offset_at_timestep(timestep+1);
-        long next_width = graph.width_at_timestep(timestep+1);
+        long last_field_offset = graph.offset_at_timestep(timestep - num_fields + 1);
+        long last_field_width = graph.width_at_timestep(timestep - num_fields + 1);
+
+        long next_offset = timestep + 1 < graph.timesteps ? graph.offset_at_timestep(timestep+1) : 0;
+        long next_width = timestep + 1 < graph.timesteps ? graph.width_at_timestep(timestep+1) : 0;
 
         long fid = FID_FIRST + timestep % num_fields;
         long last_fid = FID_FIRST + (timestep + num_fields - 1) % num_fields;
@@ -725,7 +728,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
               Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
-              if (dep >= next_offset && dep < next_offset + next_width) {
+              if (dep >= last_field_offset && dep < last_field_offset + last_field_width) {
                 // FIXME: This dependency is being generated too aggressively,
                 // it's technically only supposed to apply when a copy
                 // *wasn't* issued (i.e. the dependency is local), but doing
