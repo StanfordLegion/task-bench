@@ -1209,7 +1209,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 
         // Currently we only generate subgraphs for full-width task graphs.
         if (replay) {
-          for (long timestep = start_timestep; timestep < stop_timestep; ++timestep) {
+          for (long timestep = start_timestep - 1; timestep < stop_timestep + 1; ++timestep) {
             long offset = graph.offset_at_timestep(timestep);
             long width = graph.width_at_timestep(timestep);
             if (offset != 0 || width != graph.max_width) {
