@@ -33,7 +33,7 @@ function sweep {
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
                 local args
-                repeat args $3 -kernel compute_bound -iter $(( 1 << (26-s) )) -imbalance $5 -type [$]4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores )) -field 2
+                repeat args $3 -kernel compute_bound -iter $(( 1 << (26-s) )) -imbalance $5 -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores )) -field 2
                 $1 $2 "${args[@]}"
             fi
         done
