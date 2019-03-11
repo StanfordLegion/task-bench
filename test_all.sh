@@ -90,15 +90,16 @@ if [[ $USE_REALM -eq 1 ]]; then
             fi
             ./realm_subgraph/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2
 
-            ./realm_old/task_bench -steps $steps -type $t $k -ll:cpu 1
-            ./realm_old/task_bench -steps $steps -type $t $k -ll:cpu 2
-            ./realm_old/task_bench -steps $steps -type $t $k -ll:cpu 4
+            # FIXME: Realm old triggers a bug in GASNet MPI conduit with higher steps.
+            ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 1
+            ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 2
+            ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 4
             if [[ $USE_GASNET -eq 1 ]]; then
-                mpirun -np 2 ./realm_old/task_bench -steps $steps -type $t $k -ll:cpu 1
-                mpirun -np 2 ./realm_old/task_bench -steps $steps -type $t $k -ll:cpu 2
-                mpirun -np 4 ./realm_old/task_bench -steps $steps -type $t $k -ll:cpu 1
+                mpirun -np 2 ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 1
+                mpirun -np 2 ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 2
+                mpirun -np 4 ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 1
             fi
-            ./realm_old/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2
+            ./realm_old/task_bench -steps 9 -type $t $k -and -steps 9 -type $t $k -ll:cpu 2
         done
     done
 fi
