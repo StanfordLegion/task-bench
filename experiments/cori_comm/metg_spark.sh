@@ -95,7 +95,7 @@ function sweep {
 for n in $(( SLURM_JOB_NUM_NODES - 1 )); do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            for comm in 16 256 4096 65536; do
+            for comm in ${COMM:-16}; do
                 sweep launch $n $g $t $comm > spark_ngraphs_${g}_type_${t}_comm_${comm}_nodes_${n}.log
             done
         done
