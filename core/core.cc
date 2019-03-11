@@ -552,11 +552,68 @@ static TaskGraph default_graph(long graph_index)
   return graph;
 }
 
-void needs_argument(int i, int argc, const char *flag) {
+static void needs_argument(int i, int argc, const char *flag) {
   if (i+1 >= argc) {
     fprintf(stderr, "error: Flag \"%s\" requires an argument\n", flag);
     abort();
   }
+}
+
+#define STEPS_FLAG "-steps"
+#define WIDTH_FLAG "-width"
+#define TYPE_FLAG "-type"
+#define RADIX_FLAG "-radix"
+#define PERIOD_FLAG "-period"
+#define FRACTION_FLAG "-fraction"
+#define AND_FLAG "-and"
+
+#define KERNEL_FLAG "-kernel"
+#define ITER_FLAG "-iter"
+#define OUTPUT_FLAG "-output"
+#define SCRATCH_FLAG "-scratch"
+#define SAMPLE_FLAG "-sample"
+#define IMBALANCE_FLAG "-imbalance"
+
+#define SKIP_GRAPH_VALIDATION_FLAG "-skip-graph-validation"
+#define FIELD_FLAG "-field"
+
+static void show_help_message(int argc, char **argv) {
+  printf("%s: A Task Benchmark\n", argc > 0 ? argv[0] : "task_bench");
+
+  printf("\nGeneral options:\n");
+  printf("  %-18s show this help message and exit\n", "-h");
+  printf("  %-18s enable verbose output\n", "-v");
+
+  printf("\nOptions for configuring the task graph:\n");
+  printf("  %-18s height of task graph\n", STEPS_FLAG " [INT]");
+  printf("  %-18s width of task graph\n", WIDTH_FLAG " [INT]");
+  printf("  %-18s dependency pattern (see available list below)\n", TYPE_FLAG " [DEP]");
+  printf("  %-18s radix of dependency pattern (only for nearest, spread, and random)\n", RADIX_FLAG " [INT]");
+  printf("  %-18s period of dependency pattern (only for spread and random)\n", PERIOD_FLAG " [INT]");
+  printf("  %-18s fraction of connected dependencies (only for random)\n", FRACTION_FLAG " [FLOAT]");
+  printf("  %-18s start configuring next task graph\n", AND_FLAG);
+
+  printf("\nOptions for configuring kernels:\n");
+  printf("  %-18s kernel type (see available list below)\n", KERNEL_FLAG " [KERNEL]");
+  printf("  %-18s number of iterations\n", ITER_FLAG " [INT]");
+  printf("  %-18s output bytes per task\n", OUTPUT_FLAG " [INT]");
+  printf("  %-18s scratch bytes per task (only for memory-bound kernel)\n", SCRATCH_FLAG " [INT]");
+  printf("  %-18s number of samples (only for memory-bound kernel)\n", SAMPLE_FLAG " [INT]");
+  printf("  %-18s amount of load imbalance\n", IMBALANCE_FLAG " [FLOAT]");
+
+  printf("\nSupported dependency patterns:\n");
+  for (auto dtype : dtype_by_name()) {
+    printf("  %s\n", dtype.first.c_str());
+  }
+
+  printf("\nSupported kernel types:\n");
+  for (auto ktype : ktype_by_name()) {
+    printf("  %s\n", ktype.first.c_str());
+  }
+
+  printf("\nLess frequently used options:\n");
+  printf("  %-18s number of fields (optimization for certain task bench implementations)\n", FIELD_FLAG " [INT]");
+  printf("  %-18s skip task graph validation\n", SKIP_GRAPH_VALIDATION_FLAG);
 }
 
 App::App(int argc, char **argv)
@@ -567,36 +624,41 @@ App::App(int argc, char **argv)
 
   // Parse command line
   for (int i = 1; i < argc; i++) {
+    if (!strcmp(argv[i], "-h")) {
+      show_help_message(argc, argv);
+      exit(0);
+    }
+
     if (!strcmp(argv[i], "-v")) {
       verbose = true;
     }
 
-    if (!strcmp(argv[i], "-skip-graph-validation")) {
+    if (!strcmp(argv[i], SKIP_GRAPH_VALIDATION_FLAG)) {
       enable_graph_validation = false;
     }
 
-    if (!strcmp(argv[i], "-steps")) {
-      needs_argument(i, argc, "-steps");
+    if (!strcmp(argv[i], STEPS_FLAG)) {
+      needs_argument(i, argc, STEPS_FLAG);
       long value = atol(argv[++i]);
       if (value <= 0) {
-        fprintf(stderr, "error: Invalid flag \"-steps %ld\" must be > 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"" STEPS_FLAG " %ld\" must be > 0\n", value);
         abort();
       }
       graph.timesteps = value;
     }
 
-    if (!strcmp(argv[i], "-width")) {
-      needs_argument(i, argc, "-width");
+    if (!strcmp(argv[i], WIDTH_FLAG)) {
+      needs_argument(i, argc, WIDTH_FLAG);
       long value = atol(argv[++i]);
       if (value <= 0) {
-        fprintf(stderr, "error: Invalid flag \"-width %ld\" must be > 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"" WIDTH_FLAG " %ld\" must be > 0\n", value);
         abort();
       }
       graph.max_width = value;
     }
 
-    if (!strcmp(argv[i], "-type")) {
-      needs_argument(i, argc, "-type");
+    if (!strcmp(argv[i], TYPE_FLAG)) {
+      needs_argument(i, argc, TYPE_FLAG);
       auto types = dtype_by_name();
       auto name = argv[++i];
       auto type = types.find(name);
@@ -607,110 +669,110 @@ App::App(int argc, char **argv)
       graph.dependence = type->second;
     }
 
-    if (!strcmp(argv[i], "-radix")) {
-      needs_argument(i, argc, "-radix");
+    if (!strcmp(argv[i], RADIX_FLAG)) {
+      needs_argument(i, argc, RADIX_FLAG);
       long value = atol(argv[++i]);
       if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-radix %ld\" must be >= 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"" RADIX_FLAG " %ld\" must be >= 0\n", value);
         abort();
       }
       graph.radix = value;
     }
 
-    if (!strcmp(argv[i], "-period")) {
-      needs_argument(i, argc, "-period");
+    if (!strcmp(argv[i], PERIOD_FLAG)) {
+      needs_argument(i, argc, PERIOD_FLAG);
       long value = atol(argv[++i]);
       if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-period %ld\" must be >= 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"" PERIOD_FLAG " %ld\" must be >= 0\n", value);
         abort();
       }
       graph.period = value;
     }
 
-    if (!strcmp(argv[i], "-fraction")) {
-      needs_argument(i, argc, "-fraction");
+    if (!strcmp(argv[i], FRACTION_FLAG)) {
+      needs_argument(i, argc, FRACTION_FLAG);
       double value = atof(argv[++i]);
       if (value < 0 || value > 1) {
-        fprintf(stderr, "error: Invalid flag \"-fraction %f\" must be >= 0 and <= 1\n", value);
+        fprintf(stderr, "error: Invalid flag \"" FRACTION_FLAG " %f\" must be >= 0 and <= 1\n", value);
         abort();
       }
       graph.fraction_connected = value;
     }
 
-    if (!strcmp(argv[i], "-kernel")) {
-      needs_argument(i, argc, "-kernel");
+    if (!strcmp(argv[i], KERNEL_FLAG)) {
+      needs_argument(i, argc, KERNEL_FLAG);
       auto types = ktype_by_name();
       auto name = argv[++i];
       auto type = types.find(name);
       if (type == types.end()) {
-        fprintf(stderr, "error: Invalid flag \"-kernel %s\"\n", name);
+        fprintf(stderr, "error: Invalid flag \"" KERNEL_FLAG " %s\"\n", name);
         abort();
       }
       graph.kernel.type = type->second;
     }
 
-    if (!strcmp(argv[i], "-iter")) {
-      needs_argument(i, argc, "-iter");
+    if (!strcmp(argv[i], ITER_FLAG)) {
+      needs_argument(i, argc, ITER_FLAG);
       long value = atol(argv[++i]);
       if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-iter %ld\" must be >= 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"" ITER_FLAG " %ld\" must be >= 0\n", value);
         abort();
       }
       graph.kernel.iterations = value;
     }
 
-    if (!strcmp(argv[i], "-output")) {
-      needs_argument(i, argc, "-output");
+    if (!strcmp(argv[i], OUTPUT_FLAG)) {
+      needs_argument(i, argc, OUTPUT_FLAG);
       long value  = atol(argv[++i]);
       if (value < sizeof(std::pair<long, long>)) {
-        fprintf(stderr, "error: Invalid flag \"-output %ld\" must be >= %lu\n",
+        fprintf(stderr, "error: Invalid flag \"" OUTPUT_FLAG " %ld\" must be >= %lu\n",
                 value, sizeof(std::pair<long, long>));
         abort();
       }
       graph.output_bytes_per_task = value;
     }
 
-    if (!strcmp(argv[i], "-scratch")) {
-      needs_argument(i, argc, "-scratch");
+    if (!strcmp(argv[i], SCRATCH_FLAG)) {
+      needs_argument(i, argc, SCRATCH_FLAG);
       long value  = atol(argv[++i]);
       if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-scratch %ld\" must be >= 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"" SCRATCH_FLAG " %ld\" must be >= 0\n", value);
         abort();
       }
       graph.scratch_bytes_per_task = value;
     }
 
-    if (!strcmp(argv[i], "-sample")) {
-      needs_argument(i, argc, "-sample");
+    if (!strcmp(argv[i], SAMPLE_FLAG)) {
+      needs_argument(i, argc, SAMPLE_FLAG);
       int value  = atoi(argv[++i]);
       if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-sample %d\" must be >= 0\n", value);
+        fprintf(stderr, "error: Invalid flag \"" SAMPLE_FLAG " %d\" must be >= 0\n", value);
         abort();
       }
       graph.kernel.samples = value;
     }
 
-    if (!strcmp(argv[i], "-imbalance")) {
-      needs_argument(i, argc, "-imbalance");
+    if (!strcmp(argv[i], IMBALANCE_FLAG)) {
+      needs_argument(i, argc, IMBALANCE_FLAG);
       double value = atof(argv[++i]);
       if (value < 0 || value > 1) {
-        fprintf(stderr, "error: Invalid flag \"-imbalance %f\" must be >= 0 and <= 1\n", value);
+        fprintf(stderr, "error: Invalid flag \"" IMBALANCE_FLAG " %f\" must be >= 0 and <= 1\n", value);
         abort();
       }
       graph.kernel.imbalance = value;
     }
     
-    if (!strcmp(argv[i], "-field")) {
-      needs_argument(i, argc, "-field");
+    if (!strcmp(argv[i], FIELD_FLAG)) {
+      needs_argument(i, argc, FIELD_FLAG);
       int value  = atoi(argv[++i]);
       if (value < 0) {
-        fprintf(stderr, "error: Invalid flag \"-field %d\" must be > 1\n", value);
+        fprintf(stderr, "error: Invalid flag \"" FIELD_FLAG " %d\" must be > 1\n", value);
         abort();
       }
       graph.nb_fields = value;
     }
 
-    if (!strcmp(argv[i], "-and")) {
+    if (!strcmp(argv[i], AND_FLAG)) {
       // Hack: set default value of period for random graph
       if (graph.period < 0) {
         graph.period = needs_period(graph.dependence) ? 3 : 0;
