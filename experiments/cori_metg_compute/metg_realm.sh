@@ -10,11 +10,7 @@ total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 cores=$(( $total_cores - 2 ))
 
 function launch {
-    lmbsize=$(( 1024 * n / 32 )) # start growing at > 32 nodes
-    if [[ $lmbsize -lt 1024 ]]; then
-        lmbsize=1024 # default is 1024 KB, don't go under default
-    fi
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../realm${VARIANT+_}$VARIANT/task_bench "${@:2}" -ll:cpu $cores -ll:util 0 -ll:lmbsize $lmbsize
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../realm${VARIANT+_}$VARIANT/task_bench "${@:2}" -ll:cpu $cores -ll:util 0 -ll:rsize 512
 }
 
 function repeat {
