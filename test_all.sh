@@ -29,7 +29,7 @@ extended_types=(
 
 compute_bound="-kernel compute_bound -iter 1024"
 memory_bound="-kernel memory_bound -iter 1024 -scratch $((64*16))"
-imbalanced="-kernel load_imbalance -iter 1024"
+imbalanced="-kernel load_imbalance -iter 1024 -imbalance 0.1"
 communication_bound="-output 1024"
 
 kernels=("" "$compute_bound" "$memory_bound" "$imbalanced" "$communication_bound")
