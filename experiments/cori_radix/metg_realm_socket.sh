@@ -39,7 +39,7 @@ function sweep {
 
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
-        for t in ${PATTERN:-nearest}; do
+        for t in ${PATTERN:-stencil_1d}; do
             for r in 0 1 2 3 4 5 6 7 8 9; do
                 sweep launch $n $g $t $r > realm${VARIANT+_}${VARIANT}_socket_ngraphs_${g}_type_${t}_radix_${r}_nodes_${n}.log
             done

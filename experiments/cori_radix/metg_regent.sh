@@ -50,7 +50,7 @@ function sweep {
 
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
-        for t in ${PATTERN:-nearest}; do
+        for t in ${PATTERN:-stencil_1d}; do
             sweep launch_util_0 $n $g $t > regent${VARIANT+_}${VARIANT}_ngraphs_${g}_util_0_type_${t}_nodes_${n}.log
             # sweep launch_util_1 $n $g $t > regent${VARIANT+_}${VARIANT}_ngraphs_${g}_util_1_type_${t}_nodes_${n}.log
             # sweep launch_util_2 $n $g $t > regent${VARIANT+_}${VARIANT}_ngraphs_${g}_util_2_type_${t}_nodes_${n}.log
