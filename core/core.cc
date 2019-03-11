@@ -544,7 +544,7 @@ static TaskGraph default_graph(long graph_index)
   graph.radix = 3;
   graph.period = -1;
   graph.fraction_connected = 0.25;
-  graph.kernel = {KernelType::EMPTY, 0, 16};
+  graph.kernel = {KernelType::EMPTY, 0, 16, 0.0};
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
   graph.scratch_bytes_per_task = 0;
   graph.nb_fields = 0;
@@ -689,6 +689,16 @@ App::App(int argc, char **argv)
       }
       graph.kernel.samples = value;
     }
+
+    if (!strcmp(argv[i], "-imbalance")) {
+      needs_argument(i, argc, "-imbalance");
+      double value = atof(argv[++i]);
+      if (value < 0 || value > 1) {
+        fprintf(stderr, "error: Invalid flag \"-imbalance %f\" must be >= 0 and <= 1\n", value);
+        abort();
+      }
+      graph.kernel.imbalance = value;
+    }
     
     if (!strcmp(argv[i], "-field")) {
       needs_argument(i, argc, "-field");
@@ -812,6 +822,8 @@ void App::display() const
     printf("      Kernel:\n");
     printf("        Type: %s\n", knames.at(g.kernel.type).c_str());
     printf("        Iterations: %ld\n", g.kernel.iterations);
+    printf("        Samples: %d\n", g.kernel.samples);
+    printf("        Imbalance: %f\n", g.kernel.imbalance);
     printf("      Output Bytes: %lu\n", g.output_bytes_per_task);
     printf("      Scratch Bytes: %lu\n", g.scratch_bytes_per_task);
 

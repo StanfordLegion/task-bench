@@ -55,6 +55,7 @@ typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
   int samples;
+  double imbalance; // amount of imbalance as a fraction of the number of iterations
 } kernel_t;
 
 typedef struct interval_t {
