@@ -301,7 +301,8 @@ double execute_kernel_imbalance(const Kernel &kernel,
   long seed[3] = {graph_index, timestep, point};
   double value = random_uniform(&seed[0], sizeof(seed));
 
-  long iterations = (long)floor(value * kernel.iterations);
+  long iterations = (long)floor((1 + (value - 0.5)*kernel.imbalance) * kernel.iterations);
+  assert(iterations > 0);
   Kernel k(kernel);
   k.iterations = iterations;
   // printf("iteration %ld\n", iterations);

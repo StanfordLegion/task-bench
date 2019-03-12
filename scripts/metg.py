@@ -18,55 +18,58 @@
 import argparse
 import collections
 import csv
-import glob
 import os
 import sys
 
-import chart_metg
 import chart_util as util
 
-def driver(dependence, machine, threshold, csv_dialect):
-    dependence = dependence.replace('_', ' ')
-    params = util.get_machine_parameters(machine)
+class Parser(util.Parser):
+    def __init__(self, ngraphs, dependence, csv_dialect):
+        self.ngraphs = ngraphs
+        self.dependence = dependence.replace('_', ' ')
+        self.csv_dialect = csv_dialect
 
-    header = []
+        self.header = []
+        self.table = collections.defaultdict(lambda: collections.defaultdict(lambda: float('inf')))
 
-    table = collections.defaultdict(lambda: collections.defaultdict(lambda: float('inf')))
+    def filter(self, row):
+        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence
 
-    log_filenames = glob.glob('**/*.log', recursive=True)
-    for filename in log_filenames:
-        row = util.parse_filename(filename)
-        if row['type'] != dependence:
-            continue
-        if row['name'] not in header:
-            header.append(row['name'])
-        try:
-            metg = chart_metg.analyze(filename, row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'])
-        except:
-            metg = float('inf')
-        # Have to use float('inf') as a sentinel here to be comparable.
-        if metg is None: metg = float('inf')
-        table[row['nodes']][row['name']] = min(metg, table[row['nodes']][row['name']])
+    def process(self, row, data):
+        if row['name'] not in self.header:
+            self.header.append(row['name'])
 
-    # FIXME: This isn't actually the criteria we'd like to sort on,
-    # we'd prefer to sort so that the list of names roughly parallels
-    # the order of the bars in the graph.
-    header.sort()
-    header.insert(0, 'nodes')
+        self.table[row['nodes']][row['name']] = min(data, self.table[row['nodes']][row['name']])
 
-    out = csv.DictWriter(sys.stdout, header, dialect=csv_dialect)
-    out.writeheader()
-    for nodes in sorted(table.keys()):
-        row = table[nodes]
-        row = {k: None if v == float('inf') else v for k, v in row.items()}
-        row['nodes'] = nodes
-        out.writerow(row)
+    def error_value(self):
+        return float('inf')
+
+    def complete(self):
+        # FIXME: This isn't actually the criteria we'd like to sort on,
+        # we'd prefer to sort so that the list of names roughly parallels
+        # the order of the bars in the graph.
+        self.header.sort()
+        self.header.insert(0, 'nodes')
+
+        out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
+        out.writeheader()
+        for nodes in sorted(self.table.keys()):
+            row = self.table[nodes]
+            row = {k: None if v == float('inf') else v for k, v in row.items()}
+            row['nodes'] = nodes
+            out.writerow(row)
+
+def driver(ngraphs, dependence, machine, threshold, csv_dialect, verbose):
+    parser = Parser(ngraphs, dependence, csv_dialect)
+    parser.parse(machine, threshold, True, verbose)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-g', '--ngraphs', type=int, required=True)
     parser.add_argument('-d', '--dependence', required=True)
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--csv-dialect', default='excel-tab')
+    parser.add_argument('-v', '--verbose', action='store_true')
     args = parser.parse_args()
     driver(**vars(args))

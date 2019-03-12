@@ -64,6 +64,7 @@ if [[ $USE_REGENT -eq 1 ]]; then
 fi
 if [[ $USE_REALM -eq 1 ]]; then
     make -C realm clean
+    make -C realm_subgraph clean
     make -C realm_old clean
 fi
 if [[ $USE_REGENT -eq 1 ]]; then
@@ -98,6 +99,7 @@ if [[ $USE_LEGION -eq 1 ]]; then
 fi
 if [[ $USE_REALM -eq 1 ]]; then
     make -C realm -j$THREADS
+    make -C realm_subgraph -j$THREADS
     make -C realm_old -j$THREADS
 fi
 )
@@ -246,6 +248,9 @@ fi
     pushd "$SPARK_PROJ_DIR"
     "$SPARK_SBT_DIR"/sbt assembly
     popd
+
+    # Hack: configure logging (needs to be located in $SPARK_HOME which auto-detects to $SPARK_SRC_DIR)
+    cp "$SPARK_PROJ_DIR"/log4j.properties "$SPARK_SRC_DIR"/conf/log4j.properties
 fi)
 
 (if [[ $USE_SWIFT -eq 1 ]]; then

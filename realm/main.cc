@@ -181,6 +181,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   ShardArgs a;
   std::vector<TaskGraph> graphs;
   std::vector<std::vector<RegionInstance> > task_results;
+  std::vector<std::vector<RegionInstance> > task_inputs;
   std::vector<std::vector<RegionInstance> > raw_exchange;
   std::vector<std::vector<RegionInstance> > war_exchange;
   {
@@ -188,6 +189,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     ser >> a;
     ser >> graphs;
     ser >> task_results;
+    ser >> task_inputs;
     ser >> raw_exchange;
     ser >> war_exchange;
 
@@ -281,6 +283,77 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     }
   }
 
+  // Create local input regions.
+
+  // graph -> point -> max deps
+  std::vector<std::vector<long> > max_deps(graphs.size());
+  long all_max_deps = 0;
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    max_deps.at(graph_index).resize(graph.max_width, 0);
+
+    for (long point = 0; point < graph.max_width; ++point) {
+      long max_dset = graph.max_dependence_sets();
+      for (long dset = 0; dset < max_dset; ++dset) {
+        long deps = 0;
+        for (auto interval : graph.dependencies(dset, point)) {
+          deps += interval.second - interval.first + 1;
+        }
+        max_deps.at(graph_index).at(point) = std::max(max_deps.at(graph_index).at(point), deps);
+        all_max_deps = std::max(all_max_deps, deps);
+      }
+    }
+  }
+
+  // graph -> point -> dep -> instance
+  std::vector<std::vector<std::vector<RegionInstance> > > inputs(graphs.size());
+  // graph -> point -> dep -> field -> base pointer
+  std::vector<std::vector<std::vector<std::vector<char *> > > > input_base(graphs.size());
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    Rect1 bounds(Point1(0), Point1(graph.output_bytes_per_task - 1));
+
+    std::map<FieldID, size_t> field_sizes;
+    for (unsigned fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+      field_sizes[fid] = sizeof(char);
+    }
+
+    long first_point = proc_index * graph.max_width / num_procs;
+    long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+
+    inputs.at(graph_index).resize(last_point - first_point + 1);
+    input_base.at(graph_index).resize(last_point - first_point + 1);
+
+    for (long point = first_point; point <= last_point; ++point) {
+      long deps = max_deps.at(graph_index).at(point);
+
+      inputs.at(graph_index).at(point - first_point).resize(deps);
+      input_base.at(graph_index).at(point - first_point).resize(deps);
+
+      AffineAccessor<RegionInstance, 1, coord_t> task_input =
+        AffineAccessor<RegionInstance, 1, coord_t>(task_inputs.at(graph_index).at(point), FID_FIRST);
+
+      for (long dep = 0; dep < deps; ++dep) {
+        RegionInstance &inst = inputs.at(graph_index).at(point - first_point).at(dep);
+        RegionInstance::create_instance(inst, regmem, bounds, field_sizes,
+                                        0 /*SOA*/, ProfilingRequestSet())
+          .wait();
+
+        input_base.at(graph_index).at(point - first_point).at(dep).resize(num_fields);
+        for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
+          input_base.at(graph_index).at(point - first_point).at(dep).at(fid - FID_FIRST) =
+            get_base(inst, fid);
+        }
+
+        task_input[dep] = inst;
+      }
+      for (long dep = deps; dep < all_max_deps; ++dep) {
+        task_input[dep] = RegionInstance::NO_INST;
+      }
+    }
+  }
 
   // Create barriers.
 
@@ -331,7 +404,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     }
   }
 
-  // Perform barrier exchange.
+  // Perform input region/barrier exchange.
   sync.arrive(1);
   sync.wait();
   sync = sync.advance_barrier();
@@ -427,70 +500,94 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     }
   }
 
-  // Create local input regions
+  // graph -> remote point -> instance
+  std::vector<std::map<long, RegionInstance> > remote_task_inputs(graphs.size());
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    Rect1 bounds(Point1(0), Point1(all_max_deps - 1));
 
-  // graph -> point -> max deps
-  std::vector<std::vector<long> > max_deps(graphs.size());
-  long all_max_deps = 0;
+    std::map<FieldID, size_t> field_sizes;
+    field_sizes[FID_FIRST] = sizeof(RegionInstance);
+
+    for (auto &dep : war_all_points.at(graph_index)) {
+      RegionInstance inst;
+      RegionInstance::create_instance(inst, sysmem, bounds, field_sizes,
+                                      0 /*SOA*/, ProfilingRequestSet())
+        .wait();
+      remote_task_inputs.at(graph_index)[dep] = inst;
+    }
+  }
+
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    for (auto &dep : war_all_points.at(graph_index)) {
+      events.push_back(
+        copy(task_inputs.at(graph_index).at(dep),
+             remote_task_inputs.at(graph_index).at(dep),
+             FID_FIRST, sizeof(RegionInstance), Event::NO_EVENT));
+    }
+  }
+  Event::merge_events(events).wait();
+  events.clear();
+
+  // graph -> point -> remote point -> dep -> instance
+  std::vector<std::vector<std::map<long, std::vector<RegionInstance> > > > remote_inputs(graphs.size());
   for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
     auto graph = graphs.at(graph_index);
 
     long first_point = proc_index * graph.max_width / num_procs;
     long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
 
-    max_deps.at(graph_index).resize(last_point - first_point + 1, 0);
+    remote_inputs.at(graph_index).resize(last_point - first_point + 1);
 
     for (long point = first_point; point <= last_point; ++point) {
-      long max_dset = graph.max_dependence_sets();
-      for (long dset = 0; dset < max_dset; ++dset) {
-        long deps = 0;
-        for (auto interval : graph.dependencies(dset, point)) {
-          deps += interval.second - interval.first + 1;
+      auto &war_points = war_exchange_points.at(graph_index).at(point - first_point);
+
+      for (auto dep : war_points) {
+        remote_inputs.at(graph_index).at(point - first_point)[dep].resize(all_max_deps);
+
+        AffineAccessor<RegionInstance, 1, coord_t> remote_task_input =
+          AffineAccessor<RegionInstance, 1, coord_t>(remote_task_inputs.at(graph_index).at(dep), FID_FIRST);
+
+        for (long remote_dep = 0; remote_dep < all_max_deps; ++remote_dep) {
+          RegionInstance inst = remote_task_input[remote_dep];
+          remote_inputs.at(graph_index).at(point - first_point)[dep].at(remote_dep) = inst;
         }
-        max_deps.at(graph_index).at(point - first_point) = std::max(
-          max_deps.at(graph_index).at(point - first_point),
-          deps);
-        all_max_deps = std::max(all_max_deps, deps);
       }
     }
   }
 
-  // graph -> point -> dep -> instance
-  std::vector<std::vector<std::vector<RegionInstance> > > inputs(graphs.size());
-  // graph -> point -> dep -> field -> base pointer
-  std::vector<std::vector<std::vector<std::vector<char *> > > > input_base(graphs.size());
+  // graph -> point -> dset -> remote point -> slot
+  std::vector<std::vector<std::vector<std::map<long, long> > > > remote_input_slot(graphs.size());
   for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
     auto graph = graphs.at(graph_index);
-
-    Rect1 bounds(Point1(0), Point1(graph.output_bytes_per_task - 1));
-
-    std::map<FieldID, size_t> field_sizes;
-    for (unsigned fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
-      field_sizes[fid] = sizeof(char);
-    }
 
     long first_point = proc_index * graph.max_width / num_procs;
     long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
 
-    inputs.at(graph_index).resize(last_point - first_point + 1);
-    input_base.at(graph_index).resize(last_point - first_point + 1);
+    remote_input_slot.at(graph_index).resize(last_point - first_point + 1);
 
     for (long point = first_point; point <= last_point; ++point) {
-      long deps = max_deps.at(graph_index).at(point - first_point);
+      long max_dset = graph.max_dependence_sets();
 
-      inputs.at(graph_index).at(point - first_point).resize(deps);
-      input_base.at(graph_index).at(point - first_point).resize(deps);
+      remote_input_slot.at(graph_index).at(point - first_point).resize(max_dset);
 
-      for (long dep = 0; dep < deps; ++dep) {
-        RegionInstance &inst = inputs.at(graph_index).at(point - first_point).at(dep);
-        RegionInstance::create_instance(inst, sysmem, bounds, field_sizes,
-                                        0 /*SOA*/, ProfilingRequestSet())
-          .wait();
-
-        input_base.at(graph_index).at(point - first_point).at(dep).resize(num_fields);
-        for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
-          input_base.at(graph_index).at(point - first_point).at(dep).at(fid - FID_FIRST) =
-            get_base(inst, fid);
+      for (long dset = 0; dset < max_dset; ++dset) {
+        for (auto interval : graph.reverse_dependencies(dset, point)) {
+          for (long dep = interval.first; dep <= interval.second; ++dep) {
+            long slot = 0;
+            bool found = false;
+            for (auto interval : graph.dependencies(dset, dep)) {
+              for (long dep = interval.first; dep <= interval.second; ++dep) {
+                if (point == dep) {
+                  found = true;
+                  break;
+                }
+                slot++;
+              }
+              if (found) break;
+            }
+            assert(found);
+            remote_input_slot.at(graph_index).at(point - first_point).at(dset)[dep] = slot;
+          }
         }
       }
     }
@@ -551,7 +648,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   // Main loop
   unsigned long long start_time = 0, stop_time = 0;
   std::vector<Event> preconditions;
-  std::vector<std::pair<Event, Barrier *> > postconditions;
   for (long rep = 0; rep < 1; ++rep) {
     start_time = Clock::current_time_in_nanoseconds();
     for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
@@ -573,72 +669,64 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
         long last_offset = graph.offset_at_timestep(timestep-1);
         long last_width = graph.width_at_timestep(timestep-1);
 
+        long last_field_offset = graph.offset_at_timestep(timestep - num_fields + 1);
+        long last_field_width = graph.width_at_timestep(timestep - num_fields + 1);
+
+        long next_offset = timestep + 1 < graph.timesteps ? graph.offset_at_timestep(timestep+1) : 0;
+        long next_width = timestep + 1 < graph.timesteps ? graph.width_at_timestep(timestep+1) : 0;
+
         long fid = FID_FIRST + timestep % num_fields;
         long last_fid = FID_FIRST + (timestep + num_fields - 1) % num_fields;
 
         for (long point = first_point; point <= last_point; ++point) {
-          // Copy inputs
-          long n_inputs = 0;
+          // Gather inputs
+          long n_inputs = 0, slot = 0;
           preconditions.clear();
-          postconditions.clear();
           for (auto interval : graph.dependencies(dset, point)) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
               Barrier &ready = raw_in.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep);
-              Event precondition = ready.get_previous_phase();
-              Event postcondition = Event::NO_EVENT;
+              preconditions.push_back(ready.get_previous_phase());
 
               if (dep >= last_offset && dep < last_offset + last_width) {
                 char *data = result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST);
-                if (data) {
-                  // Data available locally
-                } else if (point >= offset && point < offset + width) {
-                  // Only copy if data is remote and needed for task execution
-                  precondition = postcondition = copy(
-                    task_results.at(graph_index).at(dep),
-                    inputs.at(graph_index).at(point - first_point).at(n_inputs),
-                    last_fid, graph.output_bytes_per_task,
-                    precondition);
-                  data = input_base.at(graph_index).at(point - first_point).at(n_inputs).at(last_fid - FID_FIRST);
+                if (point >= offset && point < offset + width) {
+                  if (data) {
+                    // Data available locally
+                  } else {
+                    // Data is remote
+                    data = input_base.at(graph_index).at(point - first_point).at(slot).at(last_fid - FID_FIRST);
+                  }
                 }
                 input_ptr.at(n_inputs) = reinterpret_cast<uintptr_t>(data);
                 n_inputs++;
               }
-
-              preconditions.push_back(precondition);
-              postconditions.push_back(
-                std::pair<Event, Barrier *>(
-                  postcondition,
-                  &war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep)));
+              slot++;
             }
           }
-          // Also need to arrive at any points not included in this
-          // dset, otherwise we'll deadlock.
-          for (long dep : raw_points_not_in_dset.at(graph_index).at(point - first_point).at(dset)) {
-            war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep).arrive(1);
-          }
 
-          // WAR dependencies
+          // Dependencies can occur in one of two ways:
+          //  1. The dependent task is local, so copy is not necessary.
+          //     (In this case the dependency catches on the task itself.)
+          //  2. The dependent task is non-local, so copy is necessary.
+          //     (In this case the dependency catches on the copy.)
+
+          // WAR dependencies (part 1)
           for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
               Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
-              preconditions.push_back(ready.get_previous_phase());
-            }
-          }
+              if (dep >= last_field_offset && dep < last_field_offset + last_field_width) {
+                // FIXME: This dependency is being generated too aggressively,
+                // it's technically only supposed to apply when a copy
+                // *wasn't* issued (i.e. the dependency is local), but doing
+                // so somehow messed up the dependencies with the last use of
+                // the same field.
 
-          // RAW dependencies
-          for (auto interval : graph.reverse_dependencies(next_dset, point)) {
-            for (long dep = interval.first; dep <= interval.second; ++dep) {
-              Barrier &complete = raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
-              postconditions.push_back(
-                std::pair<Event, Barrier *>(
-                  Event::NO_EVENT,
-                  &complete));
+                // Only copy when the dependent task doesn't live in the same address space.
+                // if (first_point <= dep && dep <= last_point) {
+                  preconditions.push_back(ready.get_previous_phase());
+                // }
+              }
             }
-          }
-          // Also need to arrive at any points not included in this
-          // dset, otherwise we'll deadlock.
-          for (long dep : war_points_not_in_dset.at(graph_index).at(point - first_point).at(next_dset)) {
-            raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep).arrive(1);
           }
 
           // Launch task
@@ -668,13 +756,52 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
             events.push_back(task_postcondition);
           }
 
-          for (auto trigger : postconditions) {
-            Event src = trigger.first;
-            if (src == Event::NO_EVENT) {
-              src = task_postcondition;
+          // WAR dependencies (part 2)
+          // RAW dependencies
+          for (auto interval : graph.reverse_dependencies(next_dset, point)) {
+            for (long dep = interval.first; dep <= interval.second; ++dep) {
+              // FIXME: This is currently handled at the task, see note above.
+              // Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
+              Barrier &complete = raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
+              Event postcondition = task_postcondition;
+              if (dep >= next_offset && dep < next_offset + next_width) {
+                // Only copy when the dependent task doesn't live in the same address space.
+                if (!result_base.at(graph_index).at(dep).at(fid - FID_FIRST)) {
+                  long slot = remote_input_slot.at(graph_index).at(point - first_point).at(next_dset).at(dep);
+                  postcondition = copy(
+                    task_results.at(graph_index).at(point),
+                    remote_inputs
+                      .at(graph_index)
+                      .at(point - first_point)
+                      .at(dep)
+                      .at(slot),
+                    fid, graph.output_bytes_per_task,
+                    // Event::merge_events(ready.get_previous_phase(),
+                    task_postcondition
+                    // )
+                    );
+                }
+              }
+              complete.arrive(1, postcondition);
             }
-            Barrier *dst = trigger.second;
-            dst->arrive(1, src);
+          }
+          // Also need to arrive at any points not included in this
+          // dset, otherwise we'll deadlock.
+          for (long dep : war_points_not_in_dset.at(graph_index).at(point - first_point).at(next_dset)) {
+            raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep).arrive(1);
+          }
+
+          // WAR dependencies
+          for (auto interval : graph.dependencies(dset, point)) {
+            for (long dep = interval.first; dep <= interval.second; ++dep) {
+              Barrier &complete = war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep);
+              complete.arrive(1, task_postcondition);
+            }
+          }
+          // Also need to arrive at any points not included in this
+          // dset, otherwise we'll deadlock.
+          for (long dep : raw_points_not_in_dset.at(graph_index).at(point - first_point).at(dset)) {
+            war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep).arrive(1);
           }
 
           for (auto &bar : raw_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST)) {
@@ -752,6 +879,22 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     }
   }
 
+  long all_max_deps = 0;
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    for (long point = 0; point <= graph.max_width; ++point) {
+      long max_dset = graph.max_dependence_sets();
+      for (long dset = 0; dset < max_dset; ++dset) {
+        long deps = 0;
+        for (auto interval : graph.dependencies(dset, point)) {
+          deps += interval.second - interval.first + 1;
+        }
+        all_max_deps = std::max(all_max_deps, deps);
+      }
+    }
+  }
+
   std::vector<Event> events;
   std::vector<std::vector<RegionInstance> > task_results(graphs.size());
   {
@@ -776,6 +919,33 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
         for (long point = first_point; point <= last_point; ++point) {
           events.push_back(
             RegionInstance::create_instance(task_results.at(graph_index).at(point), memory, bounds, field_sizes,
+                                            0 /*SOA*/, ProfilingRequestSet()));
+        }
+      }
+    }
+  }
+
+  std::vector<std::vector<RegionInstance> > task_inputs(graphs.size());
+  {
+    std::map<FieldID, size_t> field_sizes;
+    field_sizes[FID_FIRST] = sizeof(RegionInstance);
+
+    for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+      auto graph = graphs.at(graph_index);
+
+      task_inputs.at(graph_index).resize(graph.max_width);
+
+      Rect1 bounds(Point1(0), Point1(all_max_deps - 1));
+
+      for (long proc_index = 0; proc_index < num_procs; ++proc_index) {
+        auto proc = procs.at(proc_index);
+        auto memory = proc_regmems.at(proc);
+
+        long first_point = proc_index * graph.max_width / num_procs;
+        long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+        for (long point = first_point; point <= last_point; ++point) {
+          events.push_back(
+            RegionInstance::create_instance(task_inputs.at(graph_index).at(point), memory, bounds, field_sizes,
                                             0 /*SOA*/, ProfilingRequestSet()));
         }
       }
@@ -853,6 +1023,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     ser << args;
     ser << graphs;
     ser << task_results;
+    ser << task_inputs;
     ser << raw_exchange;
     ser << war_exchange;
     events.push_back(

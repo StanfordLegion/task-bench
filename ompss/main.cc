@@ -175,6 +175,142 @@ void task6(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
 #endif
 }
 
+void task7(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, payload_t payload)
+{
+  int tid = omp_get_thread_num();
+#if defined (USE_CORE_VERIFICATION)    
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)tile_out->output_buff;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)tile_in1->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in2->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in3->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in4->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in5->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in6->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+
+  graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+#else
+  tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6.dep + 1;
+  printf("Task7 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f\n", 
+    tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep, tile_in3->dep, tile_in4->dep, tile_in5->dep, tile_in6->dep);
+#endif
+}
+
+void task8(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, tile_t *tile_in7, payload_t payload)
+{
+  int tid = omp_get_thread_num();
+#if defined (USE_CORE_VERIFICATION)    
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)tile_out->output_buff;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)tile_in1->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in2->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in3->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in4->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in5->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in6->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in7->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+
+  graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+#else
+  tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6.dep + tile_in7.dep + 1;
+  printf("Task8 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f, in7 %f\n", 
+    tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep, tile_in3->dep, tile_in4->dep, tile_in5->dep, tile_in6->dep, tile_in7->dep);
+#endif
+}
+
+void task9(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, tile_t *tile_in7, tile_t *tile_in8, payload_t payload)
+{
+  int tid = omp_get_thread_num();
+#if defined (USE_CORE_VERIFICATION)    
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)tile_out->output_buff;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)tile_in1->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in2->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in3->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in4->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in5->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in6->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in7->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in8->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+
+  graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+#else
+  tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6.dep + tile_in7.dep + tile_in8.dep + 1;
+  printf("Task9 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f, in7 %f, in8 %f\n", 
+    tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep, tile_in3->dep, tile_in4->dep, tile_in5->dep, tile_in6->dep, tile_in7->dep, tile_in8->dep);
+#endif
+}
+
+void task10(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, tile_t *tile_in7, tile_t *tile_in8, tile_t *tile_in9, payload_t payload)
+{
+  int tid = omp_get_thread_num();
+#if defined (USE_CORE_VERIFICATION)    
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)tile_out->output_buff;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)tile_in1->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in2->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in3->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in4->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in5->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in6->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in7->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in8->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)tile_in9->output_buff);
+  input_bytes.push_back(graph.output_bytes_per_task);
+
+  graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+#else
+  tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6.dep + tile_in7.dep + tile_in8.dep + tile_in9.dep + 1;
+  printf("Task10 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f, in7 %f, in8 %f, in9 %f\n", 
+    tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep, tile_in3->dep, tile_in4->dep, tile_in5->dep, tile_in6->dep, tile_in7->dep, tile_in8->dep, tile_in9->dep);
+#endif
+}
+
 struct OmpSsApp : public App {
   OmpSsApp(int argc, char **argv);
   ~OmpSsApp();
@@ -185,7 +321,6 @@ private:
   void debug_printf(int verbose_level, const char *format, ...);
 private:
   int nb_workers;
-  int nb_fields;
   //matrix_t *matrix;
 };
 
@@ -195,14 +330,10 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   : App(argc, argv)
 { 
   nb_workers = 1;
-  nb_fields = 0;
   
   for (int k = 1; k < argc; k++) {
     if (!strcmp(argv[k], "-worker")) {
       nb_workers = atol(argv[++k]);
-    }
-    if (!strcmp(argv[k], "-field")) {
-      nb_fields = atol(argv[++k]);
     }
   }
   
@@ -213,10 +344,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   for (unsigned i = 0; i < graphs.size(); i++) {
     TaskGraph &graph = graphs[i];
     
-    if (nb_fields == 0) {
-      nb_fields = graph.timesteps;
-    }
-    matrix[i].M = nb_fields;
+    matrix[i].M = graph.nb_fields;
     matrix[i].N = graph.max_width;
     matrix[i].data = (tile_t*)malloc(sizeof(tile_t) * matrix[i].M * matrix[i].N);
   
@@ -228,7 +356,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
     
-    printf("graph id %d, M = %d, N = %d\n", i, matrix[i].M, matrix[i].N);
+    printf("graph id %d, M = %d, N = %d\n, nb_fields %d", i, matrix[i].M, matrix[i].N, graph.nb_fields);
   }
   
   extra_local_memory = (char**)malloc(sizeof(char*) * (nb_workers+1));
@@ -303,6 +431,7 @@ void OmpSsApp::execute_timestep(size_t idx, long t)
   long offset = g.offset_at_timestep(t);
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
+  int nb_fields = g.nb_fields;
   
   std::vector<task_args_t> args;
   payload_t payload;
@@ -442,6 +571,124 @@ void OmpSsApp::insert_task(std::vector<task_args_t> args, payload_t payload, siz
             &mat[y3 * matrix[graph_id].N + x3], 
             &mat[y4 * matrix[graph_id].N + x4], 
             &mat[y5 * matrix[graph_id].N + x5], payload);
+    break;
+  }
+  
+  case 7: 
+  {
+    int x1 = args[1].x;
+    int y1 = args[1].y;
+    int x2 = args[2].x;
+    int y2 = args[2].y;
+    int x3 = args[3].x;
+    int y3 = args[3].y;
+    int x4 = args[4].x;
+    int y4 = args[4].y;
+    int x5 = args[5].x;
+    int y5 = args[5].y;
+    int x6 = args[6].x;
+    int y6 = args[6].y;
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+      task7(&mat[y0 * matrix[graph_id].N + x0], 
+            &mat[y1 * matrix[graph_id].N + x1], 
+            &mat[y2 * matrix[graph_id].N + x2], 
+            &mat[y3 * matrix[graph_id].N + x3], 
+            &mat[y4 * matrix[graph_id].N + x4], 
+            &mat[y5 * matrix[graph_id].N + x5], 
+            &mat[y6 * matrix[graph_id].N + x6], payload);
+    break;
+  }
+  
+  case 8: 
+  {
+    int x1 = args[1].x;
+    int y1 = args[1].y;
+    int x2 = args[2].x;
+    int y2 = args[2].y;
+    int x3 = args[3].x;
+    int y3 = args[3].y;
+    int x4 = args[4].x;
+    int y4 = args[4].y;
+    int x5 = args[5].x;
+    int y5 = args[5].y;
+    int x6 = args[6].x;
+    int y6 = args[6].y;
+    int x7 = args[7].x;
+    int y7 = args[7].y;
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(in: mat[y7 * matrix[graph_id].N + x7]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+      task8(&mat[y0 * matrix[graph_id].N + x0], 
+            &mat[y1 * matrix[graph_id].N + x1], 
+            &mat[y2 * matrix[graph_id].N + x2], 
+            &mat[y3 * matrix[graph_id].N + x3], 
+            &mat[y4 * matrix[graph_id].N + x4], 
+            &mat[y5 * matrix[graph_id].N + x5], 
+            &mat[y6 * matrix[graph_id].N + x6], 
+            &mat[y7 * matrix[graph_id].N + x7], payload);
+    break;
+  }
+  
+  case 9: 
+  {
+    int x1 = args[1].x;
+    int y1 = args[1].y;
+    int x2 = args[2].x;
+    int y2 = args[2].y;
+    int x3 = args[3].x;
+    int y3 = args[3].y;
+    int x4 = args[4].x;
+    int y4 = args[4].y;
+    int x5 = args[5].x;
+    int y5 = args[5].y;
+    int x6 = args[6].x;
+    int y6 = args[6].y;
+    int x7 = args[7].x;
+    int y7 = args[7].y;
+    int x8 = args[8].x;
+    int y8 = args[8].y;
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(in: mat[y7 * matrix[graph_id].N + x7]) depend(in: mat[y8 * matrix[graph_id].N + x8]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+      task9(&mat[y0 * matrix[graph_id].N + x0], 
+            &mat[y1 * matrix[graph_id].N + x1], 
+            &mat[y2 * matrix[graph_id].N + x2], 
+            &mat[y3 * matrix[graph_id].N + x3], 
+            &mat[y4 * matrix[graph_id].N + x4], 
+            &mat[y5 * matrix[graph_id].N + x5], 
+            &mat[y6 * matrix[graph_id].N + x6], 
+            &mat[y7 * matrix[graph_id].N + x7], 
+            &mat[y8 * matrix[graph_id].N + x8], payload);
+    break;
+  }
+  
+  case 10: 
+  {
+    int x1 = args[1].x;
+    int y1 = args[1].y;
+    int x2 = args[2].x;
+    int y2 = args[2].y;
+    int x3 = args[3].x;
+    int y3 = args[3].y;
+    int x4 = args[4].x;
+    int y4 = args[4].y;
+    int x5 = args[5].x;
+    int y5 = args[5].y;
+    int x6 = args[6].x;
+    int y6 = args[6].y;
+    int x7 = args[7].x;
+    int y7 = args[7].y;
+    int x8 = args[8].x;
+    int y8 = args[8].y;
+    int x9 = args[9].x;
+    int y9 = args[9].y;
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(in: mat[y7 * matrix[graph_id].N + x7]) depend(in: mat[y8 * matrix[graph_id].N + x8]) depend(in: mat[y9 * matrix[graph_id].N + x9]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+      task10(&mat[y0 * matrix[graph_id].N + x0], 
+            &mat[y1 * matrix[graph_id].N + x1], 
+            &mat[y2 * matrix[graph_id].N + x2], 
+            &mat[y3 * matrix[graph_id].N + x3], 
+            &mat[y4 * matrix[graph_id].N + x4], 
+            &mat[y5 * matrix[graph_id].N + x5], 
+            &mat[y6 * matrix[graph_id].N + x6], 
+            &mat[y7 * matrix[graph_id].N + x7], 
+            &mat[y8 * matrix[graph_id].N + x8], 
+            &mat[y9 * matrix[graph_id].N + x9], payload);
     break;
   }
   

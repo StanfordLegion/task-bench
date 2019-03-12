@@ -29,28 +29,30 @@ extended_types=(
 
 compute_bound="-kernel compute_bound -iter 1024"
 memory_bound="-kernel memory_bound -iter 1024 -scratch $((64*16))"
-imbalanced="-kernel load_imbalance -iter 1024"
+imbalanced="-kernel load_imbalance -iter 1024 -imbalance 0.1"
 communication_bound="-output 1024"
 
 kernels=("" "$compute_bound" "$memory_bound" "$imbalanced" "$communication_bound")
 compute_kernels=("" "$compute_bound" "$imbalanced")
+
+steps=23 # chosen to be relatively prime with 2, 3, 5
 
 set -x
 
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            mpirun -np 1 ./mpi/nonblock -steps 9 -type $t $k
-            mpirun -np 2 ./mpi/nonblock -steps 9 -type $t $k
-            mpirun -np 4 ./mpi/nonblock -steps 9 -type $t $k
-            mpirun -np 4 ./mpi/nonblock -steps 9 -type $t $k -and -steps 9 -type $t $k
+            mpirun -np 1 ./mpi/nonblock -steps $steps -type $t $k
+            mpirun -np 2 ./mpi/nonblock -steps $steps -type $t $k
+            mpirun -np 4 ./mpi/nonblock -steps $steps -type $t $k
+            mpirun -np 4 ./mpi/nonblock -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
     done
     for t in no_comm stencil_1d stencil_1d_periodic all_to_all; do # FIXME: trivial dom tree fft nearest spread random_nearest are broken
         for k in "${kernels[@]}"; do
             for binary in bcast alltoall buffered_send; do
-                mpirun -np 4 ./mpi/$binary -steps 9 -type $t $k
-                mpirun -np 4 ./mpi/$binary -steps 9 -type $t $k -and -steps 9 -type $t $k
+                mpirun -np 4 ./mpi/$binary -steps $steps -type $t $k
+                mpirun -np 4 ./mpi/$binary -steps $steps -type $t $k -and -steps $steps -type $t $k
             done
         done
     done
@@ -59,8 +61,8 @@ fi
 if [[ $USE_LEGION -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            ./legion/task_bench -steps 9 -type $t $k -ll:cpu 2
-            ./legion/task_bench -steps 9 -type $t $k -and -steps 9 -type $t $k -ll:cpu 2
+            ./legion/task_bench -steps $steps -type $t $k -ll:cpu 2
+            ./legion/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2
         done
     done
 fi
@@ -68,16 +70,27 @@ fi
 if [[ $USE_REALM -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            ./realm/task_bench -steps 9 -type $t $k -ll:cpu 1
-            ./realm/task_bench -steps 9 -type $t $k -ll:cpu 2
-            ./realm/task_bench -steps 9 -type $t $k -ll:cpu 4
+            ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1
+            ./realm/task_bench -steps $steps -type $t $k -ll:cpu 2
+            ./realm/task_bench -steps $steps -type $t $k -ll:cpu 4
             if [[ $USE_GASNET -eq 1 ]]; then
-                mpirun -np 2 ./realm/task_bench -steps 9 -type $t $k -ll:cpu 1
-                mpirun -np 2 ./realm/task_bench -steps 9 -type $t $k -ll:cpu 2
-                mpirun -np 4 ./realm/task_bench -steps 9 -type $t $k -ll:cpu 1
+                mpirun -np 2 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1
+                mpirun -np 2 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 2
+                mpirun -np 4 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1
             fi
-            ./realm/task_bench -steps 9 -type $t $k -and -steps 9 -type $t $k -ll:cpu 2
+            ./realm/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2
 
+            ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 1
+            ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 2
+            ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 4
+            if [[ $USE_GASNET -eq 1 ]]; then
+                mpirun -np 2 ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 1
+                mpirun -np 2 ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 2
+                mpirun -np 4 ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 1
+            fi
+            ./realm_subgraph/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2
+
+            # FIXME: Realm old triggers a bug in GASNet MPI conduit with higher steps.
             ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 1
             ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 2
             ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 4
@@ -104,11 +117,11 @@ fi
 if [[ $USE_STARPU -eq 1 ]]; then
     for t in "${basic_types[@]}"; do
         for k in "${kernels[@]}"; do
-            mpirun -np 1 ./starpu/main -steps 9 -type $t $k -core 2
-            mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 1 -core 2
-            mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 2 -core 2
-            mpirun -np 4 ./starpu/main -steps 9 -type $t $k -p 4 -core 2
-            mpirun -np 1 ./starpu/main -steps 9 -type $t $k -and -steps 9 -type $t $k -core 2
+            mpirun -np 1 ./starpu/main -steps $steps -type $t $k -core 2
+            mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 1 -core 2
+            mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 2 -core 2
+            mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 4 -core 2
+            mpirun -np 1 ./starpu/main -steps $steps -type $t $k -and -steps $steps -type $t $k -core 2
             mpirun -np 4 ./starpu/main -steps 16 -width 8 -type $t $k -p 1 -core 2 -S
             mpirun -np 4 ./starpu/main -steps 16 -width 8 -type $t $k -and -steps 16 -width 8 -type $t $k -core 2 -p 1 -S
         done
@@ -121,6 +134,11 @@ if [[ $USE_PARSEC -eq 1 ]]; then
             mpirun -np 1 ./parsec/main_shard -steps 9 -type $t $k -c 2
             mpirun -np 4 ./parsec/main_shard -width 16 -steps 20 -type $t $k -p 1 -c 2 -S 4
             mpirun -np 1 ./parsec/main_shard -steps 9 -type $t $k -and -steps 9 -type $t $k -c 2
+            mpirun -np 1 ./parsec/main -steps $steps -type $t $k -c 2
+            mpirun -np 4 ./parsec/main -steps $steps -type $t $k -p 1 -c 2
+            mpirun -np 4 ./parsec/main -steps $steps -type $t $k -p 2 -c 2
+            mpirun -np 4 ./parsec/main -steps $steps -type $t $k -p 4 -c 2
+            mpirun -np 1 ./parsec/main -steps $steps -type $t $k -and -steps $steps -type $t $k -c 2
         done
     done
 fi
@@ -128,8 +146,8 @@ fi
 if [[ $USE_CHARM -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            ./charm++/charmrun +p1 ++mpiexec ./charm++/benchmark -steps 9 -type $t $k
-            ./charm++/charmrun +p1 ++mpiexec ./charm++/benchmark -steps 9 -type $t $k -and -steps 9 -type $t $k
+            ./charm++/charmrun +p1 ++mpiexec ./charm++/benchmark -steps $steps -type $t $k
+            ./charm++/charmrun +p1 ++mpiexec ./charm++/benchmark -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
     done
     rm charmrun.*
@@ -138,8 +156,8 @@ fi
 if [[ $USE_CHAPEL -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            ./chapel/task_benchmark -- -steps 9 -type $t $k
-            ./chapel/task_benchmark -- -steps 9 -type $t $k -and -steps 9 -type $t $k
+            ./chapel/task_benchmark -- -steps $steps -type $t $k
+            ./chapel/task_benchmark -- -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
     done
 fi
@@ -149,10 +167,10 @@ fi
 
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            mpirun -np 1 ./x10/main -steps 9 -type $t $k
-            mpirun -np 2 ./x10/main -steps 9 -type $t $k
-            mpirun -np 4 ./x10/main -steps 9 -type $t $k
-            mpirun -np 4 ./x10/main -steps 9 -type $t $k -and -steps 9 -type $t $k
+            mpirun -np 1 ./x10/main -steps $steps -type $t $k
+            mpirun -np 2 ./x10/main -steps $steps -type $t $k
+            mpirun -np 4 ./x10/main -steps $steps -type $t $k
+            mpirun -np 4 ./x10/main -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
     done
 fi)
@@ -161,8 +179,8 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     export LD_LIBRARY_PATH=/usr/local/clang/lib:$LD_LIBRARY_PATH
     for t in "${basic_types[@]}"; do
         for k in "${kernels[@]}"; do
-            ./openmp/main -steps 9 -type $t $k -worker 2
-            ./openmp/main -steps 9 -type $t $k -and -steps 9 -type $t $k -worker 2
+            ./openmp/main -steps $steps -type $t $k -worker 2
+            ./openmp/main -steps $steps -type $t $k -and -steps $steps -type $t $k -worker 2
         done
     done
 fi
@@ -170,8 +188,8 @@ fi
 if [[ $USE_OMPSS -eq 1 ]]; then
     for t in "${basic_types[@]}"; do
         for k in "${kernels[@]}"; do
-            ./ompss/main -steps 9 -type $t $k
-            ./ompss/main -steps 9 -type $t $k -and -steps 9 -type $t $k
+            ./ompss/main -steps $steps -type $t $k
+            ./ompss/main -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
     done
 fi
@@ -223,8 +241,8 @@ fi
 
     for t in trivial no_comm stencil_1d stencil_1d_periodic dom tree fft nearest random_nearest; do # FIXME: spread is broken
         for k in "${kernels[@]}"; do
-            run_spark -steps 9 -type $t $k -skip-graph-validation
-            run_spark -steps 9 -type $t $k -and -steps 9 -type $t $k -skip-graph-validation
+            run_spark -steps $steps -type $t $k -skip-graph-validation
+            run_spark -steps $steps -type $t $k -and -steps $steps -type $t $k -skip-graph-validation
         done
     done
 
@@ -237,9 +255,9 @@ fi)
     pushd swift
     for t in "${extended_types[@]}"; do
         for k in "${compute_kernels[@]}"; do
-            turbine -n 4 benchmark.tic -type $t $k -steps 9
+            turbine -n 4 benchmark.tic -type $t $k -steps $steps
             # FIXME: Swift breaks with multiple task graphs
-            # turbine -n 4 benchmark.tic -type $t $k -steps 9 -and -type $t $k -steps 9
+            # turbine -n 4 benchmark.tic -type $t $k -steps $steps -and -type $t $k -steps $steps
         done
     done
     popd
@@ -253,8 +271,8 @@ fi)
     pushd tensorflow
     for t in "${extended_types[@]}"; do
         for k in "${compute_kernels[@]}"; do
-            python task_bench.py -steps 9 -type $t $k
-            python task_bench.py -steps 9 -type $t $k -and -steps 9 -type $t $k
+            python task_bench.py -steps $steps -type $t $k
+            python task_bench.py -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
     done
     popd

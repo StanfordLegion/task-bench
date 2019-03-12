@@ -55,6 +55,7 @@ typedef struct kernel_t {
   kernel_type_t type;
   long iterations;
   int samples;
+  double imbalance; // amount of imbalance as a fraction of the number of iterations
 } kernel_t;
 
 typedef struct interval_t {
@@ -82,6 +83,7 @@ typedef struct task_graph_t {
   kernel_t kernel;
   size_t output_bytes_per_task;
   size_t scratch_bytes_per_task;
+  int nb_fields;
 } task_graph_t;
 
 long task_graph_offset_at_timestep(task_graph_t graph, long timestep);
