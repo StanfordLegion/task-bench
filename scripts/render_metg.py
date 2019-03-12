@@ -26,6 +26,11 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('filename')
+parser.add_argument('--title', required=True)
+parser.add_argument('--xlabel', default='Nodes')
+parser.add_argument('--xcol', default='nodes')
+parser.add_argument('--no-xlog', action='store_false', dest='xlog')
+parser.add_argument('--no-xticks', action='store_false', dest='xticks')
 args = parser.parse_args()
 
 markers = [
@@ -112,17 +117,22 @@ ax.tick_params(axis='x', width=0.5)
 ax.tick_params(axis='y', width=0.5)
 
 data = csv2rec(args.filename)
-columns = sorted(set(data.dtype.names) - set(['nodes']))
-plt.loglog(basex=2)
+nodes = getattr(data, args.xcol)
+columns = sorted(set(data.dtype.names) - set([args.xcol]))
+if args.xlog:
+    plt.loglog(basex=2)
+else:
+    plt.semilogy()
 for i, column in enumerate(columns):
-    plt.plot(data.nodes, getattr(data, column), '-', color=colors[i], marker=markers[i], markerfacecolor='none', linewidth=1, label=column.replace('_', ' '))
-plt.xticks(data.nodes, data.nodes, rotation=30)
+    plt.plot(nodes, getattr(data, column), '-', color=colors[i], marker=markers[i], markerfacecolor='none', linewidth=1, label=column.replace('_', ' '))
+if args.xticks:
+    plt.xticks(nodes, nodes, rotation=30)
 # plt.xlim(0.8, 40)
 # plt.ylim(0, 1600)
 
-plt.xlabel('Nodes', fontsize=12)
+plt.xlabel(args.xlabel, fontsize=12)
 plt.ylabel('Minimum Effective Task Granularity (ms)', fontsize=12)
-plt.title(r'METG (Cori, Compute, Stencil)', fontsize=14)
+plt.title(args.title, fontsize=14)
 
 # Shrink current axis by 20%
 box = ax.get_position()

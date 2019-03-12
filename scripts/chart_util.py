@@ -32,11 +32,16 @@ def parse_filename(filename):
     fields = os.path.splitext(os.path.basename(filename))[0].split('_')
     graph_idx = fields.index('ngraphs')
     type_idx = fields.index('type')
+    try:
+        imbalance_idx = fields.index('imbalance')
+    except ValueError:
+        imbalance_idx = None
     node_idx = fields.index('nodes')
     return {
         'name': ' '.join(fields[:graph_idx]),
         'ngraphs': int(' '.join(fields[graph_idx+1:type_idx])),
-        'type': ' '.join(fields[type_idx+1:node_idx]),
+        'type': ' '.join(fields[type_idx+1:imbalance_idx or node_idx]),
+        'imbalance': imbalance_idx and ' '.join(fields[imbalance_idx+1:node_idx]),
         'nodes': int(fields[node_idx+1]),
     }
 
