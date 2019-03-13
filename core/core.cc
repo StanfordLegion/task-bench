@@ -755,8 +755,8 @@ App::App(int argc, char **argv)
     if (!strcmp(argv[i], IMBALANCE_FLAG)) {
       needs_argument(i, argc, IMBALANCE_FLAG);
       double value = atof(argv[++i]);
-      if (value < 0 || value > 1) {
-        fprintf(stderr, "error: Invalid flag \"" IMBALANCE_FLAG " %f\" must be >= 0 and <= 1\n", value);
+      if (value < 0 || value > 2) {
+        fprintf(stderr, "error: Invalid flag \"" IMBALANCE_FLAG " %f\" must be >= 0 and <= 2\n", value);
         abort();
       }
       graph.kernel.imbalance = value;
@@ -926,7 +926,7 @@ void App::display() const
 }
 
 // IMPORTANT: Keep this up-to-date with kernel implementations
-long long flops_per_task(const TaskGraph &g)
+static long long count_flops_per_task(const TaskGraph &g, long timestep, long point)
 {
   switch(g.kernel.type) {
   case KernelType::EMPTY:
@@ -950,15 +950,21 @@ long long flops_per_task(const TaskGraph &g)
     return 2 * 32 * g.kernel.iterations;
 
   case KernelType::IO_BOUND:
-  case KernelType::LOAD_IMBALANCE:
     return 0;
+
+  case KernelType::LOAD_IMBALANCE:
+  {
+    long iterations = select_imbalance_iterations(g.kernel, g.graph_index, timestep, point);
+    return 2 * 64 * iterations + 64;
+  }
+
   default:
     assert(false && "unimplemented kernel type");
   };
 }
 
 // IMPORTANT: Keep this up-to-date with kernel implementations
-long long bytes_per_task(const TaskGraph &g)
+static long long count_bytes_per_task(const TaskGraph &g, long timestep, long point)
 {
   switch(g.kernel.type) {
   case KernelType::EMPTY:
@@ -980,6 +986,34 @@ long long bytes_per_task(const TaskGraph &g)
   default:
     assert(false && "unimplemented kernel type");
   };
+}
+
+static long long count_flops(const TaskGraph &g)
+{
+  long long flops = 0;
+  for (long t = 0; t < g.timesteps; ++t) {
+    long offset = g.offset_at_timestep(t);
+    long width = g.width_at_timestep(t);
+
+    for (long point = offset; point < offset + width; ++point) {
+      flops += count_flops_per_task(g, t, point);
+    }
+  }
+  return flops;
+}
+
+static long long count_bytes(const TaskGraph &g)
+{
+  long long bytes = 0;
+  for (long t = 0; t < g.timesteps; ++t) {
+    long offset = g.offset_at_timestep(t);
+    long width = g.width_at_timestep(t);
+
+    for (long point = offset; point < offset + width; ++point) {
+      bytes += count_bytes_per_task(g, t, point);
+    }
+  }
+  return bytes;
 }
 
 void App::report_timing(double elapsed_seconds) const
@@ -1013,8 +1047,8 @@ void App::report_timing(double elapsed_seconds) const
 
     total_num_tasks += num_tasks;
     total_num_deps += num_deps;
-    flops += flops_per_task(g) * num_tasks;
-    bytes += bytes_per_task(g) * num_tasks;
+    flops += count_flops(g);
+    bytes += count_bytes(g);
   }
 
   printf("Total Tasks %lld\n", total_num_tasks);

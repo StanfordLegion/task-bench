@@ -295,14 +295,21 @@ void execute_kernel_io(const Kernel &kernel)
   assert(false);
 }
 
-double execute_kernel_imbalance(const Kernel &kernel,
-                                long graph_index, long timestep, long point)
+long select_imbalance_iterations(const Kernel &kernel,
+                                 long graph_index, long timestep, long point)
 {
   long seed[3] = {graph_index, timestep, point};
   double value = random_uniform(&seed[0], sizeof(seed));
 
   long iterations = (long)floor((1 + (value - 0.5)*kernel.imbalance) * kernel.iterations);
   assert(iterations > 0);
+  return iterations;
+}
+
+double execute_kernel_imbalance(const Kernel &kernel,
+                                long graph_index, long timestep, long point)
+{
+  long iterations = select_imbalance_iterations(kernel, graph_index, timestep, point);
   Kernel k(kernel);
   k.iterations = iterations;
   // printf("iteration %ld\n", iterations);
