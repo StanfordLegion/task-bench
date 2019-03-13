@@ -719,7 +719,8 @@ void ParsecApp::execute_timestep(size_t idx, long t)
         }
       }
     
-      ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1;
+      // FIXME: each graph's wdith and timesteps need to be the same
+      ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1 + idx * g.max_width * g.timesteps;
 
       payload.i = t;
       payload.j = x;
