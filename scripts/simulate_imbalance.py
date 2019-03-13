@@ -26,14 +26,14 @@ def task_duration(timestep, point, imbalance):
 
     return 1 + (value - 0.5)*imbalance
 
-def simulate(timesteps, width, imbalance):
+def simulate(timesteps, width, radix, imbalance):
     durations = [
         [task_duration(timestep, point, imbalance)
          for point in range(width)]
         for timestep in range(timesteps)]
 
     dependencies = [
-        range(max(point - 2, 0), min(point + 2, width - 1))
+        list(range(max(point - (radix - 1)//2, 0), min(point + radix//2, width - 1) + 1))
         for point in range(width)]
 
     last_completion = [0 for point in range(width)]
@@ -62,7 +62,8 @@ def simulate(timesteps, width, imbalance):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--timesteps', type=int, default=100)
-    parser.add_argument('--width', type=int, default=10)
+    parser.add_argument('--width', type=int, default=30)
+    parser.add_argument('--radix', type=int, default=5)
     parser.add_argument('--imbalance', type=float, default=0.0)
     args = parser.parse_args()
 
