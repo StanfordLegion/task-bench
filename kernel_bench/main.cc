@@ -77,13 +77,13 @@ void *execute_task(void *tr)
   *(task_arg->time_end) = Timer::get_cur_time();
   
   if (g.kernel.type == COMPUTE_BOUND) {
-    long long flops = flops_per_task(task_arg->graph) * task_arg->nb_tasks;
+    long long flops = count_flops_per_task(task_arg->graph, 0, 0) * task_arg->nb_tasks;
     printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flop/s %e\n", 
           task_arg->tid, task_arg->nb_tasks, 
           task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
           (double)flops / (*(task_arg->time_end) - *(task_arg->time_start)));
   } else if (g.kernel.type == MEMORY_BOUND) {
-    long long bytes = bytes_per_task(task_arg->graph) * task_arg->nb_tasks;
+    long long bytes = count_bytes_per_task(task_arg->graph, 0, 0) * task_arg->nb_tasks;
     printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, bytes %lld, bw %e MB/s\n", 
           task_arg->tid, task_arg->nb_tasks, 
           task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
