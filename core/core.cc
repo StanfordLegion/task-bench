@@ -926,7 +926,7 @@ void App::display() const
 }
 
 // IMPORTANT: Keep this up-to-date with kernel implementations
-static long long count_flops_per_task(const TaskGraph &g, long timestep, long point)
+long long count_flops_per_task(const TaskGraph &g, long timestep, long point)
 {
   switch(g.kernel.type) {
   case KernelType::EMPTY:
@@ -964,7 +964,7 @@ static long long count_flops_per_task(const TaskGraph &g, long timestep, long po
 }
 
 // IMPORTANT: Keep this up-to-date with kernel implementations
-static long long count_bytes_per_task(const TaskGraph &g, long timestep, long point)
+long long count_bytes_per_task(const TaskGraph &g, long timestep, long point)
 {
   switch(g.kernel.type) {
   case KernelType::EMPTY:
