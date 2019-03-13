@@ -666,7 +666,7 @@ int first_point = rank * g.max_width / nodes - 1;
     }
 
     ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1;
-    debug_printf(0, "rank: %d, has_task: %d, x: %d, t: %d, task_id: %d\n", rank , has_task, x, t, mat.NT * t + x + 1);
+    debug_printf(1, "rank: %d, has_task: %d, x: %d, t: %d, task_id: %d\n", rank , has_task, x, t, mat.NT * t + x + 1);
 #endif
 
     payload.i = t;

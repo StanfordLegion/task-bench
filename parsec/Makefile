@@ -36,7 +36,7 @@ CFLAGS += $(INC)
 
 include ../core/make_blas.mk
 
-TARGET = main main_shard
+TARGET = main main_shard main_checkfirst
 all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
@@ -50,12 +50,17 @@ main.o: main.cc ../core/timer.h
 main_shard.o: main_shard.cc ../core/timer.h
 	$(CC) -c $(CFLAGS) $<
 
+main_checkfirst.o: main_checkfirst.cc ../core/timer.h
+	$(CC) -c $(CFLAGS) $<
+
 main: main.o common.o 
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 	
 main_shard: main_shard.o common.o 
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 
+main_checkfirst: main_checkfirst.o common.o
+	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 
 clean:
 	rm -f *.o
