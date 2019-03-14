@@ -13,11 +13,14 @@
  * limitations under the License.
  */
 
+#include <assert.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "core_random.h"
 
-#include "murmur_hash3.h"
+#include "siphash.h"
 
 // #define TEST_HARNESS
 #ifdef TEST_HARNESS
@@ -30,14 +33,16 @@ void gen_bits(const void *input, size_t input_bytes, void *output)
 {
   // To generate deterministic uniformly distributed bits, run a hash
   // function on the seed and use the hash value as the output.
-  murmur_hash3_128(input, input_bytes, 1234567, output);
+  const uint8_t k[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  siphash(input, input_bytes, k, output, sizeof(uint64_t));
 }
 
 double random_uniform(const void *input, size_t input_bytes)
 {
-  uint64_t bits[2];
-  gen_bits(input, input_bytes, &bits[0]);
-  return ((double)(bits[0])) * 0x1.p-64;
+  uint64_t bits;
+  gen_bits(input, input_bytes, &bits);
+
+  return ((double)bits) * 0x1.p-64;
 }
 
 #ifdef TEST_HARNESS

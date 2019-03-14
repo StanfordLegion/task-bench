@@ -301,7 +301,7 @@ long select_imbalance_iterations(const Kernel &kernel,
   long seed[3] = {graph_index, timestep, point};
   double value = random_uniform(&seed[0], sizeof(seed));
 
-  long iterations = (long)floor((1 + (value - 0.5)*kernel.imbalance) * kernel.iterations);
+  long iterations = (long)round((1 + (value - 0.5)*kernel.imbalance) * kernel.iterations);
   assert(iterations > 0);
   return iterations;
 }
