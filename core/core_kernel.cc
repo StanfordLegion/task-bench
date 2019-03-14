@@ -302,7 +302,7 @@ long select_imbalance_iterations(const Kernel &kernel,
   double value = random_uniform(&seed[0], sizeof(seed));
 
   long iterations = (long)round((1 + (value - 0.5)*kernel.imbalance) * kernel.iterations);
-  assert(iterations > 0);
+  assert(iterations >= 0);
   return iterations;
 }
 
