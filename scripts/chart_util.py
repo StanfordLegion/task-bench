@@ -62,7 +62,7 @@ class Parser:
         params = get_machine_parameters(machine)
 
         has_exception = False
-        log_filenames = glob.glob('**/*.log', recursive=True)
+        log_filenames = glob.glob('**/*.log', recursive=False)
         for filename in log_filenames:
             row = parse_filename(filename)
             if not self.filter(row):
