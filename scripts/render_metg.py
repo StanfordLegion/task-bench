@@ -27,7 +27,7 @@ import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('filename')
-parser.add_argument('--title', required=True)
+parser.add_argument('--title')
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
 parser.add_argument('--xdata', default='nodes')
@@ -148,7 +148,8 @@ if args.ylim:
 
 plt.xlabel(args.xlabel, fontsize=12)
 plt.ylabel(args.ylabel, fontsize=12)
-plt.title(args.title, fontsize=14)
+if args.title:
+    plt.title(args.title, fontsize=14)
 
 # Shrink current axis by 20%
 box = ax.get_position()
