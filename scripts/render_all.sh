@@ -28,11 +28,22 @@ if [[ $(basename $PWD) = compute ]]; then
 elif [[ $(basename $PWD) = imbalance ]]; then
     "$root_dir"/imbalance.py -m cori -g 4 -d nearest -n 1 --csv excel > metg_ngraphs_4_nearest.csv
 
+    "$root_dir"/imbalance_efficiency.py -m cori -g 4 -d nearest -n 1 -s 'mpi nonblock' --csv excel > efficiency_mpi.csv
+
     "$root_dir"/render_metg.py metg_ngraphs_4_nearest.csv \
                --title 'METG vs Imbalance (Cori, Compute, 4x Nearest)' \
                --xlabel 'Imbalance' \
                --xdata 'imbalance' \
                --no-xlog
+
+    "$root_dir"/render_metg.py efficiency_mpi.csv \
+               --title 'MPI Efficiency vs Task Granularity (Cori, Compute, Stencil)' \
+               --xlabel 'Efficiency' \
+               --xdata 'efficiency' \
+               --no-xlog \
+               --no-xticks \
+               --x-percent \
+               --ylabel 'Task Granularity (ms)'
 else
     echo "Not in a data directory, change to 'compute' or 'imbalance' and then rerun."
 fi
