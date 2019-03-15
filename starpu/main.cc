@@ -921,12 +921,18 @@ void StarPUApp::execute_timestep(size_t idx, long t)
         num_args = 1;
         args.push_back(starpu_desc_getaddr( mat.ddescA, t%nb_fields, x ));
         args_loc.push_back(std::make_pair(t%nb_fields, x));
+        long last_offset = g.offset_at_timestep(t-1);
+        long last_width = g.width_at_timestep(t-1);
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
           debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
-            args.push_back(starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, i ));
-            args_loc.push_back(std::make_pair((t-1)%nb_fields, i));
+            if (i >= last_offset && i < last_offset + last_width) {
+              args.push_back(starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, i ));
+              args_loc.push_back(std::make_pair((t-1)%nb_fields, i));
+            } else {
+              num_args --;
+            }
           }
         }
       }
