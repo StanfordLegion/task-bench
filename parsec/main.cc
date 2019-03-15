@@ -600,15 +600,15 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   std::vector<std::pair<long, long>> args_loc;
   payload_t payload;
 
-int first_point = rank * g.max_width / nodes - 1;
- int last_point = (rank + 1) * g.max_width / nodes - 1 + 1;
+  int first_point = rank * g.max_width / nodes - 1;
+  int last_point = (rank + 1) * g.max_width / nodes - 1 + 1;
 
- if (first_point < 0) {
-   first_point = 0;
- }
- if (last_point >= g.max_width) {
-   last_point = g.max_width-1;
- }
+  if (first_point < 0) {
+    first_point = 0;
+  }
+  if (last_point >= g.max_width) {
+    last_point = g.max_width-1;
+  }
  //for (int x = first_point; x <= last_point; x++) {
   
   //debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
@@ -631,16 +631,23 @@ int first_point = rank * g.max_width / nodes - 1;
       } else {
         num_args = 1;
         args.push_back(TILE_OF_MAT(C, t%nb_fields, x));
+        long last_offset = g.offset_at_timestep(t-1);
+        long last_width = g.width_at_timestep(t-1);
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
           debug_printf(1, "(%d, %d): [%d, %d, %d] \n", x, t, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
-            args.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));  
+            if (i >= last_offset && i < last_offset + last_width) {
+              args.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));  
 #ifdef ENABLE_PRUNE_MPI_TASK_INSERT
-            if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t-1)%nb_fields, i)) {
-              has_task = 1;
-            }
+              if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t-1)%nb_fields, i)) {
+                has_task = 1;
+              }
 #endif
+            } else {
+              num_args --;
+            }
+
           }
         }
       }

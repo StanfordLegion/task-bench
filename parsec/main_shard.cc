@@ -709,11 +709,17 @@ void ParsecApp::execute_timestep(size_t idx, long t)
         } else {
           num_args = 1;
           args.push_back(TILE_OF_MAT(C, t%nb_fields, x));
+          long last_offset = g.offset_at_timestep(t-1);
+          long last_width = g.width_at_timestep(t-1);
           for (std::pair<long, long> dep : deps) {
             num_args += dep.second - dep.first + 1;
             debug_printf(1, "(%d, %d): [%d, %d, %d] \n", x, t, num_args, dep.first, dep.second); 
             for (int i = dep.first; i <= dep.second; i++) {
-              args.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));  
+              if (i >= last_offset && i < last_offset + last_width) {
+                args.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));  
+              } else {
+                num_args --;
+              }
             }
           }
         }
