@@ -28,7 +28,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('filename')
 parser.add_argument('--title', required=True)
 parser.add_argument('--xlabel', default='Nodes')
-parser.add_argument('--xcol', default='nodes')
+parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
+parser.add_argument('--xdata', default='nodes')
+parser.add_argument('--x-percent', action='store_true')
 parser.add_argument('--no-xlog', action='store_false', dest='xlog')
 parser.add_argument('--no-xticks', action='store_false', dest='xticks')
 args = parser.parse_args()
@@ -116,9 +118,12 @@ ax.spines['right'].set_linewidth(1.0)
 ax.tick_params(axis='x', width=0.5)
 ax.tick_params(axis='y', width=0.5)
 
+if args.x_percent:
+    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
+
 data = csv2rec(args.filename)
-nodes = getattr(data, args.xcol)
-columns = sorted(set(data.dtype.names) - set([args.xcol]))
+nodes = getattr(data, args.xdata)
+columns = sorted(set(data.dtype.names) - set([args.xdata]))
 if args.xlog:
     plt.loglog(basex=2)
 else:
@@ -126,12 +131,12 @@ else:
 for i, column in enumerate(columns):
     plt.plot(nodes, getattr(data, column), '-', color=colors[i], marker=markers[i], markerfacecolor='none', linewidth=1, label=column.replace('_', ' '))
 if args.xticks:
-    plt.xticks(nodes, nodes, rotation=30)
+    plt.xticks(nodes, nodes) #, rotation=30)
 # plt.xlim(0.8, 40)
 # plt.ylim(0, 1600)
 
 plt.xlabel(args.xlabel, fontsize=12)
-plt.ylabel('Minimum Effective Task Granularity (ms)', fontsize=12)
+plt.ylabel(args.ylabel, fontsize=12)
 plt.title(args.title, fontsize=14)
 
 # Shrink current axis by 20%
