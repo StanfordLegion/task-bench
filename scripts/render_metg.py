@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 from matplotlib.mlab import csv2rec
 import numpy as np
 import argparse
+import ast
 import os
 
 parser = argparse.ArgumentParser()
@@ -30,8 +31,13 @@ parser.add_argument('--title', required=True)
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
 parser.add_argument('--xdata', default='nodes')
+parser.add_argument('--xscale', type=float, default=1)
+parser.add_argument('--yscale', type=float, default=1)
+parser.add_argument('--xlim', type=ast.literal_eval, default='None')
+parser.add_argument('--ylim', type=ast.literal_eval, default='None')
 parser.add_argument('--x-percent', action='store_true')
 parser.add_argument('--no-xlog', action='store_false', dest='xlog')
+parser.add_argument('--no-ylog', action='store_false', dest='ylog')
 parser.add_argument('--no-xticks', action='store_false', dest='xticks')
 args = parser.parse_args()
 
@@ -121,19 +127,24 @@ ax.tick_params(axis='y', width=0.5)
 if args.x_percent:
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
 
-data = csv2rec(args.filename)
-nodes = getattr(data, args.xdata)
-columns = sorted(set(data.dtype.names) - set([args.xdata]))
-if args.xlog:
+if args.xlog and args.ylog:
     plt.loglog(basex=2)
-else:
+elif args.xlog:
+    plt.semilogx(basex=2)
+elif args.ylog:
     plt.semilogy()
+
+data = csv2rec(args.filename)
+nodes = getattr(data, args.xdata) * args.xscale
+columns = sorted(set(data.dtype.names) - set([args.xdata]))
 for i, column in enumerate(columns):
-    plt.plot(nodes, getattr(data, column), '-', color=colors[i], marker=markers[i], markerfacecolor='none', linewidth=1, label=column.replace('_', ' '))
+    plt.plot(nodes, getattr(data, column) * args.yscale, '-', color=colors[i], marker=markers[i], markerfacecolor='none', linewidth=1, label=column.replace('_', ' '))
 if args.xticks:
     plt.xticks(nodes, nodes) #, rotation=30)
-# plt.xlim(0.8, 40)
-# plt.ylim(0, 1600)
+if args.xlim:
+    plt.xlim(*args.xlim)
+if args.ylim:
+    plt.ylim(*args.ylim)
 
 plt.xlabel(args.xlabel, fontsize=12)
 plt.ylabel(args.ylabel, fontsize=12)
