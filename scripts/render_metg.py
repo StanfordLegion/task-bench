@@ -28,6 +28,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('filename')
 parser.add_argument('--title')
+parser.add_argument('--legend', default='../legend.csv')
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
 parser.add_argument('--xdata', default='nodes')
@@ -137,8 +138,24 @@ elif args.ylog:
 data = csv2rec(args.filename)
 nodes = getattr(data, args.xdata) * args.xscale
 columns = sorted(set(data.dtype.names) - set([args.xdata]))
-for i, column in enumerate(columns):
-    plt.plot(nodes, getattr(data, column) * args.yscale, '-', color=colors[i], marker=markers[i], markerfacecolor='none', linewidth=1, label=column.replace('_', ' '))
+
+if args.legend:
+    legend_raw = csv2rec(args.legend)
+    legend_label = dict(zip(legend_raw.name, legend_raw.label))
+    legend_idx = dict(zip(legend_raw.name, range(legend_raw.label.size)))
+    next_idx = legend_raw.label.size
+else:
+    next_idx = 0
+
+for column in columns:
+    if args.legend and column in legend_label:
+        label = legend_label[column]
+        idx = legend_idx[column]
+    else:
+        label = column.replace('_', ' ')
+        idx = next_idx
+        next_idx += 1
+    plt.plot(nodes, getattr(data, column) * args.yscale, '-', color=colors[idx], marker=markers[idx], markerfacecolor='none', linewidth=1, label=label)
 if args.xticks:
     plt.xticks(nodes, nodes) #, rotation=30)
 if args.xlim:
