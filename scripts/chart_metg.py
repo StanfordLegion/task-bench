@@ -26,6 +26,7 @@ import sys
 _columns = collections.OrderedDict([
     ('elapsed', (re.compile(r'^\s*Elapsed Time ([0-9.e+-]+) seconds$', re.MULTILINE), float)),
     ('iterations', (re.compile(r'^\s*Iterations: ([0-9]+)$', re.MULTILINE), int)),
+    ('output', (re.compile(r'^\s*Output Bytes: ([0-9]+)$', re.MULTILINE), int)),
     ('steps', (re.compile(r'^\s*Time Steps: ([0-9]+)$', re.MULTILINE), int)),
     ('tasks', (re.compile(r'^\s*Total Tasks ([0-9]+)$', re.MULTILINE), int)),
     ('flops', (re.compile(r'^\s*Total FLOPs ([0-9]+)$', re.MULTILINE), int)),
@@ -74,7 +75,7 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
 
     assert table['tasks'].size > 0, "logs are empty"
 
-    for column in ('iterations', 'steps', 'width'):
+    for column in ('iterations', 'output', 'steps', 'width'):
         assert table[column].size % ngraphs == 0, "number of graphs is not divisible by ngraphs"
         elts = numpy.split(table[column], table[column].size / ngraphs)
         assert all(same(elt) for elt in elts), "graphs are not identical"

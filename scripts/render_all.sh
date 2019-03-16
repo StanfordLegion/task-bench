@@ -49,6 +49,24 @@ if [[ $(basename $PWD) = compute ]]; then
     crop efficiency_stencil.pdf
     crop flops_stencil.pdf
 
+elif [[ $(basename $PWD) = communication ]]; then
+
+    "$root_dir"/comm.py -m cori -g 4 -d spread -n 16 --csv excel > metg_ngraphs_4_spread_nodes_16.csv
+    "$root_dir"/comm.py -m cori -g 4 -d spread -n 64 --csv excel > metg_ngraphs_4_spread_nodes_64.csv
+
+    "$root_dir"/render_metg.py metg_ngraphs_4_spread_nodes_16.csv \
+               --xlabel 'Message Size (B)' \
+               --xdata 'comm' # \
+               # --title 'METG vs Communication (Cori, Compute, 4x Spread)'
+
+    "$root_dir"/render_metg.py metg_ngraphs_4_spread_nodes_64.csv \
+               --xlabel 'Message Size (B)' \
+               --xdata 'comm' # \
+               # --title 'METG vs Communication (Cori, Compute, 4x Spread)'
+
+    crop metg_ngraphs_4_spread_nodes_16.pdf
+    crop metg_ngraphs_4_spread_nodes_64.pdf
+
 elif [[ $(basename $PWD) = imbalance ]]; then
     "$root_dir"/imbalance.py -m cori -g 4 -d nearest -n 1 --csv excel > metg_ngraphs_4_nearest.csv
 
