@@ -2,9 +2,13 @@
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-function crop {
-    pdfcrop "$1" && mv "$(basename "$1" .pdf)"-crop.pdf "$1"
-}
+if [[ $1 = crop ]]; then
+    function crop {
+        pdfcrop "$1" && mv "$(basename "$1" .pdf)"-crop.pdf "$1"
+    }
+else
+    function crop { true; }
+fi
 
 if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/metg.py -m cori -g 1 -d no_comm --csv excel > metg_no_comm.csv
