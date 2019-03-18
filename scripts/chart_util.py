@@ -24,7 +24,7 @@ import chart_metg
 
 def get_machine_parameters(machine):
     if machine == 'cori':
-        return {'cores': 32, 'peak_flops': 1.255013e+12, 'peak_bytes': None}
+        return {'cores': 32, 'peak_flops': 1.263719e+12, 'peak_bytes': None}
     else:
         assert False
 
@@ -36,12 +36,17 @@ def parse_filename(filename):
         imbalance_idx = fields.index('imbalance')
     except ValueError:
         imbalance_idx = None
+    try:
+        comm_idx = fields.index('comm')
+    except ValueError:
+        comm_idx = None
     node_idx = fields.index('nodes')
     return {
         'name': ' '.join(fields[:graph_idx]),
         'ngraphs': int(' '.join(fields[graph_idx+1:type_idx])),
-        'type': ' '.join(fields[type_idx+1:imbalance_idx or node_idx]),
-        'imbalance': imbalance_idx and ' '.join(fields[imbalance_idx+1:node_idx]),
+        'type': ' '.join(fields[type_idx+1:imbalance_idx or comm_idx or node_idx]),
+        'imbalance': imbalance_idx and ' '.join(fields[imbalance_idx+1:comm_idx or node_idx]),
+        'comm': comm_idx and ' '.join(fields[comm_idx+1:node_idx]),
         'nodes': int(fields[node_idx+1]),
     }
 
@@ -62,7 +67,7 @@ class Parser:
         params = get_machine_parameters(machine)
 
         has_exception = False
-        log_filenames = glob.glob('**/*.log', recursive=True)
+        log_filenames = glob.glob('**/*.log', recursive=False)
         for filename in log_filenames:
             row = parse_filename(filename)
             if not self.filter(row):
@@ -75,9 +80,9 @@ class Parser:
                     traceback.print_exc(file=sys.stderr)
                 else:
                     print('%s: %s: %s' % (filename, type(e).__name__, e), file=sys.stderr)
-                data = self.error_value()
+                data = (self.error_value(),)
                 has_exception = True
-            self.process(row, data)
+            self.process(row, *data)
 
         self.complete()
 

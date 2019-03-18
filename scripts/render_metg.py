@@ -22,15 +22,25 @@ import matplotlib.pyplot as plt
 from matplotlib.mlab import csv2rec
 import numpy as np
 import argparse
+import ast
 import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('filename')
-parser.add_argument('--title', required=True)
+parser.add_argument('--title')
+parser.add_argument('--legend', default='../legend.csv')
 parser.add_argument('--xlabel', default='Nodes')
-parser.add_argument('--xcol', default='nodes')
+parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
+parser.add_argument('--xdata', default='nodes')
+parser.add_argument('--xscale', type=float, default=1)
+parser.add_argument('--yscale', type=float, default=1)
+parser.add_argument('--xlim', type=ast.literal_eval, default='None')
+parser.add_argument('--ylim', type=ast.literal_eval, default='None')
+parser.add_argument('--x-percent', action='store_true')
 parser.add_argument('--no-xlog', action='store_false', dest='xlog')
+parser.add_argument('--no-ylog', action='store_false', dest='ylog')
 parser.add_argument('--no-xticks', action='store_false', dest='xticks')
+parser.add_argument('--highlight-column')
 args = parser.parse_args()
 
 markers = [
@@ -116,34 +126,71 @@ ax.spines['right'].set_linewidth(1.0)
 ax.tick_params(axis='x', width=0.5)
 ax.tick_params(axis='y', width=0.5)
 
-data = csv2rec(args.filename)
-nodes = getattr(data, args.xcol)
-columns = sorted(set(data.dtype.names) - set([args.xcol]))
-if args.xlog:
+if args.x_percent:
+    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
+
+if args.xlog and args.ylog:
     plt.loglog(basex=2)
-else:
+elif args.xlog:
+    plt.semilogx(basex=2)
+elif args.ylog:
     plt.semilogy()
-for i, column in enumerate(columns):
-    plt.plot(nodes, getattr(data, column), '-', color=colors[i], marker=markers[i], markerfacecolor='none', linewidth=1, label=column.replace('_', ' '))
+
+data = csv2rec(args.filename)
+nodes = getattr(data, args.xdata) * args.xscale
+columns = list(data.dtype.names)
+columns.remove(args.xdata)
+
+if args.legend:
+    legend_raw = csv2rec(args.legend)
+    legend_label = dict(zip(legend_raw.name, legend_raw.label))
+    legend_idx = dict(zip(legend_raw.name, range(legend_raw.label.size)))
+    next_idx = legend_raw.label.size
+else:
+    next_idx = 0
+
+for column in columns:
+    if args.legend and column in legend_label:
+        label = legend_label[column]
+        idx = legend_idx[column]
+    else:
+        label = column.replace('_', ' ')
+        idx = next_idx
+        next_idx += 1
+    if args.highlight_column == column:
+        color = 'red'
+        marker = None
+        linetype = '--'
+        linewidth = 3
+    else:
+        color = colors[idx]
+        marker = markers[idx]
+        linetype = '-'
+        linewidth = 1
+    plt.plot(nodes, getattr(data, column) * args.yscale, linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
 if args.xticks:
-    plt.xticks(nodes, nodes, rotation=30)
-# plt.xlim(0.8, 40)
-# plt.ylim(0, 1600)
+    plt.xticks(nodes, nodes) #, rotation=30)
+if args.xlim:
+    plt.xlim(*args.xlim)
+if args.ylim:
+    plt.ylim(*args.ylim)
 
 plt.xlabel(args.xlabel, fontsize=12)
-plt.ylabel('Minimum Effective Task Granularity (ms)', fontsize=12)
-plt.title(args.title, fontsize=14)
+plt.ylabel(args.ylabel, fontsize=12)
+if args.title:
+    plt.title(args.title, fontsize=14)
 
 # Shrink current axis by 20%
 box = ax.get_position()
 ax.set_position([box.x0, box.y0, box.width * 0.80, box.height])
 
-legend = plt.legend(
-    # Put a legend to the right of the current axis
-    loc='center left', bbox_to_anchor=(1, 0.5),
-    ncol=1, fontsize=12,
-    # Square corners, disable transparency, set color to black
-    fancybox=False, framealpha=1, edgecolor='black')
+if args.legend:
+    plt.legend(
+        # Put a legend to the right of the current axis
+        loc='center left', bbox_to_anchor=(1, 0.5),
+        ncol=1, fontsize=12,
+        # Square corners, disable transparency, set color to black
+        fancybox=False, framealpha=1, edgecolor='black')
 
 plt.grid(True, color='black', linestyle='--', linewidth=0.5, dashes=(1, 5))
 output_filename = '%s.pdf' % os.path.splitext(args.filename)[0]

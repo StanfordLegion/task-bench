@@ -16,6 +16,7 @@
 #
 
 import argparse
+import collections
 import csv
 import os
 import sys
@@ -23,55 +24,51 @@ import sys
 import chart_util as util
 
 class Parser(util.Parser):
-    def __init__(self, ngraphs, dependence, nodes, system, csv_dialect):
+    def __init__(self, ngraphs, dependence, nodes, csv_dialect):
         self.ngraphs = ngraphs
         self.dependence = dependence.replace('_', ' ')
         self.nodes = nodes
-        self.system = system
         self.csv_dialect = csv_dialect
 
         self.header = []
-        self.table = []
+        self.table = collections.defaultdict(lambda: collections.defaultdict(lambda: float('inf')))
 
     def filter(self, row):
-        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes and (not self.system or row['name'] == self.system)
+        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes
 
-    def process(self, row, data, metg=None):
+    def process(self, row, data):
         if row['name'] not in self.header:
             self.header.append(row['name'])
 
-        for values in zip(*list(data.values())):
-            items = dict(zip(data.keys(), values))
-            self.table.append({
-                'efficiency': items['efficiency'],
-                row['name']: items['time_per_task']
-            })
+        self.table[row['comm']][row['name']] = min(data, self.table[row['comm']][row['name']])
 
     def error_value(self):
-        return {}
+        return float('inf')
 
     def complete(self):
         # FIXME: This isn't actually the criteria we'd like to sort on,
         # we'd prefer to sort so that the list of names roughly parallels
         # the order of the bars in the graph.
         self.header.sort()
-        self.header.insert(0, 'efficiency')
+        self.header.insert(0, 'comm')
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()
-        for row in self.table:
+        for comm in sorted(self.table.keys()):
+            row = self.table[comm]
+            row = {k: None if v == float('inf') else v for k, v in row.items()}
+            row['comm'] = comm
             out.writerow(row)
 
-def driver(ngraphs, dependence, nodes, system, machine, threshold, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, nodes, system, csv_dialect)
-    parser.parse(machine, threshold, False, verbose)
+def driver(ngraphs, dependence, nodes, machine, threshold, csv_dialect, verbose):
+    parser = Parser(ngraphs, dependence, nodes, csv_dialect)
+    parser.parse(machine, threshold, True, verbose)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--ngraphs', type=int, required=True)
     parser.add_argument('-d', '--dependence', required=True)
     parser.add_argument('-n', '--nodes', type=int, required=True)
-    parser.add_argument('-s', '--system')
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--csv-dialect', default='excel-tab')

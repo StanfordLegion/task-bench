@@ -16,6 +16,7 @@
 #
 
 import argparse
+import collections
 import csv
 import os
 import sys
@@ -31,7 +32,7 @@ class Parser(util.Parser):
         self.csv_dialect = csv_dialect
 
         self.header = []
-        self.table = []
+        self.table = collections.defaultdict(lambda: collections.defaultdict(lambda: float('inf')))
 
     def filter(self, row):
         return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes and (not self.system or row['name'] == self.system)
@@ -42,10 +43,11 @@ class Parser(util.Parser):
 
         for values in zip(*list(data.values())):
             items = dict(zip(data.keys(), values))
-            self.table.append({
-                'efficiency': items['efficiency'],
-                row['name']: items['time_per_task']
-            })
+
+            self.table[items['iterations']][row['name']] = min(
+                items['flops_per_second'],
+                self.table[items['iterations']][row['name']],
+                key=float)
 
     def error_value(self):
         return {}
@@ -55,11 +57,14 @@ class Parser(util.Parser):
         # we'd prefer to sort so that the list of names roughly parallels
         # the order of the bars in the graph.
         self.header.sort()
-        self.header.insert(0, 'efficiency')
+        self.header.insert(0, 'iterations')
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()
-        for row in self.table:
+        for iterations in sorted(self.table.keys()):
+            row = self.table[iterations]
+            row = {k: None if v == float('inf') else v for k, v in row.items()}
+            row['iterations'] = iterations
             out.writerow(row)
 
 def driver(ngraphs, dependence, nodes, system, machine, threshold, csv_dialect, verbose):

@@ -34,17 +34,17 @@ class Parser(util.Parser):
         self.table = []
 
     def filter(self, row):
-        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes and (not self.system or row['name'] == self.system)
+        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes and row['name'] == self.system
 
     def process(self, row, data, metg=None):
-        if row['name'] not in self.header:
-            self.header.append(row['name'])
+        if row['imbalance'] not in self.header:
+            self.header.append(row['imbalance'])
 
         for values in zip(*list(data.values())):
             items = dict(zip(data.keys(), values))
             self.table.append({
                 'efficiency': items['efficiency'],
-                row['name']: items['time_per_task']
+                row['imbalance']: items['time_per_task']
             })
 
     def error_value(self):
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--ngraphs', type=int, required=True)
     parser.add_argument('-d', '--dependence', required=True)
     parser.add_argument('-n', '--nodes', type=int, required=True)
-    parser.add_argument('-s', '--system')
+    parser.add_argument('-s', '--system', required=True)
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--csv-dialect', default='excel-tab')
