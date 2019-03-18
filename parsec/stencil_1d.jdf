@@ -17,7 +17,7 @@ time_steps  [ type = "int" ]
 graph_idx   [ type = "int" ]
 extra_local_memory   [ type = "char**" ]
 
-task(x, t)
+task(t, x)
 
 t = 0 .. time_steps-1
 x = 0 .. descA->lnt-1
