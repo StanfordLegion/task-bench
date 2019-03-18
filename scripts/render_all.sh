@@ -58,6 +58,10 @@ elif [[ $(basename $PWD) = communication ]]; then
     "$root_dir"/comm.py -m cori -g 4 -d spread -n 16 --csv excel > metg_ngraphs_4_spread_nodes_16.csv
     "$root_dir"/comm.py -m cori -g 4 -d spread -n 64 --csv excel > metg_ngraphs_4_spread_nodes_64.csv
 
+    "$root_dir"/comm_efficiency.py -m cori -g 4 -d spread -n 16 -s 'mpi nonblock' --csv excel > efficiency_mpi.csv
+
+    "$root_dir"/comm_efficiency.py -m cori -g 4 -d spread -n 16 -s 'charm' --csv excel > efficiency_charm.csv
+
     "$root_dir"/render_metg.py metg_ngraphs_4_spread_nodes_16.csv \
                --xlabel 'Message Size (B)' \
                --xdata 'comm' # \
@@ -68,8 +72,28 @@ elif [[ $(basename $PWD) = communication ]]; then
                --xdata 'comm' # \
                # --title 'METG vs Communication (Cori, Compute, 4x Spread)'
 
+    "$root_dir"/render_metg.py efficiency_mpi.csv \
+               --xlabel 'Efficiency' \
+               --xdata 'efficiency' \
+               --no-xlog \
+               --no-xticks \
+               --x-percent \
+               --ylabel 'Task Granularity (ms)' # \
+               # --title 'MPI Task Granularity vs Efficiency (Cori, Compute, Stencil)'
+
+    "$root_dir"/render_metg.py efficiency_charm.csv \
+               --xlabel 'Efficiency' \
+               --xdata 'efficiency' \
+               --no-xlog \
+               --no-xticks \
+               --x-percent \
+               --ylabel 'Task Granularity (ms)' # \
+               # --title 'Charm++ Task Granularity vs Efficiency (Cori, Compute, Stencil)'
+
     crop metg_ngraphs_4_spread_nodes_16.pdf
     crop metg_ngraphs_4_spread_nodes_64.pdf
+    crop efficiency_mpi.pdf
+    crop efficiency_charm.pdf
 
 elif [[ $(basename $PWD) = imbalance ]]; then
     "$root_dir"/imbalance.py -m cori -g 4 -d nearest -n 1 --csv excel > metg_ngraphs_4_nearest.csv
