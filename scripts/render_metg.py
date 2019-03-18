@@ -173,12 +173,13 @@ if args.title:
 box = ax.get_position()
 ax.set_position([box.x0, box.y0, box.width * 0.80, box.height])
 
-legend = plt.legend(
-    # Put a legend to the right of the current axis
-    loc='center left', bbox_to_anchor=(1, 0.5),
-    ncol=1, fontsize=12,
-    # Square corners, disable transparency, set color to black
-    fancybox=False, framealpha=1, edgecolor='black')
+if args.legend:
+    plt.legend(
+        # Put a legend to the right of the current axis
+        loc='center left', bbox_to_anchor=(1, 0.5),
+        ncol=1, fontsize=12,
+        # Square corners, disable transparency, set color to black
+        fancybox=False, framealpha=1, edgecolor='black')
 
 plt.grid(True, color='black', linestyle='--', linewidth=0.5, dashes=(1, 5))
 output_filename = '%s.pdf' % os.path.splitext(args.filename)[0]
