@@ -22,6 +22,8 @@
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <parsec/arena.h>
 
+#define USE_CORE_VERIFICATION
+
 #ifdef __cplusplus
 extern "C"
 {

@@ -274,7 +274,7 @@ void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
 
 int main(int argc, char ** argv)
 {
-  printf("pid %d\n", getpid());
+  //printf("pid %d\n", getpid());
   //sleep(10);
   ParsecApp app(argc, argv);
   app.execute_main_loop();
