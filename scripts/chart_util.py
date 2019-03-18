@@ -24,7 +24,7 @@ import chart_metg
 
 def get_machine_parameters(machine):
     if machine == 'cori':
-        return {'cores': 32, 'peak_flops': 1.255013e+12, 'peak_bytes': None}
+        return {'cores': 32, 'peak_flops': 1.263719e+12, 'peak_bytes': None}
     else:
         assert False
 
