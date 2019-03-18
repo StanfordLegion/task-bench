@@ -8,6 +8,19 @@ extern "C" %{
 #include "benchmark_internal.h"
 #include "core_c.h"
 
+static inline int get_num_args(void *L, void *B, void *R){
+    int num_args = 1;
+
+    if( NULL != L )
+        num_args++;
+    if( NULL != B )
+        num_args++;
+    if( NULL != R )
+        num_args++;
+
+    return num_args;
+}
+
 %}
 
 descA       [ type = "parsec_tiled_matrix_dc_t*" ]
@@ -36,8 +49,13 @@ RW A <- descA(m, x)
 
 BODY
 {
-    int num_args = 4; 
-    CORE_kernel(es, graph, A, L, B, R, NULL, NULL, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
+    int num_args; 
+    num_args = get_num_args(L, B, R); 
+    //printf("t: %d, x: %d, num_args: %d\n", t, x, num_args);
+    if( 0 != x )
+        CORE_kernel(es, graph, A, L, B, R, NULL, NULL, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
+    else
+        CORE_kernel(es, graph, A, B, R, L, NULL, NULL, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
 }
 END
 
