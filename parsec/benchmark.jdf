@@ -1,0 +1,128 @@
+extern "C" %{
+/*
+ * Copyright (c) 2017-2019 The Universiy of Tennessee and The Universiy
+ *                         of Tennessee Research Foundation. All rights
+ *                         reserved.
+ */
+#include <parsec/data_dist/matrix/matrix.h>
+#include "benchmark_internal.h"
+
+%}
+
+descA       [ type = "parsec_tiled_matrix_dc_t*" ]
+graph       [ type = "task_graph_t" ]
+nb_fields   [ type = "int" ]
+time_steps  [ type = "int" ]
+graph_idx   [ type = "int" ]
+extra_local_memory   [ type = "char**" ]
+
+update(x, t, k)
+
+offset = %{ return task_graph_dependence_set_at_timestep(graph, t); %}
+width = %{ return task_graph_width_at_timestep(graph, t); %}
+
+x = offset .. offset+width-1
+t = 0 .. time_steps-1
+
+in_first = %{ return get_in_first(graph, x, t); %}
+in_last = %{ return get_in_last(graph, x, t); %}
+nb_args = in_last - in_first + 1
+
+k =  in_first .. in_last
+
+: descA(x,  t)
+
+RW I <- (t > 0)? benchmark(k, t-1): NULL 
+     -> (nb_args >= 1 && k == in_first)? A1 benchmark(x, t)
+     -> (nb_args >= 2 && k == in_first + 1)? A2 benchmark(x, t)
+     -> (nb_args >= 3 && k == in_first + 2)? A3 benchmark(x, t)
+     -> (nb_args >= 4 && k == in_first + 3)? A4 benchmark(x, t)
+     -> (nb_args >= 5 && k == in_first + 4)? A5 benchmark(x, t)
+
+BODY
+{
+}
+END
+
+benchmark(x, t)
+
+offset = %{ return task_graph_dependence_set_at_timestep(graph, t); %}
+width = %{ return task_graph_width_at_timestep(graph, t); %}
+
+m = offset .. offset+width-1 
+t = 0 .. time_steps-1 
+
+//TODO if no input or output, nb_args = 0
+
+in_first = %{ return get_in_first(graph, x, t); %}
+in_last = %{ return get_in_last(graph, x, t); %}
+nb_args = in_last - in_first + 1
+
+out_first = %{ return get_out_first(graph, x, t); %}
+out_last = %{ return get_out_last(graph, x, t); %}
+nb_args_out = out_last - out_fisrt + 1
+
+: descA(x, t)
+
+READ A1 <- (nb_args >= 1)? I update(x, t, in_first): NULL 
+READ A2 <- (nb_args >= 2)? I update(x, t, in_first+1): NULL 
+READ A3 <- (nb_args >= 3)? I update(x, t, in_first+2): NULL 
+READ A4 <- (nb_args >= 4)? I update(x, t, in_first+3): NULL 
+READ A5 <- (nb_args >= 5)? I update(x, t, in_first+4): NULL 
+
+RW A <- descA(x%nb_fields, t)
+     -> (t < time_steps-1 && nb_args_out > 0)? I update(out_first .. out_second, t+1, m) 
+     -> descA(x%nb_fields, t)
+
+BODY
+{
+    CORE_kernel(es, graph, A, A1, A2, A3, A4, A5, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
+}
+END
+
+extern "C" %{
+
+parsec_taskpool_t*
+parsec_benchmark_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                     int time_steps, int graph_idx, char **extra_local_memory)
+{
+    parsec_taskpool_t* benchmark_taskpool;
+    parsec_benchmark_taskpool_t* taskpool = NULL;
+
+    taskpool = parsec_benchmark_new(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory);
+    benchmark_taskpool = (parsec_taskpool_t*)taskpool;
+
+    parsec_matrix_add2arena(taskpool->arenas[PARSEC_benchmark_DEFAULT_ARENA],
+                            parsec_datatype_float_t, matrix_UpperLower,
+                            1, dcA->mb, 1, dcA->mb,
+                            PARSEC_ARENA_ALIGNMENT_SSE, -1 );
+
+    return benchmark_taskpool;
+}
+
+void parsec_benchmark_Destruct(parsec_taskpool_t *taskpool)
+{
+    parsec_benchmark_taskpool_t *benchmark_taskpool = (parsec_benchmark_taskpool_t *)taskpool;
+    parsec_matrix_del2arena(benchmark_taskpool->arenas[PARSEC_benchmark_DEFAULT_ARENA]);
+    parsec_taskpool_free(taskpool);
+}
+
+int parsec_benchmark(parsec_context_t *parsec,
+                      parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                      int time_steps, int graph_idx, char **extra_local_memory)
+{
+    parsec_taskpool_t *parsec_benchmark = NULL;
+
+    parsec_benchmark = parsec_benchmark_New(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory); 
+
+    if( parsec_benchmark != NULL ){
+        parsec_enqueue(parsec, parsec_benchmark);
+        parsec_context_start(parsec);
+        parsec_context_wait(parsec);
+        parsec_benchmark_Destruct(parsec_benchmark);
+    }
+
+    return 0;
+}
+
+%}
