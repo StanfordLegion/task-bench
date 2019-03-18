@@ -22,6 +22,9 @@
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <parsec/arena.h>
 
+#ifdef __cplusplus
+extern "C"
+{
 int CORE_kernel(parsec_execution_stream_t *es, task_graph_t graph, float *out, float *in1, float *in2, float *in3,
                 float *in4, float *in5, int num_args, int x, int t, int graph_idx, int my_rank, char **extra_local_memory)
 {
@@ -182,3 +185,6 @@ int CORE_kernel(parsec_execution_stream_t *es, task_graph_t graph, float *out, f
 
   return PARSEC_HOOK_RETURN_DONE;
 }
+
+}
+#endif

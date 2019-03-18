@@ -1,9 +1,11 @@
-#ifndef PARSEC_DIR
-#$(error PARSEC_DIR variable is not defined, aborting build)
-#endif
+ifndef PARSEC_DIR
+$(error PARSEC_DIR variable is not defined, aborting build)
+endif
 
-PARSEC_DIR = /home/qcao3/task-bench/software/parsec/build/install
-PARSEC_SRC = /home/qcao3/task-bench/software/parsec
+PARSEC_SRC = $PARSEC_DIR/../../
+
+#PARSEC_DIR = /home/qcao3/task-bench/software/parsec/build/install
+#PARSEC_SRC = /home/qcao3/task-bench/software/parsec
 
 #PARSEC_DIR = /home/qcao3/task-bench/software/parsec-dtd-interface/build/install
 #PARSEC_SRC = /home/qcao3/task-bench/software/parsec-dtd-interface
@@ -11,7 +13,7 @@ PARSEC_SRC = /home/qcao3/task-bench/software/parsec
 DEBUG ?= 0
 
 CC         = mpic++
-C          = mpicc
+cc         = mpicc
 PP = ${PARSEC_DIR}/bin/parsec_ptgpp
 
 CFLAGS     = -std=c++11 -D_GNU_SOURCE
@@ -57,7 +59,7 @@ stencil_1d.c stencil_1d.h: stencil_1d.jdf
 	$(PP) -E -i $< -o $(basename $<)
 
 stencil_1d.o: stencil_1d.c stencil_1d.h benchmark_internal.h
-	$(C) -c $(CFLAGS_JDF) $(INC) $<
+	$(cc) -c $(CFLAGS_JDF) $(INC) $<
 
 benchmark_internal.o: benchmark_internal.cc
 	$(CC) -c $(CFLAGS) $<

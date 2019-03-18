@@ -21,9 +21,14 @@
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <parsec/arena.h>
 
-int CORE_kernel(parsec_execution_stream_t *es, task_graph_t graph, float *out, float *in1, float *in2, float *in3,
+#ifdef __cplusplus
+extern "C"
+{
+extern int CORE_kernel(parsec_execution_stream_t *es, task_graph_t graph, float *out, float *in1, float *in2, float *in3,
                 float *in4, float *in5, int num_args, int x, int t, int graph_idx, int my_rank, char **extra_local_memory);
+}
+#endif
 
-int parsec_stencil_1d(parsec_context_t *parsec,
+extern int parsec_stencil_1d(parsec_context_t *parsec,
                       parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
                       int time_steps, int graph_idx, char **extra_local_memory);

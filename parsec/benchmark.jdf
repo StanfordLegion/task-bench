@@ -76,7 +76,7 @@ RW A <- descA(x%nb_fields, t)
 
 BODY
 {
-    CORE_kernel(es, graph, A, A1, A2, A3, A4, A5, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
+    CORE_kernel_c(es, graph, A, A1, A2, A3, A4, A5, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
 }
 END
 
