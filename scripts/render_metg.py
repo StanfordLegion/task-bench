@@ -137,7 +137,8 @@ elif args.ylog:
 
 data = csv2rec(args.filename)
 nodes = getattr(data, args.xdata) * args.xscale
-columns = sorted(set(data.dtype.names) - set([args.xdata]))
+columns = list(data.dtype.names)
+columns.remove(args.xdata)
 
 if args.legend:
     legend_raw = csv2rec(args.legend)

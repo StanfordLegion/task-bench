@@ -21,6 +21,8 @@ if [[ $(basename $PWD) = compute ]]; then
 
     "$root_dir"/flops.py -m cori -g 1 -d stencil_1d -n 1 --csv excel > flops_stencil.csv
 
+    "$root_dir"/weak.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' --csv excel > weak_mpi.csv
+
     "$root_dir"/render_metg.py metg_no_comm.csv # --title 'METG vs Nodes (Cori, Compute, No Comm)'
     "$root_dir"/render_metg.py metg_stencil.csv # --title 'METG vs Nodes (Cori, Compute, Stencil)'
     "$root_dir"/render_metg.py metg_nearest.csv # --title 'METG vs Nodes (Cori, Compute, Nearest)'
@@ -45,6 +47,14 @@ if [[ $(basename $PWD) = compute ]]; then
                --no-ylog # \
                # --title 'FLOPS vs Problem Size (Cori, Compute, Stencil)'
 
+    "$root_dir"/render_metg.py weak_mpi.csv \
+               --legend '' \
+               --xlabel 'Nodes' \
+               --xdata 'nodes' \
+               --no-xticks \
+               --ylabel 'Wall Time (s)' # \
+               # --title 'Weak Scaling by Problem Size (Cori, Compute, Stencil)'
+
     crop metg_no_comm.pdf
     crop metg_stencil.pdf
     crop metg_nearest.pdf
@@ -52,6 +62,7 @@ if [[ $(basename $PWD) = compute ]]; then
     crop metg_ngraphs_4_nearest.pdf
     crop efficiency_stencil.pdf
     crop flops_stencil.pdf
+    crop weak_mpi.pdf
 
 elif [[ $(basename $PWD) = communication ]]; then
 
