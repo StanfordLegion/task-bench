@@ -113,9 +113,6 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
         else:
             result[k] = table[k]
 
-    if not summary:
-        return result
-
     out_filename = os.path.splitext(filename)[0] + '.csv'
     with open(out_filename, 'w') as f:
         out = csv.writer(f)
@@ -123,29 +120,30 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
         out.writerows(zip(*list(result.values())))
 
     # Compute minimum efficient task granularity:
-    min_time = None
-    if summary:
-        assert any(table['efficiency'] >= threshold), "no data above threshold, was run properly configured?"
-        assert any(table['efficiency'] < threshold), "no data below threshold, maybe run was truncated?"
+    assert any(table['efficiency'] >= threshold), "no data above threshold, was run properly configured?"
+    assert any(table['efficiency'] < threshold), "no data below threshold, maybe run was truncated?"
 
-        # Find smallest task granularity above efficiency threshold:
-        min_i, min_efficiency = min(
-            filter(lambda x: x[1] >= threshold,
-                   enumerate(table['efficiency'])),
-            key=lambda x: table['time_per_task'][x[0]])
+    # Find smallest task granularity above efficiency threshold:
+    min_i, min_efficiency = min(
+        filter(lambda x: x[1] >= threshold,
+               enumerate(table['efficiency'])),
+        key=lambda x: table['time_per_task'][x[0]])
 
-        assert min_i + 1 < len(table['reps']), "no data following the point above the threshold"
-        assert table['reps'][min_i + 1] >= table['reps'][min_i], "final data point has fewer reps, maybe run was truncated?"
+    assert min_i + 1 < len(table['reps']), "no data following the point above the threshold"
+    assert table['reps'][min_i + 1] >= table['reps'][min_i], "final data point has fewer reps, maybe run was truncated?"
 
-        # Perform linear interpolation if subsequent data point is an improvment:
-        min_time = table['time_per_task'][min_i]
-        if len(table['time_per_task']) > min_i + 1 and table['time_per_task'][min_i + 1] < min_time:
-            min_time = numpy.interp(
-                threshold,
-                numpy.flip(table['efficiency'][min_i:min_i+2], 0),
-                numpy.flip(table['time_per_task'][min_i:min_i+2], 0))
+    # Perform linear interpolation if subsequent data point is an improvment:
+    min_time = table['time_per_task'][min_i]
+    if len(table['time_per_task']) > min_i + 1 and table['time_per_task'][min_i + 1] < min_time:
+        min_time = numpy.interp(
+            threshold,
+            numpy.flip(table['efficiency'][min_i:min_i+2], 0),
+            numpy.flip(table['time_per_task'][min_i:min_i+2], 0))
 
-    return min_time
+    if not summary:
+        return (result, min_time)
+
+    return (min_time,)
 
 def driver(inputs, summary, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes):
     if peak_flops is not None and peak_bytes is not None:

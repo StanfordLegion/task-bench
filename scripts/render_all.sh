@@ -52,14 +52,16 @@ if [[ $(basename $PWD) = compute ]]; then
                --legend '' \
                --xlabel 'Nodes' \
                --xdata 'nodes' \
-               --ylabel 'Wall Time (s)' # \
+               --ylabel 'Wall Time (s)' \
+               --highlight-column 'metg' # \
                # --title 'Weak Scaling by Problem Size (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py strong_mpi.csv \
                --legend '' \
                --xlabel 'Nodes' \
                --xdata 'nodes' \
-               --ylabel 'Wall Time (s)' # \
+               --ylabel 'Wall Time (s)' \
+               --highlight-column 'metg' # \
                # --title 'Strong Scaling by Problem Size (Cori, Compute, Stencil)'
 
     crop metg_no_comm.pdf

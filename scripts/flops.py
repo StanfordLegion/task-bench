@@ -36,7 +36,7 @@ class Parser(util.Parser):
     def filter(self, row):
         return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes
 
-    def process(self, row, data):
+    def process(self, row, data, metg=None):
         if row['name'] not in self.header:
             self.header.append(row['name'])
 

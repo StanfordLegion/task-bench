@@ -80,9 +80,9 @@ class Parser:
                     traceback.print_exc(file=sys.stderr)
                 else:
                     print('%s: %s: %s' % (filename, type(e).__name__, e), file=sys.stderr)
-                data = self.error_value()
+                data = (self.error_value(),)
                 has_exception = True
-            self.process(row, data)
+            self.process(row, *data)
 
         self.complete()
 

@@ -40,6 +40,7 @@ parser.add_argument('--x-percent', action='store_true')
 parser.add_argument('--no-xlog', action='store_false', dest='xlog')
 parser.add_argument('--no-ylog', action='store_false', dest='ylog')
 parser.add_argument('--no-xticks', action='store_false', dest='xticks')
+parser.add_argument('--highlight-column')
 args = parser.parse_args()
 
 markers = [
@@ -156,7 +157,17 @@ for column in columns:
         label = column.replace('_', ' ')
         idx = next_idx
         next_idx += 1
-    plt.plot(nodes, getattr(data, column) * args.yscale, '-', color=colors[idx], marker=markers[idx], markerfacecolor='none', linewidth=1, label=label)
+    if args.highlight_column == column:
+        color = 'red'
+        marker = None
+        linetype = '--'
+        linewidth = 3
+    else:
+        color = colors[idx]
+        marker = markers[idx]
+        linetype = '-'
+        linewidth = 1
+    plt.plot(nodes, getattr(data, column) * args.yscale, linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
 if args.xticks:
     plt.xticks(nodes, nodes) #, rotation=30)
 if args.xlim:

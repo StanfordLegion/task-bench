@@ -32,11 +32,14 @@ class Parser(util.Parser):
 
         self.header = []
         self.table = collections.defaultdict(lambda: collections.defaultdict(lambda: float('inf')))
+        self.metg = collections.defaultdict(lambda: float('inf'))
 
     def filter(self, row):
         return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['name'] == self.system
 
-    def process(self, row, data):
+    def process(self, row, data, metg):
+        self.metg[row['nodes']] = min(metg, self.metg[row['nodes']], key=float)
+
         for values in zip(*list(data.values())):
             items = dict(zip(data.keys(), values))
 
@@ -58,6 +61,7 @@ class Parser(util.Parser):
         self.header.sort()
         self.header.reverse()
         self.header.insert(0, 'nodes')
+        self.header.append('metg')
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()
@@ -65,6 +69,7 @@ class Parser(util.Parser):
             row = self.table[nodes]
             row = {k: None if v == float('inf') else v for k, v in row.items()}
             row['nodes'] = nodes
+            row['metg'] = self.metg[nodes]
             out.writerow(row)
 
 def driver(ngraphs, dependence, system, machine, threshold, csv_dialect, verbose):
