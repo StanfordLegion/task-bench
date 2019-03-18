@@ -16,38 +16,98 @@
 #
 
 import argparse
+import cffi
+import os
 import random
+import subprocess
+import sys
+
+root_dir = os.path.dirname(os.path.realpath(__file__))
+core_header = subprocess.check_output(
+    ["gcc", "-D", "__attribute__(x)=", "-E", "-P", os.path.join(root_dir, "../core/core_c.h")]
+).decode("utf-8")
+ffi = cffi.FFI()
+ffi.cdef(core_header)
+c = ffi.dlopen("libcore.so")
+
+def app_create(args):
+    c_args = []
+    c_argv = ffi.new("char *[]", len(args) + 1)
+    for i, arg in enumerate(args):
+        c_args.append(ffi.new("char []", arg.encode('utf-8')))
+        c_argv[i] = c_args[-1]
+    c_argv[len(args)] = ffi.NULL
+
+    app = c.app_create(len(args), c_argv)
+    c.app_display(app)
+    return app
+
+def app_task_graphs(app):
+    result = []
+    graphs = c.app_task_graphs(app)
+    for i in range(c.task_graph_list_num_task_graphs(graphs)):
+        result.append(c.task_graph_list_task_graph(graphs, i))
+
+    return result
+
+def task_graph_dependencies(graph, timestep, point):
+    last_offset = c.task_graph_offset_at_timestep(graph, timestep - 1)
+    last_width = c.task_graph_width_at_timestep(graph, timestep - 1)
+
+    dset = c.task_graph_dependence_set_at_timestep(graph, timestep)
+    ilist = c.task_graph_dependencies(graph, dset, point)
+    for i in range(0, c.interval_list_num_intervals(ilist)):
+        interval = c.interval_list_interval(ilist, i)
+        for dep in range(interval.start, interval.end + 1):
+            if last_offset <= dep < last_offset + last_width:
+                yield dep
 
 def task_duration(timestep, point, imbalance):
-    # In theory this is supposed to be a deterministic function of
-    # timestep and point... for now just emulate with random.
+    # FIXME: Query the actual API to figure out how long the tasks are
+    # supposed to be running.
 
     value = random.uniform(0.0, 1.0)
 
     return 1 + (value - 0.5)*imbalance
 
-def simulate(timesteps, width, radix, imbalance):
-    durations = [
-        [task_duration(timestep, point, imbalance)
-         for point in range(width)]
-        for timestep in range(timesteps)]
+def simulate_task_graph(graph):
+    last_completion = [0 for point in range(graph.max_width)]
 
-    dependencies = [
-        list(range(max(point - (radix - 1)//2, 0), min(point + radix//2, width - 1) + 1))
-        for point in range(width)]
+    cumulative_time = 0
 
-    last_completion = [0 for point in range(width)]
-
-    for timestep in range(timesteps):
-        completion = [
-            max(last_completion[dep] for dep in dependencies[point]) + durations[timestep][point]
-            for point in range(width)]
+    for timestep in range(0, graph.timesteps):
+        offset = c.task_graph_offset_at_timestep(graph, timestep)
+        width = c.task_graph_width_at_timestep(graph, timestep)
+        completion = []
+        for point in range(0, offset):
+            completion.append(None)
+        for point in range(offset, offset + width):
+            deps = task_graph_dependencies(graph, timestep, point)
+            duration = task_duration(timestep, point, graph.kernel.imbalance)
+            completion.append(
+                max((last_completion[dep] for dep in deps),
+                    default=last_completion[point]) +
+                duration)
+            cumulative_time += duration
+        for point in range(offset + width, graph.max_width):
+            completion.append(None)
         last_completion = completion
-
     final_time = max(last_completion)
-    print('Final time %f' % final_time)
 
-    busy_time = sum(map(sum, durations))/width
+    return final_time, cumulative_time / graph.max_width
+
+def simulate_task_bench():
+    app = app_create(sys.argv)
+    task_graphs = app_task_graphs(app)
+
+    final_time, busy_time = 0, 0
+
+    for graph in task_graphs:
+        final, busy = simulate_task_graph(graph)
+        final_time += final
+        busy_time += busy
+
+    print('Final time %f' % final_time)
     print('Average busy time per core %f' % busy_time)
 
     idle_time = final_time - busy_time
@@ -60,11 +120,4 @@ def simulate(timesteps, width, radix, imbalance):
     print('Average idle ratio per core %f' % idle_ratio)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--timesteps', type=int, default=100)
-    parser.add_argument('--width', type=int, default=30)
-    parser.add_argument('--radix', type=int, default=5)
-    parser.add_argument('--imbalance', type=float, default=0.0)
-    args = parser.parse_args()
-
-    simulate(**vars(args))
+    simulate_task_bench()
