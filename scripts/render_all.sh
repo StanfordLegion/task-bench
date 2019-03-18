@@ -94,7 +94,9 @@ if [[ $(basename $PWD) = compute ]]; then
     crop metg_spread.pdf
     crop metg_ngraphs_4_nearest.pdf
     crop efficiency_stencil.pdf
+    crop efficiency_stencil_mpi.pdf
     crop flops_stencil.pdf
+    crop flops_stencil_mpi.pdf
     crop weak_mpi.pdf
     crop strong_mpi.pdf
 
