@@ -23,15 +23,18 @@ import sys
 import chart_util as util
 
 class Parser(util.Parser):
-    def __init__(self, ngraphs, dependence, nodes, system, csv_dialect):
+    def __init__(self, ngraphs, dependence, nodes, system, threshold, csv_dialect):
         self.ngraphs = ngraphs
         self.dependence = dependence.replace('_', ' ')
         self.nodes = nodes
         self.system = system
+        self.threshold = threshold
         self.csv_dialect = csv_dialect
 
         self.header = []
         self.table = []
+        self.min_granularity = float('inf')
+        self.max_granularity = float('-inf')
 
     def filter(self, row):
         return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes and (not self.system or row['name'] == self.system)
@@ -46,6 +49,8 @@ class Parser(util.Parser):
                 'efficiency': items['efficiency'],
                 row['name']: items['time_per_task']
             })
+            self.min_granularity = min(items['time_per_task'], self.min_granularity, key=float)
+            self.max_granularity = max(items['time_per_task'], self.max_granularity, key=float)
 
     def error_value(self):
         return {}
@@ -56,6 +61,10 @@ class Parser(util.Parser):
         # the order of the bars in the graph.
         self.header.sort()
         self.header.insert(0, 'efficiency')
+        self.header.append('metg')
+
+        self.table.append({'efficiency': self.threshold, 'metg': self.min_granularity})
+        self.table.append({'efficiency': self.threshold, 'metg': self.max_granularity})
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()
@@ -63,7 +72,7 @@ class Parser(util.Parser):
             out.writerow(row)
 
 def driver(ngraphs, dependence, nodes, system, machine, threshold, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, nodes, system, csv_dialect)
+    parser = Parser(ngraphs, dependence, nodes, system, threshold, csv_dialect)
     parser.parse(machine, threshold, False, verbose)
 
 if __name__ == '__main__':
