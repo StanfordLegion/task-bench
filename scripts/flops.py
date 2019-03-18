@@ -24,17 +24,18 @@ import sys
 import chart_util as util
 
 class Parser(util.Parser):
-    def __init__(self, ngraphs, dependence, nodes, csv_dialect):
+    def __init__(self, ngraphs, dependence, nodes, system, csv_dialect):
         self.ngraphs = ngraphs
         self.dependence = dependence.replace('_', ' ')
         self.nodes = nodes
+        self.system = system
         self.csv_dialect = csv_dialect
 
         self.header = []
         self.table = collections.defaultdict(lambda: collections.defaultdict(lambda: float('inf')))
 
     def filter(self, row):
-        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes
+        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes and (not self.system or row['name'] == self.system)
 
     def process(self, row, data, metg=None):
         if row['name'] not in self.header:
@@ -66,8 +67,8 @@ class Parser(util.Parser):
             row['iterations'] = iterations
             out.writerow(row)
 
-def driver(ngraphs, dependence, nodes, machine, threshold, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, nodes, csv_dialect)
+def driver(ngraphs, dependence, nodes, system, machine, threshold, csv_dialect, verbose):
+    parser = Parser(ngraphs, dependence, nodes, system, csv_dialect)
     parser.parse(machine, threshold, False, verbose)
 
 if __name__ == '__main__':
@@ -75,6 +76,7 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--ngraphs', type=int, required=True)
     parser.add_argument('-d', '--dependence', required=True)
     parser.add_argument('-n', '--nodes', type=int, required=True)
+    parser.add_argument('-s', '--system')
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--csv-dialect', default='excel-tab')
