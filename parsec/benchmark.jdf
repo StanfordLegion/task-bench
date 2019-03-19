@@ -44,7 +44,7 @@ RW I <- (num_args >= 2)? A benchmark(t-1, k): NULL
 
 BODY
 {
-  printf("update (%d, %d, %d): in (%d, %d)\n", t, x, k, in_first, in_last);
+  //printf("update (%d, %d, %d): in (%d, %d)\n", t, x, k, in_first, in_last);
 }
 END
 
@@ -75,12 +75,12 @@ READ A4 <- (t > 0 && num_args >= 5)? I update(t, x, in_first+3): NULL
 READ A5 <- (t > 0 && num_args >= 6)? I update(t, x, in_first+4): NULL 
 
 RW A <- descA(m, x)
-     -> (t < time_steps-1 && num_args_out >= 2)? I update(out_first .. out_last, t+1, x) 
+     -> (t < time_steps-1 && num_args_out >= 2)? I update(t+1, out_first .. out_last, x) 
      -> descA(m, x)
 
 BODY
 {
-    printf("benchmark (%d, %d): in (%d, %d); out (%d, %d)\n", t, x, in_first, in_last, out_first, out_last);
+    //printf("benchmark (%d, %d): in (%d, %d); out (%d, %d)\n", t, x, in_first, in_last, out_first, out_last);
     CORE_kernel(es, graph, A, A1, A2, A3, A4, A5, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
 }
 END
