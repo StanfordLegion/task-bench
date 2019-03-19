@@ -195,12 +195,20 @@ int get_in_first(task_graph_t g, int t, int x) {
   TaskGraph graph(g);
   long dset = graph.dependence_set_at_timestep(t);
   std::vector<std::pair<long, long> > deps = graph.dependencies(dset, x);
-  if( 0 == deps.size()) 
+  if (t == 0 || deps.size() == 0) {
     in_first = -1;
-  else
-    in_first = deps[0].first;
+  } else {
+    long last_offset = graph.offset_at_timestep(t-1);
+    long last_width = graph.width_at_timestep(t-1);
+    for (int i = deps[0].first; i <= deps[0].second; i++) {
+      if (i >= last_offset && i < last_offset + last_width) {
+        in_first = i;
+        break;
+      }  
+    }
+  }
 
-  //printf("(%d, %d): in_first: %d\n", t, x, in_first);
+ // printf("(%d, %d): in_first: %d\n", t, x, in_first);
   return in_first;
 }
 
@@ -209,11 +217,18 @@ int get_in_last(task_graph_t g, int t, int x) {
   TaskGraph graph(g);
   long dset = graph.dependence_set_at_timestep(t);
   std::vector<std::pair<long, long> > deps = graph.dependencies(dset, x);
-  if( 0 == deps.size())
+  if(t == 0 || 0 == deps.size()) {
     in_last = -2;
-  else
-    in_last = deps[deps.size()-1].second;
-
+  } else {
+    long last_offset = graph.offset_at_timestep(t-1);
+    long last_width = graph.width_at_timestep(t-1);
+    for (int i = deps[0].second; i >= deps[0].first; i--) {
+      if (i >= last_offset && i < last_offset + last_width) {
+        in_last = i;
+        break;
+      }  
+    }
+  }
   //printf("(%d, %d): in_last: %d\n", t, x, in_last);
   return in_last;
 }
@@ -223,10 +238,18 @@ int get_out_first(task_graph_t g, int t, int x) {
   TaskGraph graph(g);
   long dset_r = graph.dependence_set_at_timestep(t+1);
   std::vector<std::pair<long, long> > rdeps = graph.reverse_dependencies(dset_r, x);
-  if( 0 == rdeps.size() )
+  if(0 == rdeps.size() || t == graph.timesteps -1) {
     out_first = -1;
-  else
-    out_first = rdeps[0].first;
+  } else {
+    long next_offset = graph.offset_at_timestep(t+1);
+    long next_width = graph.width_at_timestep(t+1);
+    for (int i = rdeps[0].first; i <= rdeps[0].second; i++) {
+      if (i >= next_offset && i < next_offset + next_width) {
+        out_first = i;
+        break;
+      }  
+    }
+  }
 
   //printf("(%d, %d): out_first: %d\n", t, x, out_first);
   return out_first;
@@ -237,12 +260,20 @@ int get_out_last(task_graph_t g, int t, int x) {
   TaskGraph graph(g);
   long dset_r = graph.dependence_set_at_timestep(t+1);
   std::vector<std::pair<long, long> > rdeps = graph.reverse_dependencies(dset_r, x);
-  if( 0 == rdeps.size() )
+  if(0 == rdeps.size() || t == graph.timesteps -1) {
     out_last = -2;
-  else
-    out_last = rdeps[rdeps.size()-1].second;
-
-  //printf("(%d, %d): out_first: %d\n", t, x, out_last);
+  } else {
+    long next_offset = graph.offset_at_timestep(t+1);
+    long next_width = graph.width_at_timestep(t+1);
+    for (int i = rdeps[0].second; i >= rdeps[0].first; i--) {
+      if (i >= next_offset && i < next_offset + next_width) {
+        out_last = i;
+        break;
+      }  
+    }
+  }
+  
+ // printf("(%d, %d): out_last: %d\n", t, x, out_last);
   return out_last;
 }
 

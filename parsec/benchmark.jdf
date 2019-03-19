@@ -21,7 +21,7 @@ update(t, x, k)
 
 t = 1 .. time_steps-1
 
-offset = %{ return task_graph_dependence_set_at_timestep(graph, t); %}
+offset = %{ return task_graph_offset_at_timestep(graph, t); %}
 width = %{ return task_graph_width_at_timestep(graph, t); %}
 
 x = offset .. offset+width-1
@@ -52,7 +52,7 @@ benchmark(t, x)
 
 t = 0 .. time_steps-1 
 
-offset = %{ return task_graph_dependence_set_at_timestep(graph, t); %}
+offset = %{ return task_graph_offset_at_timestep(graph, t); %}
 width = %{ return task_graph_width_at_timestep(graph, t); %}
 
 x = offset .. offset+width-1 
