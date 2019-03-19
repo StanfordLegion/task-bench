@@ -61,6 +61,12 @@ stencil_1d.c stencil_1d.h: stencil_1d.jdf
 stencil_1d.o: stencil_1d.c stencil_1d.h benchmark_internal.h
 	$(cc) -c $(CFLAGS_JDF) $(INC) $<
 
+benchmark.c benchmark.h: benchmark.jdf
+	$(PP) -E -i $< -o $(basename $<)
+
+benchmark.o: benchmark.c benchmark.h benchmark_internal.h
+	$(cc) -c $(CFLAGS_JDF) $(INC) $<
+
 benchmark_internal.o: benchmark_internal.cc
 	$(CC) -c $(CFLAGS) $<
 
@@ -88,7 +94,7 @@ main_shard: main_shard.o common.o
 main_checkfirst: main_checkfirst.o common.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 
-main_jdf: main_jdf.o common.o stencil_1d.o benchmark_internal.o
+main_jdf: main_jdf.o common.o stencil_1d.o benchmark_internal.o benchmark.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 
 clean:

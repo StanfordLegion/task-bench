@@ -190,5 +190,83 @@ int CORE_kernel(parsec_execution_stream_t *es, task_graph_t g, float *out, float
   return PARSEC_HOOK_RETURN_DONE;
 }
 
+int get_in_first(task_graph_t g, int t, int x) {
+  int in_first;
+  TaskGraph graph(g);
+  long dset = graph.dependence_set_at_timestep(t);
+  std::vector<std::pair<long, long> > deps = graph.dependencies(dset, x);
+  if( 0 == deps.size()) 
+    in_first = -1;
+  else
+    in_first = deps[0].first;
+
+  //printf("(%d, %d): in_first: %d\n", t, x, in_first);
+  return in_first;
 }
-#endif
+
+int get_in_last(task_graph_t g, int t, int x) {
+  int in_last;
+  TaskGraph graph(g);
+  long dset = graph.dependence_set_at_timestep(t);
+  std::vector<std::pair<long, long> > deps = graph.dependencies(dset, x);
+  if( 0 == deps.size())
+    in_last = -2;
+  else
+    in_last = deps[deps.size()-1].second;
+
+  //printf("(%d, %d): in_last: %d\n", t, x, in_last);
+  return in_last;
+}
+
+int get_out_first(task_graph_t g, int t, int x) {
+  int out_first;
+  TaskGraph graph(g);
+  long dset_r = graph.dependence_set_at_timestep(t+1);
+  std::vector<std::pair<long, long> > rdeps = graph.reverse_dependencies(dset_r, x);
+  if( 0 == rdeps.size() )
+    out_first = -1;
+  else
+    out_first = rdeps[0].first;
+
+  //printf("(%d, %d): out_first: %d\n", t, x, out_first);
+  return out_first;
+}
+
+int get_out_last(task_graph_t g, int t, int x) {
+  int out_last;
+  TaskGraph graph(g);
+  long dset_r = graph.dependence_set_at_timestep(t+1);
+  std::vector<std::pair<long, long> > rdeps = graph.reverse_dependencies(dset_r, x);
+  if( 0 == rdeps.size() )
+    out_last = -2;
+  else
+    out_last = rdeps[rdeps.size()-1].second;
+
+  //printf("(%d, %d): out_first: %d\n", t, x, out_last);
+  return out_last;
+}
+
+int get_num_args(task_graph_t g, int t, int x, int in_first, int in_last) {
+  TaskGraph graph(g);
+  long dset = graph.dependence_set_at_timestep(t);
+  std::vector<std::pair<long, long> > deps = graph.dependencies(dset, x);
+
+  if( 0 == deps.size() || 0 == t )
+    return 1;
+  else
+    return in_last - in_first + 2;
+}
+
+int get_num_args_out(task_graph_t g, int t, int x, int out_first, int out_last) {
+  TaskGraph graph(g);
+  long dset_r = graph.dependence_set_at_timestep(t+1);
+  std::vector<std::pair<long, long> > rdeps = graph.reverse_dependencies(dset_r, x);
+  
+  if( 0 == rdeps.size() )
+    return 1;
+  else
+    return out_last - out_first + 2;
+}
+
+}
+#endif  /* end __cplusplus */

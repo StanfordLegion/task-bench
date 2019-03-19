@@ -45,6 +45,10 @@ extern "C" {
 int parsec_stencil_1d(parsec_context_t *parsec,
                       parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
                       int time_steps, int graph_idx, char **extra_local_memory);
+
+int parsec_benchmark(parsec_context_t *parsec,
+                     parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                     int time_steps, int graph_idx, char **extra_local_memory);
 }
 
 typedef struct matrix_s{
@@ -237,8 +241,8 @@ void ParsecApp::execute_main_loop()
 
     debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d, timesteps %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, nb_fields, g.timesteps);
 
-    parsec_stencil_1d(parsec, (parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory);
-
+    //parsec_stencil_1d(parsec, (parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory);
+    parsec_benchmark(parsec, (parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory);
   }
   
   MPI_Barrier(MPI_COMM_WORLD);

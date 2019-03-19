@@ -26,6 +26,19 @@ extern "C"
 {
 extern int CORE_kernel(parsec_execution_stream_t *es, task_graph_t graph, float *out, float *in1, float *in2, float *in3,
                 float *in4, float *in5, int num_args, int x, int t, int graph_idx, int my_rank, char **extra_local_memory);
+
+extern int get_in_first(task_graph_t graph, int t, int x);
+
+extern int get_in_last(task_graph_t graph, int t, int x);
+
+extern int get_out_first(task_graph_t graph, int t, int x);
+
+extern int get_out_last(task_graph_t graph, int t, int x);
+
+extern int get_num_args(task_graph_t g, int t, int x, int in_first, int in_last);
+
+int get_num_args_out(task_graph_t g, int t, int x, int out_first, int out_last);
+
 }
 #endif
 
