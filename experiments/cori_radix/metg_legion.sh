@@ -60,9 +60,11 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            sweep launch_util_0 $n $g $t > legion_util_0_ngraphs_${g}_type_${t}_nodes_${n}.log
-            # sweep launch_util_1 $n $g $t > legion_util_1_ngraphs_${g}_type_${t}_nodes_${n}.log
-            # sweep launch_util_2 $n $g $t > legion_util_2_ngraphs_${g}_type_${t}_nodes_${n}.log
+            for r in ${RADIX:-5}; do
+                sweep launch_util_0 $n $g $t > legion_util_0_ngraphs_${g}_type_${t}_radix_${r}_nodes_${n}.log
+                # sweep launch_util_1 $n $g $t > legion_util_1_ngraphs_${g}_type_${t}_radix_${r}_nodes_${n}.log
+                # sweep launch_util_2 $n $g $t > legion_util_2_ngraphs_${g}_type_${t}_radix_${r}_nodes_${n}.log
+            done
         done
     done
 done
