@@ -178,6 +178,7 @@ EOF
     rm apache-ant-1.10.5-bin.tar.gz
 
     git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
+    git -C "$X10_DIR"/x10 reset --hard 9212dc271c8bcba805c82114617d47506747ee3a
 fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then
