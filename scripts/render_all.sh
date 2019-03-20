@@ -38,7 +38,8 @@ if [[ $(basename $PWD) = compute ]]; then
                --no-xlog \
                --no-xticks \
                --x-percent \
-               --ylabel 'Task Granularity (ms)' # \
+               --ylabel 'Task Granularity (ms)' \
+               --highlight-column 'metg' # \
                # --title 'Task Granularity vs Efficiency (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py efficiency_stencil_mpi.csv \
@@ -48,7 +49,8 @@ if [[ $(basename $PWD) = compute ]]; then
                --no-xlog \
                --no-xticks \
                --x-percent \
-               --ylabel 'Task Granularity (ms)' # \
+               --ylabel 'Task Granularity (ms)' \
+               --highlight-column 'metg' # \
                # --title 'MPI Task Granularity vs Efficiency (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py flops_stencil.csv \
@@ -58,7 +60,8 @@ if [[ $(basename $PWD) = compute ]]; then
                --no-xticks \
                --ylabel 'TFLOPS' \
                --yscale 1e-12 \
-               --no-ylog # \
+               --no-ylog \
+               --highlight-column 'metg' # \
                # --title 'FLOPS vs Problem Size (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py flops_stencil_mpi.csv \
@@ -69,7 +72,8 @@ if [[ $(basename $PWD) = compute ]]; then
                --no-xticks \
                --ylabel 'TFLOPS' \
                --yscale 1e-12 \
-               --no-ylog # \
+               --no-ylog \
+               --highlight-column 'metg' # \
                # --title 'MPI FLOPS vs Problem Size (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py weak_mpi.csv \

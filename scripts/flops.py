@@ -24,15 +24,18 @@ import sys
 import chart_util as util
 
 class Parser(util.Parser):
-    def __init__(self, ngraphs, dependence, nodes, system, csv_dialect):
+    def __init__(self, ngraphs, dependence, nodes, system, machine, threshold, csv_dialect):
         self.ngraphs = ngraphs
         self.dependence = dependence.replace('_', ' ')
         self.nodes = nodes
         self.system = system
+        self.machine = machine
+        self.threshold = threshold
         self.csv_dialect = csv_dialect
 
         self.header = []
         self.table = collections.defaultdict(lambda: collections.defaultdict(lambda: float('inf')))
+        self.metg = collections.defaultdict(lambda: float('inf'))
 
     def filter(self, row):
         return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes and (not self.system or row['name'] == self.system)
@@ -49,6 +52,11 @@ class Parser(util.Parser):
                 self.table[items['iterations']][row['name']],
                 key=float)
 
+            self.metg[items['iterations']] = min(
+                util.get_machine_parameters(self.machine)['peak_flops'] * self.threshold,
+                self.metg[items['iterations']],
+                key=float)
+
     def error_value(self):
         return {}
 
@@ -58,6 +66,7 @@ class Parser(util.Parser):
         # the order of the bars in the graph.
         self.header.sort()
         self.header.insert(0, 'iterations')
+        self.header.append('metg')
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()
@@ -65,10 +74,11 @@ class Parser(util.Parser):
             row = self.table[iterations]
             row = {k: None if v == float('inf') else v for k, v in row.items()}
             row['iterations'] = iterations
+            row['metg'] = self.metg[iterations]
             out.writerow(row)
 
 def driver(ngraphs, dependence, nodes, system, machine, threshold, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, nodes, system, csv_dialect)
+    parser = Parser(ngraphs, dependence, nodes, system, machine, threshold, csv_dialect)
     parser.parse(machine, threshold, False, verbose)
 
 if __name__ == '__main__':

@@ -211,7 +211,7 @@ object Main {
         if (ts == 0) inputsRDDUngrouped = relevantValsRDD.mapValues( v=>fakearr); 
 
         /*------CREATE INPUT DATA, NO JOIN: send prev ts values to cur ts to get cur ts inputs-------*/
-        if (depType != "NO_COMM" && depType != "TRIVIAL" && !(depType == "NEAREST" && taskGraph.getRadix() == 0)) { //only send if ts != 0
+        if (depType != "NO_COMM" && depType != "TRIVIAL" && !(depType == "NEAREST" && taskGraph.getRadix() <= 1)) { //only send if ts != 0
             if (ts != 0) {
                 inputsRDDUngrouped = relevantValsRDD.flatMap { 
                     case (point, oldVal) =>
