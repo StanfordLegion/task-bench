@@ -23,12 +23,13 @@ import sys
 import chart_util as util
 
 class Parser(util.Parser):
-    def __init__(self, ngraphs, dependence, nodes, system, imbalance, threshold, csv_dialect):
+    def __init__(self, ngraphs, dependence, nodes, system, imbalance, comm, threshold, csv_dialect):
         self.ngraphs = ngraphs
         self.dependence = dependence.replace('_', ' ')
         self.nodes = nodes
         self.system = system
         self.imbalance = imbalance
+        self.comm = comm
         self.threshold = threshold
         self.csv_dialect = csv_dialect
 
@@ -38,7 +39,13 @@ class Parser(util.Parser):
         self.max_granularity = float('-inf')
 
     def filter(self, row):
-        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes and (not self.system or row['name'] == self.system) and (not self.imbalance or row['imbalance'] == self.imbalance)
+        return (
+            row['ngraphs'] == self.ngraphs and
+            row['type'] == self.dependence and
+            row['nodes'] == self.nodes and
+            (not self.system or row['name'] == self.system) and
+            (not self.imbalance or row['imbalance'] == self.imbalance) and
+            (not self.comm or row['comm'] == self.comm))
 
     def process(self, row, data, metg=None):
         if row['name'] not in self.header:
@@ -72,8 +79,8 @@ class Parser(util.Parser):
         for row in self.table:
             out.writerow(row)
 
-def driver(ngraphs, dependence, nodes, system, imbalance, machine, threshold, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, nodes, system, imbalance, threshold, csv_dialect)
+def driver(ngraphs, dependence, nodes, system, imbalance, comm, machine, threshold, csv_dialect, verbose):
+    parser = Parser(ngraphs, dependence, nodes, system, imbalance, comm, threshold, csv_dialect)
     parser.parse(machine, threshold, False, verbose)
 
 if __name__ == '__main__':
@@ -83,6 +90,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--nodes', type=int, required=True)
     parser.add_argument('-s', '--system')
     parser.add_argument('-i', '--imbalance')
+    parser.add_argument('-c', '--comm')
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--csv-dialect', default='excel-tab')

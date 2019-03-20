@@ -115,23 +115,49 @@ elif [[ $(basename $PWD) = radix ]]; then
                # --title 'METG vs Dependencies per Task (Cori, Compute, Nearest)'
 
 elif [[ $(basename $PWD) = communication ]]; then
+    "$root_dir"/comm.py -m cori -g 4 -d spread -n 16 --csv excel > metg_nodes_16.csv
+    "$root_dir"/comm.py -m cori -g 4 -d spread -n 64 --csv excel > metg_nodes_64.csv
 
-    "$root_dir"/comm.py -m cori -g 4 -d spread -n 16 --csv excel > metg_ngraphs_4_spread_nodes_16.csv
-    "$root_dir"/comm.py -m cori -g 4 -d spread -n 64 --csv excel > metg_ngraphs_4_spread_nodes_64.csv
+    for comm in 16 256 4096 65536; do
+        "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 16 -c ${comm} --csv excel > efficiency_nodes_16_comm_${comm}.csv
+        "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 64 -c ${comm} --csv excel > efficiency_nodes_64_comm_${comm}.csv
+    done
 
     "$root_dir"/comm_efficiency.py -m cori -g 4 -d spread -n 16 -s 'mpi nonblock' --csv excel > efficiency_mpi.csv
 
     "$root_dir"/comm_efficiency.py -m cori -g 4 -d spread -n 16 -s 'charm' --csv excel > efficiency_charm.csv
 
-    "$root_dir"/render_metg.py metg_ngraphs_4_spread_nodes_16.csv \
+    "$root_dir"/render_metg.py metg_nodes_16.csv \
                --xlabel 'Message Size (B)' \
                --xdata 'comm' # \
                # --title 'METG vs Communication (Cori, Compute, 4x Spread)'
 
-    "$root_dir"/render_metg.py metg_ngraphs_4_spread_nodes_64.csv \
+    "$root_dir"/render_metg.py metg_nodes_64.csv \
                --xlabel 'Message Size (B)' \
                --xdata 'comm' # \
                # --title 'METG vs Communication (Cori, Compute, 4x Spread)'
+
+    for comm in 16 256 4096 65536; do
+        "$root_dir"/render_metg.py efficiency_nodes_16_comm_${comm}.csv \
+                   --xlabel 'Efficiency' \
+                   --xdata 'efficiency' \
+                   --no-xlog \
+                   --no-xticks \
+                   --x-percent \
+                   --ylabel 'Task Granularity (ms)' \
+                   --highlight-column 'metg' # \
+                   # --title "Task Granularity vs Efficiency (Cori, Compute, Stencil, Comm ${comm})"
+
+        "$root_dir"/render_metg.py efficiency_nodes_64_comm_${comm}.csv \
+                   --xlabel 'Efficiency' \
+                   --xdata 'efficiency' \
+                   --no-xlog \
+                   --no-xticks \
+                   --x-percent \
+                   --ylabel 'Task Granularity (ms)' \
+                   --highlight-column 'metg' # \
+                   # --title "Task Granularity vs Efficiency (Cori, Compute, Stencil, Comm ${comm})"
+    done
 
     "$root_dir"/render_metg.py efficiency_mpi.csv \
                --xlabel 'Efficiency' \
@@ -151,8 +177,12 @@ elif [[ $(basename $PWD) = communication ]]; then
                --ylabel 'Task Granularity (ms)' # \
                # --title 'Charm++ Task Granularity vs Efficiency (Cori, Compute, Stencil)'
 
-    crop metg_ngraphs_4_spread_nodes_16.pdf
-    crop metg_ngraphs_4_spread_nodes_64.pdf
+    crop metg_nodes_16.pdf
+    crop metg_nodes_64.pdf
+    for comm in 16 256 4096 65536; do
+        crop efficiency_nodes_16_comm_${comm}.pdf
+        crop efficiency_nodes_64_comm_${comm}.pdf
+    done
     crop efficiency_mpi.pdf
     crop efficiency_charm.pdf
 
@@ -160,7 +190,7 @@ elif [[ $(basename $PWD) = imbalance ]]; then
     "$root_dir"/imbalance.py -m cori -g 4 -d nearest -n 1 --csv excel > metg_ngraphs_4_nearest.csv
 
     for imbalance in 0.0 0.5 1.0 1.5 2.0; do
-        "$root_dir"/efficiency.py -m cori -g 4 -d nearest -n 1 -i ${imbalance} --csv excel > efficiency_${imbalance}.csv
+        "$root_dir"/efficiency.py -m cori -g 4 -d nearest -n 1 -i ${imbalance} --csv excel > efficiency_imbalance_${imbalance}.csv
     done
 
     "$root_dir"/imbalance_efficiency.py -m cori -g 4 -d nearest -n 1 -s 'mpi nonblock' --csv excel > efficiency_mpi.csv
@@ -172,7 +202,7 @@ elif [[ $(basename $PWD) = imbalance ]]; then
                # --title 'METG vs Imbalance (Cori, Compute, 4x Nearest)'
 
     for imbalance in 0.0 0.5 1.0 1.5 2.0; do
-        "$root_dir"/render_metg.py efficiency_${imbalance}.csv \
+        "$root_dir"/render_metg.py efficiency_imbalance_${imbalance}.csv \
                    --xlabel 'Efficiency' \
                    --xdata 'efficiency' \
                    --no-xlog \
@@ -180,7 +210,7 @@ elif [[ $(basename $PWD) = imbalance ]]; then
                    --x-percent \
                    --ylabel 'Task Granularity (ms)' \
                    --highlight-column 'metg' # \
-                   # --title "Task Granularity vs Efficiency (Cori, Compute, Stencil, ${imbalance} Imbalance)"
+                   # --title "Task Granularity vs Efficiency (Cori, Compute, Stencil, Imbalance ${imbalance})"
     done
 
     "$root_dir"/render_metg.py efficiency_mpi.csv \
@@ -195,7 +225,7 @@ elif [[ $(basename $PWD) = imbalance ]]; then
     crop metg_ngraphs_4_nearest.pdf
     crop efficiency_mpi.pdf
     for imbalance in 0.0 0.5 1.0 1.5 2.0; do
-        crop efficiency_${imbalance}.pdf
+        crop efficiency_imbalance_${imbalance}.pdf
     done
 else
     echo "Not in a data directory, change to 'compute' or 'imbalance' and then rerun."

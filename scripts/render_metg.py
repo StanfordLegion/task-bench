@@ -32,8 +32,8 @@ parser.add_argument('--legend', default='../legend.csv')
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
 parser.add_argument('--xdata', default='nodes')
-parser.add_argument('--xscale', type=float, default=1)
-parser.add_argument('--yscale', type=float, default=1)
+parser.add_argument('--xscale', type=float, default=0)
+parser.add_argument('--yscale', type=float, default=0)
 parser.add_argument('--xlim', type=ast.literal_eval, default='None')
 parser.add_argument('--ylim', type=ast.literal_eval, default='None')
 parser.add_argument('--x-percent', action='store_true')
@@ -62,7 +62,7 @@ markers = [
     'H',
     '2',
     '>'
-] * 2
+] * 10
 
 colors = [
     # Built in colors
@@ -106,7 +106,7 @@ colors = [
     (0.659,0.471,0.431),
     (0.404,0.749,0.361),
     (0.137,0.122,0.125),
-]
+] * 10
 
 # matplotlib.rcParams["font.family"] = "STIXGeneral"
 # matplotlib.rcParams["mathtext.fontset"] = "stix"
@@ -137,7 +137,9 @@ elif args.ylog:
     plt.semilogy()
 
 data = csv2rec(args.filename)
-nodes = getattr(data, args.xdata) * args.xscale
+nodes = getattr(data, args.xdata)
+if args.xscale:
+    nodes = nodes * args.xscale
 columns = list(data.dtype.names)
 columns.remove(args.xdata)
 
@@ -157,6 +159,7 @@ for column in columns:
         label = column.replace('_', ' ')
         idx = next_idx
         next_idx += 1
+
     if args.highlight_column == column:
         color = 'red'
         marker = None
@@ -168,7 +171,13 @@ for column in columns:
         marker = markers[idx]
         linetype = '-'
         linewidth = 1
-    plt.plot(nodes, getattr(data, column) * args.yscale, linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
+
+    column_data = getattr(data, column)
+    if args.yscale:
+        column_data = column_data * args.yscale
+
+    plt.plot(nodes, column_data, linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
+
 if args.xticks:
     plt.xticks(nodes, nodes) #, rotation=30)
 if args.xlim:
