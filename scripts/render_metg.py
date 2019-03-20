@@ -162,6 +162,7 @@ for column in columns:
         marker = None
         linetype = '--'
         linewidth = 3
+        label = None
     else:
         color = colors[idx]
         marker = markers[idx]

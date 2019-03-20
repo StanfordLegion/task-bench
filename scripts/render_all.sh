@@ -159,6 +159,10 @@ elif [[ $(basename $PWD) = communication ]]; then
 elif [[ $(basename $PWD) = imbalance ]]; then
     "$root_dir"/imbalance.py -m cori -g 4 -d nearest -n 1 --csv excel > metg_ngraphs_4_nearest.csv
 
+    for imbalance in 0.0 0.5 1.0 1.5 2.0; do
+        "$root_dir"/efficiency.py -m cori -g 4 -d nearest -n 1 -i ${imbalance} --csv excel > efficiency_${imbalance}.csv
+    done
+
     "$root_dir"/imbalance_efficiency.py -m cori -g 4 -d nearest -n 1 -s 'mpi nonblock' --csv excel > efficiency_mpi.csv
 
     "$root_dir"/render_metg.py metg_ngraphs_4_nearest.csv \
@@ -166,6 +170,18 @@ elif [[ $(basename $PWD) = imbalance ]]; then
                --xdata 'imbalance' \
                --no-xlog # \
                # --title 'METG vs Imbalance (Cori, Compute, 4x Nearest)'
+
+    for imbalance in 0.0 0.5 1.0 1.5 2.0; do
+        "$root_dir"/render_metg.py efficiency_${imbalance}.csv \
+                   --xlabel 'Efficiency' \
+                   --xdata 'efficiency' \
+                   --no-xlog \
+                   --no-xticks \
+                   --x-percent \
+                   --ylabel 'Task Granularity (ms)' \
+                   --highlight-column 'metg' # \
+                   # --title "Task Granularity vs Efficiency (Cori, Compute, Stencil, ${imbalance} Imbalance)"
+    done
 
     "$root_dir"/render_metg.py efficiency_mpi.csv \
                --xlabel 'Efficiency' \
@@ -178,6 +194,9 @@ elif [[ $(basename $PWD) = imbalance ]]; then
 
     crop metg_ngraphs_4_nearest.pdf
     crop efficiency_mpi.pdf
+    for imbalance in 0.0 0.5 1.0 1.5 2.0; do
+        crop efficiency_${imbalance}.pdf
+    done
 else
     echo "Not in a data directory, change to 'compute' or 'imbalance' and then rerun."
 fi
