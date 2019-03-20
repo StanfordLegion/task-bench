@@ -284,6 +284,186 @@ static int test_task6(parsec_execution_stream_t *es, parsec_task_t *this_task)
   return PARSEC_HOOK_RETURN_DONE;
 }
 
+static int test_task7(parsec_execution_stream_t *es, parsec_task_t *this_task)
+{
+  (void)es;
+  payload_t payload;
+  float *in1, *in2, *in3, *in4, *in5, *in6, *out;
+
+  parsec_dtd_unpack_args(this_task, &payload, &in1, &in2, &in3, &in4, &in5, &in6, &out);
+
+#if defined (USE_CORE_VERIFICATION)  
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)out;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)in1);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in2);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in3);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in4);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in5);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in6);
+  input_bytes.push_back(graph.output_bytes_per_task);
+
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+#else
+  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + 1.0;
+  printf("Graph %d, Task7, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, out %.2f, local_mem %p\n", 
+        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *in4, *in5, *in6, *out, extra_local_memory[es->core_id]);                   
+#endif
+
+#if defined (TRACK_NB_TASKS)          
+  nb_tasks_per_node[es->core_id] ++;
+#endif  
+  
+  return PARSEC_HOOK_RETURN_DONE;
+}
+
+static int test_task8(parsec_execution_stream_t *es, parsec_task_t *this_task)
+{
+  (void)es;
+  payload_t payload;
+  float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *out;
+
+  parsec_dtd_unpack_args(this_task, &payload, &in1, &in2, &in3, &in4, &in5, &in6, &in7, &out);
+
+#if defined (USE_CORE_VERIFICATION)  
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)out;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)in1);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in2);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in3);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in4);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in5);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in6);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in7);
+  input_bytes.push_back(graph.output_bytes_per_task);
+
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+#else
+  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + 1.0;
+  printf("Graph %d, Task8, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, out %.2f, local_mem %p\n", 
+        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *out, extra_local_memory[es->core_id]);                   
+#endif
+
+#if defined (TRACK_NB_TASKS)          
+  nb_tasks_per_node[es->core_id] ++;
+#endif  
+  
+  return PARSEC_HOOK_RETURN_DONE;
+}
+
+static int test_task9(parsec_execution_stream_t *es, parsec_task_t *this_task)
+{
+  (void)es;
+  payload_t payload;
+  float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *out;
+
+  parsec_dtd_unpack_args(this_task, &payload, &in1, &in2, &in3, &in4, &in5, &in6, &in7, &in8, &out);
+
+#if defined (USE_CORE_VERIFICATION)  
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)out;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)in1);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in2);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in3);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in4);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in5);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in6);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in7);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in8);
+  input_bytes.push_back(graph.output_bytes_per_task);
+
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+#else
+  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + *in8 + 1.0;
+  printf("Graph %d, Task9, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, out %.2f, local_mem %p\n", 
+        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *out, extra_local_memory[es->core_id]);                   
+#endif
+
+#if defined (TRACK_NB_TASKS)          
+  nb_tasks_per_node[es->core_id] ++;
+#endif  
+  
+  return PARSEC_HOOK_RETURN_DONE;
+}
+
+static int test_task10(parsec_execution_stream_t *es, parsec_task_t *this_task)
+{
+  (void)es;
+  payload_t payload;
+  float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *in9, *out;
+
+  parsec_dtd_unpack_args(this_task, &payload, &in1, &in2, &in3, &in4, &in5, &in6, &in7, &in8, &in9, &out);
+
+#if defined (USE_CORE_VERIFICATION)  
+  TaskGraph graph = payload.graph;
+  char *output_ptr = (char*)out;
+  size_t output_bytes= graph.output_bytes_per_task;
+  std::vector<const char *> input_ptrs;
+  std::vector<size_t> input_bytes;
+  input_ptrs.push_back((char*)in1);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in2);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in3);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in4);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in5);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in6);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in7);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in8);
+  input_bytes.push_back(graph.output_bytes_per_task);
+  input_ptrs.push_back((char*)in9);
+  input_bytes.push_back(graph.output_bytes_per_task);
+
+  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+#else
+  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + *in8 + 1.0;
+  printf("Graph %d, Task10, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, in9 %.2f, out %.2f, local_mem %p\n", 
+        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *in9, *out, extra_local_memory[es->core_id]);                   
+#endif
+
+#if defined (TRACK_NB_TASKS)          
+  nb_tasks_per_node[es->core_id] ++;
+#endif  
+  
+  return PARSEC_HOOK_RETURN_DONE;
+}
+
 typedef struct matrix_s{
   two_dim_block_cyclic_t *__dcC;
   two_dim_block_cyclic_t dcC;
@@ -381,6 +561,60 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                     PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
+                                    PARSEC_DTD_ARG_END);
+    break;
+  case 7:
+    parsec_dtd_taskpool_insert_task(dtd_tp, test_task7,    0,  "test_task7",
+                                    sizeof(payload_t), &payload, VALUE,
+                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[6], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
+                                    PARSEC_DTD_ARG_END);
+    break;
+  case 8:
+    parsec_dtd_taskpool_insert_task(dtd_tp, test_task8,    0,  "test_task8",
+                                    sizeof(payload_t), &payload, VALUE,
+                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[6], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[7], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
+                                    PARSEC_DTD_ARG_END);
+    break;
+  case 9:
+    parsec_dtd_taskpool_insert_task(dtd_tp, test_task9,    0,  "test_task9",
+                                    sizeof(payload_t), &payload, VALUE,
+                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[6], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[7], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[8], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
+                                    PARSEC_DTD_ARG_END);
+    break;
+  case 10:
+    parsec_dtd_taskpool_insert_task(dtd_tp, test_task10,    0,  "test_task10",
+                                    sizeof(payload_t), &payload, VALUE,
+                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[6], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[7], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[8], INPUT | TILE_FULL,
+                                    PASSED_BY_REF,  args[9], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                     PARSEC_DTD_ARG_END);
     break;
