@@ -104,6 +104,15 @@ if [[ $(basename $PWD) = compute ]]; then
     crop weak_mpi.pdf
     crop strong_mpi.pdf
 
+elif [[ $(basename $PWD) = radix ]]; then
+
+    "$root_dir"/radix.py -m cori -g 1 -d nearest -n 1 --csv excel > metg_nearest.csv
+
+    "$root_dir"/render_metg.py metg_nearest.csv \
+               --xlabel 'Dependencies per Task' \
+               --xdata 'radix' # \
+               # --title 'METG vs Dependencies per Task (Cori, Compute, Nearest)'
+
 elif [[ $(basename $PWD) = communication ]]; then
 
     "$root_dir"/comm.py -m cori -g 4 -d spread -n 16 --csv excel > metg_ngraphs_4_spread_nodes_16.csv

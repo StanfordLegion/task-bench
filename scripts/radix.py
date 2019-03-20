@@ -60,8 +60,8 @@ class Parser(util.Parser):
             row['radix'] = radix
             out.writerow(row)
 
-def driver(ngraphs, dependence, machine, threshold, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, csv_dialect)
+def driver(ngraphs, dependence, nodes, machine, threshold, csv_dialect, verbose):
+    parser = Parser(ngraphs, dependence, nodes, csv_dialect)
     parser.parse(machine, threshold, True, verbose)
 
 if __name__ == '__main__':
