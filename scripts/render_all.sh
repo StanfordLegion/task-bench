@@ -110,7 +110,8 @@ elif [[ $(basename $PWD) = radix ]]; then
 
     "$root_dir"/render_metg.py metg_nearest.csv \
                --xlabel 'Dependencies per Task' \
-               --xdata 'radix' # \
+               --xdata 'radix' \
+               --no-xlog # \
                # --title 'METG vs Dependencies per Task (Cori, Compute, Nearest)'
 
 elif [[ $(basename $PWD) = communication ]]; then
