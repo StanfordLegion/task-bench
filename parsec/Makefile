@@ -112,5 +112,6 @@ main_multi_taskpool: main_multi_taskpool.o common.o
 clean:
 	rm -f *.o
 	rm -f $(TARGET)
+	rm -f benchmark.h benchmark.c stencil_1d.c stencil_1d.h
 
 .PHONY: all clean
