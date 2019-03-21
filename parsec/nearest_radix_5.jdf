@@ -117,7 +117,7 @@ int parsec_nearest_radix_5(parsec_context_t *parsec,
       parsec_enqueue(parsec, parsec_nearest_radix_5);
       parsec_context_start(parsec);
       parsec_context_wait(parsec);
-      parsec_stencil_1d_Destruct(parsec_nearest_radix_5);
+      parsec_nearest_radix_5_Destruct(parsec_nearest_radix_5);
   }
   
   return 0;

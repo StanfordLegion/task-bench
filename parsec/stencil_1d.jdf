@@ -51,7 +51,7 @@ BODY
 {
     int num_args; 
     num_args = get_num_args_internal(L, B, R); 
-    printf("t: %d, x: %d, num_args: %d\n", t, x, num_args);
+   // printf("t: %d, x: %d, num_args: %d\n", t, x, num_args);
     if( 0 != x )
         CORE_kernel(es, graph, A, L, B, R, NULL, NULL, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
     else

@@ -53,6 +53,18 @@ int parsec_nearest_radix_5(parsec_context_t *parsec,
 int parsec_benchmark(parsec_context_t *parsec,
                      parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
                      int time_steps, int graph_idx, char **extra_local_memory);
+
+void parsec_stencil_1d_Destruct(parsec_taskpool_t *taskpool);
+
+parsec_taskpool_t*
+parsec_stencil_1d_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                      int time_steps, int graph_idx, char **extra_local_memory);
+
+parsec_taskpool_t*
+parsec_nearest_radix_5_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                           int time_steps, int graph_idx, char **extra_local_memory);
+
+void parsec_nearest_radix_5_Destruct(parsec_taskpool_t *taskpool);
 }
 
 typedef struct matrix_s{
@@ -81,7 +93,6 @@ struct ParsecApp : public App {
   void debug_printf(int verbose_level, const char *format, ...);
 private:
   parsec_context_t* parsec;
-  parsec_taskpool_t *dtd_tp;
   int rank;
   int nodes;
   int cores;
@@ -239,6 +250,7 @@ void ParsecApp::execute_main_loop()
 
   int x, y;
   
+  parsec_taskpool_t* tp[10];
   for (int i = 0; i < graphs.size(); i++) {
     const TaskGraph &g = graphs[i];
     matrix_t &mat = mat_array[i];
@@ -246,13 +258,33 @@ void ParsecApp::execute_main_loop()
     debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d, timesteps %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, nb_fields, g.timesteps);
     
     if (g.dependence == DependenceType::STENCIL_1D) {
-      parsec_stencil_1d(parsec, (parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory);
+      //parsec_stencil_1d(parsec, (parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory);
+      tp[i] = parsec_stencil_1d_New((parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory); 
     } else if (g.dependence == DependenceType::NEAREST && g.radix == 5) {
-      parsec_nearest_radix_5(parsec, (parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory);
+      //parsec_nearest_radix_5(parsec, (parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory);
+      tp[i] = parsec_nearest_radix_5_New((parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory); 
     } else {
       assert(0);
       parsec_benchmark(parsec, (parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory);
     }
+    assert(tp[i] != NULL);
+    parsec_enqueue(parsec, tp[i]);
+  }
+  
+  parsec_context_start(parsec);
+  parsec_context_wait(parsec);
+  
+  for (int i = 0; i < graphs.size(); i++) {
+    const TaskGraph &g = graphs[i];
+    
+    if (g.dependence == DependenceType::STENCIL_1D) {
+      parsec_stencil_1d_Destruct(tp[i]);
+    } else if (g.dependence == DependenceType::NEAREST && g.radix == 5) {
+      parsec_nearest_radix_5_Destruct(tp[i]);
+    } else {
+      assert(0);
+    }
+    tp[i] = NULL;
   }
   
   MPI_Barrier(MPI_COMM_WORLD);
