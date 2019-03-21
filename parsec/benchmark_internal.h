@@ -43,5 +43,9 @@ int get_num_args_out(task_graph_t g, int t, int x, int out_first, int out_last);
 #endif
 
 extern int parsec_stencil_1d(parsec_context_t *parsec,
-                      parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
-                      int time_steps, int graph_idx, char **extra_local_memory);
+                             parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                             int time_steps, int graph_idx, char **extra_local_memory);
+                      
+extern int parsec_nearest_radix_5(parsec_context_t *parsec,
+                                  parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                                  int time_steps, int graph_idx, char **extra_local_memory);

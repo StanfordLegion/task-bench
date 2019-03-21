@@ -1,24 +1,24 @@
 extern "C" %{
 /*
- * Copyright (c) 2017-2018 The Universiy of Tennessee and The Universiy
- *                         of Tennessee Research Foundation. All rights
- *                         reserved.
+ * Copyright (c) 2019 The Universiy of Tennessee and The Universiy
+ *                    of Tennessee Research Foundation. All rights
+ *                    reserved.
  */
 #include "parsec/data_dist/matrix/matrix.h"
 #include "benchmark_internal.h"
 #include "core_c.h"
 
-static inline int get_num_args(void *L, void *B, void *R){
-    int num_args = 1;
+static inline int get_num_args_internal(void *L, void *B, void *R){
+  int num_args = 1;
 
-    if( NULL != L )
-        num_args++;
-    if( NULL != B )
-        num_args++;
-    if( NULL != R )
-        num_args++;
+  if( NULL != L )
+      num_args++;
+  if( NULL != B )
+      num_args++;
+  if( NULL != R )
+      num_args++;
 
-    return num_args;
+  return num_args;
 }
 
 %}
@@ -50,8 +50,8 @@ RW A <- descA(m, x)
 BODY
 {
     int num_args; 
-    num_args = get_num_args(L, B, R); 
-    //printf("t: %d, x: %d, num_args: %d\n", t, x, num_args);
+    num_args = get_num_args_internal(L, B, R); 
+    printf("t: %d, x: %d, num_args: %d\n", t, x, num_args);
     if( 0 != x )
         CORE_kernel(es, graph, A, L, B, R, NULL, NULL, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
     else
@@ -65,18 +65,18 @@ parsec_taskpool_t*
 parsec_stencil_1d_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
                       int time_steps, int graph_idx, char **extra_local_memory)
 {
-    parsec_taskpool_t* stencil_1d_taskpool;
-    parsec_stencil_1d_taskpool_t* taskpool = NULL;
+  parsec_taskpool_t* stencil_1d_taskpool;
+  parsec_stencil_1d_taskpool_t* taskpool = NULL;
 
-    taskpool = parsec_stencil_1d_new(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory);
-    stencil_1d_taskpool = (parsec_taskpool_t*)taskpool;
+  taskpool = parsec_stencil_1d_new(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory);
+  stencil_1d_taskpool = (parsec_taskpool_t*)taskpool;
 
-    parsec_matrix_add2arena(taskpool->arenas[PARSEC_stencil_1d_DEFAULT_ARENA],
-                            parsec_datatype_float_t, matrix_UpperLower,
-                            1, A->mb, A->nb, A->mb,
-                            PARSEC_ARENA_ALIGNMENT_SSE, -1 );
+  parsec_matrix_add2arena(taskpool->arenas[PARSEC_stencil_1d_DEFAULT_ARENA],
+                          parsec_datatype_float_t, matrix_UpperLower,
+                          1, A->mb, A->nb, A->mb,
+                          PARSEC_ARENA_ALIGNMENT_SSE, -1 );
 
-    return stencil_1d_taskpool;
+  return stencil_1d_taskpool;
 }
 
 /**
@@ -84,9 +84,9 @@ parsec_stencil_1d_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fi
 */
 void parsec_stencil_1d_Destruct(parsec_taskpool_t *taskpool)
 {
-    parsec_stencil_1d_taskpool_t *stencil_1d_taskpool = (parsec_stencil_1d_taskpool_t *)taskpool;
-    parsec_matrix_del2arena(stencil_1d_taskpool->arenas[PARSEC_stencil_1d_DEFAULT_ARENA]);
-    parsec_taskpool_free(taskpool);
+  parsec_stencil_1d_taskpool_t *stencil_1d_taskpool = (parsec_stencil_1d_taskpool_t *)taskpool;
+  parsec_matrix_del2arena(stencil_1d_taskpool->arenas[PARSEC_stencil_1d_DEFAULT_ARENA]);
+  parsec_taskpool_free(taskpool);
 }
 
 /**
@@ -98,18 +98,18 @@ int parsec_stencil_1d(parsec_context_t *parsec,
                       parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
                       int time_steps, int graph_idx, char **extra_local_memory)
 {
-    parsec_taskpool_t *parsec_stencil_1d = NULL;
+  parsec_taskpool_t *parsec_stencil_1d = NULL;
 
-    parsec_stencil_1d = parsec_stencil_1d_New(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory); 
+  parsec_stencil_1d = parsec_stencil_1d_New(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory); 
 
-    if( parsec_stencil_1d != NULL ){
-        parsec_enqueue(parsec, parsec_stencil_1d);
-        parsec_context_start(parsec);
-        parsec_context_wait(parsec);
-        parsec_stencil_1d_Destruct(parsec_stencil_1d);
-    }
+  if( parsec_stencil_1d != NULL ){
+      parsec_enqueue(parsec, parsec_stencil_1d);
+      parsec_context_start(parsec);
+      parsec_context_wait(parsec);
+      parsec_stencil_1d_Destruct(parsec_stencil_1d);
+  }
 
-    return 0;
+  return 0;
 }
 
 %}

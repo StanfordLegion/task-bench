@@ -57,8 +57,14 @@ all: $(TARGET)
 
 stencil_1d.c stencil_1d.h: stencil_1d.jdf
 	$(PP) -E -i $< -o $(basename $<)
+	
+nearest_radix_5.c nearest_radix_5.h: nearest_radix_5.jdf
+	$(PP) -E -i $< -o $(basename $<)
 
 stencil_1d.o: stencil_1d.c stencil_1d.h benchmark_internal.h
+	$(cc) -c $(CFLAGS_JDF) $(INC) $<
+	
+nearest_radix_5.o: nearest_radix_5.c nearest_radix_5.h benchmark_internal.h
 	$(cc) -c $(CFLAGS_JDF) $(INC) $<
 
 benchmark.c benchmark.h: benchmark.jdf
@@ -94,7 +100,7 @@ main_shard: main_shard.o common.o
 main_checkfirst: main_checkfirst.o common.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 
-main_jdf: main_jdf.o common.o stencil_1d.o benchmark_internal.o benchmark.o
+main_jdf: main_jdf.o common.o stencil_1d.o nearest_radix_5.o benchmark_internal.o benchmark.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 
 clean:
