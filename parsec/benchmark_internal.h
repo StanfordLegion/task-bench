@@ -21,6 +21,8 @@
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
 #include <parsec/arena.h>
 
+//#define TRACK_NB_TASKS
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -39,8 +41,7 @@ extern int get_num_args(task_graph_t g, int t, int x, int in_first, int in_last)
 
 int get_num_args_out(task_graph_t g, int t, int x, int out_first, int out_last);
 
-}
-#endif
+extern int nb_tasks_per_node[32];
 
 extern int parsec_stencil_1d(parsec_context_t *parsec,
                              parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
@@ -49,3 +50,23 @@ extern int parsec_stencil_1d(parsec_context_t *parsec,
 extern int parsec_nearest_radix_5(parsec_context_t *parsec,
                                   parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
                                   int time_steps, int graph_idx, char **extra_local_memory);
+                                  
+                                  
+extern int parsec_benchmark(parsec_context_t *parsec,
+                     parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                     int time_steps, int graph_idx, char **extra_local_memory);
+
+extern void parsec_stencil_1d_Destruct(parsec_taskpool_t *taskpool);
+
+extern parsec_taskpool_t*
+parsec_stencil_1d_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                      int time_steps, int graph_idx, char **extra_local_memory);
+
+extern parsec_taskpool_t*
+parsec_nearest_radix_5_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                           int time_steps, int graph_idx, char **extra_local_memory);
+
+extern void parsec_nearest_radix_5_Destruct(parsec_taskpool_t *taskpool);
+
+}
+#endif

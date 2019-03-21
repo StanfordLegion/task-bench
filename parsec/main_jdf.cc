@@ -27,13 +27,14 @@
 #define MPI_TIMING
 #endif
 #include "timer.h"
-//#include "benchmark_internal.h"
+#include "benchmark_internal.h"
 
 #define MAX_ARGS  4
 
 #define VERBOSE_LEVEL 0
 
 #define USE_CORE_VERIFICATION
+//#define TRACK_NB_TASKS
 
 #if defined (TRACK_NB_TASKS)  
 int nb_tasks_per_node[32];
@@ -41,31 +42,6 @@ int nb_tasks_per_node[32];
 
 char **extra_local_memory;
 
-extern "C" {
-int parsec_stencil_1d(parsec_context_t *parsec,
-                      parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
-                      int time_steps, int graph_idx, char **extra_local_memory);
-                      
-int parsec_nearest_radix_5(parsec_context_t *parsec,
-                           parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
-                           int time_steps, int graph_idx, char **extra_local_memory);
-
-int parsec_benchmark(parsec_context_t *parsec,
-                     parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
-                     int time_steps, int graph_idx, char **extra_local_memory);
-
-void parsec_stencil_1d_Destruct(parsec_taskpool_t *taskpool);
-
-parsec_taskpool_t*
-parsec_stencil_1d_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
-                      int time_steps, int graph_idx, char **extra_local_memory);
-
-parsec_taskpool_t*
-parsec_nearest_radix_5_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
-                           int time_steps, int graph_idx, char **extra_local_memory);
-
-void parsec_nearest_radix_5_Destruct(parsec_taskpool_t *taskpool);
-}
 
 typedef struct matrix_s{
   two_dim_block_cyclic_t dcC;

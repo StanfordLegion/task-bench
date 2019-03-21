@@ -50,7 +50,7 @@ CFLAGS += $(INC)
 
 include ../core/make_blas.mk
 
-TARGET = main main_shard main_checkfirst main_jdf
+TARGET = main main_shard main_checkfirst main_jdf main_multi_taskpool
 all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
@@ -90,6 +90,9 @@ main_checkfirst.o: main_checkfirst.cc ../core/timer.h
 
 main_jdf.o: main_jdf.cc ../core/timer.h ../core/core_c.h
 	$(CC) -c $(CFLAGS) $<
+	
+main_multi_taskpool.o: main_multi_taskpool.cc ../core/timer.h
+	$(CC) -c $(CFLAGS) $<
 
 main: main.o common.o 
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
@@ -102,6 +105,9 @@ main_checkfirst: main_checkfirst.o common.o
 
 main_jdf: main_jdf.o common.o stencil_1d.o nearest_radix_5.o benchmark_internal.o benchmark.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
+	
+main_multi_taskpool: main_multi_taskpool.o common.o
+	$(CC) $^ $(LIB) $(LDFLAGS) -o $@	
 
 clean:
 	rm -f *.o
