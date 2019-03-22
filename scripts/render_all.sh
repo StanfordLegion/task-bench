@@ -11,10 +11,9 @@ else
 fi
 
 if [[ $(basename $PWD) = compute ]]; then
-    "$root_dir"/metg.py -m cori -g 1 -d no_comm --csv excel > metg_no_comm.csv
-    "$root_dir"/metg.py -m cori -g 1 -d stencil_1d --csv excel > metg_stencil.csv
-    "$root_dir"/metg.py -m cori -g 1 -d nearest --csv excel > metg_nearest.csv
-    "$root_dir"/metg.py -m cori -g 1 -d spread --csv excel > metg_spread.csv
+    for pattern in stencil_1d nearest spread fft; do
+        "$root_dir"/metg.py -m cori -g 1 -d $pattern --csv excel > metg_${pattern}.csv
+    done
     "$root_dir"/metg.py -m cori -g 4 -d nearest --csv excel > metg_ngraphs_4_nearest.csv
 
     "$root_dir"/efficiency.py -m cori -g 1 -d stencil_1d -n 1 --csv excel > efficiency_stencil.csv
@@ -26,10 +25,9 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/weak.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' --csv excel > weak_mpi.csv
     "$root_dir"/strong.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' --csv excel > strong_mpi.csv
 
-    "$root_dir"/render_metg.py metg_no_comm.csv # --title 'METG vs Nodes (Cori, Compute, No Comm)'
-    "$root_dir"/render_metg.py metg_stencil.csv # --title 'METG vs Nodes (Cori, Compute, Stencil)'
-    "$root_dir"/render_metg.py metg_nearest.csv # --title 'METG vs Nodes (Cori, Compute, Nearest)'
-    "$root_dir"/render_metg.py metg_spread.csv # --title 'METG vs Nodes (Cori, Compute, Spread)'
+    for pattern in stencil_1d nearest spread fft; do
+        "$root_dir"/render_metg.py metg_${pattern}.csv # --title "METG vs Nodes (Cori, Compute, ${pattern})"
+    done
     "$root_dir"/render_metg.py metg_ngraphs_4_nearest.csv # --title 'METG vs Nodes (Cori, Compute, 4x Nearest)'
 
     "$root_dir"/render_metg.py efficiency_stencil.csv \
@@ -92,10 +90,9 @@ if [[ $(basename $PWD) = compute ]]; then
                --highlight-column 'metg' # \
                # --title 'Strong Scaling by Problem Size (Cori, Compute, Stencil)'
 
-    crop metg_no_comm.pdf
-    crop metg_stencil.pdf
-    crop metg_nearest.pdf
-    crop metg_spread.pdf
+    for pattern in stencil_1d nearest spread fft; do
+        crop metg_${pattern}.pdf
+    done
     crop metg_ngraphs_4_nearest.pdf
     crop efficiency_stencil.pdf
     crop efficiency_stencil_mpi.pdf
