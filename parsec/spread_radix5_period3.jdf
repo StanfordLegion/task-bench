@@ -17,64 +17,66 @@ time_steps  [ type = "int" ]
 graph_idx   [ type = "int" ]
 extra_local_memory   [ type = "char**" ]
 period   [ type = "int" hidden = on default = 3 ]
+radix    [ type = "int" hidden = on default = 5 ]
+width    [ type = "int" hidden = on default = "descA->lnt/radix" ]
 
 task(t, x)
 
 t = 0 .. time_steps-1
 x = 0 .. descA->lnt-1
-m = t%nb_fields
+m = t % nb_fields
 
-in2_1 = (x+period) % descA->lnt
-in2_2 = (x+period+1) % descA->lnt
-in2_3 = (x+period-1) % descA->lnt
+in2_0 = (x+width) % descA->lnt
+in2_1 = (x+width+1) % descA->lnt
+in2_2 = (x+width+2) % descA->lnt
 
-in3_1 = (x+2*period) % descA->lnt
-in3_2 = (x+2*period+1) % descA->lnt
-in3_3 = (x+2*period-1) % descA->lnt
+in3_0 = (x+2*width) % descA->lnt
+in3_1 = (x+2*width+1) % descA->lnt
+in3_2 = (x+2*width+2) % descA->lnt
 
-in4_1 = (x+3*period) % descA->lnt
-in4_2 = (x+3*period+1) % descA->lnt
-in4_3 = (x+3*period-1) % descA->lnt
+in4_0 = (x+3*width) % descA->lnt
+in4_1 = (x+3*width+1) % descA->lnt
+in4_2 = (x+3*width+2) % descA->lnt
 
-in5_1 = (x+4*period) % descA->lnt
-in5_2 = (x+4*period+1) % descA->lnt
-in5_3 = (x+4*period-1) % descA->lnt
+in5_0 = (x+4*width) % descA->lnt
+in5_1 = (x+4*width+1) % descA->lnt
+in5_2 = (x+4*width+2) % descA->lnt
 
-out2_0 = (x%descA->lnt-period+descA->lnt) % descA->lnt
-out2_1 = (x%descA->lnt-period-1+descA->lnt) % descA->lnt
-out2_2 = (x%descA->lnt-period+1+descA->lnt) % descA->lnt
+out2_0 = (x%descA->lnt-width-1+descA->lnt) % descA->lnt
+out2_1 = (x%descA->lnt-width-2+descA->lnt) % descA->lnt
+out2_2 = (x%descA->lnt-width+descA->lnt) % descA->lnt
 
-out3_0 = (x%descA->lnt-2*period+descA->lnt) % descA->lnt
-out3_1 = (x%descA->lnt-2*period-1+descA->lnt) % descA->lnt
-out3_2 = (x%descA->lnt-2*period+1+descA->lnt) % descA->lnt
+out3_0 = (x%descA->lnt-2*width-1+descA->lnt) % descA->lnt
+out3_1 = (x%descA->lnt-2*width-2+descA->lnt) % descA->lnt
+out3_2 = (x%descA->lnt-2*width+descA->lnt) % descA->lnt
 
-out4_0 = (x%descA->lnt-3*period+descA->lnt) % descA->lnt
-out4_1 = (x%descA->lnt-3*period-1+descA->lnt) % descA->lnt
-out4_2 = (x%descA->lnt-3*period+1+descA->lnt) % descA->lnt
+out4_0 = (x%descA->lnt-3*width-1+descA->lnt) % descA->lnt
+out4_1 = (x%descA->lnt-3*width-2+descA->lnt) % descA->lnt
+out4_2 = (x%descA->lnt-3*width+descA->lnt) % descA->lnt
 
-out5_0 = (x%descA->lnt-4*period+descA->lnt) % descA->lnt
-out5_1 = (x%descA->lnt-4*period-1+descA->lnt) % descA->lnt
-out5_2 = (x%descA->lnt-4*period+1+descA->lnt) % descA->lnt
+out5_0 = (x%descA->lnt-4*width-1+descA->lnt) % descA->lnt
+out5_1 = (x%descA->lnt-4*width-2+descA->lnt) % descA->lnt
+out5_2 = (x%descA->lnt-4*width+descA->lnt) % descA->lnt
 
 : descA(m, x)
 
 READ A1 <- (t > 0)? A task(t-1, x): NULL
 
-READ A2 <- (t > 0 && t % period == 1)? A task(t-1, in2_1)
-        <- (t > 0 && t % period == 2)? A task(t-1, in2_2) 
-        <- (t > 0 && t % period == 0)? A task(t-1, in2_3): NULL
+READ A2 <- (t > 0 && t % period == 0)? A task(t-1, in2_0)
+        <- (t > 0 && t % period == 1)? A task(t-1, in2_1) 
+        <- (t > 0 && t % period == 2)? A task(t-1, in2_2): NULL
 
-READ A3 <- (t > 0 && t % period == 1)? A task(t-1, in3_1)
-        <- (t > 0 && t % period == 2)? A task(t-1, in3_2) 
-        <- (t > 0 && t % period == 0)? A task(t-1, in3_3): NULL
+READ A3 <- (t > 0 && t % period == 0)? A task(t-1, in3_0)
+        <- (t > 0 && t % period == 1)? A task(t-1, in3_1) 
+        <- (t > 0 && t % period == 2)? A task(t-1, in3_2): NULL
 
-READ A4 <- (t > 0 && t % period == 1)? A task(t-1, in4_1)
-        <- (t > 0 && t % period == 2)? A task(t-1, in4_2) 
-        <- (t > 0 && t % period == 0)? A task(t-1, in4_3): NULL
+READ A4 <- (t > 0 && t % period == 0)? A task(t-1, in4_0)
+        <- (t > 0 && t % period == 1)? A task(t-1, in4_1) 
+        <- (t > 0 && t % period == 2)? A task(t-1, in4_2): NULL
 
-READ A5 <- (t > 0 && t % period == 1)? A task(t-1, in5_1)
-        <- (t > 0 && t % period == 2)? A task(t-1, in5_2) 
-        <- (t > 0 && t % period == 0)? A task(t-1, in5_3): NULL
+READ A5 <- (t > 0 && t % period == 0)? A task(t-1, in5_0)
+        <- (t > 0 && t % period == 1)? A task(t-1, in5_1) 
+        <- (t > 0 && t % period == 2)? A task(t-1, in5_2): NULL
 
 RW A <- descA(m, x)
      -> (t < time_steps-1)? A1 task(t+1, x)
@@ -93,6 +95,26 @@ RW A <- descA(m, x)
 
 BODY
 {
+#if 0
+    if(t > 0 && t % period == 1)
+    printf("in: t %d, x %d: A2 %d, A3 %d, A4 %d, A5 %d\n", t, x, in2_1, in3_1, in4_1, in5_1);
+
+    if(t > 0 && t % period == 2)
+    printf("in: t %d, x %d: A2 %d, A3 %d, A4 %d, A5 %d\n", t, x, in2_2, in3_2, in4_2, in5_2);
+
+    if(t > 0 && t % period == 0)
+    printf("in: t %d, x %d: A2 %d, A3 %d, A4 %d, A5 %d\n", t, x, in2_0, in3_0, in4_0, in5_0);
+
+    if(t < time_steps-1 && t % period == 0)
+    printf("out: t %d, x %d: A2 %d, A3 %d, A4 %d, A5 %d\n", t, x, out2_0, out3_0, out4_0, out5_0);
+
+    if(t < time_steps-1 && t % period == 1)
+    printf("out: t %d, x %d: A2 %d, A3 %d, A4 %d, A5 %d\n", t, x, out2_1, out3_1, out4_1, out5_1);
+
+    if(t < time_steps-1 && t % period == 2)
+    printf("out: t %d, x %d: A2 %d, A3 %d, A4 %d, A5 %d\n", t, x, out2_2, out3_2, out4_2, out5_2);
+#endif
+
     int num_args;
     if( 0 == t)
         num_args = 1;
@@ -101,6 +123,10 @@ BODY
 
     //printf("t: %d, x: %d, num_args: %d\n", t, x, num_args);
     CORE_kernel(es, graph, A, A1, A2, A3, A4, A5, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
+
+//    if(t == 0)
+//    printf("out t %d, x %d: out %d\n", t, x, *((float *)A));
+
 }
 END
 

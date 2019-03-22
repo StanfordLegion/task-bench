@@ -118,6 +118,6 @@ main_multi_taskpool: main_multi_taskpool.o common.o
 clean:
 	rm -f *.o
 	rm -f $(TARGET)
-	rm -f benchmark.h benchmark.c stencil_1d.c stencil_1d.h
+	rm -f benchmark.h benchmark.c stencil_1d.c stencil_1d.h nearest_radix_5.c nearest_radix_5.h spread_radix5_period3.c spread_radix5_period3.h
 
 .PHONY: all clean
