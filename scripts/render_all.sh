@@ -11,7 +11,8 @@ else
 fi
 
 if [[ $(basename $PWD) = compute ]]; then
-    for pattern in stencil_1d nearest spread fft; do
+    "$root_dir"/metg.py -m cori -g 1 -d stencil_1d --csv excel > metg_stencil.csv
+    for pattern in nearest spread fft; do
         "$root_dir"/metg.py -m cori -g 1 -d $pattern --csv excel > metg_${pattern}.csv
     done
     "$root_dir"/metg.py -m cori -g 4 -d nearest --csv excel > metg_ngraphs_4_nearest.csv
@@ -25,7 +26,8 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/weak.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' --csv excel > weak_mpi.csv
     "$root_dir"/strong.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' --csv excel > strong_mpi.csv
 
-    for pattern in stencil_1d nearest spread fft; do
+    "$root_dir"/render_metg.py metg_stencil.csv # --title "METG vs Nodes (Cori, Compute, Stencil)"
+    for pattern in nearest spread fft; do
         "$root_dir"/render_metg.py metg_${pattern}.csv # --title "METG vs Nodes (Cori, Compute, ${pattern})"
     done
     "$root_dir"/render_metg.py metg_ngraphs_4_nearest.csv # --title 'METG vs Nodes (Cori, Compute, 4x Nearest)'
@@ -90,7 +92,8 @@ if [[ $(basename $PWD) = compute ]]; then
                --highlight-column 'metg' # \
                # --title 'Strong Scaling by Problem Size (Cori, Compute, Stencil)'
 
-    for pattern in stencil_1d nearest spread fft; do
+    crop metg_stencil.pdf
+    for pattern in nearest spread fft; do
         crop metg_${pattern}.pdf
     done
     crop metg_ngraphs_4_nearest.pdf
