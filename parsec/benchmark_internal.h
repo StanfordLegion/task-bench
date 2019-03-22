@@ -50,13 +50,14 @@ extern int parsec_stencil_1d(parsec_context_t *parsec,
 extern int parsec_nearest_radix_5(parsec_context_t *parsec,
                                   parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
                                   int time_steps, int graph_idx, char **extra_local_memory);
-                                  
+
+extern int parsec_spread_radix5_period3(parsec_context_t *parsec,
+                                        parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                                        int time_steps, int graph_idx, char **extra_local_memory);
                                   
 extern int parsec_benchmark(parsec_context_t *parsec,
                      parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
                      int time_steps, int graph_idx, char **extra_local_memory);
-
-extern void parsec_stencil_1d_Destruct(parsec_taskpool_t *taskpool);
 
 extern parsec_taskpool_t*
 parsec_stencil_1d_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
@@ -66,7 +67,15 @@ extern parsec_taskpool_t*
 parsec_nearest_radix_5_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
                            int time_steps, int graph_idx, char **extra_local_memory);
 
+extern parsec_taskpool_t*
+parsec_spread_radix5_period3_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                           int time_steps, int graph_idx, char **extra_local_memory);
+
+extern void parsec_stencil_1d_Destruct(parsec_taskpool_t *taskpool);
+
 extern void parsec_nearest_radix_5_Destruct(parsec_taskpool_t *taskpool);
+
+extern void parsec_spread_radix5_period3_Destruct(parsec_taskpool_t *taskpool);
 
 }
 #endif

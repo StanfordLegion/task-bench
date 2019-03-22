@@ -239,6 +239,9 @@ void ParsecApp::execute_main_loop()
     } else if (g.dependence == DependenceType::NEAREST && g.radix == 5) {
       //parsec_nearest_radix_5(parsec, (parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory);
       tp[i] = parsec_nearest_radix_5_New((parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory); 
+    } else if (g.dependence == DependenceType::SPREAD && g.radix == 5) {
+      //parsec_spread_radix5_period3(parsec, (parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory);
+      tp[i] = parsec_spread_radix5_period3_New((parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory); 
     } else {
       assert(0);
       parsec_benchmark(parsec, (parsec_tiled_matrix_dc_t *)&mat, g, nb_fields, g.timesteps, i, extra_local_memory);
@@ -257,6 +260,8 @@ void ParsecApp::execute_main_loop()
       parsec_stencil_1d_Destruct(tp[i]);
     } else if (g.dependence == DependenceType::NEAREST && g.radix == 5) {
       parsec_nearest_radix_5_Destruct(tp[i]);
+    } else if (g.dependence == DependenceType::SPREAD && g.radix == 5) {
+      parsec_spread_radix5_period3_Destruct(tp[i]);
     } else {
       assert(0);
     }

@@ -1,11 +1,11 @@
-ifndef PARSEC_DIR
-$(error PARSEC_DIR variable is not defined, aborting build)
-endif
+#ifndef PARSEC_DIR
+#$(error PARSEC_DIR variable is not defined, aborting build)
+#endif
 
 PARSEC_SRC = $(PARSEC_DIR)/../../
 
-#PARSEC_DIR = /home/qcao3/task-bench/software/parsec/build/install
-#PARSEC_SRC = /home/qcao3/task-bench/software/parsec
+PARSEC_DIR = /home/qcao3/task-bench/software/parsec/build/install
+PARSEC_SRC = /home/qcao3/task-bench/software/parsec
 
 #PARSEC_DIR = /home/qcao3/task-bench/software/parsec-dtd-interface/build/install
 #PARSEC_SRC = /home/qcao3/task-bench/software/parsec-dtd-interface
@@ -73,6 +73,12 @@ benchmark.c benchmark.h: benchmark.jdf
 benchmark.o: benchmark.c benchmark.h benchmark_internal.h
 	$(cc) -c $(CFLAGS_JDF) $(INC) $<
 
+spread_radix5_period3.c spread_radix5_period3.h: spread_radix5_period3.jdf
+	$(PP) -E -i $< -o $(basename $<)
+
+spread_radix5_period3.o: spread_radix5_period3.c spread_radix5_period3.h benchmark_internal.h
+	$(cc) -c $(CFLAGS_JDF) $(INC) $<
+
 benchmark_internal.o: benchmark_internal.cc
 	$(CC) -c $(CFLAGS) $<
 
@@ -103,7 +109,7 @@ main_shard: main_shard.o common.o
 main_checkfirst: main_checkfirst.o common.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 
-main_jdf: main_jdf.o common.o stencil_1d.o nearest_radix_5.o benchmark_internal.o benchmark.o
+main_jdf: main_jdf.o common.o stencil_1d.o nearest_radix_5.o benchmark_internal.o benchmark.o spread_radix5_period3.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 	
 main_multi_taskpool: main_multi_taskpool.o common.o
