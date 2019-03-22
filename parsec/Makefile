@@ -2,7 +2,7 @@
 #$(error PARSEC_DIR variable is not defined, aborting build)
 #endif
 
-PARSEC_SRC = $(PARSEC_DIR)/../../
+PARSEC_SRC = $(PARSEC_DIR)/../..
 
 #PARSEC_DIR = /home/qcao3/task-bench/software/parsec/build/install
 #PARSEC_SRC = /home/qcao3/task-bench/software/parsec
