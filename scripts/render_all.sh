@@ -4,7 +4,7 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ $1 = crop ]]; then
     function crop {
-        pdfcrop "$1" && mv "$(basename "$1" .pdf)"-crop.pdf "$1"
+        pdfcrop "$1" >/dev/null && mv "$(basename "$1" .pdf)"-crop.pdf "$1"
     }
 else
     function crop { true; }
