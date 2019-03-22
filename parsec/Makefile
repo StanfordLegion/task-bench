@@ -4,8 +4,8 @@
 
 PARSEC_SRC = $(PARSEC_DIR)/../../
 
-PARSEC_DIR = /home/qcao3/task-bench/software/parsec/build/install
-PARSEC_SRC = /home/qcao3/task-bench/software/parsec
+#PARSEC_DIR = /home/qcao3/task-bench/software/parsec/build/install
+#PARSEC_SRC = /home/qcao3/task-bench/software/parsec
 
 #PARSEC_DIR = /home/qcao3/task-bench/software/parsec-dtd-interface/build/install
 #PARSEC_SRC = /home/qcao3/task-bench/software/parsec-dtd-interface
