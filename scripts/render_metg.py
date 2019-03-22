@@ -19,11 +19,13 @@
 import matplotlib
 matplotlib.use('PDF')
 import matplotlib.pyplot as plt
-from matplotlib.mlab import csv2rec
 import numpy as np
 import argparse
 import ast
 import os
+
+def csv2rec(filename):
+    return np.recfromtxt(filename, dtype=None, delimiter=',', names=True, encoding='utf-8')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('filename')
