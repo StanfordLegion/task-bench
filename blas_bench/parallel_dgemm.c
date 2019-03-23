@@ -48,6 +48,7 @@ double get_cur_time(){
 int main(int argc, char** argv)
 {
   double time[128]; 
+  double flops[128];
   int N = 256;
   int loop_cnt;
   int nb_threads = 1;
@@ -116,9 +117,10 @@ int main(int argc, char** argv)
   }
   s_elapsed = (get_cur_time() - s_initial) / loop_cnt;
   time[myid] = s_elapsed * 1000;
+  flops[myid] = 2*(double)N*(double)N*(double)N/s_elapsed*1e-9;
 
   printf ("Thread #%d, MKL DGEMM N=%d, time %.5f milliseconds, GFLOPS=%.3f\n", 
-          myid, N, (s_elapsed * 1000), 2*(double)N*(double)N*(double)N/s_elapsed*1e-9);
+          myid, N, (s_elapsed * 1000), flops[myid]);
   
   mkl_free(A);
   mkl_free(B);
@@ -134,12 +136,10 @@ int main(int argc, char** argv)
   }
 }
   // compute average
-  double average=0.0;
+  double total_flops=0.0;
   for (int i=0; i < nb_threads; i++)
-      average += time[i]; 
-  average = average / nb_threads;
-  printf(" AE= %.3f ms, Each thread uses %.3f MB\n", 
-          average, (double)N*(double)N*sizeof(double)/(1024*1024));
+      total_flops += flops[i]; 
+  printf("total flops %e gflops\n", total_flops);
 
 
   printf (" Example completed. \n\n");
