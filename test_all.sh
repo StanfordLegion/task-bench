@@ -70,15 +70,17 @@ fi
 if [[ $USE_REALM -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1
-            ./realm/task_bench -steps $steps -type $t $k -ll:cpu 2
-            ./realm/task_bench -steps $steps -type $t $k -ll:cpu 4
-            if [[ $USE_GASNET -eq 1 ]]; then
-                mpirun -np 2 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1
-                mpirun -np 2 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 2
-                mpirun -np 4 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1
-            fi
-            ./realm/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2
+            for option in "" "-force-copies"; do
+                ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1 $option
+                ./realm/task_bench -steps $steps -type $t $k -ll:cpu 2 $option
+                ./realm/task_bench -steps $steps -type $t $k -ll:cpu 4 $option
+                if [[ $USE_GASNET -eq 1 ]]; then
+                    mpirun -np 2 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1 $option
+                    mpirun -np 2 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 2 $option
+                    mpirun -np 4 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1 $option
+                fi
+                ./realm/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2 $option
+            done
 
             ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 1
             ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 2
