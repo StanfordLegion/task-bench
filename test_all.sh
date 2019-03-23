@@ -70,27 +70,19 @@ fi
 if [[ $USE_REALM -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            for option in "" "-force-copies"; do
-                ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1 $option
-                ./realm/task_bench -steps $steps -type $t $k -ll:cpu 2 $option
-                ./realm/task_bench -steps $steps -type $t $k -ll:cpu 4 $option
-                if [[ $USE_GASNET -eq 1 ]]; then
-                    mpirun -np 2 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1 $option
-                    mpirun -np 2 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 2 $option
-                    mpirun -np 4 ./realm/task_bench -steps $steps -type $t $k -ll:cpu 1 $option
-                fi
-                ./realm/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2 $option
+            for variant in realm realm_subgraph; do
+                for option in "" "-force-copies"; do
+                    ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 1 $option
+                    ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 2 $option
+                    ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 4 $option
+                    if [[ $USE_GASNET -eq 1 ]]; then
+                        mpirun -np 2 ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 1 $option
+                        mpirun -np 2 ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 2 $option
+                        mpirun -np 4 ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 1 $option
+                    fi
+                    ./$variant/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2 $option
+                done
             done
-
-            ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 1
-            ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 2
-            ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 4
-            if [[ $USE_GASNET -eq 1 ]]; then
-                mpirun -np 2 ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 1
-                mpirun -np 2 ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 2
-                mpirun -np 4 ./realm_subgraph/task_bench -steps $steps -type $t $k -ll:cpu 1
-            fi
-            ./realm_subgraph/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2
 
             # FIXME: Realm old triggers a bug in GASNet MPI conduit with higher steps.
             ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 1
