@@ -89,6 +89,12 @@ void *execute_task(void *tr)
           task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
           bytes,
           ((double)bytes/1024/1024) / (*(task_arg->time_end) - *(task_arg->time_start)));
+  } else if (g.kernel.type == COMPUTE_DGEMM) {
+    long long flops = count_flops_per_task(task_arg->graph, 0, 0) * task_arg->nb_tasks;
+    printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flops %lld, flop/s %e\n", 
+          task_arg->tid, task_arg->nb_tasks, 
+          task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3, flops, 
+          (double)flops / (*(task_arg->time_end) - *(task_arg->time_start)));
   }
   return NULL;
 }
