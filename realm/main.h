@@ -33,6 +33,7 @@ public:
   long proc_index;
   long num_procs;
   long num_fields;
+  long force_copies;
   Realm::Memory sysmem;
   Realm::Memory regmem;
   Realm::Barrier sync;

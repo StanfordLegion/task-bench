@@ -199,6 +199,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   long proc_index = a.proc_index;
   long num_procs = a.num_procs;
   long num_fields = a.num_fields;
+  long force_copies = a.force_copies;
   Memory sysmem = a.sysmem;
   Memory regmem = a.regmem;
   Barrier sync = a.sync;
@@ -690,7 +691,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
               if (dep >= last_offset && dep < last_offset + last_width) {
                 char *data = result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST);
                 if (point >= offset && point < offset + width) {
-                  if (data) {
+                  if (data && !force_copies) {
                     // Data available locally
                   } else {
                     // Data is remote
@@ -766,7 +767,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
               Event postcondition = task_postcondition;
               if (dep >= next_offset && dep < next_offset + next_width) {
                 // Only copy when the dependent task doesn't live in the same address space.
-                if (!result_base.at(graph_index).at(dep).at(fid - FID_FIRST)) {
+                if (force_copies || !result_base.at(graph_index).at(dep).at(fid - FID_FIRST)) {
                   long slot = remote_input_slot.at(graph_index).at(point - first_point).at(next_dset).at(dep);
                   postcondition = copy(
                     task_results.at(graph_index).at(point),
@@ -846,7 +847,22 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   App app(global_argc, global_argv);
   auto &graphs = app.graphs;
 
-  const long num_fields = 5;
+  long num_fields = 5;
+  bool force_copies = false;
+  for (int i = 1; i < global_argc; i++) {
+    if (!strcmp(global_argv[i], "-field")) {
+      long value  = atol(global_argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"-field %ld\" must be > 1\n", value);
+        abort();
+      }
+      num_fields = value;
+    }
+
+    if (!strcmp(global_argv[i], "-force-copies")) {
+      force_copies = true;
+    }
+  }
 
   app.display();
 
@@ -1011,6 +1027,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     args.proc_index = proc_index;
     args.num_procs = num_procs;
     args.num_fields = num_fields;
+    args.force_copies = force_copies;
     args.sysmem = proc_sysmems[proc];
     args.regmem = proc_regmems[proc];
     args.sync = sync_bar;
