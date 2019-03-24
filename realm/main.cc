@@ -662,9 +662,9 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 
       // Don't leak copy postconditions between graphs.
       copy_postconditions.resize(last_point - first_point + 1);
-      for (auto &field_postconditions : copy_postconditions) {
-        field_postconditions.resize(num_fields);
-        for (auto &postconditions : field_postconditions) {
+      for (auto &point_postconditions : copy_postconditions) {
+        point_postconditions.resize(num_fields);
+        for (auto &postconditions : point_postconditions) {
           postconditions.clear();
         }
       }
