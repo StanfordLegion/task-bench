@@ -649,7 +649,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   // Main loop
   unsigned long long start_time = 0, stop_time = 0;
   std::vector<Event> preconditions;
-  std::vector<std::vector<Event> > copy_postconditions(num_fields);
+  std::vector<std::vector<std::vector<Event> > > copy_postconditions;
   for (long rep = 0; rep < 1; ++rep) {
     start_time = Clock::current_time_in_nanoseconds();
     for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
@@ -661,8 +661,12 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
 
       // Don't leak copy postconditions between graphs.
-      for (long field = 0; field < num_fields; ++field) {
-        copy_postconditions.at(field).clear();
+      copy_postconditions.resize(last_point - first_point + 1);
+      for (auto &field_postconditions : copy_postconditions) {
+        field_postconditions.resize(num_fields);
+        for (auto &postconditions : field_postconditions) {
+          postconditions.clear();
+        }
       }
 
       for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
@@ -690,8 +694,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           long n_inputs = 0, slot = 0;
           preconditions.clear();
           preconditions.insert(preconditions.begin(),
-                               copy_postconditions.at(fid - FID_FIRST).begin(),
-                               copy_postconditions.at(fid - FID_FIRST).end());
+                               copy_postconditions.at(point - first_point).at(fid - FID_FIRST).begin(),
+                               copy_postconditions.at(point - first_point).at(fid - FID_FIRST).end());
           const auto &dset_deps = graph.dependencies(dset, point);
           for (auto interval : dset_deps) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
@@ -772,7 +776,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
             events.push_back(task_postcondition);
           }
 
-          copy_postconditions.at(fid - FID_FIRST).clear();
+          copy_postconditions.at(point - first_point).at(fid - FID_FIRST).clear();
 
           // RAW dependencies
           for (auto interval : next_dset_rev_deps) {
@@ -792,7 +796,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                       .at(slot),
                     fid, graph.output_bytes_per_task,
                     task_postcondition);
-                  copy_postconditions.at(fid - FID_FIRST).push_back(postcondition);
+                  copy_postconditions.at(point - first_point).at(fid - FID_FIRST).push_back(postcondition);
                 }
               }
               complete.arrive(1, postcondition);
