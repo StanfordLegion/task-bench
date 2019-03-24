@@ -279,9 +279,6 @@ static Event define_subgraph(Subgraph &subgraph,
     long last_offset = graph.offset_at_timestep(timestep-1);
     long last_width = graph.width_at_timestep(timestep-1);
 
-    long last_field_offset = graph.offset_at_timestep(timestep - num_fields + 1);
-    long last_field_width = graph.width_at_timestep(timestep - num_fields + 1);
-
     long next_offset = graph.offset_at_timestep(timestep+1);
     long next_width = graph.width_at_timestep(timestep+1);
 
@@ -322,7 +319,7 @@ static Event define_subgraph(Subgraph &subgraph,
       // WAR dependencies (part 1)
       for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
         for (long dep = interval.first; dep <= interval.second; ++dep) {
-          if (dep >= last_field_offset && dep < last_field_offset + last_field_width) {
+          if (dep >= next_offset && dep < next_offset + next_width) {
             // Only copy when the dependent task doesn't live in the same address space.
             if (!force_copies && result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST)) {
               preconditions.push_back(next_precondition++);
@@ -631,9 +628,6 @@ static Event instantiate_subgraph(Subgraph &subgraph,
     // long last_offset = graph.offset_at_timestep(timestep-1);
     // long last_width = graph.width_at_timestep(timestep-1);
 
-    long last_field_offset = graph.offset_at_timestep(timestep - num_fields + 1);
-    long last_field_width = graph.width_at_timestep(timestep - num_fields + 1);
-
     long next_offset = graph.offset_at_timestep(timestep+1);
     long next_width = graph.width_at_timestep(timestep+1);
 
@@ -658,7 +652,7 @@ static Event instantiate_subgraph(Subgraph &subgraph,
       // WAR dependencies (part 1)
       for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
         for (long dep = interval.first; dep <= interval.second; ++dep) {
-          if (dep >= last_field_offset && dep < last_field_offset + last_field_width) {
+          if (dep >= next_offset && dep < next_offset + next_width) {
             // Only copy when the dependent task doesn't live in the same address space.
             if (!force_copies && result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST)) {
               Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
