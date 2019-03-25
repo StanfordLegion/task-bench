@@ -24,12 +24,13 @@ import sys
 import chart_util as util
 
 class Parser(util.Parser):
-    def __init__(self, ngraphs, dependence, nodes, system, machine, threshold, csv_dialect):
+    def __init__(self, ngraphs, dependence, nodes, system, machine, resource, threshold, csv_dialect):
         self.ngraphs = ngraphs
         self.dependence = dependence.replace('_', ' ')
         self.nodes = nodes
         self.system = system
         self.machine = machine
+        self.resource = resource
         self.threshold = threshold
         self.csv_dialect = csv_dialect
 
@@ -48,12 +49,12 @@ class Parser(util.Parser):
             items = dict(zip(data.keys(), values))
 
             self.table[items['iterations']][row['name']] = min(
-                items['flops_per_second'],
+                items['%s_per_second' % self.resource],
                 self.table[items['iterations']][row['name']],
                 key=float)
 
             self.metg[items['iterations']] = min(
-                util.get_machine_parameters(self.machine)['peak_flops'] * self.threshold,
+                util.get_machine_parameters(self.machine, self.resource)['peak_%s' % self.resource] * self.threshold,
                 self.metg[items['iterations']],
                 key=float)
 
@@ -77,9 +78,9 @@ class Parser(util.Parser):
             row['metg'] = self.metg[iterations]
             out.writerow(row)
 
-def driver(ngraphs, dependence, nodes, system, machine, threshold, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, nodes, system, machine, threshold, csv_dialect)
-    parser.parse(machine, threshold, False, verbose)
+def driver(ngraphs, dependence, nodes, system, machine, resource, threshold, csv_dialect, verbose):
+    parser = Parser(ngraphs, dependence, nodes, system, machine, resource, threshold, csv_dialect)
+    parser.parse(machine, resource, threshold, False, verbose)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -88,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--nodes', type=int, required=True)
     parser.add_argument('-s', '--system')
     parser.add_argument('-m', '--machine', required=True)
+    parser.add_argument('-r', '--resource', default='flops')
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--csv-dialect', default='excel-tab')
     parser.add_argument('-v', '--verbose', action='store_true')

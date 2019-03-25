@@ -22,9 +22,14 @@ import traceback
 
 import chart_metg
 
-def get_machine_parameters(machine):
+def get_machine_parameters(machine, resource):
     if machine == 'cori':
-        return {'cores': 32, 'peak_flops': 1.263719e+12, 'peak_bytes': None}
+        if resource == 'flops':
+            return {'cores': 32, 'peak_flops': 1.263719e+12, 'peak_bytes': None}
+        elif resource == 'bytes':
+            return {'cores': 32, 'peak_flops': None, 'peak_bytes': 1.149947e+11} # FIXME: get real peak bytes number
+        else:
+            assert False
     else:
         assert False
 
@@ -68,8 +73,8 @@ class Parser:
     def complete(self):
         raise Exception('complete() must be customized by the subclass')
 
-    def parse(self, machine, threshold, summary, verbose):
-        params = get_machine_parameters(machine)
+    def parse(self, machine, resource, threshold, summary, verbose):
+        params = get_machine_parameters(machine, resource)
 
         has_exception = False
         log_filenames = glob.glob('**/*.log', recursive=False)

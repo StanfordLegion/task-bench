@@ -60,9 +60,9 @@ class Parser(util.Parser):
             row['comm'] = comm
             out.writerow(row)
 
-def driver(ngraphs, dependence, nodes, machine, threshold, csv_dialect, verbose):
+def driver(ngraphs, dependence, nodes, machine, resource, threshold, csv_dialect, verbose):
     parser = Parser(ngraphs, dependence, nodes, csv_dialect)
-    parser.parse(machine, threshold, True, verbose)
+    parser.parse(machine, resource, threshold, True, verbose)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -70,6 +70,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--dependence', required=True)
     parser.add_argument('-n', '--nodes', type=int, required=True)
     parser.add_argument('-m', '--machine', required=True)
+    parser.add_argument('-r', '--resource', default='flops')
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--csv-dialect', default='excel-tab')
     parser.add_argument('-v', '--verbose', action='store_true')

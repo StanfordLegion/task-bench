@@ -104,6 +104,24 @@ if [[ $(basename $PWD) = compute ]]; then
     crop weak_mpi.pdf
     crop strong_mpi.pdf
 
+elif [[ $(basename $PWD) = memory_test ]]; then
+
+    "$root_dir"/flops.py -m cori -r bytes -g 1 -d stencil_1d -n 1 --csv excel > bytes_stencil.csv
+
+
+    "$root_dir"/render_metg.py bytes_stencil.csv \
+               --xlabel 'Problem Size' \
+               --xdata 'iterations' \
+               --xlim "($(( 1 << 15 )),$(( 1 << 0 )))" \
+               --no-xticks \
+               --ylabel 'GB/s' \
+               --yscale 1e-9 \
+               --no-ylog \
+               --highlight-column 'metg' # \
+               # --title 'B/s vs Problem Size (Cori, Memory, Stencil)'
+
+    crop bytes_stencil.pdf
+
 elif [[ $(basename $PWD) = radix ]]; then
 
     "$root_dir"/radix.py -m cori -g 1 -d nearest -n 1 --csv excel > metg_nearest.csv
