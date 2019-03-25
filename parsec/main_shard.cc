@@ -46,7 +46,11 @@
 int nb_tasks_per_node[32];
 #endif
 
+#define NB_LOCAL_MEMORY 8
+
 char **extra_local_memory;
+int *extra_local_memory_idx;
+int memory_block_size = 0;
 
 enum regions {
   TILE_FULL,
@@ -87,7 +91,9 @@ static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id]+extra_local_memory_idx[es->core_id]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[es->core_id]++;
+  extra_local_memory_idx[es->core_id] = extra_local_memory_idx[es->core_id] % NB_LOCAL_MEMORY;
 #else   
   *out = 0.0;
   printf("Graph %d, Task1, [%d, %d], rank %d, core %d, out %.2f, local_mem %p\n", 
@@ -121,7 +127,9 @@ static int test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id]+extra_local_memory_idx[es->core_id]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[es->core_id]++;
+  extra_local_memory_idx[es->core_id] = extra_local_memory_idx[es->core_id] % NB_LOCAL_MEMORY;
 #else
   *out = *in1 + 1.0;
   printf("Graph %d, Task2, [%d, %d], rank %d, core %d, in1 %.2f out %.2f, local_mem %p\n", 
@@ -155,8 +163,9 @@ static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                     input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
-
+                     input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id]+extra_local_memory_idx[es->core_id]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[es->core_id]++;
+  extra_local_memory_idx[es->core_id] = extra_local_memory_idx[es->core_id] % NB_LOCAL_MEMORY;
 #else    
   *out = *in1 + *in2 + 1.0;
   printf("Graph %d, Task3, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, out %.2f, local_mem %p\n", 
@@ -192,7 +201,9 @@ static int test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id]+extra_local_memory_idx[es->core_id]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[es->core_id]++;
+  extra_local_memory_idx[es->core_id] = extra_local_memory_idx[es->core_id] % NB_LOCAL_MEMORY;
 #else
   *out = *in1 + *in2 + *in3 + 1.0;
   printf("Graph %d, Task4, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, out %.2f, local_mem %p\n", 
@@ -230,7 +241,9 @@ static int test_task5(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id]+extra_local_memory_idx[es->core_id]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[es->core_id]++;
+  extra_local_memory_idx[es->core_id] = extra_local_memory_idx[es->core_id] % NB_LOCAL_MEMORY;
 #else
   *out = *in1 + *in2 + *in3 + *in4 + 1.0;
   printf("Graph %d, Task5, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, out %.2f, local_mem %p\n", 
@@ -270,7 +283,9 @@ static int test_task6(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id]+extra_local_memory_idx[es->core_id]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[es->core_id]++;
+  extra_local_memory_idx[es->core_id] = extra_local_memory_idx[es->core_id] % NB_LOCAL_MEMORY;
 #else
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + 1.0;
   printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, out %.2f, local_mem %p\n", 
@@ -312,7 +327,9 @@ static int test_task7(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id]+extra_local_memory_idx[es->core_id]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[es->core_id]++;
+  extra_local_memory_idx[es->core_id] = extra_local_memory_idx[es->core_id] % NB_LOCAL_MEMORY;
 #else
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + 1.0;
   printf("Graph %d, Task7, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, out %.2f, local_mem %p\n", 
@@ -356,7 +373,9 @@ static int test_task8(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id]+extra_local_memory_idx[es->core_id]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[es->core_id]++;
+  extra_local_memory_idx[es->core_id] = extra_local_memory_idx[es->core_id] % NB_LOCAL_MEMORY;
 #else
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + 1.0;
   printf("Graph %d, Task8, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, out %.2f, local_mem %p\n", 
@@ -402,7 +421,9 @@ static int test_task9(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id]+extra_local_memory_idx[es->core_id]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[es->core_id]++;
+  extra_local_memory_idx[es->core_id] = extra_local_memory_idx[es->core_id] % NB_LOCAL_MEMORY;
 #else
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + *in8 + 1.0;
   printf("Graph %d, Task9, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, out %.2f, local_mem %p\n", 
@@ -450,7 +471,9 @@ static int test_task10(parsec_execution_stream_t *es, parsec_task_t *this_task)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id]+extra_local_memory_idx[es->core_id]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[es->core_id]++;
+  extra_local_memory_idx[es->core_id] = extra_local_memory_idx[es->core_id] % NB_LOCAL_MEMORY;
 #else
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + *in8 + 1.0;
   printf("Graph %d, Task10, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, in9 %.2f, out %.2f, local_mem %p\n", 
@@ -736,13 +759,18 @@ ParsecApp::ParsecApp(int argc, char **argv)
   
   extra_local_memory = (char**)malloc(sizeof(char*) * cores);
   assert(extra_local_memory != NULL);
+  extra_local_memory_idx = (int*)malloc(sizeof(int) * cores);
+  assert(extra_local_memory_idx != NULL);
   for (i = 0; i < cores; i++) {
     if (max_scratch_bytes_per_task > 0) {
-      extra_local_memory[i] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
+      extra_local_memory[i] = (char*)malloc(sizeof(char) * max_scratch_bytes_per_task * NB_LOCAL_MEMORY);
     } else {
       extra_local_memory[i] = NULL;
     }
+    extra_local_memory_idx[i] = 0;
   }
+  
+  memory_block_size = max_scratch_bytes_per_task;
   
   debug_printf(0, "max_scratch_bytes_per_task %lld\n", max_scratch_bytes_per_task);
 
@@ -763,6 +791,8 @@ ParsecApp::~ParsecApp()
   }
   free(extra_local_memory);
   extra_local_memory = NULL;
+  free(extra_local_memory_idx);
+  extra_local_memory_idx = NULL;
   
   /* #### PaRSEC context is done #### */
   
