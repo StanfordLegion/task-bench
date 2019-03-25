@@ -32,7 +32,11 @@
 #define USE_CORE_VERIFICATION
 #define ENABLE_PRUNE_MPI_TASK_INSERT
 
+#define NB_LOCAL_MEMORY 8
+
 char **extra_local_memory;
+int *extra_local_memory_idx;
+int memory_block_size = -1;
 
 typedef struct payload_s {
   int graph_id;
@@ -60,7 +64,9 @@ static void task1(void *descr[], void *cl_arg)
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -90,7 +96,9 @@ static void task2(void *descr[], void *cl_arg)
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else  
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -123,7 +131,9 @@ static void task3(void *descr[], void *cl_arg)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -159,8 +169,9 @@ static void task4(void *descr[], void *cl_arg)
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
-
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -200,8 +211,9 @@ static void task5(void *descr[], void *cl_arg)
   
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
-
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -244,8 +256,9 @@ static void task6(void *descr[], void *cl_arg)
   
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
-
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -291,8 +304,9 @@ static void task7(void *descr[], void *cl_arg)
   
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
-
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -342,8 +356,9 @@ static void task8(void *descr[], void *cl_arg)
   
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
-
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -396,8 +411,9 @@ static void task9(void *descr[], void *cl_arg)
   
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
-
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -453,8 +469,9 @@ static void task10(void *descr[], void *cl_arg)
   
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
-
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -784,13 +801,18 @@ StarPUApp::StarPUApp(int argc, char **argv)
    
   extra_local_memory = (char**)malloc(sizeof(char*) * nb_cores);
   assert(extra_local_memory != NULL);
+  extra_local_memory_idx = (int*)malloc(sizeof(int) * nb_cores);
+  assert(extra_local_memory_idx != NULL);
   for (i = 0; i < nb_cores; i++) {
     if (max_scratch_bytes_per_task > 0) {
-      extra_local_memory[i] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
+      extra_local_memory[i] = (char*)malloc(sizeof(char) * max_scratch_bytes_per_task * NB_LOCAL_MEMORY);
     } else {
       extra_local_memory[i] = NULL;
     }
+    extra_local_memory_idx[i] = 0;
   }
+  
+  memory_block_size = max_scratch_bytes_per_task;
   
   debug_printf(0, "max_scratch_bytes_per_task %lld\n", max_scratch_bytes_per_task);
 }
@@ -806,6 +828,8 @@ StarPUApp::~StarPUApp()
   }
   free(extra_local_memory);
   extra_local_memory = NULL;
+  free(extra_local_memory_idx);
+  extra_local_memory_idx = NULL;
   
   for (i = 0; i < graphs.size(); i++) {
     matrix_t &mat = mat_array[i];
