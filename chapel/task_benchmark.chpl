@@ -189,12 +189,15 @@ proc execute_task_graph2(graph, task_result, task_ready, task_used) {
               continue;
             }
 
-            for offset in 0..(output_bytes/8)-1 {
-              inputs[n_inputs, offset] = task_result[graph_index, dep, offset];
+            if (output_bytes <= 32) {
+              for offset in 0..(output_bytes/8)-1 {
+                inputs[n_inputs, offset] = task_result[graph_index, dep, offset];
+              }
+            } else {
+              serial {
+                inputs[n_inputs, ..] = task_result[graph_index, dep, ..];
+              }
             }
-            // serial {
-            //   inputs[n_inputs, ..] = task_result[graph_index, dep, ..];
-            // }
 
             task_used[graph_index, dep, timestep].add(1);
 
