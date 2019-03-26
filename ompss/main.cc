@@ -33,11 +33,7 @@ typedef struct matrix_s {
   int N;
 }matrix_t;
 
-#define NB_LOCAL_MEMORY 8
-
 char **extra_local_memory;
-int *extra_local_memory_idx;
-int memory_block_size = -1;
 
 void task1(tile_t *tile_out, payload_t payload)
 {
@@ -52,9 +48,7 @@ void task1(tile_t *tile_out, payload_t payload)
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
-  extra_local_memory_idx[tid]++;
-  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else  
   tile_out->dep = 0;
   printf("Task1 tid %d, x %d, y %d, out %f\n", tid, payload.x, payload.y, tile_out->dep);
@@ -74,9 +68,7 @@ void task2(tile_t *tile_out, tile_t *tile_in1, payload_t payload)
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
-  extra_local_memory_idx[tid]++;
-  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else  
   tile_out->dep = tile_in1->dep + 1;
   printf("Task2 tid %d, x %d, y %d, out %f, in1 %f\n", tid, payload.x, payload.y, tile_out->dep,tile_in1->dep);
@@ -98,9 +90,7 @@ void task3(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, payload_t paylo
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                     input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
-  extra_local_memory_idx[tid]++;
-  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
+                     input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else  
   tile_out->dep = tile_in1->dep + tile_in2->dep + 1;
   printf("Task3 tid %d, x %d, y %d, out %f, in1 %f, in2 %f\n", tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep);
@@ -124,9 +114,7 @@ void task4(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
-  extra_local_memory_idx[tid]++;
-  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + 1;
   printf("Task4 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f\n", tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep, tile_in3->dep);
@@ -152,9 +140,7 @@ void task5(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
-  extra_local_memory_idx[tid]++;
-  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + 1;
   printf("Task5 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f\n", tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep, tile_in3->dep, tile_in4->dep);
@@ -182,7 +168,7 @@ void task6(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + 1;
   printf("Task6 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f\n", tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep, tile_in3->dep, tile_in4->dep, tile_in5->dep);
@@ -212,9 +198,7 @@ void task7(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
-  extra_local_memory_idx[tid]++;
-  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6->dep + 1;
   printf("Task7 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f\n", 
@@ -247,9 +231,7 @@ void task8(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
-  extra_local_memory_idx[tid]++;
-  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6->dep + tile_in7->dep + 1;
   printf("Task8 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f, in7 %f\n", 
@@ -284,9 +266,7 @@ void task9(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
-  extra_local_memory_idx[tid]++;
-  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6->dep + tile_in7->dep + tile_in8->dep + 1;
   printf("Task9 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f, in7 %f, in8 %f\n", 
@@ -323,9 +303,7 @@ void task10(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_i
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
-  extra_local_memory_idx[tid]++;
-  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6->dep + tile_in7->dep + tile_in8->dep + tile_in9->dep + 1;
   printf("Task10 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f, in7 %f, in8 %f, in9 %f\n", 
@@ -383,18 +361,13 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   
   extra_local_memory = (char**)malloc(sizeof(char*) * (nb_workers+1));
   assert(extra_local_memory != NULL);
-  extra_local_memory_idx = (int*)malloc(sizeof(int) * (nb_workers+1));
-  assert(extra_local_memory_idx != NULL);
   for (int k = 0; k < (nb_workers+1); k++) {
     if (max_scratch_bytes_per_task > 0) {
-      extra_local_memory[k] = (char*)malloc(sizeof(char) * max_scratch_bytes_per_task * NB_LOCAL_MEMORY);
+      extra_local_memory[k] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
     } else {
       extra_local_memory[k] = NULL;
     }
-    extra_local_memory_idx[k] = 0;
   }
-  
-  memory_block_size = max_scratch_bytes_per_task;
   
   // omp_set_dynamic(1);
   omp_set_num_threads(nb_workers);
@@ -424,8 +397,6 @@ OmpSsApp::~OmpSsApp()
   }
   free(extra_local_memory);
   extra_local_memory = NULL;
-  free(extra_local_memory_idx);
-  extra_local_memory_idx = NULL;
 }
 
 void OmpSsApp::execute_main_loop()
