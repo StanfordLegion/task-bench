@@ -1,6 +1,6 @@
-#ifndef PARSEC_DIR
-#$(error PARSEC_DIR variable is not defined, aborting build)
-#endif
+ifndef PARSEC_DIR
+$(error PARSEC_DIR variable is not defined, aborting build)
+endif
 
 PARSEC_SRC = $(PARSEC_DIR)/../..
 
@@ -50,7 +50,7 @@ CFLAGS += $(INC)
 
 include ../core/make_blas.mk
 
-TARGET = main main_shard main_checkfirst main_jdf main_multi_taskpool
+TARGET = main main_shard main_jdf
 all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
@@ -91,13 +91,7 @@ main.o: main.cc ../core/timer.h
 main_shard.o: main_shard.cc ../core/timer.h
 	$(CC) -c $(CFLAGS) $<
 
-main_checkfirst.o: main_checkfirst.cc ../core/timer.h
-	$(CC) -c $(CFLAGS) $<
-
 main_jdf.o: main_jdf.cc ../core/timer.h ../core/core_c.h
-	$(CC) -c $(CFLAGS) $<
-	
-main_multi_taskpool.o: main_multi_taskpool.cc ../core/timer.h
 	$(CC) -c $(CFLAGS) $<
 
 main: main.o common.o 
@@ -106,14 +100,8 @@ main: main.o common.o
 main_shard: main_shard.o common.o 
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 
-main_checkfirst: main_checkfirst.o common.o
-	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
-
 main_jdf: main_jdf.o common.o stencil_1d.o nearest_radix_5.o benchmark_internal.o benchmark.o spread_radix5_period3.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
-	
-main_multi_taskpool: main_multi_taskpool.o common.o
-	$(CC) $^ $(LIB) $(LDFLAGS) -o $@	
 
 clean:
 	rm -f *.o

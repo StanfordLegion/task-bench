@@ -505,6 +505,7 @@ private:
   int scheduler;
   int iparam[IPARAM_SIZEOF];
   int nb_tasks;
+  int nb_fields;
 };
 
 void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_dtd_tile_t*> &args)
@@ -639,6 +640,16 @@ ParsecApp::ParsecApp(int argc, char **argv)
   iparam[IPARAM_N] = 4;
   iparam[IPARAM_M] = 4;
   
+  nb_fields = 0;
+  
+  int nb_fields_arg = 0;
+  
+  for (int i = 1; i < argc; i++) {
+    if (!strcmp(argv[i], "-field")) {
+      nb_fields_arg = atol(argv[++i]);
+    }
+  }
+  
  // parse_arguments(&argc, &argv, iparam);
   
   parsec = setup_parsec(argc, argv, iparam);
@@ -664,6 +675,12 @@ ParsecApp::ParsecApp(int argc, char **argv)
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
     
+    if (nb_fields_arg > 0) {
+      nb_fields = nb_fields_arg;
+    } else {
+      nb_fields = graph.timesteps;
+    }
+    
     MB_cal = sqrt(graph.output_bytes_per_task / sizeof(float));
     
     if (MB_cal > iparam[IPARAM_MB]) {
@@ -672,7 +689,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
     }
     
     iparam[IPARAM_N] = graph.max_width * iparam[IPARAM_MB];
-    iparam[IPARAM_M] = graph.nb_fields * iparam[IPARAM_MB];
+    iparam[IPARAM_M] = nb_fields * iparam[IPARAM_MB];
   
     parse_arguments(&argc, &argv, iparam);
     
@@ -680,7 +697,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
     
     PASTE_CODE_IPARAM_LOCALS_MAT(iparam);
     
-    debug_printf(0, "output_bytes_per_task %d, mb %d, nb %d, nb_fields %d\n", graph.output_bytes_per_task, mat.MB, mat.NB, graph.nb_fields);
+    debug_printf(0, "output_bytes_per_task %d, mb %d, nb %d\n", graph.output_bytes_per_task, mat.MB, mat.NB);
   
     assert(graph.output_bytes_per_task <= sizeof(float) * mat.MB * mat.NB);
   
@@ -791,7 +808,7 @@ void ParsecApp::execute_main_loop()
     const TaskGraph &g = graphs[i];
     matrix_t &mat = mat_array[i];
 
-    debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d, timesteps %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, g.nb_fields, g.timesteps);
+    debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d, timesteps %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, nb_fields, g.timesteps);
 
     for (y = 0; y < g.timesteps; y++) {
       execute_timestep(i, y);
@@ -828,29 +845,52 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   long width = g.width_at_timestep(t);
   long dset = g.dependence_set_at_timestep(t);
   matrix_t &mat = mat_array[idx];
-  int nb_fields = g.nb_fields;
   
   std::vector<parsec_dtd_tile_t*> args;
   std::vector<std::pair<long, long>> args_loc;
   payload_t payload;
-
-  int first_point = rank * g.max_width / nodes - 1;
-  int last_point = (rank + 1) * g.max_width / nodes - 1 + 1;
-
-  if (first_point < 0) {
-    first_point = 0;
-  }
-  if (last_point >= g.max_width) {
-    last_point = g.max_width-1;
-  }
- //for (int x = first_point; x <= last_point; x++) {
   
-  //debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
- for (int x = offset; x <= offset+width-1; x++) {
+  debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
+  for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args;    
 #ifdef ENABLE_PRUNE_MPI_TASK_INSERT
     int has_task = 0;
+    if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, t%nb_fields, x)) {
+      has_task = 1;
+    }
+
+    if( t < g.timesteps-1 && has_task != 1 ){
+      long dset_r = g.dependence_set_at_timestep(t+1);
+      std::vector<std::pair<long, long> > rdeps = g.reverse_dependencies(dset_r, x);
+      for (std::pair<long, long> rdep : rdeps) {
+        debug_printf(1, "R: (%d, %d): [%d, %d] \n", x, t, rdep.first, rdep.second); 
+        for (int i = rdep.first; i <= rdep.second; i++) {
+          if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t+1)%nb_fields, i))
+          {
+            has_task = 1;
+          }
+        }
+      }
+    }
+    
+    if (deps.size() != 0 && t != 0 && has_task != 1) {
+      for (std::pair<long, long> dep : deps) {
+        for (int i = dep.first; i <= dep.second; i++) {
+          if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t-1)%nb_fields, i)) {
+            has_task = 1;
+          }
+        }
+      }
+    }
+
+    // FIXME: each graph's wdith and timesteps need to be the same
+    ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1 + idx * g.max_width * g.timesteps;
+    debug_printf(1, "rank: %d, has_task: %d, x: %d, t: %d, task_id: %d\n", rank , has_task, x, t, mat.NT * t + x + 1);
+    
+    if (has_task == 0) {
+      continue;
+    }
 #endif
     
     if (deps.size() == 0) {
@@ -873,55 +913,19 @@ void ParsecApp::execute_timestep(size_t idx, long t)
           for (int i = dep.first; i <= dep.second; i++) {
             if (i >= last_offset && i < last_offset + last_width) {
               args.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));  
-#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
-              if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t-1)%nb_fields, i)) {
-                has_task = 1;
-              }
-#endif
             } else {
               num_args --;
             }
-
           }
         }
       }
     }
 
-#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
-    if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, t%nb_fields, x)) {
-      has_task = 1;
-    }
-
-    if( t < g.timesteps-1 && has_task != 1 ){
-        long dset_r = g.dependence_set_at_timestep(t+1);
-        std::vector<std::pair<long, long> > rdeps = g.reverse_dependencies(dset_r, x);
-        for (std::pair<long, long> rdep : rdeps) {
-            debug_printf(1, "R: (%d, %d): [%d, %d] \n", x, t, rdep.first, rdep.second); 
-            for (int i = rdep.first; i <= rdep.second; i++) {
-                if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t+1)%nb_fields, i))
-                {
-                  has_task = 1;
-                }
-            }
-        }
-    }
-
-    // FIXME: each graph's wdith and timesteps need to be the same
-    ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1 + idx * g.max_width * g.timesteps;
-    debug_printf(1, "rank: %d, has_task: %d, x: %d, t: %d, task_id: %d\n", rank , has_task, x, t, mat.NT * t + x + 1);
-#endif
-
     payload.i = t;
     payload.j = x;
     payload.graph = g;
     payload.graph_id = idx;
-    
-#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
-    if( has_task )
-#endif
-    {
-        insert_task(num_args, payload, args); 
-    }
+    insert_task(num_args, payload, args); 
     args.clear();
   }
   debug_printf(1, "\n");
