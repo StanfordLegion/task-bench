@@ -22,19 +22,28 @@ ifndef MKLROOT
 $(error MKLROOT variable is not defined, aborting build)
 endif
 
-CC := gcc
-CFLAGS := -fopenmp -O3 -DMKL_ILP64 -m64 -I${MKLROOT}/include
-LDFLAGS := -fopenmp -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+CC := g++
+ST_CFLAGS := -fopenmp -O3 -DMKL_ILP64 -m64 -I${MKLROOT}/include
+ST_LDFLAGS := -fopenmp -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_ilp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
 
-all: parallel_dgemm
+MT_CFLAGS := -fopenmp -O3 -DMKL_ILP64 -m64 -I${MKLROOT}/include
+MT_LDFLAGS :=  -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_ilp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
+
+all: st_dgemm mt_dgemm
 
 .PRECIOUS: %.c %.o
 
-parallel_dgemm.o: parallel_dgemm.c
-	$(CC) -c $(CFLAGS) $<
+st_dgemm.o: st_dgemm.cc
+	$(CC) -c $(ST_CFLAGS) $<
 
-parallel_dgemm: parallel_dgemm.o
-	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
+st_dgemm: st_dgemm.o
+	$(CC) $^ $(LIB) $(ST_LDFLAGS) -o $@ 
+	
+mt_dgemm.o: mt_dgemm.cc
+	$(CC) -c $(MT_CFLAGS) $<
+
+mt_dgemm: mt_dgemm.o
+	$(CC) $^ $(LIB) $(MT_LDFLAGS) -o $@ 
 
 
 clean:

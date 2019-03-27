@@ -226,6 +226,7 @@ static Event define_subgraph(Subgraph &subgraph,
                              long start_timestep, long stop_timestep,
                              long first_point, long last_point,
                              long num_fields,
+                             bool force_copies,
                              const std::vector<std::vector<RegionInstance> > &task_results,
                              const std::vector<std::vector<std::map<long, std::vector<RegionInstance> > > > &remote_inputs,
                              const std::vector<std::vector<std::vector<std::map<long, long> > > > &remote_input_slot,
@@ -264,6 +265,7 @@ static Event define_subgraph(Subgraph &subgraph,
   }
 
   std::vector<size_t> preconditions;
+  std::vector<std::vector<size_t> > copy_postconditions(num_fields);
   size_t next_precondition = 0;
 
   for (long timestep = start_timestep; timestep < stop_timestep; ++timestep) {
@@ -294,7 +296,7 @@ static Event define_subgraph(Subgraph &subgraph,
           if (dep >= last_offset && dep < last_offset + last_width) {
             char *data = result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST);
             if (point >= offset && point < offset + width) {
-              if (data) {
+              if (data && !force_copies) {
                 // Data available locally
               } else {
                 // Data is remote
@@ -318,16 +320,21 @@ static Event define_subgraph(Subgraph &subgraph,
       for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
         for (long dep = interval.first; dep <= interval.second; ++dep) {
           if (dep >= next_offset && dep < next_offset + next_width) {
-            // FIXME: This dependency is being generated too aggressively,
-            // it's technically only supposed to apply when a copy
-            // *wasn't* issued (i.e. the dependency is local), but doing
-            // so somehow messed up the dependencies with the last use of
-            // the same field.
-
             // Only copy when the dependent task doesn't live in the same address space.
-            // if (first_point <= dep && dep <= last_point) {
+            if (!force_copies && result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST)) {
               preconditions.push_back(next_precondition++);
-            // }
+            }
+          }
+        }
+      }
+
+      // WAR dependencies (part 2)
+      for (auto interval : graph.reverse_dependencies(next_dset, point)) {
+        for (long dep = interval.first; dep <= interval.second; ++dep) {
+          if (dep >= next_offset && dep < next_offset + next_width) {
+            if (force_copies || !result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST)) {
+              preconditions.push_back(next_precondition++);
+            }
           }
         }
       }
@@ -382,22 +389,32 @@ static Event define_subgraph(Subgraph &subgraph,
 
           definition.dependencies.push_back(precondition_dep);
         }
+
+        for (auto precondition : copy_postconditions.at(fid - FID_FIRST)) {
+          SubgraphDefinition::Dependency precondition_dep;
+          precondition_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_COPY;
+          precondition_dep.src_op_index = precondition;
+          precondition_dep.src_op_port = 0;
+          precondition_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_TASK;
+          precondition_dep.tgt_op_index = task_postcondition;
+          precondition_dep.tgt_op_port = 0;
+
+          definition.dependencies.push_back(precondition_dep);
+        }
       }
 
-      // WAR dependencies (part 2)
+      copy_postconditions.at(fid - FID_FIRST).clear();
+
       // RAW dependencies
       for (auto interval : graph.reverse_dependencies(next_dset, point)) {
         for (long dep = interval.first; dep <= interval.second; ++dep) {
-          // FIXME: This is currently handled at the task, see note above.
-          // size_t ready_offset = global_ser.bytes_used();
-          // global_ser << Barrier::NO_BARRIER;
           global_ser << Barrier::NO_BARRIER;
           size_t complete_offset = global_ser.bytes_used() - sizeof(Barrier);
 
           size_t copy_postcondition = SIZE_MAX;
           if (dep >= next_offset && dep < next_offset + next_width) {
             // Only copy when the dependent task doesn't live in the same address space.
-            if (!result_base.at(graph_index).at(dep).at(fid - FID_FIRST)) {
+            if (force_copies || !result_base.at(graph_index).at(dep).at(fid - FID_FIRST)) {
               long slot = remote_input_slot.at(graph_index).at(point - first_point).at(next_dset).at(dep);
               copy_postcondition = definition.copies.size();
               definition.copies.push_back(copy_desc(
@@ -409,17 +426,9 @@ static Event define_subgraph(Subgraph &subgraph,
                   .at(slot),
                 fid, graph.output_bytes_per_task));
 
+              copy_postconditions.at(fid - FID_FIRST).push_back(copy_postcondition);
+
               if (task_postcondition != SIZE_MAX) {
-                // SubgraphDefinition::Dependency ready_dep;
-                // ready_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_EXT_PRECOND;
-                // ready_dep.src_op_index = ready;
-                // ready_dep.src_op_port = 0;
-                // ready_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_COPY;
-                // ready_dep.tgt_op_index = copy_postcondition;
-                // ready_dep.tgt_op_port = 0;
-
-                // definition.dependencies.push_back(ready_dep);
-
                 SubgraphDefinition::Dependency task_dep;
                 task_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_TASK;
                 task_dep.src_op_index = task_postcondition;
@@ -561,7 +570,17 @@ static Event define_subgraph(Subgraph &subgraph,
 
         definition.interpolations.push_back(interp);
 
-        // No dependency, it's an unconditional arrival
+        if (task_postcondition != SIZE_MAX) {
+          SubgraphDefinition::Dependency arrival_dep;
+          arrival_dep.src_op_kind = SubgraphDefinition::OpKind::OPKIND_TASK;
+          arrival_dep.src_op_index = task_postcondition;
+          arrival_dep.src_op_port = 0;
+          arrival_dep.tgt_op_kind = SubgraphDefinition::OpKind::OPKIND_ARRIVAL;
+          arrival_dep.tgt_op_index = arrival_precondition;
+          arrival_dep.tgt_op_port = 0;
+
+          definition.dependencies.push_back(arrival_dep);
+        }
       }
     }
   }
@@ -581,12 +600,14 @@ static Event instantiate_subgraph(Subgraph &subgraph,
                                   long start_timestep, long stop_timestep,
                                   long first_point, long last_point,
                                   long num_fields,
+                                  bool force_copies,
                                   std::vector<std::vector<std::vector<std::map<long, Barrier> > > > &raw_in,
                                   std::vector<std::vector<std::vector<std::map<long, Barrier> > > > &war_in,
                                   std::vector<std::vector<std::vector<std::map<long, Barrier> > > > &raw_out,
                                   std::vector<std::vector<std::vector<std::map<long, Barrier> > > > &war_out,
                                   const std::vector<std::vector<std::vector<std::vector<long> > > > &raw_points_not_in_dset,
-                                  const std::vector<std::vector<std::vector<std::vector<long> > > > &war_points_not_in_dset)
+                                  const std::vector<std::vector<std::vector<std::vector<long> > > > &war_points_not_in_dset,
+                                  const std::vector<std::vector<std::vector<char *> > > &result_base)
 {
   DynamicBufferSerializer global_ser(4096); // FIXME: dynamic allocation
 
@@ -631,18 +652,25 @@ static Event instantiate_subgraph(Subgraph &subgraph,
       // WAR dependencies (part 1)
       for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
         for (long dep = interval.first; dep <= interval.second; ++dep) {
-          Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
           if (dep >= next_offset && dep < next_offset + next_width) {
-            // FIXME: This dependency is being generated too aggressively,
-            // it's technically only supposed to apply when a copy
-            // *wasn't* issued (i.e. the dependency is local), but doing
-            // so somehow messed up the dependencies with the last use of
-            // the same field.
-
             // Only copy when the dependent task doesn't live in the same address space.
-            // if (first_point <= dep && dep <= last_point) {
+            if (!force_copies && result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST)) {
+              Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
               preconditions.push_back(ready.get_previous_phase());
-            // }
+            }
+          }
+        }
+      }
+
+      // WAR dependencies (part 2)
+      for (auto interval : graph.reverse_dependencies(next_dset, point)) {
+        for (long dep = interval.first; dep <= interval.second; ++dep) {
+          if (dep >= next_offset && dep < next_offset + next_width) {
+            // Only copy when the dependent task doesn't live in the same address space.
+            if (force_copies || !result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST)) {
+              Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
+              preconditions.push_back(ready.get_previous_phase());
+            }
           }
         }
       }
@@ -655,9 +683,6 @@ static Event instantiate_subgraph(Subgraph &subgraph,
       // RAW dependencies
       for (auto interval : graph.reverse_dependencies(next_dset, point)) {
         for (long dep = interval.first; dep <= interval.second; ++dep) {
-          // FIXME: This is currently handled at the task, see note above.
-          // Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
-          // global_ser << ready;
           Barrier &complete = raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
           global_ser << complete;
 
@@ -735,6 +760,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   long proc_index = a.proc_index;
   long num_procs = a.num_procs;
   long num_fields = a.num_fields;
+  long force_copies = a.force_copies;
   Memory sysmem = a.sysmem;
   Memory regmem = a.regmem;
   Barrier sync = a.sync;
@@ -1237,6 +1263,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                                           start_timestep, stop_timestep,
                                           first_point, last_point,
                                           num_fields,
+                                          force_copies,
                                           task_results,
                                           remote_inputs,
                                           remote_input_slot,
@@ -1253,17 +1280,19 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 
         // Replay the subgraph.
         postcondition = instantiate_subgraph(current_subgraph,
-                                             current_ready,
+                                             Event::merge_events(current_ready, postcondition),
                                              graph, graph_index,
                                              start_timestep, stop_timestep,
                                              first_point, last_point,
                                              num_fields,
+                                             force_copies,
                                              raw_in,
                                              war_in,
                                              raw_out,
                                              war_out,
                                              raw_points_not_in_dset,
-                                             war_points_not_in_dset);
+                                             war_points_not_in_dset,
+                                             result_base);
         events.push_back(postcondition);
 
         if (!replay) {
@@ -1298,7 +1327,22 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   App app(global_argc, global_argv);
   auto &graphs = app.graphs;
 
-  const long num_fields = 5;
+  long num_fields = 5;
+  bool force_copies = false;
+  for (int i = 1; i < global_argc; i++) {
+    if (!strcmp(global_argv[i], "-field")) {
+      long value  = atol(global_argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"-field %ld\" must be > 1\n", value);
+        abort();
+      }
+      num_fields = value;
+    }
+
+    if (!strcmp(global_argv[i], "-force-copies")) {
+      force_copies = true;
+    }
+  }
 
   app.display();
 
@@ -1463,6 +1507,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     args.proc_index = proc_index;
     args.num_procs = num_procs;
     args.num_fields = num_fields;
+    args.force_copies = force_copies;
     args.sysmem = proc_sysmems[proc];
     args.regmem = proc_regmems[proc];
     args.sync = sync_bar;

@@ -10,7 +10,7 @@ total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 cores=$(( $total_cores - 2 ))
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../realm${VARIANT+_}$VARIANT/task_bench "${@:2}" -ll:cpu $cores -ll:util 0 -ll:rsize 512
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../realm${VARIANT+_}$VARIANT/task_bench "${@:2}" -ll:cpu $cores -field 6 -ll:util 0 # -ll:rsize 512
 }
 
 function repeat {

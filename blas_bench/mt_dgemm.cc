@@ -47,7 +47,7 @@ double get_cur_time(){
 
 int main(int argc, char** argv)
 {
-  double time[128]; 
+  double flops;
   int N = 256;
   int loop_cnt;
   int nb_threads = 1;
@@ -66,11 +66,6 @@ int main(int argc, char** argv)
   }  
   
   omp_set_dynamic(0);
-  omp_set_num_threads(nb_threads);
-
-#pragma omp parallel
-{    
-  int myid =  omp_get_thread_num();
 
   double *A = NULL;
   double *B = NULL;
@@ -101,7 +96,7 @@ int main(int argc, char** argv)
       C[i] = 0.0;
   }
     
-  mkl_set_num_threads(1);
+  mkl_set_num_threads(nb_threads);
 
   // warmup
   for (r = 0; r < 10; r++) {
@@ -115,31 +110,14 @@ int main(int argc, char** argv)
                 N, N, N, alpha, A, N, B, N, beta, C, N);
   }
   s_elapsed = (get_cur_time() - s_initial) / loop_cnt;
-  time[myid] = s_elapsed * 1000;
+  flops = 2*(double)N*(double)N*(double)N/s_elapsed*1e-9;
 
-  printf ("Thread #%d, MKL DGEMM N=%d, time %.5f milliseconds, GFLOPS=%.3f\n", 
-          myid, N, (s_elapsed * 1000), 2*(double)N*(double)N*(double)N/s_elapsed*1e-9);
+  printf ("MKL DGEMM N=%d, time %.5f milliseconds, GFLOPS=%.3f\n", 
+          N, (s_elapsed * 1000), flops);
   
   mkl_free(A);
   mkl_free(B);
   mkl_free(C);
-  
-  if (s_elapsed < 0.9/loop_cnt) {
-      s_elapsed=1.0/loop_cnt/s_elapsed;
-      i=(int)(s_elapsed*loop_cnt)+1;
-      if (myid == 0)
-      printf(" It is highly recommended to define LOOP_COUNT for this example on your \n"
-             " computer as %i to have total execution time about 1 second for reliability \n"
-             " of measurements\n\n", i);
-  }
-}
-  // compute average
-  double average=0.0;
-  for (int i=0; i < nb_threads; i++)
-      average += time[i]; 
-  average = average / nb_threads;
-  printf(" AE= %.3f ms, Each thread uses %.3f MB\n", 
-          average, (double)N*(double)N*sizeof(double)/(1024*1024));
 
 
   printf (" Example completed. \n\n");

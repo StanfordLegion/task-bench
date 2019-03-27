@@ -121,6 +121,8 @@ export CHPL_HOME=$CHPL_HOME
 export CHPL_HOST_PLATFORM=\$(\$CHPL_HOME/util/chplenv/chpl_platform.py)
 export CHPL_LLVM=llvm
 export CHPL_TARGET_ARCH=native
+# export CHPL_QTHREAD_SCHEDULER=distrib # or sherwood # Enables Chapel work stealing scheduler
+# Note: distrib scheduler needs QTHREAD_STEAL_RATIO=8 set at runtime
 EOF
     if [[ -n $CHPL_COMM ]]; then
         cat >>deps/env.sh <<EOF

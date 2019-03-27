@@ -199,6 +199,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   long proc_index = a.proc_index;
   long num_procs = a.num_procs;
   long num_fields = a.num_fields;
+  long force_copies = a.force_copies;
   Memory sysmem = a.sysmem;
   Memory regmem = a.regmem;
   Barrier sync = a.sync;
@@ -648,6 +649,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   // Main loop
   unsigned long long start_time = 0, stop_time = 0;
   std::vector<Event> preconditions;
+  std::vector<std::vector<std::vector<Event> > > copy_postconditions;
   for (long rep = 0; rep < 1; ++rep) {
     start_time = Clock::current_time_in_nanoseconds();
     for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
@@ -657,6 +659,15 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 
       long first_point = proc_index * graph.max_width / num_procs;
       long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+
+      // Don't leak copy postconditions between graphs.
+      copy_postconditions.resize(last_point - first_point + 1);
+      for (auto &point_postconditions : copy_postconditions) {
+        point_postconditions.resize(num_fields);
+        for (auto &postconditions : point_postconditions) {
+          postconditions.clear();
+        }
+      }
 
       for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
         long dset = graph.dependence_set_at_timestep(timestep);
@@ -682,7 +693,11 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           // Gather inputs
           long n_inputs = 0, slot = 0;
           preconditions.clear();
-          for (auto interval : graph.dependencies(dset, point)) {
+          preconditions.insert(preconditions.begin(),
+                               copy_postconditions.at(point - first_point).at(fid - FID_FIRST).begin(),
+                               copy_postconditions.at(point - first_point).at(fid - FID_FIRST).end());
+          const auto &dset_deps = graph.dependencies(dset, point);
+          for (auto interval : dset_deps) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
               Barrier &ready = raw_in.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep);
               preconditions.push_back(ready.get_previous_phase());
@@ -690,7 +705,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
               if (dep >= last_offset && dep < last_offset + last_width) {
                 char *data = result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST);
                 if (point >= offset && point < offset + width) {
-                  if (data) {
+                  if (data && !force_copies) {
                     // Data available locally
                   } else {
                     // Data is remote
@@ -713,18 +728,23 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           // WAR dependencies (part 1)
           for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
-              Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
               if (dep >= last_field_offset && dep < last_field_offset + last_field_width) {
-                // FIXME: This dependency is being generated too aggressively,
-                // it's technically only supposed to apply when a copy
-                // *wasn't* issued (i.e. the dependency is local), but doing
-                // so somehow messed up the dependencies with the last use of
-                // the same field.
-
                 // Only copy when the dependent task doesn't live in the same address space.
-                // if (first_point <= dep && dep <= last_point) {
+                if (!force_copies && result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST)) {
+                  Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
                   preconditions.push_back(ready.get_previous_phase());
-                // }
+                }
+              }
+            }
+          }
+
+          // WAR dependencies (part 2)
+          const auto &next_dset_rev_deps = graph.reverse_dependencies(next_dset, point);
+          for (auto interval : next_dset_rev_deps) {
+            for (long dep = interval.first; dep <= interval.second; ++dep) {
+              if (force_copies || !result_base.at(graph_index).at(dep).at(last_fid - FID_FIRST)) {
+                Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
+                preconditions.push_back(ready.get_previous_phase());
               }
             }
           }
@@ -756,17 +776,16 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
             events.push_back(task_postcondition);
           }
 
-          // WAR dependencies (part 2)
+          copy_postconditions.at(point - first_point).at(fid - FID_FIRST).clear();
+
           // RAW dependencies
-          for (auto interval : graph.reverse_dependencies(next_dset, point)) {
+          for (auto interval : next_dset_rev_deps) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
-              // FIXME: This is currently handled at the task, see note above.
-              // Barrier &ready = war_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
               Barrier &complete = raw_out.at(graph_index).at(point - first_point).at(fid - FID_FIRST).at(dep);
               Event postcondition = task_postcondition;
               if (dep >= next_offset && dep < next_offset + next_width) {
                 // Only copy when the dependent task doesn't live in the same address space.
-                if (!result_base.at(graph_index).at(dep).at(fid - FID_FIRST)) {
+                if (force_copies || !result_base.at(graph_index).at(dep).at(fid - FID_FIRST)) {
                   long slot = remote_input_slot.at(graph_index).at(point - first_point).at(next_dset).at(dep);
                   postcondition = copy(
                     task_results.at(graph_index).at(point),
@@ -776,10 +795,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                       .at(dep)
                       .at(slot),
                     fid, graph.output_bytes_per_task,
-                    // Event::merge_events(ready.get_previous_phase(),
-                    task_postcondition
-                    // )
-                    );
+                    task_postcondition);
+                  copy_postconditions.at(point - first_point).at(fid - FID_FIRST).push_back(postcondition);
                 }
               }
               complete.arrive(1, postcondition);
@@ -792,7 +809,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           }
 
           // WAR dependencies
-          for (auto interval : graph.dependencies(dset, point)) {
+          for (auto interval : dset_deps) {
             for (long dep = interval.first; dep <= interval.second; ++dep) {
               Barrier &complete = war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep);
               complete.arrive(1, task_postcondition);
@@ -801,7 +818,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           // Also need to arrive at any points not included in this
           // dset, otherwise we'll deadlock.
           for (long dep : raw_points_not_in_dset.at(graph_index).at(point - first_point).at(dset)) {
-            war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep).arrive(1);
+            war_out.at(graph_index).at(point - first_point).at(last_fid - FID_FIRST).at(dep).arrive(1, task_postcondition);
           }
 
           for (auto &bar : raw_in.at(graph_index).at(point - first_point).at(fid - FID_FIRST)) {
@@ -846,7 +863,22 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   App app(global_argc, global_argv);
   auto &graphs = app.graphs;
 
-  const long num_fields = 5;
+  long num_fields = 5;
+  bool force_copies = false;
+  for (int i = 1; i < global_argc; i++) {
+    if (!strcmp(global_argv[i], "-field")) {
+      long value  = atol(global_argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"-field %ld\" must be > 1\n", value);
+        abort();
+      }
+      num_fields = value;
+    }
+
+    if (!strcmp(global_argv[i], "-force-copies")) {
+      force_copies = true;
+    }
+  }
 
   app.display();
 
@@ -1011,6 +1043,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     args.proc_index = proc_index;
     args.num_procs = num_procs;
     args.num_fields = num_fields;
+    args.force_copies = force_copies;
     args.sysmem = proc_sysmems[proc];
     args.regmem = proc_regmems[proc];
     args.sync = sync_bar;

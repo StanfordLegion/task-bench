@@ -44,13 +44,14 @@ class Parser(util.Parser):
         for row in self.table:
             out.writerow(row)
 
-def driver(machine, threshold, csv_dialect):
+def driver(machine, resource, threshold, csv_dialect):
     parser = Parser(csv_dialect)
-    parser.parse(machine, threshold, False, verbose)
+    parser.parse(machine, resource, threshold, False, verbose)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--machine', required=True)
+    parser.add_argument('-r', '--resource', default='flops')
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
     parser.add_argument('--csv-dialect', default='excel-tab')
     parser.add_argument('-v', '--verbose', action='store_true')

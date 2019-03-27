@@ -765,7 +765,7 @@ App::App(int argc, char **argv)
     if (!strcmp(argv[i], FIELD_FLAG)) {
       needs_argument(i, argc, FIELD_FLAG);
       int value  = atoi(argv[++i]);
-      if (value < 0) {
+      if (value <= 0) {
         fprintf(stderr, "error: Invalid flag \"" FIELD_FLAG " %d\" must be > 1\n", value);
         abort();
       }

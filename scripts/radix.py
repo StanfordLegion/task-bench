@@ -24,65 +24,51 @@ import sys
 import chart_util as util
 
 class Parser(util.Parser):
-    def __init__(self, ngraphs, dependence, system, csv_dialect):
+    def __init__(self, ngraphs, dependence, nodes, csv_dialect):
         self.ngraphs = ngraphs
         self.dependence = dependence.replace('_', ' ')
-        self.system = system
+        self.nodes = nodes
         self.csv_dialect = csv_dialect
 
         self.header = []
         self.table = collections.defaultdict(lambda: collections.defaultdict(lambda: float('inf')))
-        self.metg = collections.defaultdict(lambda: float('inf'))
 
     def filter(self, row):
-        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['name'] == self.system
+        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['nodes'] == self.nodes
 
-    def process(self, row, data, metg):
-        self.metg[row['nodes']] = min(metg, self.metg[row['nodes']], key=float)
+    def process(self, row, data):
+        if row['name'] not in self.header:
+            self.header.append(row['name'])
 
-        for values in zip(*list(data.values())):
-            items = dict(zip(data.keys(), values))
-
-            iterations = row['nodes'] * items['iterations']
-
-            if iterations not in self.header:
-                self.header.append(iterations)
-
-            self.table[row['nodes']][iterations] = min(
-                items['elapsed'],
-                self.table[row['nodes']][iterations],
-                key=float)
+        self.table[row['radix']][row['name']] = min(data, self.table[row['radix']][row['name']])
 
     def error_value(self):
-        return {}
+        return float('inf')
 
     def complete(self):
         # FIXME: This isn't actually the criteria we'd like to sort on,
         # we'd prefer to sort so that the list of names roughly parallels
         # the order of the bars in the graph.
         self.header.sort()
-        self.header.reverse()
-        self.header.insert(0, 'nodes')
-        self.header.append('metg')
+        self.header.insert(0, 'radix')
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()
-        for nodes in sorted(self.table.keys()):
-            row = self.table[nodes]
+        for radix in sorted(self.table.keys()):
+            row = self.table[radix]
             row = {k: None if v == float('inf') else v for k, v in row.items()}
-            row['nodes'] = nodes
-            row['metg'] = self.metg[nodes]
+            row['radix'] = radix
             out.writerow(row)
 
-def driver(ngraphs, dependence, system, machine, resource, threshold, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, system, csv_dialect)
-    parser.parse(machine, resource, threshold, False, verbose)
+def driver(ngraphs, dependence, nodes, machine, resource, threshold, csv_dialect, verbose):
+    parser = Parser(ngraphs, dependence, nodes, csv_dialect)
+    parser.parse(machine, resource, threshold, True, verbose)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--ngraphs', type=int, required=True)
     parser.add_argument('-d', '--dependence', required=True)
-    parser.add_argument('-s', '--system', required=True)
+    parser.add_argument('-n', '--nodes', type=int, required=True)
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-r', '--resource', default='flops')
     parser.add_argument('-t', '--threshold', type=float, default=0.5)

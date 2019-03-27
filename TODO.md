@@ -12,6 +12,7 @@
       * Measure memory usage of runtimes
   * Potential Implementations
       * DARMA
+      * Julia
       * OCR
       * Dask
       * Ray
