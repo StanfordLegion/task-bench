@@ -90,7 +90,7 @@ export PARSEC_DIR=$PARSEC_DL_DIR/build
 EOF
     mkdir -p "$PARSEC_DL_DIR"
     git clone https://bitbucket.org/icldistcomp/parsec.git "$PARSEC_DL_DIR" 
-    pushd "$PARSEC_DIR"
+    pushd "$PARSEC_DL_DIR"
     git checkout 0729fb0
     popd
 fi
