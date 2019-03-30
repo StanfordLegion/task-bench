@@ -8,10 +8,14 @@
 
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
-module load craype-hugepages8M
+source ../../deps/tensorflow/env.sh
+
+export LD_LIBRARY_PATH="$PWD"/../../core:"$PWD"/../../tensorflow/ops:"$LD_LIBRARY_PATH"
 
 function launch {
-    srun -n $(( $1 * cores )) -N $1 --ntasks-per-node=$cores --cpus-per-task=2 --cpu_bind cores ../../charm++/benchmark "${@:2}"
+    pushd ../../tensorflow
+    srun -n $1 -N $1 --cpus-per-task=$(( cores * 2 )) --cpu_bind none python task_bench.py "${@:2}"
+    popd
 }
 
 function repeat {
@@ -41,7 +45,7 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            sweep launch $n $g $t > charm_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch $n $g $t > tensorflow_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done

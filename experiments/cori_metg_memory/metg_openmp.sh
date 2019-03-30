@@ -8,27 +8,43 @@
 
 module unload PrgEnv-intel
 module load PrgEnv-gnu
-export OMP_PROC_BIND=spread
+#export OMP_PROC_BIND=spread
 
 total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 cores=$(( $total_cores - 1 ))
 
 function launch {
-    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none ../../openmp/main "${@:2}" -width $(( $1 * cores )) -worker $total_cores -field 2
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../openmp/main "${@:2}" -worker $total_cores
+}
+
+function repeat {
+    local -n result=$1
+    local n=$2
+    result=()
+    for i in $(seq 1 $n); do
+        result+=("${@:3}")
+        if (( i < n )); then
+            result+=("-and")
+        fi
+    done
 }
 
 function sweep {
-    for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13; do
+    for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
-                $1 $2 -kernel memory_bound -iter $(( 1 << (14-s) )) -scratch $((1024*1024*8)) -sample 1024 -type $3 -steps 1000
+                local args
+                repeat args $3 -kernel memory_bound -iter $(( 1 << (18-s) )) -scratch $(( 16 * 1024 * 1024 )) -sample 8192 -type $4 -radix ${RADIX:-5} -steps ${STEPS:-8192} -width $(( $2 * cores )) -field 2
+                $1 $2 "${args[@]}"
             fi
         done
     done
 }
 
 for n in $SLURM_JOB_NUM_NODES; do
-    for t in stencil_1d; do
-        sweep launch $n $t > openmp_type_${t}_nodes_${n}.log
+    for g in ${NGRAPHS:-1}; do
+        for t in ${PATTERN:-stencil_1d}; do
+            sweep launch $n $g $t > openmp_ngraphs_${g}_type_${t}_nodes_${n}.log
+        done
     done
 done

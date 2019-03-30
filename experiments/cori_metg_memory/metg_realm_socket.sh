@@ -6,12 +6,11 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
-
-module load craype-hugepages8M
+total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+cores=$(( $total_cores - 2 ))
 
 function launch {
-    srun -n $(( $1 * cores )) -N $1 --ntasks-per-node=$cores --cpus-per-task=2 --cpu_bind cores ../../charm++/benchmark "${@:2}"
+    srun -n $(( $1 * 2 )) -N $1 --cpus-per-task=$(( total_cores * 2 / 2 )) --cpu_bind cores ../../realm${VARIANT+_}$VARIANT/task_bench "${@:2}" -field 3 -ll:cpu $(( cores / 2 )) -ll:util 0 # -ll:rsize 512
 }
 
 function repeat {
@@ -41,7 +40,7 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            sweep launch $n $g $t > charm_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch $n $g $t > realm${VARIANT+_}${VARIANT}_socket_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done
