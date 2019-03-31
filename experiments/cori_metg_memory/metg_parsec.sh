@@ -3,7 +3,7 @@
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --exclusive
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --mail-type=ALL
 
 module unload PrgEnv-intel
@@ -29,11 +29,11 @@ function repeat {
 }
 
 function sweep {
-    for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
+    for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
                 local args
-                repeat args $3 -kernel memory_bound -iter $(( 1 << (18-s) )) -scratch $(( 16 * 1024 * 1024 )) -sample 8192 -type $4 -radix ${RADIX:-5} -steps ${STEPS:-8192} -width $(( $2 * cores )) -field 2
+                repeat args $3 -kernel memory_bound -iter $(( 1 << (16-s) )) -scratch $(( 16 * 1024 * 1024 )) -sample 8192 -type $4 -radix ${RADIX:-5} -steps ${STEPS:-8192} -width $(( $2 * cores )) -field 2
                 $1 $2 "${args[@]}"
             fi
         done
