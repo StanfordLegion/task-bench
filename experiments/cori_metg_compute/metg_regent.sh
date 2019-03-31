@@ -3,7 +3,7 @@
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --exclusive
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --mail-type=ALL
 
 total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
@@ -20,7 +20,7 @@ function launch_util_1 {
 }
 
 function launch_util_2 {
-    memoize="-dm:memoize"
+    memoize="-dm:memoize -lg:parallel_replay 2"
     srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:util 2 $memoize -scratch 64
 }
 
@@ -51,9 +51,9 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            sweep launch_util_0 $n $g $t > regent${VARIANT+_}${VARIANT}_util_0_ngraphs_${g}_type_${t}_nodes_${n}.log
-            # sweep launch_util_1 $n $g $t > regent${VARIANT+_}${VARIANT_}_util_1ngraphs_${g}_type_${t}_nodes_${n}.log
-            # sweep launch_util_2 $n $g $t > regent${VARIANT+_}${VARIANT}_util_2_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_0 $n $g $t > regent${VARIANT+_}${VARIANT}_util_0_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_1 $n $g $t > regent${VARIANT+_}${VARIANT_}_util_1_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch_util_2 $n $g $t > regent${VARIANT+_}${VARIANT}_util_2_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done
