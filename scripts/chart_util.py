@@ -27,7 +27,7 @@ def get_machine_parameters(machine, resource):
         if resource == 'flops':
             return {'cores': 32, 'peak_flops': 1.263719e+12, 'peak_bytes': None}
         elif resource == 'bytes':
-            return {'cores': 32, 'peak_flops': None, 'peak_bytes': 1.149947e+11} # FIXME: get real peak bytes number
+            return {'cores': 32, 'peak_flops': None, 'peak_bytes': 1.074944e+11}
         else:
             assert False
     else:

@@ -104,10 +104,11 @@ if [[ $(basename $PWD) = compute ]]; then
     crop weak_mpi.pdf
     crop strong_mpi.pdf
 
-elif [[ $(basename $PWD) = memory_test ]]; then
+elif [[ $(basename $PWD) = memory ]]; then
 
     "$root_dir"/flops.py -m cori -r bytes -g 1 -d stencil_1d -n 1 --csv excel > bytes_stencil.csv
 
+    "$root_dir"/efficiency.py -m cori -r bytes -g 1 -d stencil_1d -n 1 --csv excel > efficiency_stencil.csv
 
     "$root_dir"/render_metg.py bytes_stencil.csv \
                --xlabel 'Problem Size' \
@@ -120,7 +121,18 @@ elif [[ $(basename $PWD) = memory_test ]]; then
                --highlight-column 'metg' # \
                # --title 'B/s vs Problem Size (Cori, Memory, Stencil)'
 
+    "$root_dir"/render_metg.py efficiency_stencil.csv \
+               --xlabel 'Efficiency' \
+               --xdata 'efficiency' \
+               --no-xlog \
+               --no-xticks \
+               --x-percent \
+               --ylabel 'Task Granularity (ms)' \
+               --highlight-column 'metg' # \
+               # --title 'Task Granularity vs Efficiency (Cori, Memory, Stencil)'
+
     crop bytes_stencil.pdf
+    crop efficiency_stencil.pdf
 
 elif [[ $(basename $PWD) = radix ]]; then
 
