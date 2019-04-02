@@ -70,7 +70,7 @@ markers = [
 
 colors = [
     # Built in colors
-    'gold',
+    # 'gold',
     'green',
     'red',
     'fuchsia',
@@ -81,7 +81,7 @@ colors = [
     'cyan',
     'darkslategrey',
     'olive',
-    'pink',
+    # 'pink',
     'darkred',
     'lawngreen',
     'grey',
