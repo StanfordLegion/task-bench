@@ -39,6 +39,8 @@ parser.add_argument('--yscale', type=float, default=0)
 parser.add_argument('--xlim', type=ast.literal_eval, default='None')
 parser.add_argument('--ylim', type=ast.literal_eval, default='None')
 parser.add_argument('--x-percent', action='store_true')
+parser.add_argument('--y-percent', action='store_true')
+parser.add_argument('--xbase', type=int, default=2)
 parser.add_argument('--no-xlog', action='store_false', dest='xlog')
 parser.add_argument('--no-ylog', action='store_false', dest='ylog')
 parser.add_argument('--no-xticks', action='store_false', dest='xticks')
@@ -130,11 +132,13 @@ ax.tick_params(axis='y', width=0.5)
 
 if args.x_percent:
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
+if args.y_percent:
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
 
 if args.xlog and args.ylog:
-    plt.loglog(basex=2)
+    plt.loglog(basex=args.xbase)
 elif args.xlog:
-    plt.semilogx(basex=2)
+    plt.semilogx(basex=args.xbase)
 elif args.ylog:
     plt.semilogy()
 
