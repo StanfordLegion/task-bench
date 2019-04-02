@@ -119,9 +119,9 @@ matplotlib.rcParams["mathtext.fontset"] = "stixsans"
 matplotlib.rc('xtick', labelsize=12)
 matplotlib.rc('ytick', labelsize=12)
 
-fig = plt.figure(figsize=(12, 6))
+fig = plt.figure(figsize=(10, 5))
 ax = fig.add_subplot(111)
-plt.subplots_adjust(bottom=0.16, left=0.08)
+plt.subplots_adjust(bottom=0.16, left=0.09)
 
 ax.spines['top'].set_linewidth(1.0)
 ax.spines['bottom'].set_linewidth(1.0)
