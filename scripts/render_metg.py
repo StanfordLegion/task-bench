@@ -152,19 +152,25 @@ columns.remove(args.xdata)
 if args.legend:
     legend_raw = csv2rec(args.legend)
     legend_label = dict(zip(legend_raw.name, legend_raw.label))
+    legend_visible = dict(zip(legend_raw.name, legend_raw.visible))
     legend_idx = dict(zip(legend_raw.name, range(legend_raw.label.size)))
     next_idx = legend_raw.label.size
 else:
     next_idx = 0
 
 for column in columns:
+    visible = True
     if args.legend and column in legend_label:
         label = legend_label[column]
+        visible = legend_visible[column]
         idx = legend_idx[column]
     else:
         label = column.replace('_', ' ')
         idx = next_idx
         next_idx += 1
+
+    if not visible:
+        continue
 
     if args.highlight_column == column:
         color = 'red'
