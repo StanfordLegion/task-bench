@@ -153,6 +153,8 @@ elif [[ $(basename $PWD) = radix ]]; then
                --no-xlog # \
                # --title 'METG vs Dependencies per Task (Cori, Compute, Nearest)'
 
+    crop metg_nearest.pdf
+
 elif [[ $(basename $PWD) = communication ]]; then
     "$root_dir"/comm.py -m cori -g 4 -d spread -n 16 --csv excel > metg_nodes_16.csv
     "$root_dir"/comm.py -m cori -g 4 -d spread -n 64 --csv excel > metg_nodes_64.csv
