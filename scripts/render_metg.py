@@ -90,7 +90,7 @@ colors = [
     'navy',
 
     # Tableau colors
-    (0.968,0.714,0.824),
+    # (0.968,0.714,0.824),
     (0.882,0.478,0.470),
     (0.565,0.663,0.792),
     (0.635,0.635,0.635),
@@ -119,9 +119,9 @@ matplotlib.rcParams["mathtext.fontset"] = "stixsans"
 matplotlib.rc('xtick', labelsize=12)
 matplotlib.rc('ytick', labelsize=12)
 
-fig = plt.figure(figsize=(10, 5))
+fig = plt.figure(figsize=(9, 5))
 ax = fig.add_subplot(111)
-plt.subplots_adjust(bottom=0.16, left=0.09)
+plt.subplots_adjust(bottom=0.16, left=0.10)
 
 ax.spines['top'].set_linewidth(1.0)
 ax.spines['bottom'].set_linewidth(1.0)
