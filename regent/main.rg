@@ -219,108 +219,173 @@ end
 local f1 = generate_point_task(1, 1)
 local f2 = generate_point_task(1, 2)
 
-task main()
-  var args = c.legion_runtime_get_input_args()
-  var app = core.app_create(args.argc, args.argv)
-  core.app_display(app)
-
-  var task_graphs = core.app_task_graphs(app)
-
-  regentlib.assert(
-    core.task_graph_list_num_task_graphs(task_graphs) == 1,
-    "can only handle one task graph for now")
-  var task_graph = core.task_graph_list_task_graph(task_graphs, 0)
-
-  regentlib.assert(
-    core.task_graph_max_dependence_sets(task_graph) == 1,
-    "can only handle one dependence set for now")
-  var dset = 0
-
-  var max_timesteps = task_graph.timesteps
-  var max_width = task_graph.max_width
-  var output_bytes = task_graph.output_bytes_per_task
-  var scratch_bytes = task_graph.scratch_bytes_per_task
-
-  -- Compute map from points to number of dependencies per point.
-  var ndeps = region(ispace(int1d, max_width), rect1d)
-  var pndeps = partition(equal, ndeps, ispace(int1d, max_width))
-
-  var last_dep = 0
-  for point = 0, max_width do
-    var dep_count = 0
-    var intervals = core.task_graph_dependencies(task_graph, dset, point)
-    for i = 0, core.interval_list_num_intervals(intervals) do
-      var interval = core.interval_list_interval(intervals, i)
-      dep_count += interval.["end"] - interval.start + 1
-    end
-    core.interval_list_destroy(intervals)
-
-    ndeps[point] = rect1d { last_dep, last_dep + dep_count - 1 }
-    last_dep += dep_count
+local point_tasks = {}
+for n_inputs = 0, MAX_INPUTS do
+  point_tasks[n_inputs] = {}
+  for field_idx = 1, #fields do
+    point_tasks[n_inputs][field_idx] = generate_point_task(n_inputs, field_idx)
   end
+end
 
-  -- Compute dependencies.
-  var deps = region(ispace(int1d, 3*max_width-2), rect1d)
-  var pdeps = image(deps, pndeps, ndeps)
+function generate_work_task(max_inputs)
+  local task w()
+    var args = c.legion_runtime_get_input_args()
+    var app = core.app_create(args.argc, args.argv)
+    core.app_display(app)
 
-  -- Task output data.
-  var output = region(ispace(int1d, max_width*output_bytes), fs)
-  var primary = partition(equal, output, ispace(int1d, max_width))
+    var task_graphs = core.app_task_graphs(app)
 
-  do
-    var dep_index = 0
+    regentlib.assert(
+      core.task_graph_list_num_task_graphs(task_graphs) == 1,
+      "can only handle one task graph for now")
+    var task_graph = core.task_graph_list_task_graph(task_graphs, 0)
+
+    regentlib.assert(
+      core.task_graph_max_dependence_sets(task_graph) == 1,
+      "can only handle one dependence set for now")
+    var dset = 0
+
+    var max_timesteps = task_graph.timesteps
+    var max_width = task_graph.max_width
+    var output_bytes = task_graph.output_bytes_per_task
+    var scratch_bytes = task_graph.scratch_bytes_per_task
+
+    -- Compute map from points to number of dependencies per point.
+    var ndeps = region(ispace(int1d, max_width), rect1d)
+    var pndeps = partition(equal, ndeps, ispace(int1d, max_width))
+
+    var last_dep = 0
     for point = 0, max_width do
+      var dep_count = 0
       var intervals = core.task_graph_dependencies(task_graph, dset, point)
       for i = 0, core.interval_list_num_intervals(intervals) do
         var interval = core.interval_list_interval(intervals, i)
-        for dep = interval.start, interval.["end"] + 1 do
-          deps[dep_index] = primary[dep].bounds
-          dep_index += 1
-        end
+        dep_count += interval.["end"] - interval.start + 1
       end
       core.interval_list_destroy(intervals)
+
+      ndeps[point] = rect1d { last_dep, last_dep + dep_count - 1 }
+      last_dep += dep_count
+    end
+
+    -- Compute dependencies.
+    var deps = region(ispace(int1d, 3*max_width-2), rect1d)
+    var pdeps = image(deps, pndeps, ndeps)
+
+    -- Task output data.
+    var output = region(ispace(int1d, max_width*output_bytes), fs)
+    var primary = partition(equal, output, ispace(int1d, max_width))
+
+    do
+      var dep_index = 0
+      for point = 0, max_width do
+        var intervals = core.task_graph_dependencies(task_graph, dset, point)
+        for i = 0, core.interval_list_num_intervals(intervals) do
+          var interval = core.interval_list_interval(intervals, i)
+          for dep = interval.start, interval.["end"] + 1 do
+            deps[dep_index] = primary[dep].bounds
+            dep_index += 1
+          end
+        end
+        core.interval_list_destroy(intervals)
+      end
+    end
+
+    var secondary = image(output, pdeps, deps)
+
+    fill(output.{x, y}, 0)
+
+    -- Task scratch data.
+    var scratch = region(ispace(int1d, max_width*scratch_bytes), fs)
+    var pscratch = partition(equal, scratch, ispace(int1d, max_width))
+
+    fill(scratch.{x, y}, 0)
+
+    -- Extra region for tracking execution time.
+    var time = region(ispace(int1d, max_width, 0), times)
+    var ptime = partition(equal, time, ispace(int1d, max_width))
+
+    fill(time.start, [uint64:max()])
+    fill(time.stop, [uint64:min()])
+
+    regentlib.assert(max_timesteps % 2 == 0, "must run even number of timesteps")
+
+    __demand(__spmd, __trace)
+    for timestep = 0, max_timesteps, 2 do
+      for point = 0, max_width do
+        f1(primary[point], secondary[point], pscratch[point], ptime[point],
+           task_graph, timestep, point)
+      end
+
+      for point = 0, max_width do
+        f2(primary[point], secondary[point], pscratch[point], ptime[point],
+           task_graph, timestep+1, point)
+      end
+    end
+
+    var start_time = [uint64:max()]
+    var stop_time = [uint64:min()]
+    for t in time do
+      start_time min= t.start
+      stop_time max= t.stop
+    end
+    core.app_report_timing(app, double(stop_time - start_time)/1e9)
+  end
+  w:set_name("work_task_max_inputs_" .. max_inputs)
+  return w
+end
+
+local work_tasks = {}
+for max_inputs = 0, MAX_INPUTS do
+  work_tasks[max_inputs] = generate_work_task(max_inputs)
+end
+
+function generate_work_task_call(max_inputs)
+  local actions = rquote
+    regentlib.assert(false, "max_inputs > MAX_INPUTS")
+  end
+
+  for static_max_inputs = MAX_INPUTS, 0, -1 do
+    actions = rquote
+      if [max_inputs] == [static_max_inputs] then
+        [work_tasks[static_max_inputs]]()
+      else
+        [actions]
+      end
+    end
+  end
+  return actions
+end
+
+task main()
+  var args = c.legion_runtime_get_input_args()
+  var app = core.app_create(args.argc, args.argv)
+
+  var graphs = core.app_task_graphs(app)
+
+  var n_graphs = core.task_graph_list_num_task_graphs(graphs)
+
+  var max_inputs = 0
+
+  for graph_idx = 0, n_graphs do
+    var graph = core.task_graph_list_task_graph(graphs, graph_idx)
+    var n_dsets = core.task_graph_max_dependence_sets(graph)
+    var max_width = graph.max_width
+    for dset = 0, n_dsets do
+      for point = 0, max_width do
+        var intervals = core.task_graph_dependencies(graph, dset, point)
+        var n_inputs = 0
+        for i = 0, core.interval_list_num_intervals(intervals) do
+          var interval = core.interval_list_interval(intervals, i)
+          n_inputs += interval.["end"] - interval.start + 1
+        end
+        max_inputs max= n_inputs
+        core.interval_list_destroy(intervals)
+      end
     end
   end
 
-  var secondary = image(output, pdeps, deps)
-
-  fill(output.{x, y}, 0)
-
-  -- Task scratch data.
-  var scratch = region(ispace(int1d, max_width*scratch_bytes), fs)
-  var pscratch = partition(equal, scratch, ispace(int1d, max_width))
-
-  fill(scratch.{x, y}, 0)
-
-  -- Extra region for tracking execution time.
-  var time = region(ispace(int1d, max_width, 0), times)
-  var ptime = partition(equal, time, ispace(int1d, max_width))
-
-  fill(time.start, [uint64:max()])
-  fill(time.stop, [uint64:min()])
-
-  regentlib.assert(max_timesteps % 2 == 0, "must run even number of timesteps")
-
-  __demand(__spmd, __trace)
-  for timestep = 0, max_timesteps, 2 do
-    for point = 0, max_width do
-      f1(primary[point], secondary[point], pscratch[point], ptime[point],
-         task_graph, timestep, point)
-    end
-
-    for point = 0, max_width do
-      f2(primary[point], secondary[point], pscratch[point], ptime[point],
-         task_graph, timestep+1, point)
-    end
-  end
-
-  var start_time = [uint64:max()]
-  var stop_time = [uint64:min()]
-  for t in time do
-    start_time min= t.start
-    stop_time max= t.stop
-  end
-  core.app_report_timing(app, double(stop_time - start_time)/1e9)
+  [generate_work_task_call(max_inputs)]
 end
 
 if os.getenv('SAVEOBJ') == '1' then
