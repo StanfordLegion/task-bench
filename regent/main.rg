@@ -52,10 +52,13 @@ do
   cmapper = terralib.includec("mapper.h", {"-I", root_dir, "-I", runtime_dir})
 end
 
-fspace fs {
-  x : int8,
-  y : int8,
-}
+local MAX_INPUTS = 9
+
+local fields = {"x", "y"}
+local fs = terralib.types.newstruct()
+for _, field in ipairs(fields) do
+  fs.entries:insert({field, int8})
+end
 
 fspace times {
   start : uint64,
@@ -84,21 +87,14 @@ end
 terra execute_point(runtime : c.legion_runtime_t,
                     output : c.legion_physical_region_t[1],
                     output_fields : c.legion_field_id_t[1],
-                    input : c.legion_physical_region_t[1],
-                    input_fields : c.legion_field_id_t[1],
+                    inputs : &c.legion_physical_region_t,
+                    input_fields : &c.legion_field_id_t,
+                    n_inputs : int,
                     scratch : c.legion_physical_region_t[1],
                     scratch_fields : c.legion_field_id_t[1],
-                    primary : c.legion_logical_partition_t,
                     task_graph : core.task_graph_t,
                     timestep : int,
                     point : int)
-  var output_acc = c.legion_physical_region_get_field_accessor_array_1d(
-    output[0], output_fields[0])
-  var input_acc = c.legion_physical_region_get_field_accessor_array_1d(
-    input[0], input_fields[0])
-  var scratch_acc = c.legion_physical_region_get_field_accessor_array_1d(
-    scratch[0], scratch_fields[0])
-
   var dset = core.task_graph_dependence_set_at_timestep(task_graph, timestep)
   var intervals = core.task_graph_dependencies(task_graph, dset, point)
 
@@ -107,6 +103,19 @@ terra execute_point(runtime : c.legion_runtime_t,
     var interval = core.interval_list_interval(intervals, i)
     num_inputs = num_inputs + interval.["end"] - interval.start + 1
   end
+  regentlib.assert(num_inputs <= n_inputs, "num_inputs > n_inputs")
+  core.interval_list_destroy(intervals)
+
+  var output_acc = c.legion_physical_region_get_field_accessor_array_1d(
+    output[0], output_fields[0])
+  regentlib.assert(n_inputs < [#fields], ["n_inputs >= " .. #fields])
+  var input_accs : c.legion_accessor_array_1d_t[MAX_INPUTS]
+  for i = 0, num_inputs do
+    input_accs[i] = c.legion_physical_region_get_field_accessor_array_1d(
+      inputs[i], input_fields[i])
+  end
+  var scratch_acc = c.legion_physical_region_get_field_accessor_array_1d(
+    scratch[0], scratch_fields[0])
 
   var output_r = c.legion_physical_region_get_logical_region(output[0])
   var output_is = output_r.index_space
@@ -116,25 +125,15 @@ terra execute_point(runtime : c.legion_runtime_t,
   var scratch_is = scratch_r.index_space
   var scratch_ptr, scratch_size = get_base_and_size(runtime, scratch_acc, scratch_is)
 
-  var input_ptrs = [&&int8](c.malloc(num_inputs*[sizeof(&int8)]))
-  var input_sizes = [&c.size_t](c.malloc(num_inputs*[sizeof(c.size_t)]))
-  regentlib.assert(input_ptrs ~= nil and input_sizes ~= nil, "malloc failed")
+  var input_ptrs : (&int8)[MAX_INPUTS]
+  var input_sizes : c.size_t[MAX_INPUTS]
 
-  var input_index = 0
-  for i = 0, core.interval_list_num_intervals(intervals) do
-    var interval = core.interval_list_interval(intervals, i)
-    for dep = interval.start, interval.["end"] + 1 do
-      var r = c.legion_logical_partition_get_logical_subregion_by_color(
-        runtime, primary, dep)
-      var is = r.index_space
-      var base, size = get_base_and_size(runtime, input_acc, is)
-
-      input_ptrs[input_index] = [&int8](base)
-      input_sizes[input_index] = size
-      input_index = input_index + 1
-    end
+  for i = 0, num_inputs do
+    var is = c.legion_physical_region_get_logical_region(inputs[i]).index_space
+    var base, size = get_base_and_size(runtime, input_accs[i], is)
+    input_ptrs[i] = [&int8](base)
+    input_sizes[i] = size
   end
-  core.interval_list_destroy(intervals)
 
   core.task_graph_execute_point_scratch(
     task_graph, timestep, point,
@@ -142,97 +141,83 @@ terra execute_point(runtime : c.legion_runtime_t,
     input_ptrs, input_sizes, num_inputs,
     [&int8](scratch_ptr), scratch_size)
 
-  c.free(input_ptrs)
-  c.free(input_sizes)
   c.legion_accessor_array_1d_destroy(output_acc)
-  c.legion_accessor_array_1d_destroy(input_acc)
+  for i = 0, num_inputs do
+    c.legion_accessor_array_1d_destroy(input_accs[i])
+  end
   c.legion_accessor_array_1d_destroy(scratch_acc)
 end
 
-task f1(output : region(ispace(int1d), fs),
-        input : region(ispace(int1d), fs),
-        scratch : region(ispace(int1d), fs),
-        time : region(ispace(int1d), times),
-        -- FIXME: Can't use singleton regions in static control replication
-        -- root : region(ispace(int1d), fs),
-        -- primary : partition(disjoint, root, ispace(int1d)),
-        primary : c.legion_logical_partition_t,
-        task_graph : core.task_graph_t,
-        timestep : int,
-        point : int)
-where
-  reads writes(output.x),
-  reads(input.y),
-  reads writes(scratch.x),
-  reads writes(time)
-do
-  if timestep == 0 then
-    var current = c.legion_get_current_time_in_nanos()
-    __forbid(__vectorize) -- FIXME: Breaks vectorizer
-    for t in time do
-      t.start min= current
-    end
+function generate_point_task(n_inputs, field_idx)
+  local input_field = fields[(field_idx - 1 + #fields - 1) % #fields + 1]
+  local output_field = fields[field_idx]
+  assert(input_field and output_field)
+
+  local inputs = terralib.newlist()
+  local input_privileges = terralib.newlist()
+  local input_pr_array = regentlib.newsymbol(c.legion_physical_region_t[n_inputs], "input_pr_array")
+  local input_fid_array = regentlib.newsymbol(c.legion_field_id_t[n_inputs], "input_fid_array")
+  local make_input_arrays = terralib.newlist()
+  make_input_arrays:insert(
+    rquote
+      var [input_pr_array]
+      var [input_fid_array]
+    end)
+  for idx = 1, n_inputs do
+    local input = regentlib.newsymbol(region(ispace(int1d), fs), "input" .. idx)
+    inputs:insert(input)
+    input_privileges:insert(regentlib.privilege(regentlib.reads, input, input_field))
+    make_input_arrays:insert(
+      rquote
+        [input_pr_array][ [idx-1] ] = __physical([input])[0];
+        [input_fid_array][ [idx-1] ] = __fields([input])[0]
+      end)
   end
 
-  execute_point(
-    __runtime(),
-    __physical(output), __fields(output),
-    __physical(input), __fields(input),
-    __physical(scratch), __fields(scratch),
-    primary,
-    task_graph, timestep, point)
+  local task t(output : region(ispace(int1d), fs),
+               [inputs],
+               scratch : region(ispace(int1d), fs),
+               time : region(ispace(int1d), times),
+               task_graph : core.task_graph_t,
+               timestep : int,
+               point : int)
+  where
+    reads writes(output.[output_field]),
+    [input_privileges],
+    reads writes(scratch.x),
+    reads writes(time)
+  do
+    if timestep == 0 then
+      var current = c.legion_get_current_time_in_nanos()
+      __forbid(__vectorize) -- FIXME: Breaks vectorizer
+      for t in time do
+        t.start min= current
+      end
+    end
 
-  if timestep == task_graph.timesteps - 1 then
-    var current = c.legion_get_current_time_in_nanos()
-    __forbid(__vectorize) -- FIXME: Breaks vectorizer
-    for t in time do
-      t.stop max= current
+    [make_input_arrays]
+
+    execute_point(
+      __runtime(),
+      __physical(output), __fields(output),
+      [input_pr_array], [input_fid_array], [n_inputs],
+      __physical(scratch), __fields(scratch),
+      task_graph, timestep, point)
+
+    if timestep == task_graph.timesteps - 1 then
+      var current = c.legion_get_current_time_in_nanos()
+      __forbid(__vectorize) -- FIXME: Breaks vectorizer
+      for t in time do
+        t.stop max= current
+      end
     end
   end
+  t:set_name("point_task_n_inputs_" .. n_inputs .. "_field_idx_" .. field_idx)
+  return t
 end
 
-task f2(output : region(ispace(int1d), fs),
-        input : region(ispace(int1d), fs),
-        scratch : region(ispace(int1d), fs),
-        time : region(ispace(int1d), times),
-        -- FIXME: Can't use singleton regions in static control replication
-        -- root : region(ispace(int1d), fs),
-        -- primary : partition(disjoint, root, ispace(int1d)),
-        primary : c.legion_logical_partition_t,
-        task_graph : core.task_graph_t,
-        timestep : int,
-        point : int)
-where
-  reads writes(output.y),
-  reads(input.x),
-  reads writes(scratch.x),
-  reads writes(time)
-do
-  if timestep == 0 then
-    var current = c.legion_get_current_time_in_nanos()
-    __forbid(__vectorize) -- FIXME: Breaks vectorizer
-    for t in time do
-      t.start min= current
-    end
-  end
-
-  execute_point(
-    __runtime(),
-    __physical(output), __fields(output),
-    __physical(input), __fields(input),
-    __physical(scratch), __fields(scratch),
-    primary,
-    task_graph, timestep, point)
-
-  if timestep == task_graph.timesteps - 1 then
-    var current = c.legion_get_current_time_in_nanos()
-    __forbid(__vectorize) -- FIXME: Breaks vectorizer
-    for t in time do
-      t.stop max= current
-    end
-  end
-end
-
+local f1 = generate_point_task(1, 1)
+local f2 = generate_point_task(1, 2)
 
 task main()
   var args = c.legion_runtime_get_input_args()
@@ -314,25 +299,17 @@ task main()
   fill(time.start, [uint64:max()])
   fill(time.stop, [uint64:min()])
 
-  var raw_primary = __raw(primary)
-
   regentlib.assert(max_timesteps % 2 == 0, "must run even number of timesteps")
 
   __demand(__spmd, __trace)
   for timestep = 0, max_timesteps, 2 do
     for point = 0, max_width do
       f1(primary[point], secondary[point], pscratch[point], ptime[point],
-         -- FIXME: Can't use singleton regions in static control replication
-         -- output, primary,
-         raw_primary,
          task_graph, timestep, point)
     end
 
     for point = 0, max_width do
       f2(primary[point], secondary[point], pscratch[point], ptime[point],
-         -- FIXME: Can't use singleton regions in static control replication
-         -- output, primary,
-         raw_primary,
          task_graph, timestep+1, point)
     end
   end
