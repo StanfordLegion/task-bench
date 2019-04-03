@@ -54,8 +54,8 @@ class Parser(util.Parser):
         for values in zip(*list(data.values())):
             items = dict(zip(data.keys(), values))
             self.table.append({
-                'efficiency': items['efficiency'],
-                row['name']: items['time_per_task']
+                'time_per_task': items['time_per_task'],
+                row['name']: items['efficiency']
             })
             self.min_granularity = min(items['time_per_task'], self.min_granularity, key=float)
             self.max_granularity = max(items['time_per_task'], self.max_granularity, key=float)
@@ -68,11 +68,11 @@ class Parser(util.Parser):
         # we'd prefer to sort so that the list of names roughly parallels
         # the order of the bars in the graph.
         self.header.sort()
-        self.header.insert(0, 'efficiency')
+        self.header.insert(0, 'time_per_task')
         self.header.append('metg')
 
-        self.table.append({'efficiency': self.threshold, 'metg': self.min_granularity})
-        self.table.append({'efficiency': self.threshold, 'metg': self.max_granularity})
+        self.table.append({'time_per_task': self.min_granularity, 'metg': self.threshold})
+        self.table.append({'time_per_task': self.max_granularity, 'metg': self.threshold})
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()

@@ -33,25 +33,31 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/render_metg.py metg_ngraphs_4_nearest.csv # --title 'METG vs Nodes (Cori, Compute, 4x Nearest)'
 
     "$root_dir"/render_metg.py efficiency_stencil.csv \
-               --xlabel 'Efficiency' \
-               --xdata 'efficiency' \
-               --no-xlog \
+               --xlabel 'Task Granularity (ms)' \
+               --xdata 'time_per_task' \
+               --xlim "(2000,0.002)" \
+               --xbase 10 \
                --no-xticks \
-               --x-percent \
-               --ylabel 'Task Granularity (ms)' \
+               --ylabel 'Efficiency' \
+               --ylim '(-0.05,1.05)' \
+               --no-ylog \
+               --y-percent \
                --highlight-column 'metg' # \
-               # --title 'Task Granularity vs Efficiency (Cori, Compute, Stencil)'
+               # --title 'Efficiency vs Task Granularity (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py efficiency_stencil_mpi.csv \
                --legend '' \
-               --xlabel 'Efficiency' \
-               --xdata 'efficiency' \
-               --no-xlog \
+               --xlabel 'Task Granularity (ms)' \
+               --xdata 'time_per_task' \
+               --xlim "(300,0.0015)" \
+               --xbase 10 \
                --no-xticks \
-               --x-percent \
-               --ylabel 'Task Granularity (ms)' \
+               --ylabel 'Efficiency' \
+               --ylim '(-0.05,1.05)' \
+               --no-ylog \
+               --y-percent \
                --highlight-column 'metg' # \
-               # --title 'MPI Task Granularity vs Efficiency (Cori, Compute, Stencil)'
+               # --title 'MPI Efficiency vs Task Granularity (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py flops_stencil.csv \
                --xlabel 'Problem Size' \
@@ -122,14 +128,17 @@ elif [[ $(basename $PWD) = memory ]]; then
                # --title 'B/s vs Problem Size (Cori, Memory, Stencil)'
 
     "$root_dir"/render_metg.py efficiency_stencil.csv \
-               --xlabel 'Efficiency' \
-               --xdata 'efficiency' \
-               --no-xlog \
+               --xlabel 'Task Granularity (ms)' \
+               --xdata 'time_per_task' \
+               --xlim "(100,0.002)" \
+               --xbase 10 \
                --no-xticks \
-               --x-percent \
-               --ylabel 'Task Granularity (ms)' \
+               --ylabel 'Efficiency' \
+               --ylim '(-0.05,1.05)' \
+               --no-ylog \
+               --y-percent \
                --highlight-column 'metg' # \
-               # --title 'Task Granularity vs Efficiency (Cori, Memory, Stencil)'
+               # --title 'Efficiency vs Task Granularity (Cori, Memory, Stencil)'
 
     crop bytes_stencil.pdf
     crop efficiency_stencil.pdf
@@ -144,6 +153,8 @@ elif [[ $(basename $PWD) = radix ]]; then
                --no-xlog # \
                # --title 'METG vs Dependencies per Task (Cori, Compute, Nearest)'
 
+    crop metg_nearest.pdf
+
 elif [[ $(basename $PWD) = communication ]]; then
     "$root_dir"/comm.py -m cori -g 4 -d spread -n 16 --csv excel > metg_nodes_16.csv
     "$root_dir"/comm.py -m cori -g 4 -d spread -n 64 --csv excel > metg_nodes_64.csv
@@ -152,10 +163,6 @@ elif [[ $(basename $PWD) = communication ]]; then
         "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 16 -c ${comm} --csv excel > efficiency_nodes_16_comm_${comm}.csv
         "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 64 -c ${comm} --csv excel > efficiency_nodes_64_comm_${comm}.csv
     done
-
-    "$root_dir"/comm_efficiency.py -m cori -g 4 -d spread -n 16 -s 'mpi nonblock' --csv excel > efficiency_mpi.csv
-
-    "$root_dir"/comm_efficiency.py -m cori -g 4 -d spread -n 16 -s 'charm' --csv excel > efficiency_charm.csv
 
     "$root_dir"/render_metg.py metg_nodes_16.csv \
                --xlabel 'Message Size (B)' \
@@ -169,43 +176,31 @@ elif [[ $(basename $PWD) = communication ]]; then
 
     for comm in 16 256 4096 65536; do
         "$root_dir"/render_metg.py efficiency_nodes_16_comm_${comm}.csv \
-                   --xlabel 'Efficiency' \
-                   --xdata 'efficiency' \
-                   --no-xlog \
+                   --xlabel 'Task Granularity (ms)' \
+                   --xdata 'time_per_task' \
+                   --xlim "(2000,0.002)" \
+                   --xbase 10 \
                    --no-xticks \
-                   --x-percent \
-                   --ylabel 'Task Granularity (ms)' \
+                   --ylabel 'Efficiency' \
+                   --ylim '(-0.05,1.05)' \
+                   --no-ylog \
+                   --y-percent \
                    --highlight-column 'metg' # \
-                   # --title "Task Granularity vs Efficiency (Cori, Compute, Stencil, Comm ${comm})"
+                   # --title "Efficiency vs Task Granularity (Cori, Compute, Stencil, Comm ${comm})"
 
         "$root_dir"/render_metg.py efficiency_nodes_64_comm_${comm}.csv \
-                   --xlabel 'Efficiency' \
-                   --xdata 'efficiency' \
-                   --no-xlog \
+                   --xlabel 'Task Granularity (ms)' \
+                   --xdata 'time_per_task' \
+                   --xlim "(2000,0.002)" \
+                   --xbase 10 \
                    --no-xticks \
-                   --x-percent \
-                   --ylabel 'Task Granularity (ms)' \
+                   --ylabel 'Efficiency' \
+                   --ylim '(-0.05,1.05)' \
+                   --no-ylog \
+                   --y-percent \
                    --highlight-column 'metg' # \
-                   # --title "Task Granularity vs Efficiency (Cori, Compute, Stencil, Comm ${comm})"
+                   # --title "Efficiency vs Task Granularity (Cori, Compute, Stencil, Comm ${comm})"
     done
-
-    "$root_dir"/render_metg.py efficiency_mpi.csv \
-               --xlabel 'Efficiency' \
-               --xdata 'efficiency' \
-               --no-xlog \
-               --no-xticks \
-               --x-percent \
-               --ylabel 'Task Granularity (ms)' # \
-               # --title 'MPI Task Granularity vs Efficiency (Cori, Compute, Stencil)'
-
-    "$root_dir"/render_metg.py efficiency_charm.csv \
-               --xlabel 'Efficiency' \
-               --xdata 'efficiency' \
-               --no-xlog \
-               --no-xticks \
-               --x-percent \
-               --ylabel 'Task Granularity (ms)' # \
-               # --title 'Charm++ Task Granularity vs Efficiency (Cori, Compute, Stencil)'
 
     crop metg_nodes_16.pdf
     crop metg_nodes_64.pdf
@@ -213,8 +208,6 @@ elif [[ $(basename $PWD) = communication ]]; then
         crop efficiency_nodes_16_comm_${comm}.pdf
         crop efficiency_nodes_64_comm_${comm}.pdf
     done
-    crop efficiency_mpi.pdf
-    crop efficiency_charm.pdf
 
 elif [[ $(basename $PWD) = imbalance ]]; then
     "$root_dir"/imbalance.py -m cori -g 4 -d nearest -n 1 --csv excel > metg_ngraphs_4_nearest.csv
@@ -222,8 +215,6 @@ elif [[ $(basename $PWD) = imbalance ]]; then
     for imbalance in 0.0 0.5 1.0 1.5 2.0; do
         "$root_dir"/efficiency.py -m cori -g 4 -d nearest -n 1 -i ${imbalance} --csv excel > efficiency_imbalance_${imbalance}.csv
     done
-
-    "$root_dir"/imbalance_efficiency.py -m cori -g 4 -d nearest -n 1 -s 'mpi nonblock' --csv excel > efficiency_mpi.csv
 
     "$root_dir"/render_metg.py metg_ngraphs_4_nearest.csv \
                --xlabel 'Imbalance' \
@@ -233,27 +224,20 @@ elif [[ $(basename $PWD) = imbalance ]]; then
 
     for imbalance in 0.0 0.5 1.0 1.5 2.0; do
         "$root_dir"/render_metg.py efficiency_imbalance_${imbalance}.csv \
-                   --xlabel 'Efficiency' \
-                   --xdata 'efficiency' \
-                   --no-xlog \
+                   --xlabel 'Task Granularity (ms)' \
+                   --xdata 'time_per_task' \
+                   --xlim "(800,0.002)" \
+                   --xbase 10 \
                    --no-xticks \
-                   --x-percent \
-                   --ylabel 'Task Granularity (ms)' \
+                   --ylabel 'Efficiency' \
+                   --ylim '(-0.05,1.05)' \
+                   --no-ylog \
+                   --y-percent \
                    --highlight-column 'metg' # \
-                   # --title "Task Granularity vs Efficiency (Cori, Compute, Stencil, Imbalance ${imbalance})"
+                   # --title "Efficiency vs Task Granularity (Cori, Compute, Stencil, Imbalance ${imbalance})"
     done
 
-    "$root_dir"/render_metg.py efficiency_mpi.csv \
-               --xlabel 'Efficiency' \
-               --xdata 'efficiency' \
-               --no-xlog \
-               --no-xticks \
-               --x-percent \
-               --ylabel 'Task Granularity (ms)' # \
-               # --title 'MPI Task Granularity vs Efficiency (Cori, Compute, Stencil)'
-
     crop metg_ngraphs_4_nearest.pdf
-    crop efficiency_mpi.pdf
     for imbalance in 0.0 0.5 1.0 1.5 2.0; do
         crop efficiency_imbalance_${imbalance}.pdf
     done
