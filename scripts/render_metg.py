@@ -153,8 +153,14 @@ if args.legend:
     legend_raw = csv2rec(args.legend)
     legend_label = dict(zip(legend_raw.name, legend_raw.label))
     legend_visible = dict(zip(legend_raw.name, legend_raw.visible))
-    legend_idx = dict(zip(legend_raw.name, range(legend_raw.label.size)))
-    next_idx = legend_raw.label.size
+    legend_idx = {}
+    next_idx = 0
+    for name in legend_raw.name:
+        if legend_visible[name]:
+            legend_idx[name] = next_idx
+            next_idx += 1
+        else:
+            legend_idx[name] = None
 else:
     next_idx = 0
 
