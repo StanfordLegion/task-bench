@@ -58,10 +58,12 @@ inline void compute_generic(OpKernelContext* context)
   }
 
   std::vector<char> output(graph.output_bytes_per_task);
+  std::vector<char> scratch(graph.scratch_bytes_per_task);
 
-  task_graph_execute_point(graph, timestep, point,
+  task_graph_execute_point_scratch(graph, timestep, point,
                            const_cast<char *>(output.data()), output.size(),
-                           input_ptrs.data(), input_bytes.data(), n_inputs);
+                           input_ptrs.data(), input_bytes.data(), n_inputs,
+                           const_cast<char *>(scratch.data()), scratch.size());
 
   TensorShape output_shape;
   output_shape.AddDim(output.size());

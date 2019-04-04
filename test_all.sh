@@ -261,7 +261,7 @@ fi)
 
     pushd tensorflow
     for t in "${extended_types[@]}"; do
-        for k in "${compute_kernels[@]}"; do
+        for k in "${kernels[@]}"; do
             python task_bench.py -steps $steps -type $t $k
             python task_bench.py -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
