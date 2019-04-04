@@ -101,8 +101,8 @@ fi
 if [[ $USE_REGENT -eq 1 ]]; then
     for t in trivial no_comm stencil_1d stencil_1d_periodic nearest "spread -period 2" random_nearest all_to_all; do # FIXME: dom tree fft
         for k in "${kernels[@]}"; do
-            ./regent/main.shard20 -steps $steps -type $t $k
-            ./regent/main.shard20 -steps $steps -type $t $k -ll:cpu 2
+            ./regent/main.shard15 -steps $steps -type $t $k
+            ./regent/main.shard15 -steps $steps -type $t $k -ll:cpu 2
             # FIXME: Regent doesn't support multiple graphs
         done
     done
