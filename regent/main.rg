@@ -166,7 +166,7 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
       var [input_fid_array]
     end)
   for idx = 1, n_inputs do
-    local input = regentlib.newsymbol(region(ispace(int1d), fs), "input" .. idx)
+    local input = regentlib.newsymbol(region(ispace(int1d), fs), "input_" .. idx)
     inputs:insert(input)
     input_privileges:insert(regentlib.privilege(regentlib.reads, input, input_field))
     make_input_arrays:insert(
@@ -401,7 +401,7 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
               [inputs:map(function(input) return rexpr input[point] end end)],
               [pscratch[graph_idx]][point],
               [ptiming[graph_idx]][point],
-              graph, timestep, point)
+              graph, timestep+1, point)
           end
         end
       end)
