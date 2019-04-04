@@ -33,7 +33,7 @@ imbalanced="-kernel load_imbalance -iter 1024 -imbalance 0.1"
 communication_bound="-output 1024"
 
 kernels=("" "$compute_bound" "$memory_bound" "$imbalanced" "$communication_bound")
-compute_kernels=("" "$compute_bound" "$imbalanced")
+noncomm_kernels=("" "$compute_bound" "$memory_bound" "$imbalanced")
 
 steps=23 # chosen to be relatively prime with 2, 3, 5
 
@@ -245,7 +245,7 @@ fi)
 
     pushd swift
     for t in "${extended_types[@]}"; do
-        for k in "${compute_kernels[@]}"; do
+        for k in "${noncomm_kernels[@]}"; do
             turbine -n 4 benchmark.tic -type $t $k -steps $steps
             # FIXME: Swift breaks with multiple task graphs
             # turbine -n 4 benchmark.tic -type $t $k -steps $steps -and -type $t $k -steps $steps
