@@ -8,10 +8,10 @@
 
 module unload PrgEnv-intel
 module load PrgEnv-gnu
-#export OMP_PROC_BIND=spread
+export OMP_PROC_BIND=spread
 
 total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
-cores=$(( $total_cores - 1 ))
+cores=$(( $total_cores))
 
 function launch {
     srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../openmp/main "${@:2}" -worker $total_cores
