@@ -52,9 +52,9 @@ do
   cmapper = terralib.includec("mapper.h", {"-I", root_dir, "-I", runtime_dir})
 end
 
-local MAX_GRAPHS = 2
-local MAX_DSETS = 2
-local MAX_INPUTS = 2
+local MAX_GRAPHS = 1
+local MAX_DSETS = 3
+local MAX_INPUTS = 5
 
 local fields = terralib.newlist({"x", "y"})
 local fs = terralib.types.newstruct()
@@ -110,7 +110,7 @@ terra execute_point(runtime : c.legion_runtime_t,
 
   var output_acc = c.legion_physical_region_get_field_accessor_array_1d(
     output[0], output_fields[0])
-  regentlib.assert(n_inputs < [#fields], ["n_inputs >= " .. #fields])
+  regentlib.assert(n_inputs <= MAX_INPUTS, ["n_inputs > " .. MAX_INPUTS])
   var input_accs : c.legion_accessor_array_1d_t[MAX_INPUTS]
   for i = 0, num_inputs do
     input_accs[i] = c.legion_physical_region_get_field_accessor_array_1d(
@@ -189,6 +189,12 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
     reads writes(scratch.x),
     reads writes(time)
   do
+    -- Easier to no-op out the task than to fix the main loop to
+    -- handle timesteps % period != 0.
+    if timestep >= task_graph.timesteps then
+      return
+    end
+
     if timestep == 0 then
       var current = c.legion_get_current_time_in_nanos()
       __forbid(__vectorize) -- FIXME: Breaks vectorizer
@@ -265,6 +271,19 @@ terra make_secondary_partition(graph : core.task_graph_t, dset : int, input : in
     end
   end
   return c.legion_logical_partition_create(runtime, context, r, ip)
+end
+
+function gcd(a, b)
+  while b ~= 0 do
+    local old_b = b
+    b = a % b
+    a = old_b
+  end
+  return a
+end
+
+function lcm(a, b)
+  return a * b / gcd(a, b)
 end
 
 local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
@@ -375,34 +394,38 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
     for graph_idx = 1, n_graphs do
       local graph = graphs[graph_idx]
 
-      local inputs = terralib.newlist()
-      for input = 1, max_inputs do
-        inputs:insert(secondary_partitions[graph_idx][1][input])
+      local period = lcm(#fields, n_dsets)
+
+      local max_timesteps = regentlib.newsymbol("max_timesteps")
+      local max_width = regentlib.newsymbol("max_width")
+      local timestep = regentlib.newsymbol("timestep")
+
+      local body_actions = terralib.newlist()
+      for step = 0, period - 1 do
+        local inputs = terralib.newlist()
+        for input = 1, max_inputs do
+          inputs:insert(secondary_partitions[graph_idx][step % n_dsets + 1][input])
+        end
+
+        body_actions:insert(rquote
+          for point = 0, max_width do
+            [point_task(max_inputs, step % #fields + 1)](
+              [primary_partitions[graph_idx]][point],
+              [inputs:map(function(input) return rexpr input[point] end end)],
+              [pscratch[graph_idx]][point],
+              [ptiming[graph_idx]][point],
+              graph, timestep + step, point)
+          end
+        end)
       end
 
       actions:insert(rquote
-        regentlib.assert(graph.timesteps % 2 == 0, "must run even number of timesteps")
-        var max_timesteps = graph.timesteps
-        var max_width = graph.max_width
+        regentlib.assert(period % core.task_graph_timestep_period(graph) == 0, "precomputed period is not divisible by task graph period")
+        var [max_timesteps] = graph.timesteps
+        var [max_width] = graph.max_width
         __demand(__spmd, __trace)
-        for timestep = 0, max_timesteps, 2 do
-          for point = 0, max_width do
-            [point_task(max_inputs, 1)](
-              [primary_partitions[graph_idx]][point],
-              [inputs:map(function(input) return rexpr input[point] end end)],
-              [pscratch[graph_idx]][point],
-              [ptiming[graph_idx]][point],
-              graph, timestep, point)
-          end
-
-          for point = 0, max_width do
-            [point_task(max_inputs, 2)](
-              [primary_partitions[graph_idx]][point],
-              [inputs:map(function(input) return rexpr input[point] end end)],
-              [pscratch[graph_idx]][point],
-              [ptiming[graph_idx]][point],
-              graph, timestep+1, point)
-          end
+        for [timestep] = 0, max_timesteps + period - 1, period do
+          [body_actions]
         end
       end)
     end
