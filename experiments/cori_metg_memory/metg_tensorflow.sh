@@ -6,16 +6,15 @@
 #SBATCH --time=06:00:00
 #SBATCH --mail-type=ALL
 
-source ../../deps/swift/env.sh
+cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
-total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
-cores=$(( $total_cores - 1 ))
+source ../../deps/tensorflow/env.sh
 
-export TURBINE_LAUNCH_OPTIONS="--cpu_bind=cores"
+export LD_LIBRARY_PATH="$PWD"/../../core:"$PWD"/../../tensorflow/ops:"$LD_LIBRARY_PATH"
 
 function launch {
-    pushd ../../swift
-    turbine -n $(( $1 * total_cores )) benchmark.tic "${@:2}"
+    pushd ../../tensorflow
+    srun -n $1 -N $1 --cpus-per-task=$(( cores * 2 )) --cpu_bind none python task_bench.py "${@:2}"
     popd
 }
 
@@ -46,7 +45,7 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            sweep launch $n $g $t > swift_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch $n $g $t > tensorflow_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done

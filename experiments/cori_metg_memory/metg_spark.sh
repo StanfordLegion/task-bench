@@ -1,11 +1,9 @@
 #!/bin/bash
-#SBATCH --cpus-per-task=16 
-#SBATCH --ntasks-per-node=2
 #SBATCH --account=m2294
 #SBATCH --qos=regular
 #SBATCH --constraint=haswell
 #SBATCH --exclusive
-#SBATCH --time=01:00:00
+#SBATCH --time=06:00:00
 #SBATCH --mail-type=ALL
 
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
@@ -25,8 +23,8 @@ export LD_LIBRARY_PATH="$SPARK_PROJ_DIR:$CORE_DIR:$LD_LIBRARY_PATH"
 export SPARK_IDENT_STRING=$SLURM_JOBID
 
 # prepare directories
-export SPARK_WORKER_DIR=${SPARK_WORKER_DIR:-$HOME/.spark/worker}
-export SPARK_LOG_DIR=${SPARK_LOG_DIR:-$HOME/.spark/logs}
+export SPARK_WORKER_DIR=${SPARK_WORKER_DIR:-$SCRATCH/spark/worker}
+export SPARK_LOG_DIR=${SPARK_LOG_DIR:-$SCRATCH/spark/logs}
 export SPARK_LOCAL_DIRS=${SPARK_LOCAL_DIRS:-/tmp/spark}
 mkdir -p $SPARK_LOG_DIR $SPARK_WORKER_DIR
 
@@ -46,16 +44,16 @@ echo $MASTER_URL
 ## --------------------------------------
 
 # get the resource details from the Slurm job
-export SPARK_WORKER_CORES=${SLURM_CPUS_PER_TASK:-1}
-export SPARK_MEM=$(( ${SLURM_MEM_PER_CPU:-4096} * ${SLURM_CPUS_PER_TASK:-1} ))M
+export SPARK_WORKER_CORES=$(( cores / 2 ))
+export SPARK_MEM=$(( ${SLURM_MEM_PER_CPU:-4096} * $SPARK_WORKER_CORES ))M
 export SPARK_DAEMON_MEMORY=$SPARK_MEM
 export SPARK_WORKER_MEMORY=$SPARK_MEM
 export SPARK_EXECUTOR_MEMORY=$SPARK_MEM
 
 # start the workers on each non-master node allocated to the job
 export SPARK_NO_DAEMONIZE=1
-nWorkerNodes=$((SLURM_JOB_NUM_NODES - 1))
-srun  -r1 --nodes=$nWorkerNodes --ntasks=$((2 * $nWorkerNodes)) --output=$SPARK_LOG_DIR/spark-%j-workers.out --label \
+nWorkerNodes=$(( SLURM_JOB_NUM_NODES - 1 ))
+srun -r1 -n $(( nWorkerNodes * 2 )) -N $nWorkerNodes --cpus-per-task=$(( cores * 2 / 2 )) --ntasks-per-node=2 --cpu_bind cores --output=$SPARK_LOG_DIR/spark-%j-workers.out --label \
     $SPARK_SRC_DIR/sbin/start-slave.sh ${MASTER_URL} & 
 
 function launch {
@@ -67,30 +65,38 @@ function launch {
         --conf "spark.network.timeout=420000" \
         --conf spark.scheduler.listenerbus.eventqueue.capacity=20000 \
         $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar \
-        "${@:2}" -width $(( $1 * cores ))
+        "${@:2}"
+}
+
+function repeat {
+    local -n result=$1
+    local n=$2
+    result=()
+    for i in $(seq 1 $n); do
+        result+=("${@:3}")
+        if (( i < n )); then
+            result+=("-and")
+        fi
+    done
 }
 
 function sweep {
-    for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13; do
+    for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
-                $1 $2 -kernel memory_bound -iter $(( 1 << (14-s) )) -scratch $((1024*1024*8)) -sample 1024 -type $3 -steps 1000
+                local args
+                repeat args $3 -kernel memory_bound -iter $(( 1 << (20-s) )) -scratch $(( 16 * 1024 * 1024 )) -sample 8192 -type $4 -radix ${RADIX:-5} -steps ${STEPS:-8192} -width $(( $2 * cores ))
+                $1 $2 "${args[@]}"
             fi
         done
     done
 }
 
 for n in $(( SLURM_JOB_NUM_NODES - 1 )); do
-    for t in stencil_1d; do
-        sweep launch $n $t > spark_type_${t}_nodes_${n}.log
-    done
-done
-
-
-for n in $SLURM_JOB_NUM_NODES; do
-    for t in stencil_1d; do
-        realNodeCount=$(($n - 1))
-        sweep $t > CORIspark_type_${t}_nodes_${realNodeCount}.log
+    for g in ${NGRAPHS:-1}; do
+        for t in ${PATTERN:-stencil_1d}; do
+            sweep launch $n $g $t > spark_ngraphs_${g}_type_${t}_nodes_${n}.log
+        done
     done
 done
 

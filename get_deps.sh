@@ -68,7 +68,11 @@ export LG_RT_DIR="\$LEGION_DIR"/runtime
 export REGENT_DIR="\$LEGION_DIR"/language
 export USE_LIBDL=0
 EOF
-    git clone -b subgraph https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+    if [[ $USE_REALM -eq 1 ]]; then
+        git clone -b subgraph https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+    else
+        git clone -b master https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+    fi
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then

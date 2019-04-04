@@ -39,6 +39,8 @@ parser.add_argument('--yscale', type=float, default=0)
 parser.add_argument('--xlim', type=ast.literal_eval, default='None')
 parser.add_argument('--ylim', type=ast.literal_eval, default='None')
 parser.add_argument('--x-percent', action='store_true')
+parser.add_argument('--y-percent', action='store_true')
+parser.add_argument('--xbase', type=int, default=2)
 parser.add_argument('--no-xlog', action='store_false', dest='xlog')
 parser.add_argument('--no-ylog', action='store_false', dest='ylog')
 parser.add_argument('--no-xticks', action='store_false', dest='xticks')
@@ -68,7 +70,7 @@ markers = [
 
 colors = [
     # Built in colors
-    'gold',
+    # 'gold',
     'green',
     'red',
     'fuchsia',
@@ -79,7 +81,7 @@ colors = [
     'cyan',
     'darkslategrey',
     'olive',
-    'pink',
+    # 'pink',
     'darkred',
     'lawngreen',
     'grey',
@@ -88,7 +90,7 @@ colors = [
     'navy',
 
     # Tableau colors
-    (0.968,0.714,0.824),
+    # (0.968,0.714,0.824),
     (0.882,0.478,0.470),
     (0.565,0.663,0.792),
     (0.635,0.635,0.635),
@@ -117,9 +119,9 @@ matplotlib.rcParams["mathtext.fontset"] = "stixsans"
 matplotlib.rc('xtick', labelsize=12)
 matplotlib.rc('ytick', labelsize=12)
 
-fig = plt.figure(figsize=(12, 6))
+fig = plt.figure(figsize=(9, 5))
 ax = fig.add_subplot(111)
-plt.subplots_adjust(bottom=0.16, left=0.08)
+plt.subplots_adjust(bottom=0.16, left=0.10)
 
 ax.spines['top'].set_linewidth(1.0)
 ax.spines['bottom'].set_linewidth(1.0)
@@ -130,11 +132,13 @@ ax.tick_params(axis='y', width=0.5)
 
 if args.x_percent:
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
+if args.y_percent:
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
 
 if args.xlog and args.ylog:
-    plt.loglog(basex=2)
+    plt.loglog(basex=args.xbase)
 elif args.xlog:
-    plt.semilogx(basex=2)
+    plt.semilogx(basex=args.xbase)
 elif args.ylog:
     plt.semilogy()
 
@@ -148,19 +152,31 @@ columns.remove(args.xdata)
 if args.legend:
     legend_raw = csv2rec(args.legend)
     legend_label = dict(zip(legend_raw.name, legend_raw.label))
-    legend_idx = dict(zip(legend_raw.name, range(legend_raw.label.size)))
-    next_idx = legend_raw.label.size
+    legend_visible = dict(zip(legend_raw.name, legend_raw.visible))
+    legend_idx = {}
+    next_idx = 0
+    for name in legend_raw.name:
+        if legend_visible[name]:
+            legend_idx[name] = next_idx
+            next_idx += 1
+        else:
+            legend_idx[name] = None
 else:
     next_idx = 0
 
 for column in columns:
+    visible = True
     if args.legend and column in legend_label:
         label = legend_label[column]
+        visible = legend_visible[column]
         idx = legend_idx[column]
     else:
         label = column.replace('_', ' ')
         idx = next_idx
         next_idx += 1
+
+    if not visible:
+        continue
 
     if args.highlight_column == column:
         color = 'red'

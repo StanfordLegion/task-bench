@@ -7,21 +7,21 @@
 #SBATCH --mail-type=ALL
 
 total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
-cores=$(( $total_cores - 2 ))
+cores=$(( $total_cores - 4 ))
 
 function launch_util_0 {
     memoize="-dm:memoize -lg:parallel_replay $cores"
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:io 1 -ll:util 0 -lg:replay_on_cpus $memoize -scratch 64
+    srun -n $(( $1 * 2 )) -N $1 --cpus-per-task=$(( total_cores * 2 / 2 )) --cpu_bind cores ../../regent${VARIANT+_}$VARIANT/main.shard$(( cores / 2 )) "${@:2}" -ll:cpu $(( cores / 2 )) -ll:io 1 -ll:util 0 -lg:replay_on_cpus $memoize -scratch 64
 }
 
 function launch_util_1 {
     memoize="-dm:memoize"
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:io 1 -ll:util 1 -ll:pin_util $memoize -scratch 64
+    srun -n $(( $1 * 2 )) -N $1 --cpus-per-task=$(( total_cores * 2 / 2 )) --cpu_bind cores ../../regent${VARIANT+_}$VARIANT/main.shard$(( cores / 2 )) "${@:2}" -ll:cpu $(( cores / 2 )) -ll:io 1 -ll:util 1 -ll:pin_util $memoize -scratch 64
 }
 
 function launch_util_2 {
     memoize="-dm:memoize -lg:parallel_replay 2"
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:util 2 $memoize -scratch 64
+    srun -n $(( $1 * 2 )) -N $1 --cpus-per-task=$(( total_cores * 2 / 2 )) --cpu_bind cores ../../regent${VARIANT+_}$VARIANT/main.shard$(( cores / 2 )) "${@:2}" -ll:cpu $(( cores / 2 )) -ll:util 2 $memoize -scratch 64
 }
 
 function repeat {
@@ -51,9 +51,9 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            # sweep launch_util_0 $n $g $t > regent${VARIANT+_}${VARIANT}_util_0_ngraphs_${g}_type_${t}_nodes_${n}.log
-            # sweep launch_util_1 $n $g $t > regent${VARIANT+_}${VARIANT}_util_1_ngraphs_${g}_type_${t}_nodes_${n}.log
-            sweep launch_util_2 $n $g $t > regent${VARIANT+_}${VARIANT}_util_2_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_0 $n $g $t > regent${VARIANT+_}${VARIANT}_util_0_socket_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_1 $n $g $t > regent${VARIANT+_}${VARIANT}_util_1_socket_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch_util_2 $n $g $t > regent${VARIANT+_}${VARIANT}_util_2_socket_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done
