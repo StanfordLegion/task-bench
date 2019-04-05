@@ -123,6 +123,8 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
     assert any(table['efficiency'] >= threshold), "no data above threshold, was run properly configured?"
     assert any(table['efficiency'] < threshold), "no data below threshold, maybe run was truncated?"
 
+    assert all(table['efficiency'] < 1.5), "suspiciously high efficiency over 150%, was run timed correctly?"
+
     # Find smallest task granularity above efficiency threshold:
     min_i, min_efficiency = min(
         filter(lambda x: x[1] >= threshold,
