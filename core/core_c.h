@@ -102,6 +102,13 @@ void task_graph_execute_point_scratch(task_graph_t graph, long timestep, long po
                                       const char **input_ptr, const size_t *input_bytes,
                                       size_t n_inputs,
                                       char *scratch_ptr, size_t scratch_bytes);
+// Hack: This version is here for Spark because allocating scratch_ptr
+// through the JVM seems to cause the GC to thrash.
+void task_graph_execute_point_scratch_auto(task_graph_t graph, long timestep, long point,
+                                           char *output_ptr, size_t output_bytes,
+                                           const char **input_ptr, const size_t *input_bytes,
+                                           size_t n_inputs,
+                                           size_t scratch_bytes);
 
 // FIXME: input_ptr should be const, but this breaks Chapel
 void task_graph_execute_point_nonconst(task_graph_t graph, long timestep, long point,
