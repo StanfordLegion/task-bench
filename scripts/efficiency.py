@@ -23,7 +23,7 @@ import sys
 import chart_util as util
 
 class Parser(util.Parser):
-    def __init__(self, ngraphs, dependence, nodes, system, imbalance, comm, threshold, csv_dialect):
+    def __init__(self, ngraphs, dependence, nodes, system, imbalance, comm, threshold, show_metg, csv_dialect):
         self.ngraphs = ngraphs
         self.dependence = dependence.replace('_', ' ')
         self.nodes = nodes
@@ -31,6 +31,7 @@ class Parser(util.Parser):
         self.imbalance = imbalance
         self.comm = comm
         self.threshold = threshold
+        self.show_metg = show_metg
         self.csv_dialect = csv_dialect
 
         self.header = []
@@ -69,18 +70,19 @@ class Parser(util.Parser):
         # the order of the bars in the graph.
         self.header.sort()
         self.header.insert(0, 'time_per_task')
-        self.header.append('metg')
 
-        self.table.append({'time_per_task': self.min_granularity, 'metg': self.threshold})
-        self.table.append({'time_per_task': self.max_granularity, 'metg': self.threshold})
+        if self.show_metg:
+            self.header.append('metg')
+            self.table.append({'time_per_task': self.min_granularity, 'metg': self.threshold})
+            self.table.append({'time_per_task': self.max_granularity, 'metg': self.threshold})
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()
         for row in self.table:
             out.writerow(row)
 
-def driver(ngraphs, dependence, nodes, system, imbalance, comm, machine, resource, threshold, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, nodes, system, imbalance, comm, threshold, csv_dialect)
+def driver(ngraphs, dependence, nodes, system, imbalance, comm, machine, resource, threshold, show_metg, csv_dialect, verbose):
+    parser = Parser(ngraphs, dependence, nodes, system, imbalance, comm, threshold, show_metg, csv_dialect)
     parser.parse(machine, resource, threshold, False, verbose)
 
 if __name__ == '__main__':
@@ -94,6 +96,7 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-r', '--resource', default='flops')
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
+    parser.add_argument('--hide-metg', action='store_false', dest='show_metg')
     parser.add_argument('--csv-dialect', default='excel-tab')
     parser.add_argument('-v', '--verbose', action='store_true')
     args = parser.parse_args()

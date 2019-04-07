@@ -160,8 +160,8 @@ elif [[ $(basename $PWD) = communication ]]; then
     "$root_dir"/comm.py -m cori -g 4 -d spread -n 64 --csv excel > metg_nodes_64.csv
 
     for comm in 16 256 4096 65536; do
-        "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 16 -c ${comm} --csv excel > efficiency_nodes_16_comm_${comm}.csv
-        "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 64 -c ${comm} --csv excel > efficiency_nodes_64_comm_${comm}.csv
+        "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 16 -c ${comm} --hide-metg --csv excel > efficiency_nodes_16_comm_${comm}.csv
+        "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 64 -c ${comm} --hide-metg --csv excel > efficiency_nodes_64_comm_${comm}.csv
     done
 
     "$root_dir"/render_metg.py metg_nodes_16.csv \
@@ -191,7 +191,7 @@ elif [[ $(basename $PWD) = communication ]]; then
         "$root_dir"/render_metg.py efficiency_nodes_64_comm_${comm}.csv \
                    --xlabel 'Task Granularity (ms)' \
                    --xdata 'time_per_task' \
-                   --xlim "(2000,0.002)" \
+                   --xlim "(400,0.02)" \
                    --xbase 10 \
                    --no-xticks \
                    --ylabel 'Efficiency' \
@@ -213,7 +213,7 @@ elif [[ $(basename $PWD) = imbalance ]]; then
     "$root_dir"/imbalance.py -m cori -g 4 -d nearest -n 1 --csv excel > metg_ngraphs_4_nearest.csv
 
     for imbalance in 0.0 0.5 1.0 1.5 2.0; do
-        "$root_dir"/efficiency.py -m cori -g 4 -d nearest -n 1 -i ${imbalance} --csv excel > efficiency_imbalance_${imbalance}.csv
+        "$root_dir"/efficiency.py -m cori -g 4 -d nearest -n 1 -i ${imbalance} --hide-metg --csv excel > efficiency_imbalance_${imbalance}.csv
     done
 
     "$root_dir"/render_metg.py metg_ngraphs_4_nearest.csv \
