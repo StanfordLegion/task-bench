@@ -11,17 +11,17 @@ cores=$(( $total_cores - 4 ))
 
 function launch_util_0 {
     memoize="-dm:memoize -lg:parallel_replay $cores"
-    srun -n $(( $1 * 2 )) -N $1 --cpus-per-task=$(( total_cores * 2 / 2 )) --cpu_bind cores ../../regent${VARIANT+_}$VARIANT/main.shard$(( cores / 2 )) "${@:2}" -ll:cpu $(( cores / 2 )) -ll:io 1 -ll:util 0 -lg:replay_on_cpus
+    srun -n $(( $1 * 2 )) -N $1 --cpus-per-task=$(( total_cores * 2 / 2 )) --cpu_bind cores ../../regent${VARIANT+_}$VARIANT/main.shard$(( cores / 2 )) "${@:2}" -ll:cpu $(( cores / 2 )) -ll:io 1 -ll:util 0 -ll:csize 8192 -lg:replay_on_cpus
 }
 
 function launch_util_1 {
     memoize="-dm:memoize"
-    srun -n $(( $1 * 2 )) -N $1 --cpus-per-task=$(( total_cores * 2 / 2 )) --cpu_bind cores ../../regent${VARIANT+_}$VARIANT/main.shard$(( cores / 2 )) "${@:2}" -ll:cpu $(( cores / 2 )) -ll:io 1 -ll:util 1 -ll:pin_util $memoize
+    srun -n $(( $1 * 2 )) -N $1 --cpus-per-task=$(( total_cores * 2 / 2 )) --cpu_bind cores ../../regent${VARIANT+_}$VARIANT/main.shard$(( cores / 2 )) "${@:2}" -ll:cpu $(( cores / 2 )) -ll:io 1 -ll:util 1 -ll:pin_util -ll:csize 8192 $memoize
 }
 
 function launch_util_2 {
     memoize="-dm:memoize -lg:parallel_replay 2"
-    srun -n $(( $1 * 2 )) -N $1 --cpus-per-task=$(( total_cores * 2 / 2 )) --cpu_bind cores ../../regent${VARIANT+_}$VARIANT/main.shard$(( cores / 2 )) "${@:2}" -ll:cpu $(( cores / 2 )) -ll:util 2 $memoize
+    srun -n $(( $1 * 2 )) -N $1 --cpus-per-task=$(( total_cores * 2 / 2 )) --cpu_bind cores ../../regent${VARIANT+_}$VARIANT/main.shard$(( cores / 2 )) "${@:2}" -ll:cpu $(( cores / 2 )) -ll:util 2 -ll:csize 8192 $memoize
 }
 
 function repeat {
