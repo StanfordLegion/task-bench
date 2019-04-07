@@ -38,6 +38,8 @@ parser.add_argument('--xscale', type=float, default=0)
 parser.add_argument('--yscale', type=float, default=0)
 parser.add_argument('--xlim', type=ast.literal_eval, default='None')
 parser.add_argument('--ylim', type=ast.literal_eval, default='None')
+parser.add_argument('--x-invert', action='store_true')
+parser.add_argument('--y-invert', action='store_true')
 parser.add_argument('--x-percent', action='store_true')
 parser.add_argument('--y-percent', action='store_true')
 parser.add_argument('--xbase', type=int, default=2)
@@ -134,6 +136,11 @@ if args.x_percent:
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
 if args.y_percent:
     ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+
+if args.x_invert:
+    ax.invert_xaxis()
+if args.y_invert:
+    ax.invert_yaxis()
 
 if args.xlog and args.ylog:
     plt.loglog(basex=args.xbase)

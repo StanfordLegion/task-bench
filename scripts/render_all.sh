@@ -35,7 +35,7 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/render_metg.py efficiency_stencil.csv \
                --xlabel 'Task Granularity (ms)' \
                --xdata 'time_per_task' \
-               --xlim "(2000,0.002)" \
+               --x-invert \
                --xbase 10 \
                --no-xticks \
                --ylabel 'Efficiency' \
@@ -49,7 +49,7 @@ if [[ $(basename $PWD) = compute ]]; then
                --legend '' \
                --xlabel 'Task Granularity (ms)' \
                --xdata 'time_per_task' \
-               --xlim "(300,0.0015)" \
+               --x-invert \
                --xbase 10 \
                --no-xticks \
                --ylabel 'Efficiency' \
@@ -62,7 +62,7 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/render_metg.py flops_stencil.csv \
                --xlabel 'Problem Size' \
                --xdata 'iterations' \
-               --xlim "($(( 1 << 27 )),$(( 1 << 4 )))" \
+               --x-invert \
                --no-xticks \
                --ylabel 'TFLOPS' \
                --yscale 1e-12 \
@@ -74,7 +74,7 @@ if [[ $(basename $PWD) = compute ]]; then
                --legend '' \
                --xlabel 'Problem Size' \
                --xdata 'iterations' \
-               --xlim "($(( 1 << 27 )),$(( 1 << 4 )))" \
+               --x-invert \
                --no-xticks \
                --ylabel 'TFLOPS' \
                --yscale 1e-12 \
@@ -119,7 +119,7 @@ elif [[ $(basename $PWD) = memory ]]; then
     "$root_dir"/render_metg.py bytes_stencil.csv \
                --xlabel 'Problem Size' \
                --xdata 'iterations' \
-               --xlim "($(( 1 << 15 )),$(( 1 << 0 )))" \
+               --x-invert \
                --no-xticks \
                --ylabel 'GB/s' \
                --yscale 1e-9 \
@@ -130,7 +130,7 @@ elif [[ $(basename $PWD) = memory ]]; then
     "$root_dir"/render_metg.py efficiency_stencil.csv \
                --xlabel 'Task Granularity (ms)' \
                --xdata 'time_per_task' \
-               --xlim "(100,0.002)" \
+               --x-invert \
                --xbase 10 \
                --no-xticks \
                --ylabel 'Efficiency' \
@@ -178,7 +178,7 @@ elif [[ $(basename $PWD) = communication ]]; then
         "$root_dir"/render_metg.py efficiency_nodes_16_comm_${comm}.csv \
                    --xlabel 'Task Granularity (ms)' \
                    --xdata 'time_per_task' \
-                   --xlim "(2000,0.002)" \
+                   --x-invert \
                    --xbase 10 \
                    --no-xticks \
                    --ylabel 'Efficiency' \
@@ -191,7 +191,7 @@ elif [[ $(basename $PWD) = communication ]]; then
         "$root_dir"/render_metg.py efficiency_nodes_64_comm_${comm}.csv \
                    --xlabel 'Task Granularity (ms)' \
                    --xdata 'time_per_task' \
-                   --xlim "(400,0.02)" \
+                   --x-invert \
                    --xbase 10 \
                    --no-xticks \
                    --ylabel 'Efficiency' \
@@ -226,7 +226,7 @@ elif [[ $(basename $PWD) = imbalance ]]; then
         "$root_dir"/render_metg.py efficiency_imbalance_${imbalance}.csv \
                    --xlabel 'Task Granularity (ms)' \
                    --xdata 'time_per_task' \
-                   --xlim "(800,0.002)" \
+                   --x-invert \
                    --xbase 10 \
                    --no-xticks \
                    --ylabel 'Efficiency' \
