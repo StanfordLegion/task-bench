@@ -47,7 +47,7 @@ if [[ $(basename $PWD) = compute ]]; then
 
     "$root_dir"/render_metg.py efficiency_stencil_mpi.csv \
                --legend '' \
-               --height 4.25 \
+               --height 4 \
                --xlabel 'Task Granularity (ms)' \
                --xdata 'time_per_task' \
                --x-invert \
@@ -73,7 +73,7 @@ if [[ $(basename $PWD) = compute ]]; then
 
     "$root_dir"/render_metg.py flops_stencil_mpi.csv \
                --legend '' \
-               --height 4.25 \
+               --height 4 \
                --xlabel 'Problem Size' \
                --xdata 'iterations' \
                --x-invert \
