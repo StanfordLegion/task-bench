@@ -30,6 +30,8 @@ def csv2rec(filename):
 parser = argparse.ArgumentParser()
 parser.add_argument('filename')
 parser.add_argument('--title')
+parser.add_argument('--width', type=float, default=9)
+parser.add_argument('--height', type=float, default=5)
 parser.add_argument('--legend', default='../legend.csv')
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
@@ -121,7 +123,7 @@ matplotlib.rcParams["mathtext.fontset"] = "stixsans"
 matplotlib.rc('xtick', labelsize=12)
 matplotlib.rc('ytick', labelsize=12)
 
-fig = plt.figure(figsize=(9, 5))
+fig = plt.figure(figsize=(args.width, args.height))
 ax = fig.add_subplot(111)
 plt.subplots_adjust(bottom=0.16, left=0.10)
 
