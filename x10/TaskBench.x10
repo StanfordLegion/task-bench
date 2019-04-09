@@ -106,9 +106,6 @@ public class TaskBench {
 
     // Materialize the contents of the task graph metadata so it's less obnoxious to use it.
 
-    val place_id = here.id;
-    val n_places = Place.places().size;
-
     // point -> dset -> [dep]
     val deps:Rail[Rail[Rail[Long]]];
 
@@ -139,6 +136,9 @@ public class TaskBench {
     @Native("c++", "
       assert(task_graph->FMGL(size) == sizeof(TaskGraph));
       TaskGraph graph = *(TaskGraph *)task_graph->raw;
+
+      x10_long place_id = ::x10::lang::Place::_make(::x10aux::here)->FMGL(id);
+      x10_long n_places = ::x10::lang::Place::places()->x10::lang::PlaceGroup::size();
 
       auto graph_first_point = place_id * graph.max_width / n_places;
       auto graph_last_point = (place_id + 1) * graph.max_width / n_places - 1;
