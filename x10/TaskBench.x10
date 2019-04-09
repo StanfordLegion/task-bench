@@ -23,12 +23,15 @@ public class TaskBench {
     public val task_used:Rail[Rail[Rail[Long]]];
     public val task_used_lock:Rail[Rail[Rail[Monitor]]];
 
+    public var elapsed_time:Long;
+
     protected def this(max_width:Rail[Long], output_bytes:Rail[Long], timesteps:Rail[Long]) {
       this.task_result = new Rail[Rail[Rail[UByte]]](max_width.size);
       this.task_ready = new Rail[Rail[Rail[Long]]](max_width.size);
       this.task_ready_lock = new Rail[Rail[Rail[Monitor]]](max_width.size);
       this.task_used = new Rail[Rail[Rail[Long]]](max_width.size);
       this.task_used_lock = new Rail[Rail[Rail[Monitor]]](max_width.size);
+      this.elapsed_time = 0;
 
       for (graph_index in 0..(max_width.size-1)) {
         val width = max_width(graph_index);
@@ -288,8 +291,7 @@ public class TaskBench {
   private def execute() {
     val local_plh = plh; // Make local so that it's not copied by at statements.
 
-    var start_time:Long = 0;
-    var stop_time:Long = 0;
+    var elapsed_time:Long = 0;
     for (iter in 0..1) {
       finish for (p in Place.places()) {
         async at (p) {
@@ -311,19 +313,23 @@ public class TaskBench {
           }
         }
       }
-      start_time = Timer.nanoTime();
       finish for (p in Place.places()) {
         async at (p) {
-          for (graph_index in 0..(timesteps.size-1)) {
+          Team.WORLD.barrier();
+          val start_time = Timer.nanoTime();
+          finish for (graph_index in 0..(timesteps.size-1)) {
             async {
               executeGraph(graph_index);
             }
           }
+          Team.WORLD.barrier();
+          val stop_time = Timer.nanoTime();
+          local_plh().elapsed_time = Team.WORLD.allreduce(stop_time - start_time, Team.MAX);
         }
       }
-      stop_time = Timer.nanoTime();
+      elapsed_time = local_plh().elapsed_time;
     }
-    return (stop_time - start_time)/1e9;
+    return elapsed_time/1e9;
   }
 
   private static def executeTaskBench(argc: Int, argRail: Rail[String]) {
