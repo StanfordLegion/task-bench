@@ -269,6 +269,31 @@ fi)
     popd
 fi)
 
+(if [[ $USE_DASK -eq 1 ]]; then
+    source "$DASK_DIR"/env.sh
+
+    export LD_LIBRARY_PATH="$PWD"/core:"$LD_LIBRARY_PATH"
+    export PYTHONPATH="$PWD"/dask:"$PYTHONPATH"
+
+    SCHEDULER_HOST=localhost
+    SCHEDULER_PORT=8786
+    SCHEDULER_URL=$SCHEDULER_HOST:$SCHEDULER_PORT
+    dask-scheduler --port $SCHEDULER_PORT &
+    dask-worker $SCHEDULER_URL &
+    dask-worker $SCHEDULER_URL &
+
+    for t in "${extended_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            python ./dask/task_bench.py -steps $steps -type $t $k -scheduler $SCHEDULER_URL -expect-workers 2 -skip-graph-validation
+            python ./dask/task_bench.py -steps $steps -type $t $k -and -steps $steps -type $t $k -scheduler $SCHEDULER_URL -expect-workers 2 -skip-graph-validation
+        done
+    done
+
+    kill %3
+    kill %2
+    kill %1
+fi)
+
 set +x
 
 echo

@@ -29,6 +29,7 @@ export USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
 export USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 export USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 export USE_TENSORFLOW=${USE_TENSORFLOW:-$DEFAULT_FEATURES}
+export USE_DASK=${USE_DASK:-$DEFAULT_FEATURES}
 EOF
 
 source deps/env.sh
@@ -327,4 +328,28 @@ EOF
     # conda install -y tensorflow
     conda install -y python=3.6
     pip install tensorflow
+fi)
+
+(if [[ $USE_DASK -eq 1 ]]; then
+    export DASK_DIR="$PWD"/deps/dask
+    cat >>deps/env.sh <<EOF
+export DASK_DIR="$DASK_DIR"
+# see dask/env.sh for Dask configuration
+EOF
+
+    mkdir -p "$DASK_DIR"
+
+    cat >>"$DASK_DIR"/env.sh <<EOF
+export DASK_DIR="$DASK_DIR"
+export CONDA_PREFIX="\$DASK_DIR"/conda
+export PATH="\$CONDA_PREFIX"/bin:"\$PATH"
+EOF
+
+    source "$DASK_DIR"/env.sh
+
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
+    rm Miniconda3-latest-Linux-x86_64.sh
+    conda update -y conda
+    conda install -y dask
 fi)

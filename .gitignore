@@ -24,3 +24,7 @@ legion_prof
 /deps
 /charm++_smp
 *charmrun.*
+
+# dask
+*.lock
+worker-*

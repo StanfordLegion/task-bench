@@ -24,6 +24,7 @@ The following configurations are currently supported:
 Implementations:
 [Charm++](charm++),
 [Chapel](chapel),
+[Dask](dask),
 [Legion](legion),
 [MPI](mpi),
 [OmpSs](ompss),

@@ -14,6 +14,5 @@
       * DARMA
       * Julia
       * OCR
-      * Dask
       * Ray
       * Nimbus
