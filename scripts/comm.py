@@ -54,7 +54,7 @@ class Parser(util.Parser):
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()
-        for comm in sorted(self.table.keys()):
+        for comm in sorted(self.table.keys(), key=int):
             row = self.table[comm]
             row = {k: None if v == float('inf') else v for k, v in row.items()}
             row['comm'] = comm

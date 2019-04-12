@@ -81,8 +81,14 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
         assert all(same(elt) for elt in elts), "graphs are not identical"
         table[column] = table[column][::ngraphs]
 
-    # Check consistency of data:
     assert same([len(column) for column in table.values()]), "columns are uneven"
+
+    # Sort data by iteration count.
+    permutation = table['iterations'].argsort()[::-1]
+    for column in table.keys():
+        table[column] = table[column][permutation]
+
+    # Check consistency of data:
     assert same(table['steps']), "steps are not identical"
     assert same(table['width']), "widths are not identical"
     assert same(table['tasks']), "tasks are not identical"

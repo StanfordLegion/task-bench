@@ -160,10 +160,15 @@ elif [[ $(basename $PWD) = radix ]]; then
 elif [[ $(basename $PWD) = communication ]]; then
     "$root_dir"/comm.py -m cori -g 4 -d spread -n 16 --csv excel > metg_nodes_16.csv
     "$root_dir"/comm.py -m cori -g 4 -d spread -n 64 --csv excel > metg_nodes_64.csv
+    "$root_dir"/comm.py -m cori -g 4 -d spread -n 256 --csv excel > metg_nodes_256.csv
 
     for comm in 16 256 4096 65536; do
         "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 16 -c ${comm} --hide-metg --csv excel > efficiency_nodes_16_comm_${comm}.csv
         "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 64 -c ${comm} --hide-metg --csv excel > efficiency_nodes_64_comm_${comm}.csv
+    done
+
+    for comm in 256 4096 65536 1048576; do
+        "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 256 -c ${comm} --hide-metg --csv excel > efficiency_nodes_256_comm_${comm}.csv
     done
 
     "$root_dir"/render_metg.py metg_nodes_16.csv \
@@ -172,6 +177,11 @@ elif [[ $(basename $PWD) = communication ]]; then
                # --title 'METG vs Communication (Cori, Compute, 4x Spread)'
 
     "$root_dir"/render_metg.py metg_nodes_64.csv \
+               --xlabel 'Message Size (B)' \
+               --xdata 'comm' # \
+               # --title 'METG vs Communication (Cori, Compute, 4x Spread)'
+
+    "$root_dir"/render_metg.py metg_nodes_256.csv \
                --xlabel 'Message Size (B)' \
                --xdata 'comm' # \
                # --title 'METG vs Communication (Cori, Compute, 4x Spread)'
@@ -204,11 +214,30 @@ elif [[ $(basename $PWD) = communication ]]; then
                    # --title "Efficiency vs Task Granularity (Cori, Compute, Stencil, Comm ${comm})"
     done
 
+    for comm in 256 4096 65536 1048576; do
+        "$root_dir"/render_metg.py efficiency_nodes_256_comm_${comm}.csv \
+                   --xlabel 'Task Granularity (ms)' \
+                   --xdata 'time_per_task' \
+                   --x-invert \
+                   --xbase 10 \
+                   --no-xticks \
+                   --ylabel 'Efficiency' \
+                   --ylim '(-0.05,1.05)' \
+                   --no-ylog \
+                   --y-percent \
+                   --highlight-column 'metg' # \
+                   # --title "Efficiency vs Task Granularity (Cori, Compute, Stencil, Comm ${comm})"
+    done
+
     crop metg_nodes_16.pdf
     crop metg_nodes_64.pdf
+    crop metg_nodes_256.pdf
     for comm in 16 256 4096 65536; do
         crop efficiency_nodes_16_comm_${comm}.pdf
         crop efficiency_nodes_64_comm_${comm}.pdf
+    done
+    for comm in 256 4096 65536 1048576; do
+        crop efficiency_nodes_256_comm_${comm}.pdf
     done
 
 elif [[ $(basename $PWD) = imbalance ]]; then
