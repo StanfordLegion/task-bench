@@ -138,7 +138,7 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
         key=lambda x: table['time_per_task'][x[0]])
 
     assert min_i + 1 < len(table['reps']), "no data following the point above the threshold"
-    assert table['reps'][min_i + 1] >= table['reps'][min_i], "final data point has fewer reps, maybe run was truncated?"
+    assert table['reps'][min_i + 1] >= max(table['reps']), "final data point has fewer reps, maybe run was truncated?"
 
     # Perform linear interpolation if subsequent data point is an improvment:
     min_time = table['time_per_task'][min_i]
