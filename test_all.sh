@@ -284,8 +284,10 @@ fi)
 
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            python ./dask/task_bench.py -steps $steps -type $t $k -scheduler $SCHEDULER_URL -expect-workers 2 -skip-graph-validation
-            python ./dask/task_bench.py -steps $steps -type $t $k -and -steps $steps -type $t $k -scheduler $SCHEDULER_URL -expect-workers 2 -skip-graph-validation
+            for variant in "" _direct; do
+                python ./dask/task_bench$variant.py -steps $steps -type $t $k -scheduler $SCHEDULER_URL -expect-workers 2 -skip-graph-validation
+                python ./dask/task_bench$variant.py -steps $steps -type $t $k -and -steps $steps -type $t $k -scheduler $SCHEDULER_URL -expect-workers 2 -skip-graph-validation
+            done
         done
     done
 
