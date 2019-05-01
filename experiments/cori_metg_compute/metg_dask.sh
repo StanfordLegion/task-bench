@@ -29,7 +29,7 @@ srun -r 1 -n $NUM_WORKERS -N $NUM_WORKERS --cpu_bind none dask-worker --nthreads
 popd
 
 function launch {
-    python "$root_dir"/dask/task_bench.py "${@:2}" -scheduler $SCHEDULER_URL -expect-workers $NUM_WORKERS -skip-graph-validation
+    python "$root_dir"/dask/task_bench_direct.py "${@:2}" -scheduler $SCHEDULER_URL -expect-workers $NUM_WORKERS -skip-graph-validation
 }
 
 function repeat {
