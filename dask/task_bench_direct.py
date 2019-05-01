@@ -67,15 +67,23 @@ def execute_point(graph_array, timestep, point, scratch, *inputs):
     output = np.empty(graph.output_bytes_per_task, dtype=np.ubyte)
     output_ptr = ffi.cast("char *", output.ctypes.data)
 
-    scratch_ptr = ffi.cast("char *", scratch.ctypes.data)
+    if scratch is not None:
+        scratch_ptr = ffi.cast("char *", scratch.ctypes.data)
+        scratch_size = scratch.shape[0]
+    else:
+        scratch_ptr = ffi.NULL
+        scratch_size = 0
 
     c.task_graph_execute_point_scratch(
         graph, timestep, point,
         output_ptr, output.shape[0],
         input_ptrs, input_sizes, len(inputs),
-        scratch_ptr, scratch.shape[0])
+        scratch_ptr, scratch_size)
 
-    return output, scratch
+    if scratch is not None:
+        return output, scratch
+    else:
+        return output
 
 def splitter(value, idx):
     return value[idx]
@@ -128,7 +136,10 @@ def execute_task_graph(graph, computations, next_tid):
 
     graph_array = encode_task_graph(graph)
 
-    scratch = [np.empty(graph.scratch_bytes_per_task, dtype=np.ubyte) for _ in range(graph.max_width)]
+    if graph.scratch_bytes_per_task > 0:
+        scratch = [np.empty(graph.scratch_bytes_per_task, dtype=np.ubyte) for _ in range(graph.max_width)]
+    else:
+        scratch = [None for _ in range(graph.max_width)]
 
     last_row = None
     for timestep in range(0, graph.timesteps):
@@ -148,13 +159,16 @@ def execute_task_graph(graph, computations, next_tid):
 
             computations[result] = (execute_point, graph_array, timestep, point, scratch[point], *inputs)
 
-            output = 'task_%s' % next_tid
-            next_tid += 1
-            scratch[point] = 'task_%s' % next_tid
-            next_tid += 1
+            if scratch[point] is not None:
+                output = 'task_%s' % next_tid
+                next_tid += 1
+                scratch[point] = 'task_%s' % next_tid
+                next_tid += 1
 
-            computations[output] = (splitter, result, 0)
-            computations[scratch[point]] = (splitter, result, 1)
+                computations[output] = (splitter, result, 0)
+                computations[scratch[point]] = (splitter, result, 1)
+            else:
+                output = result
 
             row.append(output)
         for point in range(offset + width, graph.max_width):
