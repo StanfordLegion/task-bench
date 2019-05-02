@@ -141,6 +141,7 @@ def execute_task_graph(graph, computations, next_tid):
     else:
         scratch = [None for _ in range(graph.max_width)]
 
+    outputs = []
     last_row = None
     for timestep in range(0, graph.timesteps):
         offset = c.task_graph_offset_at_timestep(graph, timestep)
@@ -171,11 +172,12 @@ def execute_task_graph(graph, computations, next_tid):
                 output = result
 
             row.append(output)
+            outputs.append(output)
         for point in range(offset + width, graph.max_width):
             row.append(None)
         assert(len(row) == graph.max_width)
         last_row = row
-    return last_row, next_tid
+    return outputs, next_tid
 
 
 def execute_task_bench():
@@ -189,7 +191,7 @@ def execute_task_bench():
     results = []
     for task_graph in task_graphs:
         result, next_tid = execute_task_graph(task_graph, computations, next_tid)
-        results.extend(x for x in result if x is not None)
+        results.extend(result)
     if client:
         client.get(computations, results)
     else:

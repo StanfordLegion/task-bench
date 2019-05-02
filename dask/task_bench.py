@@ -126,6 +126,7 @@ def execute_task_graph(graph):
 
     scratch = [np.empty(graph.scratch_bytes_per_task, dtype=np.ubyte) for _ in range(graph.max_width)]
 
+    outputs = []
     last_row = None
     for timestep in range(0, graph.timesteps):
         offset = c.task_graph_offset_at_timestep(graph, timestep)
@@ -140,11 +141,12 @@ def execute_task_graph(graph):
                 inputs.append(last_row[dep])
             output, scratch[point] = execute_point(graph_array, timestep, point, scratch[point], *inputs)
             row.append(output)
+            outputs.append(output)
         for point in range(offset + width, graph.max_width):
             row.append(None)
         assert(len(row) == graph.max_width)
         last_row = row
-    return last_row
+    return outputs
 
 
 @dask.delayed
