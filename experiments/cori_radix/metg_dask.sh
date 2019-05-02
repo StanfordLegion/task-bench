@@ -56,7 +56,7 @@ function sweep {
     done
 }
 
-for n in $SLURM_JOB_NUM_NODES; do
+for n in $(( SLURM_JOB_NUM_NODES - 1 )); do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
             for r in ${RADIX:-5}; do
