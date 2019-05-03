@@ -157,6 +157,26 @@ ParsecApp::ParsecApp(int argc, char **argv)
     debug_printf(0, "output_bytes_per_task %d, mb %d, nb %d\n", graph.output_bytes_per_task, mat.MB, mat.NB);
   
     assert(graph.output_bytes_per_task <= sizeof(float) * mat.MB * mat.NB);
+
+    /* Set P to 1 */
+    if( P != 1 ) {
+       P = 1;
+       Q = nodes;
+       if( 0 == rank )
+           printf("Warnning: set P = 1 Q = %d\n", nodes);
+    }
+
+    /* Set P to 1 */
+    if( (mat.N/mat.NB % nodes == 0 && mat.SNB != mat.N/mat.NB/nodes)
+        || (mat.N/mat.NB % nodes != 0 && mat.SNB != mat.N/mat.NB/nodes + 1) ) {
+        if( 0 == mat.N/mat.NB % nodes )
+            mat.SNB = mat.N/mat.NB/nodes;
+        else
+            mat.SNB = mat.N/mat.NB/nodes + 1;
+
+        if( 0 == rank )
+           printf("Warnning: set distribution to two dim block; SNB = %d\n", mat.SNB);
+    }
   
     two_dim_block_cyclic_init(&mat.dcC, matrix_RealFloat, matrix_Tile,
                                nodes, rank, mat.MB, mat.NB, mat.M, mat.N, 0, 0,
