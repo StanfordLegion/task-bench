@@ -35,6 +35,9 @@ static parsec_key_fn_t my_key_fns_task = {
     .key_hash = parsec_hash_table_generic_64bits_key_hash
 };
 
+struct __parsec_stencil_1d_task_task_s *this_task;
+static int my_startup_task(parsec_execution_stream_t * es, struct __parsec_stencil_1d_task_task_s * this_task);
+
 %}
 
 %option nb_local_tasks_fn = pretermined_nb_tasks
@@ -47,7 +50,8 @@ graph_idx   [ type = "int" ]
 extra_local_memory   [ type = "char**" ]
 
 task(t, x) [ hash_struct = my_key_fns_task
-             make_key_fn = my_make_key_task ]
+             make_key_fn = my_make_key_task
+             startup_fn  = my_startup_task ] 
 
 t = 0 .. time_steps-1
 x = 0 .. descA->lnt-1
@@ -124,6 +128,97 @@ static char *my_key_print_task(char *buffer, size_t buffer_size, parsec_key_t __
     __parsec_key /= x_range;
     snprintf(buffer, buffer_size, "task(%d, %d)", t, x);
     return buffer;
+}
+
+static int my_startup_task(parsec_execution_stream_t * es, __parsec_stencil_1d_task_task_t * this_task)
+{
+    __parsec_stencil_1d_task_task_t *new_task;
+    __parsec_stencil_1d_internal_taskpool_t *__parsec_tp =
+        (__parsec_stencil_1d_internal_taskpool_t *) this_task->taskpool;
+    parsec_context_t *context = __parsec_tp->super.super.context;
+    int vpid = 0, nb_tasks = 0;
+    size_t total_nb_tasks = 0;
+    parsec_list_item_t *pready_ring = NULL;
+    int t = this_task->locals.t.value;  /* retrieve value saved during the last iteration */
+    int x = this_task->locals.x.value;  /* retrieve value saved during the last iteration */
+    int m = this_task->locals.m.value;  /* retrieve value saved during the last iteration */
+    if (0 != this_task->locals.reserved[0].value) {
+        this_task->locals.reserved[0].value = 1;        /* reset the submission process */
+        goto after_insert_task;
+    }
+    this_task->locals.reserved[0].value = 1;    /* a sane default value */
+    for (this_task->locals.t.value = t = 0;
+         this_task->locals.t.value <= 0; this_task->locals.t.value += 1, t = this_task->locals.t.value) {
+        for (this_task->locals.x.value = x = 0;
+             this_task->locals.x.value <= (__parsec_tp->super._g_descA->lnt - 1);
+             this_task->locals.x.value += 1, x = this_task->locals.x.value) {
+            this_task->locals.m.value = m = (t % __parsec_tp->super._g_nb_fields);
+            if (!task_pred(t, x, m))
+                continue;
+            if (!(((!(((t > 0) && (x > 0))))) && ((!((t > 0)))) && ((!(((t > 0) && (x < (__parsec_tp->super._g_descA->lnt - 1))))))))
+                continue;
+            if (NULL != ((parsec_data_collection_t *) __parsec_tp->super._g_descA)->vpid_of) {
+                vpid =
+                    ((parsec_data_collection_t *) __parsec_tp->super._g_descA)->
+                    vpid_of((parsec_data_collection_t *) __parsec_tp->super._g_descA, m, x);
+                assert(context->nb_vp >= vpid);
+            }
+            new_task =
+                (__parsec_stencil_1d_task_task_t *) parsec_thread_mempool_allocate(context->virtual_processes[0]->
+                                                                                   execution_streams[0]->
+                                                                                   context_mempool);
+            new_task->status = PARSEC_TASK_STATUS_NONE;
+            /* Copy only the valid elements from this_task to new_task one */
+            new_task->taskpool = this_task->taskpool;
+            new_task->task_class = __parsec_tp->super.super.task_classes_array[stencil_1d_task.task_class_id];
+            new_task->chore_id = 0;
+            new_task->locals.t.value = this_task->locals.t.value;
+            new_task->locals.x.value = this_task->locals.x.value;
+            new_task->locals.m.value = this_task->locals.m.value;
+            PARSEC_LIST_ITEM_SINGLETON(new_task);
+            new_task->priority = __parsec_tp->super.super.priority;
+            new_task->data._f_A.data_repo = NULL;
+            new_task->data._f_A.data_in = NULL;
+            new_task->data._f_A.data_out = NULL;
+            new_task->data._f_L.data_repo = NULL;
+            new_task->data._f_L.data_in = NULL;
+            new_task->data._f_L.data_out = NULL;
+            new_task->data._f_B.data_repo = NULL;
+            new_task->data._f_B.data_in = NULL;
+            new_task->data._f_B.data_out = NULL;
+            new_task->data._f_R.data_repo = NULL;
+            new_task->data._f_R.data_in = NULL;
+            new_task->data._f_R.data_out = NULL;
+#if defined(PARSEC_DEBUG_NOISIER)
+            {
+                char tmp[128];
+                PARSEC_DEBUG_VERBOSE(10, parsec_debug_output, "Add startup task %s",
+                                     parsec_task_snprintf(tmp, 128, (parsec_task_t *) new_task));
+            }
+#endif
+            parsec_dependencies_mark_task_as_startup((parsec_task_t *) new_task, es);
+            pready_ring = parsec_list_item_ring_push_sorted(pready_ring,
+                                                            (parsec_list_item_t *) new_task,
+                                                            parsec_execution_context_priority_comparator);
+            nb_tasks++;
+          after_insert_task:    /* we jump here just so that we have code after the label */
+            if (nb_tasks > this_task->locals.reserved[0].value) {
+                if ((size_t) this_task->locals.reserved[0].value < parsec_task_startup_iter)
+                    this_task->locals.reserved[0].value <<= 1;
+                __parsec_schedule(es, (parsec_task_t *) pready_ring, 0);
+                pready_ring = NULL;
+                total_nb_tasks += nb_tasks;
+                nb_tasks = 0;
+                if (total_nb_tasks > parsec_task_startup_chunk) {       /* stop here and request to be rescheduled */
+                    return PARSEC_HOOK_RETURN_AGAIN;
+                }
+            }
+        }
+    }
+    (void) vpid;
+    if (NULL != pready_ring)
+        __parsec_schedule(es, (parsec_task_t *) pready_ring, 0);
+    return PARSEC_HOOK_RETURN_DONE;
 }
 
 parsec_taskpool_t*
