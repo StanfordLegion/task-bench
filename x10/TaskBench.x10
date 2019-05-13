@@ -230,7 +230,7 @@ public class TaskBench {
     val first_point = here.id * max_width / Place.places().size;
     val last_point = (here.id + 1) * max_width / Place.places().size - 1;
     finish for (point in first_point..last_point) {
-      async {
+      // async {
         val point_index = point - first_point;
 
         var max_deps:Long = 0;
@@ -264,94 +264,98 @@ public class TaskBench {
           // Fetch inputs for this timestep.
           var n_inputs:Long = 0;
 
-          // RAW dependencies: copy data from last timestep.
-          {
-            var n_raw_deps:Long = 0;
-            val dset = dset_at_timestep(timestep);
-            for (dep in deps(point_index)(dset)) {
-              if (dep < last_offset || dep >= last_offset + last_width) {
-                continue;
-              }
-              n_raw_deps++;
-            }
+          // // RAW dependencies: copy data from last timestep.
+          // {
+          //   var n_raw_deps:Long = 0;
+          //   val dset = dset_at_timestep(timestep);
+          //   for (dep in deps(point_index)(dset)) {
+          //     if (dep < last_offset || dep >= last_offset + last_width) {
+          //       continue;
+          //     }
+          //     n_raw_deps++;
+          //   }
 
-            {
-              val lock = pi.task_ready_lock(graph_index)(point_index)(timestep);
-              lock.lock();
-              while (pi.task_ready(graph_index)(point_index)(timestep) != n_raw_deps) {
-                lock.await();
-              }
-              lock.unlock();
-            }
+          //   {
+          //     if (n_raw_deps > 0) {
+          //       val lock = pi.task_ready_lock(graph_index)(point_index)(timestep);
+          //       lock.lock();
+          //       while (pi.task_ready(graph_index)(point_index)(timestep) != n_raw_deps) {
+          //         lock.await();
+          //       }
+          //       lock.unlock();
+          //     }
+          //   }
 
-            finish for (dep in deps(point_index)(dset)) {
-              if (dep < last_offset || dep >= last_offset + last_width) {
-                continue;
-              }
+          //   finish for (dep in deps(point_index)(dset)) {
+          //     if (dep < last_offset || dep >= last_offset + last_width) {
+          //       continue;
+          //     }
 
-              val input = inputs(n_inputs);
-              val dep_index = point_local_indices(dep);
-              async at(owners(dep)) {
-                val remote_pi = local_plh();
-                val src = remote_pi.task_result(graph_index)(dep_index);
-                val dst = input;
-                assert src.size == dst.size;
-                finish Rail.asyncCopy(src, 0, dst, 0, src.size);
+          //     val input = inputs(n_inputs);
+          //     val dep_index = point_local_indices(dep);
+          //     async at(owners(dep)) {
+          //       val remote_pi = local_plh();
+          //       val src = remote_pi.task_result(graph_index)(dep_index);
+          //       val dst = input;
+          //       assert src.size == dst.size;
+          //       finish Rail.asyncCopy(src, 0, dst, 0, src.size);
 
-                val lock = remote_pi.task_used_lock(graph_index)(dep_index)(timestep);
-                lock.lock();
-                remote_pi.task_used(graph_index)(dep_index)(timestep)++;
-                lock.release();
-              }
-              n_inputs++;
-            }
-          }
+          //       val lock = remote_pi.task_used_lock(graph_index)(dep_index)(timestep);
+          //       lock.lock();
+          //       remote_pi.task_used(graph_index)(dep_index)(timestep)++;
+          //       lock.release();
+          //     }
+          //     n_inputs++;
+          //   }
+          // }
 
-          // WAR dependencies: avoid copying over data that is still being copied.
-          {
-            var n_war_deps:Long = 0;
-            if (point >= last_offset && point < last_offset + last_width) {
-              val dset = dset_at_timestep(timestep);
-              for (dep in rev_deps(point_index)(dset)) {
-                if (dep < offset || dep >= offset + width) {
-                  continue;
-                }
-                n_war_deps++;
-              }
-            }
+          // // WAR dependencies: avoid copying over data that is still being copied.
+          // {
+          //   var n_war_deps:Long = 0;
+          //   if (point >= last_offset && point < last_offset + last_width) {
+          //     val dset = dset_at_timestep(timestep);
+          //     for (dep in rev_deps(point_index)(dset)) {
+          //       if (dep < offset || dep >= offset + width) {
+          //         continue;
+          //       }
+          //       n_war_deps++;
+          //     }
+          //   }
 
-            val lock = pi.task_used_lock(graph_index)(point_index)(timestep);
-            lock.lock();
-            while (pi.task_used(graph_index)(point_index)(timestep) != n_war_deps) {
-              lock.await();
-            }
-            lock.unlock();
-          }
+          //   if (n_war_deps > 0) {
+          //     val lock = pi.task_used_lock(graph_index)(point_index)(timestep);
+          //     lock.lock();
+          //     while (pi.task_used(graph_index)(point_index)(timestep) != n_war_deps) {
+          //       lock.await();
+          //     }
+          //     lock.unlock();
+          //   }
+          // }
 
           // Execute task.
           executePoint(task_graph, timestep, point, output, input_rails, n_inputs, scratch);
 
-          // Mark dependencies as ready.
-          if (timestep + 1 < timesteps) {
-            val next_dset = dset_at_timestep(timestep+1);
-            finish for (dep in rev_deps(point_index)(next_dset)) {
-              if (dep < next_offset || dep >= next_offset + next_width) {
-                continue;
-              }
+          // // Mark dependencies as ready.
+          // if (timestep + 1 < timesteps) {
+          //   val next_dset = dset_at_timestep(timestep+1);
+          //   finish for (dep in rev_deps(point_index)(next_dset)) {
+          //     if (dep < next_offset || dep >= next_offset + next_width) {
+          //       continue;
+          //     }
 
-              val dep_index = point_local_indices(dep);
-              async at(owners(dep)) {
-                val remote_pi = local_plh();
+          //     val dep_index = point_local_indices(dep);
+          //     async at(owners(dep)) {
+          //       val remote_pi = local_plh();
 
-                val lock = remote_pi.task_ready_lock(graph_index)(dep_index)(timestep+1);
-                lock.lock();
-                remote_pi.task_ready(graph_index)(dep_index)(timestep+1)++;
-                lock.release();
-              }
-            }
-          }
+          //       val lock = remote_pi.task_ready_lock(graph_index)(dep_index)(timestep+1);
+          //       lock.lock();
+          //       remote_pi.task_ready(graph_index)(dep_index)(timestep+1)++;
+          //       lock.release();
+          //     }
+          //   }
+          // }
         }
-      }
+      // } // async
     }
   }
 
@@ -385,9 +389,9 @@ public class TaskBench {
       finish for (p in Place.places()) {
         async at (p) {
           for (graph_index in 0..(task_graphs.size-1)) {
-            async {
+            // async {
               executeGraph(graph_index);
-            }
+            // }
           }
         }
       }
