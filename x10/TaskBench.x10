@@ -291,7 +291,7 @@ public class TaskBench {
 
               val input = inputs(n_inputs);
               val dep_index = point_local_indices(dep);
-              async at(owners(dep)) {
+              at(owners(dep)) async {
                 val remote_pi = local_plh();
                 val src = remote_pi.task_result(graph_index)(dep_index);
                 val dst = input;
@@ -340,7 +340,7 @@ public class TaskBench {
               }
 
               val dep_index = point_local_indices(dep);
-              async at(owners(dep)) {
+              at(owners(dep)) async {
                 val remote_pi = local_plh();
 
                 val lock = remote_pi.task_ready_lock(graph_index)(dep_index)(timestep+1);
@@ -362,7 +362,7 @@ public class TaskBench {
     var stop_time:Long = 0;
     for (iter in 0..1) {
       finish for (p in Place.places()) {
-        async at (p) {
+        at (p) async {
           val remote_pi = local_plh();
           for (graph_result in remote_pi.task_result) {
             for (point_result in graph_result) {
@@ -383,7 +383,7 @@ public class TaskBench {
       }
       start_time = Timer.nanoTime();
       finish for (p in Place.places()) {
-        async at (p) {
+        at (p) async {
           for (graph_index in 0..(task_graphs.size-1)) {
             async {
               executeGraph(graph_index);
