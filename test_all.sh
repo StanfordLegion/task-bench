@@ -42,10 +42,12 @@ set -x
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            mpirun -np 1 ./mpi/nonblock -steps $steps -type $t $k
-            mpirun -np 2 ./mpi/nonblock -steps $steps -type $t $k
-            mpirun -np 4 ./mpi/nonblock -steps $steps -type $t $k
-            mpirun -np 4 ./mpi/nonblock -steps $steps -type $t $k -and -steps $steps -type $t $k
+            for binary in nonblock bulk_synchronous; do
+                mpirun -np 1 ./mpi/$binary -steps $steps -type $t $k
+                mpirun -np 2 ./mpi/$binary -steps $steps -type $t $k
+                mpirun -np 4 ./mpi/$binary -steps $steps -type $t $k
+                mpirun -np 4 ./mpi/$binary -steps $steps -type $t $k -and -steps $steps -type $t $k
+            done
         done
     done
     for t in no_comm stencil_1d stencil_1d_periodic all_to_all; do # FIXME: trivial dom tree fft nearest spread random_nearest are broken
