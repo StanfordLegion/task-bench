@@ -54,8 +54,7 @@ def decode_task_graph(graph_array):
     return ffi.cast("task_graph_t *", graph_array.ctypes.data)[0]
 
 
-@dask.delayed(nout=2)
-def execute_point(graph_array, timestep, point, scratch, *inputs):
+def execute_point_impl(graph_array, timestep, point, scratch, *inputs):
     from task_bench_core import ffi, c
 
     graph = decode_task_graph(graph_array)
@@ -66,15 +65,41 @@ def execute_point(graph_array, timestep, point, scratch, *inputs):
     output = np.empty(graph.output_bytes_per_task, dtype=np.ubyte)
     output_ptr = ffi.cast("char *", output.ctypes.data)
 
-    scratch_ptr = ffi.cast("char *", scratch.ctypes.data)
+    if scratch is not None:
+        scratch_ptr = ffi.cast("char *", scratch.ctypes.data)
+        scratch_size = scratch.shape[0]
+    else:
+        scratch_ptr = ffi.NULL
+        scratch_size = 0
 
     c.task_graph_execute_point_scratch(
         graph, timestep, point,
         output_ptr, output.shape[0],
         input_ptrs, input_sizes, len(inputs),
-        scratch_ptr, scratch.shape[0])
+        scratch_ptr, scratch_size)
 
-    return output, scratch
+    if scratch is not None:
+        return output, scratch
+    else:
+        return output
+
+@dask.delayed(nout=2)
+def execute_point_scratch(graph_array, timestep, point, scratch, *inputs):
+    return execute_point_impl(graph_array, timestep, point, scratch, *inputs)
+
+@dask.delayed
+def execute_point_no_scratch(graph_array, timestep, point, *inputs):
+    return execute_point_impl(graph_array, timestep, point, None, *inputs)
+
+def execute_point(graph_array, timestep, point, scratch, *inputs):
+    if scratch is not None:
+        return execute_point_scratch(graph_array, timestep, point, scratch, *inputs)
+    else:
+        return execute_point_no_scratch(graph_array, timestep, point, *inputs), None
+
+@dask.delayed
+def init_scratch(scratch_bytes):
+    return np.empty(scratch_bytes, dtype=np.ubyte)
 
 def app_create(args):
     from task_bench_core import ffi, c
@@ -124,7 +149,10 @@ def execute_task_graph(graph):
 
     graph_array = encode_task_graph(graph)
 
-    scratch = [np.empty(graph.scratch_bytes_per_task, dtype=np.ubyte) for _ in range(graph.max_width)]
+    if graph.scratch_bytes_per_task > 0:
+        scratch = [init_scratch(graph.scratch_bytes_per_task) for _ in range(graph.max_width)]
+    else:
+        scratch = [None for _ in range(graph.max_width)]
 
     outputs = []
     last_row = None

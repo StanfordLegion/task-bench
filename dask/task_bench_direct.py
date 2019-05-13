@@ -88,6 +88,9 @@ def execute_point(graph_array, timestep, point, scratch, *inputs):
 def splitter(value, idx):
     return value[idx]
 
+def init_scratch(scratch_bytes):
+    return np.empty(scratch_bytes, dtype=np.ubyte)
+
 def app_create(args):
     from task_bench_core import ffi, c
 
@@ -136,10 +139,12 @@ def execute_task_graph(graph, computations, next_tid):
 
     graph_array = encode_task_graph(graph)
 
+    scratch = [None for _ in range(graph.max_width)]
     if graph.scratch_bytes_per_task > 0:
-        scratch = [np.empty(graph.scratch_bytes_per_task, dtype=np.ubyte) for _ in range(graph.max_width)]
-    else:
-        scratch = [None for _ in range(graph.max_width)]
+        for point in range(graph.max_width):
+            scratch[point] = 'task_%s' % next_tid
+            next_tid += 1
+            computations[scratch[point]] = (init_scratch, graph.scratch_bytes_per_task)
 
     outputs = []
     last_row = None
