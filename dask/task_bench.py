@@ -78,14 +78,11 @@ def execute_point_impl(graph_array, timestep, point, scratch, *inputs):
         input_ptrs, input_sizes, len(inputs),
         scratch_ptr, scratch_size)
 
-    if scratch is not None:
-        return output, scratch
-    else:
-        return output
+    return output
 
 @dask.delayed(nout=2)
 def execute_point_scratch(graph_array, timestep, point, scratch, *inputs):
-    return execute_point_impl(graph_array, timestep, point, scratch, *inputs)
+    return execute_point_impl(graph_array, timestep, point, scratch, *inputs), scratch
 
 @dask.delayed
 def execute_point_no_scratch(graph_array, timestep, point, *inputs):
