@@ -22,19 +22,12 @@ static inline int get_num_args_internal(void *L, void *B, void *R){
 }
 
 /* The following routines are to simplify dgemm_internal_init
- * 1. Donot cound nb_tasks, but the last po broadcast terminate
- * 2. Create own parsec_key_fn_t struncture
+ * 1. Donot count nb_tasks
+ * 2. Create own make key 
+ * 3. Create own startup 
  */
 static uint32_t pretermined_nb_tasks(struct __parsec_stencil_1d_internal_taskpool_s *__tp);
 static parsec_key_t my_make_key_task(const parsec_taskpool_t * tp, const assignment_t * as);
-static char *my_key_print_task(char *buffer, size_t buffer_size, parsec_key_t __parsec_key_, void *user_data);
-
-static parsec_key_fn_t my_key_fns_task = {
-    .key_equal = parsec_hash_table_generic_64bits_key_equal,
-    .key_print = my_key_print_task,
-    .key_hash = parsec_hash_table_generic_64bits_key_hash
-};
-
 struct __parsec_stencil_1d_task_task_s *this_task;
 static int my_startup_task(parsec_execution_stream_t * es, struct __parsec_stencil_1d_task_task_s * this_task);
 
@@ -49,8 +42,7 @@ time_steps  [ type = "int" ]
 graph_idx   [ type = "int" ]
 extra_local_memory   [ type = "char**" ]
 
-task(t, x) [ hash_struct = my_key_fns_task
-             make_key_fn = my_make_key_task
+task(t, x) [ make_key_fn = my_make_key_task
              startup_fn  = my_startup_task ] 
 
 t = 0 .. time_steps-1
@@ -113,21 +105,6 @@ static parsec_key_t my_make_key_task(const parsec_taskpool_t * tp, const assignm
     __parsec_id += (x - __jdf2c_x_min) * t_range;
     (void) __parsec_tp;
     return (parsec_key_t) __parsec_id;
-}
-
-static char *my_key_print_task(char *buffer, size_t buffer_size, parsec_key_t __parsec_key_, void *user_data)
-{
-    const __parsec_stencil_1d_internal_taskpool_t *__parsec_tp =
-        (const __parsec_stencil_1d_internal_taskpool_t *) user_data;
-    int t_range = __parsec_tp->super._g_time_steps;
-    int x_range = __parsec_tp->super._g_descA->lnt;
-    uintptr_t __parsec_key = (uintptr_t) __parsec_key_;
-    int t = __parsec_key % t_range;
-    __parsec_key /= t_range;
-    int x = __parsec_key % x_range;
-    __parsec_key /= x_range;
-    snprintf(buffer, buffer_size, "task(%d, %d)", t, x);
-    return buffer;
 }
 
 static int my_startup_task(parsec_execution_stream_t * es, __parsec_stencil_1d_task_task_t * this_task)
