@@ -18,6 +18,7 @@ env:
     - DEFAULT_FEATURES=0
   matrix:
     - TASKBENCH_USE_MPI=1
+    - USE_MPI_OPENMP=1
     - USE_LEGION=1
     - USE_REGENT=1
     - USE_REALM=1 USE_GASNET=1 CONDUIT=mpi
