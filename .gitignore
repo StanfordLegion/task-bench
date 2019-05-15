@@ -8,6 +8,7 @@
 *.so
 *.dSYM
 __pycache__
+core
 
 *.csv
 *.out
@@ -23,6 +24,7 @@ legion_prof
 
 /deps
 /charm++_smp
+/mpi_openmp_kmp
 *charmrun.*
 
 # dask

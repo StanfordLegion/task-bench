@@ -1,0 +1,4 @@
+/project
+!/project/assembly.sbt
+/target
+/core_c_wrap.cxx
