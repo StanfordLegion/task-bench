@@ -29,6 +29,10 @@
 #include "core_kernel.h"
 #include "core_random.h"
 
+#ifdef ENABLE_CUDA
+#include "cuda_kernel.h"
+#endif
+
 #ifdef DEBUG_CORE
 typedef unsigned long long TaskGraphMask;
 static std::atomic<TaskGraphMask> has_executed_graph;
@@ -76,6 +80,13 @@ void Kernel::execute(long graph_index, long timestep, long point,
     assert(timestep >= 0 && point >= 0);
     execute_kernel_imbalance(*this, graph_index, timestep, point);
     break;
+#ifdef ENABLE_CUDA
+  case KernelType::CUDA_COMPUTE_BOUND:
+    assert(scratch_ptr != NULL);
+    assert(scratch_bytes > 0);
+    execute_kernel_compute_cuda(*this, scratch_ptr, scratch_bytes);
+    break; 
+#endif
   default:
     assert(false && "unimplemented kernel type");
   };
@@ -95,6 +106,9 @@ static const std::map<std::string, KernelType> &ktype_by_name()
     types["compute_bound2"] = KernelType::COMPUTE_BOUND2;
     types["io_bound"] = KernelType::IO_BOUND;
     types["load_imbalance"] = KernelType::LOAD_IMBALANCE;
+#ifdef ENABLE_CUDA
+    types["cuda_compute_bound"] = KernelType::CUDA_COMPUTE_BOUND;
+#endif
   }
 
   return types;
@@ -574,6 +588,11 @@ static void needs_argument(int i, int argc, const char *flag) {
 #define SAMPLE_FLAG "-sample"
 #define IMBALANCE_FLAG "-imbalance"
 
+#ifdef ENABLE_CUDA
+#define CUDA_NB_BLOCKS_FLAG "-nb_blocks"
+#define CUDA_THREADS_PER_BLOCK_FLAG "-threads_per_block"
+#endif
+
 #define SKIP_GRAPH_VALIDATION_FLAG "-skip-graph-validation"
 #define FIELD_FLAG "-field"
 
@@ -771,6 +790,27 @@ App::App(int argc, char **argv)
       }
       graph.nb_fields = value;
     }
+#ifdef ENABLE_CUDA    
+    if (!strcmp(argv[i], CUDA_NB_BLOCKS_FLAG)) {
+      needs_argument(i, argc, CUDA_NB_BLOCKS_FLAG);
+      int value  = atoi(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"" CUDA_NB_BLOCKS_FLAG " %d\" must be > 1\n", value);
+        abort();
+      }
+      graph.kernel.nb_blocks = value;
+    }
+    
+    if (!strcmp(argv[i], CUDA_THREADS_PER_BLOCK_FLAG)) {
+      needs_argument(i, argc, CUDA_THREADS_PER_BLOCK_FLAG);
+      int value  = atoi(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"" CUDA_THREADS_PER_BLOCK_FLAG " %d\" must be > 1\n", value);
+        abort();
+      }
+      graph.kernel.threads_per_block = value;
+    }
+#endif
 
     if (!strcmp(argv[i], AND_FLAG)) {
       // Hack: set default value of period for random graph
