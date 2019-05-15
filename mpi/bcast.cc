@@ -290,6 +290,7 @@ int main(int argc, char *argv[])
       char *output_ptr = output_ptrs[graph_num];
       size_t scratch_bytes = graph.scratch_bytes_per_task;
       char *scratch_ptr = (char *)malloc(scratch_bytes);
+      assert(scratch_ptr);
 
       char *saved_ptr = NULL;
       for (long timestep = 0L; timestep < graph.timesteps; timestep++) {
