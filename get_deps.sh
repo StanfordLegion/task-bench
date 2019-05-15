@@ -17,6 +17,7 @@ if [[ $(hostname --fqdn) = *"summit"* ]]; then
 module load gcc/6.4.0
 module load cuda/9.2.148
 module load cmake/3.14.2
+module load git/2.13.0
 export CC=gcc
 export CXX=g++
 export MPICXX=mpicxx
