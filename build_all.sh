@@ -31,6 +31,11 @@ if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     make -C mpi all -j$THREADS
 fi
 
+if [[ $USE_MPI_OPENMP -eq 1 ]]; then
+    make -C mpi_openmp clean
+    make -C mpi_openmp all -j$THREADS
+fi
+
 if [[ $USE_GASNET -eq 1 ]]; then
     make -C "$GASNET_DIR"
 fi

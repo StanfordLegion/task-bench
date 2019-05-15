@@ -60,6 +60,17 @@ if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     done
 fi
 
+if [[ $USE_MPI_OPENMP -eq 1 ]]; then
+    for t in "${extended_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            mpirun -np 1 ./mpi_openmp/forall -steps $steps -type $t $k
+            mpirun -np 2 ./mpi_openmp/forall -steps $steps -type $t $k
+            mpirun -np 4 ./mpi_openmp/forall -steps $steps -type $t $k
+            mpirun -np 4 ./mpi_openmp/forall -steps $steps -type $t $k -and -steps $steps -type $t $k
+        done
+    done
+fi
+
 if [[ $USE_LEGION -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
