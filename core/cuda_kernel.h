@@ -5,8 +5,15 @@
 #include <cuda_runtime.h>
 
 struct Kernel;
+struct TaskGraph;
 
-void execute_kernel_compute_cuda(const Kernel &kernel, char *A, size_t bytes);
+extern std::vector<char*> local_buffer;
+
+extern size_t local_buffer_size;
+
+void init_cuda_support(const std::vector<TaskGraph> &graphs);
+
+void execute_kernel_compute_cuda(const Kernel &kernel, char *scratch_ptr, size_t scratch_bytes);
 
 __global__ void execute_kernel_compute_cuda_kernel(long iter, double *A);
 

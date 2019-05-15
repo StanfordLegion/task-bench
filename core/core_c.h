@@ -62,6 +62,8 @@ typedef struct kernel_t {
 #ifdef ENABLE_CUDA
   int nb_blocks;
   int threads_per_block;
+  int memcpy_required;
+  int gpu_id;
 #endif
 } kernel_t;
 

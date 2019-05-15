@@ -558,7 +558,11 @@ static TaskGraph default_graph(long graph_index)
   graph.radix = 3;
   graph.period = -1;
   graph.fraction_connected = 0.25;
+#ifdef ENABLE_CUDA
+  graph.kernel = {KernelType::EMPTY, 0, 16, 0.0, 1, 32, 0, 0};
+#else
   graph.kernel = {KernelType::EMPTY, 0, 16, 0.0};
+#endif
   graph.output_bytes_per_task = sizeof(std::pair<long, long>);
   graph.scratch_bytes_per_task = 0;
   graph.nb_fields = 0;
@@ -591,6 +595,7 @@ static void needs_argument(int i, int argc, const char *flag) {
 #ifdef ENABLE_CUDA
 #define CUDA_NB_BLOCKS_FLAG "-nb_blocks"
 #define CUDA_THREADS_PER_BLOCK_FLAG "-threads_per_block"
+#define CUDA_MEMCPY_FLAG "-memcpy"
 #endif
 
 #define SKIP_GRAPH_VALIDATION_FLAG "-skip-graph-validation"
@@ -810,6 +815,16 @@ App::App(int argc, char **argv)
       }
       graph.kernel.threads_per_block = value;
     }
+    
+    if (!strcmp(argv[i], CUDA_MEMCPY_FLAG)) {
+      needs_argument(i, argc, CUDA_MEMCPY_FLAG);
+      int value  = atoi(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"" CUDA_MEMCPY_FLAG " %d\" must be > 1\n", value);
+        abort();
+      }
+      graph.kernel.memcpy_required = value;
+    }
 #endif
 
     if (!strcmp(argv[i], AND_FLAG)) {
@@ -837,6 +852,10 @@ App::App(int argc, char **argv)
   }
   
   check();
+  
+#ifdef ENABLE_CUDA
+  init_cuda_support(graphs);
+#endif
 }
 
 void App::check() const
@@ -997,6 +1016,11 @@ long long count_flops_per_task(const TaskGraph &g, long timestep, long point)
     long iterations = select_imbalance_iterations(g.kernel, g.graph_index, timestep, point);
     return 2 * 64 * iterations + 64;
   }
+  
+#ifdef ENABLE_CUDA
+  case KernelType::CUDA_COMPUTE_BOUND:
+    return 2 * g.kernel.nb_blocks * g.kernel.threads_per_block * g.kernel.iterations;
+#endif
 
   default:
     assert(false && "unimplemented kernel type");
@@ -1023,6 +1047,10 @@ long long count_bytes_per_task(const TaskGraph &g, long timestep, long point)
   case KernelType::IO_BOUND:
   case KernelType::LOAD_IMBALANCE:
     return 0;
+#ifdef ENABLE_CUDA
+  case KernelType::CUDA_COMPUTE_BOUND:
+    return 0;
+#endif
   default:
     assert(false && "unimplemented kernel type");
   };

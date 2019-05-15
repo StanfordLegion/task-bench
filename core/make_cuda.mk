@@ -35,5 +35,4 @@ else
 	NVCCLDFLAGS += -L. -Wl,--whole-archive -lcore_cuda -Wl,--no-whole-archive
 endif
 
-
 endif

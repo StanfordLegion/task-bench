@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <string.h>
 #include <algorithm> 
+#include <cuda.h>
+#include <cuda_runtime.h>
 #include "core.h"
 #include "timer.h"
 
@@ -76,22 +78,9 @@ void *execute_task(void *tr)
   }
   *(task_arg->time_end) = Timer::get_cur_time();
   
-  if (g.kernel.type == COMPUTE_BOUND) {
+  if (g.kernel.type == CUDA_COMPUTE_BOUND) {
     long long flops = count_flops_per_task(task_arg->graph, 0, 0) * task_arg->nb_tasks;
-    printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flop/s %e\n", 
-          task_arg->tid, task_arg->nb_tasks, 
-          task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
-          (double)flops / (*(task_arg->time_end) - *(task_arg->time_start)));
-  } else if (g.kernel.type == MEMORY_BOUND) {
-    long long bytes = count_bytes_per_task(task_arg->graph, 0, 0) * task_arg->nb_tasks;
-    printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, bytes %lld, bw %e MB/s\n", 
-          task_arg->tid, task_arg->nb_tasks, 
-          task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3,
-          bytes,
-          ((double)bytes/1024/1024) / (*(task_arg->time_end) - *(task_arg->time_start)));
-  } else if (g.kernel.type == COMPUTE_DGEMM) {
-    long long flops = count_flops_per_task(task_arg->graph, 0, 0) * task_arg->nb_tasks;
-    printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, flops %lld, flop/s %e\n", 
+    printf("thread #%d, nb_tasks %d, time (%p, %p), %f ms, total flops %lld, flop/s %e\n", 
           task_arg->tid, task_arg->nb_tasks, 
           task_arg->time_start, task_arg->time_end, (*(task_arg->time_end) - *(task_arg->time_start)) * 1e3, flops, 
           (double)flops / (*(task_arg->time_end) - *(task_arg->time_start)));
@@ -108,7 +97,7 @@ private:
 private:
   size_t nb_tasks;
   std::vector<std::vector<char> > output_buff;
-  std::vector<std::vector<char> > scratch_buff;
+  std::vector<double *> scratch_buff;
   double *time_start;
   double *time_end;
   pthread_t *threads;
@@ -142,7 +131,7 @@ KernelBenchApp::KernelBenchApp(int argc, char **argv)
 
   scratch_buff.reserve(nb_workers);
   for (i = 0; i < nb_workers; i++) {
-    scratch_buff.emplace_back(graph.scratch_bytes_per_task, 0);
+    cudaMallocHost((void**)&(scratch_buff[i]), graph.scratch_bytes_per_task);
   }
 
   // init timer array
@@ -181,6 +170,7 @@ void KernelBenchApp::execute_main_loop()
   int i, rc;
   
   display();
+  TaskGraph &graph = graphs[0];
 
   task_args_t *task_args = (task_args_t*)malloc(sizeof(task_args_t) * nb_workers);
   assert(task_args != nullptr);
@@ -192,8 +182,8 @@ void KernelBenchApp::execute_main_loop()
     task_args[i].time_end = &(time_end[i]);
     task_args[i].output_ptr = output_buff[i].data();
     task_args[i].output_bytes = output_buff[i].size();
-    task_args[i].scratch_ptr = scratch_buff[i].data();
-    task_args[i].scratch_bytes = scratch_buff[i].size();
+    task_args[i].scratch_ptr = (char*)scratch_buff[i];
+    task_args[i].scratch_bytes = graph.scratch_bytes_per_task;
     task_args[i].graph = graphs[0];
     task_args[i].nb_tasks = nb_tasks/nb_workers;
     rc = pthread_create(&threads[i], NULL, execute_task, (void *)&(task_args[i]));
