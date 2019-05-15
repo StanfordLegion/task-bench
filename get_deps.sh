@@ -12,6 +12,29 @@ mkdir deps
 
 DEFAULT_FEATURES=${DEFAULT_FEATURES:-1}
 
+if [[ $(hostname --fqdn) = *"summit"* ]]; then
+    cat >>deps/env.sh <<EOF
+module load gcc/6.4.0
+module load cuda/9.2.148
+module load cmake/3.14.2
+export CC=gcc
+export CXX=g++
+export MPICXX=mpicxx
+
+EOF
+elif [[ $(hostname) = "cori"* ]]; then
+    cat >>deps/env.sh <<EOF
+module unload PrgEnv-intel
+module load PrgEnv-gnu
+module load cmake
+module load pcre
+export CC=cc
+export CXX=CC
+export MPICXX=CC
+
+EOF
+fi
+
 cat >>deps/env.sh <<EOF
 export TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 export USE_GASNET=${USE_GASNET:-0}
@@ -30,6 +53,7 @@ export USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 export USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 export USE_TENSORFLOW=${USE_TENSORFLOW:-$DEFAULT_FEATURES}
 export USE_DASK=${USE_DASK:-$DEFAULT_FEATURES}
+
 EOF
 
 source deps/env.sh

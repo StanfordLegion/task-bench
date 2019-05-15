@@ -12,28 +12,25 @@ Corresponding authors:
 
 ### Cori
 
-Place the following into `~/.bashrc.ext`:
-
-```
-module unload PrgEnv-intel
-module load PrgEnv-gnu
-module load python/3.6-anaconda-4.4
-module load cmake
-module load pcre
-export CC=cc
-export CXX=CC
-export MPICXX=CC
-```
-
-Then run:
-
 ```
 git clone https://github.com/StanfordLegion/task-bench.git
 cd task-bench
 USE_GASNET=1 CONDUIT=aries CHPL_COMM=ugni CHARM_VERSION=gni-crayxc ./get_deps.sh
 ./build_all.sh
 cd experiment/cori_metg_compute
-sbatch --nodes 1 emtg_legion.sh
+sbatch --nodes 1 metg_legion.sh
+```
+
+### Summit
+
+
+```
+git clone https://github.com/StanfordLegion/task-bench.git
+cd task-bench
+USE_GASNET=1 CONDUIT=ibv CHARM_VERSION=verbs-linux-ppc64le ./get_deps.sh
+./build_all.sh
+cd experiment/summit_metg_compute
+sbatch --nodes 1 metg_legion.sh
 ```
 
 ### Sherlock
@@ -56,5 +53,5 @@ cd task-bench
 CONDUIT=ibv USE_GASNET=1 CHARM_VERSION=verbs-linux-x86_64 ./get_deps.sh
 sbatch ./scripts/sherlock/build.sh
 cd scripts/sherlock
-sbatch --nodes 1 emtg_legion.sh
+sbatch --nodes 1 metg_legion.sh
 ```
