@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 
         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-        #pragma omp parallel for schedule(dynamic, 1)
+        #pragma omp parallel for schedule(runtime)
         for (long point = std::max(first_point, offset); point <= std::min(last_point, offset + width - 1); ++point) {
           long point_index = point - first_point;
 
