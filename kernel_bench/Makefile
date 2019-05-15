@@ -27,6 +27,7 @@ LIB := $(LIB) $(LIB_EXT)
 CXXFLAGS += $(INC)
 
 include ../core/make_blas.mk
+include ../core/make_cuda_app.mk
 
 TARGET = main
 all: $(TARGET)

@@ -4,14 +4,8 @@ OBJS=core.o core_c.o core_kernel.o timer.o
 COBJS=core_random.o siphash.o
 HEADERS=core.h core_c.h core_kernel.h core_random.h timer.h
 
-CUDA_SLIB=libcore_cuda.a
-CUDA_DLIB=libcore_cuda.so
-CUDA_OBJS=cuda_kernel.o
-CUDA_HEADERS=cuda_kernel.h
-
 # Second name for library that can be used to exclusively statically link.
 SLIB_SYMLINK=libcore_s.a
-CUDA_SLIB_SYMLINK=libcore_cuda_s.a
 
 DEBUG ?= 0
 
@@ -21,17 +15,12 @@ CFLAGS += -std=c11 -fPIC
 CXXFLAGS ?=
 CXXFLAGS += -std=c++11 -fPIC
 
-NVCCFLAGS ?=
-NVCCFLAGS += -std=c++11  --compiler-options '-fPIC' -DENABLE_CUDA
-
 ifeq ($(strip $(DEBUG)),0)
 	CFLAGS += -O3
 	CXXFLAGS += -O3
-	NVCCFLAGS += -O3
 else
 	CFLAGS += -O0 -ggdb -DDEBUG_CORE
 	CXXFLAGS += -O0 -ggdb -DDEBUG_CORE
-	NVCCFLAGS += -O0 -g
 endif
 
 #check AVX support
@@ -56,31 +45,22 @@ else ifeq ($(strip $(HAVE_AVX)),1)
 	CXXFLAGS += -mavx
 endif
 
-ifeq ($(strip $(HAVE_CUDA)),1)
-	CFLAGS += -DENABLE_CUDA
-	CXXFLAGS += -DENABLE_CUDA
-endif
-
 LDFLAGS ?=
-NVCCLDFLAGS ?=
 
 ifeq ($(shell uname), Darwin)
 	LDFLAGS += -dynamiclib -single_module -undefined dynamic_lookup -fPIC
-	NVCCLDFLAGS += -dynamiclib -single_module -undefined dynamic_lookup -fPIC
 else
 	LDFLAGS += -shared
-	NVCCLDFLAGS += -shared
 endif
 
 ifeq ($(shell uname), Darwin)
 	LDFLAGS += -L. -Wl,-force_load,libcore.a
-	NVCCLDFLAGS += -L. -Wl,-force_load,libcore_cuda.a
 else
 	LDFLAGS += -L. -Wl,--whole-archive -lcore -Wl,--no-whole-archive
-	NVCCLDFLAGS += -L. -Wl,--whole-archive -lcore_cuda -Wl,--no-whole-archive
 endif
 
 include make_blas.mk
+include make_cuda.mk
 
 .PHONY: all
 ifeq ($(strip $(HAVE_CUDA)),1)
@@ -121,7 +101,7 @@ $(CUDA_SLIB_SYMLINK):
 	ln -sf $(CUDA_SLIB) $@
 
 $(CUDA_OBJS) : %.o : %.cu $(CUDA_HEADERS)
-	nvcc $(NVCCFLAGS) -c -o $@ $<
+	$(NVCC) $(NVCCFLAGS) -c -o $@ $<
 endif
 
 .PHONY: clean
