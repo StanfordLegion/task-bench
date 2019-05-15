@@ -8,6 +8,9 @@ extern "C" %{
 #include "benchmark_internal.h"
 #include "core_c.h"
 
+/* Used for timing */
+extern double *timecount;
+
 static inline int get_num_args_internal(void *L, void *B, void *R){
   int num_args = 1;
 
@@ -41,6 +44,7 @@ nb_fields   [ type = "int" ]
 time_steps  [ type = "int" ]
 graph_idx   [ type = "int" ]
 extra_local_memory   [ type = "char**" ]
+wrap_task   [ type = "parsec_hook_t*" hidden = on default = NULL ]
 
 task(t, x) [ make_key_fn = my_make_key_task
              startup_fn  = my_startup_task ] 
@@ -198,15 +202,36 @@ static int my_startup_task(parsec_execution_stream_t * es, __parsec_stencil_1d_t
     return PARSEC_HOOK_RETURN_DONE;
 }
 
+static int wrap_task(parsec_execution_stream_t * es,
+                      __parsec_stencil_1d_task_task_t * this_task)
+{
+    int val;
+    double stime;
+    int myrank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+    int nb_threads = es->virtual_process->nb_cores;
+    int myid = es->th_id;
+    parsec_stencil_1d_taskpool_t *parsec_tp = (parsec_stencil_1d_taskpool_t*)this_task->taskpool;
+    stime = MPI_Wtime();
+    val = parsec_tp->_g_wrap_task(es, this_task); 
+    timecount[myid] += MPI_Wtime() - stime;
+    return val;
+}
+
 parsec_taskpool_t*
 parsec_stencil_1d_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
                       int time_steps, int graph_idx, char **extra_local_memory)
 {
+  void** hook;
   parsec_taskpool_t* stencil_1d_taskpool;
   parsec_stencil_1d_taskpool_t* taskpool = NULL;
 
   taskpool = parsec_stencil_1d_new(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory);
   stencil_1d_taskpool = (parsec_taskpool_t*)taskpool;
+
+  taskpool->_g_wrap_task = taskpool->super.task_classes_array[0]->incarnations[0].hook;
+  hook = &taskpool->super.task_classes_array[0]->incarnations[0].hook;
+  *hook = &wrap_task;
 
   parsec_matrix_add2arena(taskpool->arenas[PARSEC_stencil_1d_DEFAULT_ARENA],
                           parsec_datatype_float_t, matrix_UpperLower,

@@ -42,6 +42,9 @@ int nb_tasks_per_node[32];
 
 char **extra_local_memory;
 
+/* For timming */
+double *timecount;
+double *timecount_all;
 
 typedef struct matrix_s{
   two_dim_block_cyclic_t dcC;
@@ -186,7 +189,11 @@ ParsecApp::ParsecApp(int argc, char **argv)
                                    (size_t)mat.dcC.super.bsiz *      \
                                    (size_t)parsec_datadist_getsizeoftype(mat.dcC.super.mtype)); \
     parsec_data_collection_set_key((parsec_data_collection_t*)&(mat.dcC), "dcC"); 
-  
+
+    /* For timming */
+    timecount = (double *)calloc(cores, sizeof(double));
+    if( 0 == rank )
+        timecount_all = (double *)calloc(nodes*cores, sizeof(double));
 
     /* matrix generation */
     //dplasma_dplrnt( parsec, 0, (parsec_tiled_matrix_dc_t *)&dcC, Cseed);
@@ -289,10 +296,12 @@ void ParsecApp::execute_main_loop()
   }
   
   MPI_Barrier(MPI_COMM_WORLD);
+
+  double elapsed;
   if (rank == 0) {
-    double elapsed = Timer::time_end();
+    elapsed = Timer::time_end();
     report_timing(elapsed);
-    debug_printf(0, "[****] TIME(s) %12.5f : \tnb_tasks %d\n", elapsed, nb_tasks);
+    debug_printf(0, "[****] TIME(s) %12.5f : \tnb_tasks %d", elapsed, nb_tasks);
   }
 
 #if defined (TRACK_NB_TASKS)    
@@ -301,6 +310,20 @@ void ParsecApp::execute_main_loop()
   }
   printf("rank %d, nb_tasks %d\n", rank, nb_tasks_per_node[0]);
 #endif
+
+  /* For timming */
+  MPI_Gather(timecount, cores, MPI_DOUBLE, timecount_all, cores, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+  if( 0 == rank ) {
+    double time_sum = 0.0;
+    double time_max = 0.0;
+    for(int i = 0; i < cores * nodes; i++) {
+        if( timecount_all[i] >= time_max )
+            time_max = timecount_all[i];
+        time_sum += timecount_all[i];
+    }
+    printf("\tKernel_time_max: %lf, Kernel_time_avg: %lf, Time_diff: %lf\n", time_max, time_sum/cores, elapsed-time_max);
+  }
 
   cleanup_parsec(parsec, iparam);
 
