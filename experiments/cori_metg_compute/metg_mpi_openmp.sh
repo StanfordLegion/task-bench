@@ -11,7 +11,7 @@ cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 export OMP_SCHEDULE=static,1
 
 function launch {
-    OMP_NUM_THREADS=$cores OMP_PLACES=cores srun -n $1 -N $1 --ntasks-per-node=1 --cpus-per-task=$(( cores * 2 )) --cpu_bind none ../../mpi_openmp/forall "${@:2}"
+    OMP_NUM_THREADS=$cores OMP_PLACES=cores srun -n $1 -N $1 --ntasks-per-node=1 --cpus-per-task=$(( cores * 2 )) --cpu_bind none ../../mpi_openmp${VARIANT+_}$VARIANT/forall "${@:2}"
 }
 
 function repeat {
@@ -41,7 +41,7 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            sweep launch $n $g $t > mpi_openmp_gomp_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch $n $g $t > mpi_openmp${VARIANT+_}${VARIANT}_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done
