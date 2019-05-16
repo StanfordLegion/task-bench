@@ -3,6 +3,7 @@
 #include "cuda_kernel.h"
 
 std::vector<char*> local_buffer;
+int nb_local_buffer = 0;
 size_t local_buffer_size;
 
 #define UNROLL_1  1
@@ -25,7 +26,8 @@ void init_cuda_support(const std::vector<TaskGraph> &graphs)
   int nb_gpus = 1;
   cudaError_t cuda_err;
   
-  local_buffer.reserve(nb_gpus);
+  nb_local_buffer = nb_gpus;
+  local_buffer.reserve(nb_local_buffer);
   int nb_blocks = graphs[0].kernel.nb_blocks;
   int threads_per_block = graphs[0].kernel.threads_per_block;
   int cuda_unroll = graphs[0].kernel.cuda_unroll;
@@ -37,6 +39,17 @@ void init_cuda_support(const std::vector<TaskGraph> &graphs)
     cuda_err = cudaMalloc((void**)&(local_buffer[i]), sizeof(double) * nb_blocks * threads_per_block * cuda_unroll);
     CUDA_ERROR_CHECK(cuda_err);
     assert(local_buffer[i] != NULL);
+  }
+}
+
+void fini_cuda_support()
+{
+  cudaError_t cuda_err;
+  for (int i = 0; i < nb_local_buffer; i++) {
+    cuda_err = cudaSetDevice(0);
+    CUDA_ERROR_CHECK(cuda_err);
+    cuda_err = cudaFree(local_buffer[i]);
+    local_buffer[i] = NULL;
   }
 }
 

@@ -1141,4 +1141,8 @@ void App::report_timing(double elapsed_seconds) const
 #ifdef DEBUG_CORE
   printf("Task Graph Execution Mask %llx\n", has_executed_graph.load());
 #endif
+  
+#ifdef ENABLE_CUDA
+  fini_cuda_support();
+#endif
 }
