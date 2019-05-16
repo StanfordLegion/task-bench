@@ -43,7 +43,7 @@ void init_cuda_support(const std::vector<TaskGraph> &graphs)
 void execute_kernel_compute_cuda(const Kernel &kernel, char *scratch_ptr, size_t scratch_bytes)
 {
   cudaError_t cuda_err;
-  printf("CUDA COMPUTE KERNEL buffer %p, size %lld, nb_blocks %d, threads_per_block %d\n", scratch_ptr, scratch_bytes, kernel.nb_blocks, kernel.threads_per_block);
+//  printf("CUDA COMPUTE KERNEL buffer %p, size %lld, nb_blocks %d, threads_per_block %d\n", scratch_ptr, scratch_bytes, kernel.nb_blocks, kernel.threads_per_block);
   assert(scratch_bytes <= local_buffer_size);
   if (kernel.memcpy_required == 1) {
     printf("enable memcpy in\n");
