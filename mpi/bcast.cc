@@ -17,6 +17,7 @@
 #include <cfloat>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <map>
 
 #include "core.h"
