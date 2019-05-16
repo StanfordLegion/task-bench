@@ -13,13 +13,16 @@
  * limitations under the License.
  */
 
-#include <float.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cfloat>
+#include <cstdio>
+#include <cstdlib>
 #include <map>
-#include "../core/core.h"
-#include "../core/timer.h"
+
+#include "core.h"
 #include "mpi.h"
+#include "timer.h"
+
 #define MASTER 0
 #define NUM_ITER 1
 #define NUM_BUFFERS 1
