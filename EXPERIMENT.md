@@ -29,7 +29,7 @@ been provided for informational purposes only.
 ```
 git clone https://github.com/StanfordLegion/task-bench.git
 cd task-bench
-USE_GASNET=1 CONDUIT=ibv CHARM_VERSION=verbs-linux-ppc64le ./get_deps.sh
+USE_GASNET=1 CONDUIT=ibv CHARM_VERSION="pamilrts-linux-ppc64le gcc" ./get_deps.sh
 ./build_all.sh
 cd experiment/summit_metg_compute
 sbatch --nodes 1 metg_legion.sh
