@@ -34,6 +34,17 @@ export CXX=CC
 export MPICXX=CC
 
 EOF
+elif [[ $(hostname) = "daint"* ]]; then
+    cat >>deps/env.sh <<EOF
+module load daint-gpu
+module unload PrgEnv-cray
+module load PrgEnv-gnu
+module load cudatoolkit
+export CC=cc
+export CXX=CC
+export MPICXX=CC
+
+EOF
 fi
 
 cat >>deps/env.sh <<EOF
