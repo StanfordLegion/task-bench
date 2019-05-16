@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
     for (auto graph : app.graphs) {
       size_t scratch_bytes = graph.scratch_bytes_per_task;
       char *scratch_ptr = (char *)malloc(scratch_bytes);
+      assert(scratch_ptr);
 
       long first_point = rank * graph.max_width / n_ranks;
       long last_point = (rank + 1) * graph.max_width / n_ranks - 1;

@@ -40,13 +40,13 @@ int main(int argc, char *argv[])
     std::vector<MPI_Request> requests;
 
     for (auto graph : app.graphs) {
-      size_t scratch_bytes = graph.scratch_bytes_per_task;
-      char *scratch_ptr = (char *)malloc(scratch_bytes);
-      assert(scratch_ptr);
-
       long first_point = rank * graph.max_width / n_ranks;
       long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
       long n_points = last_point - first_point + 1;
+
+      size_t scratch_bytes = graph.scratch_bytes_per_task;
+      char *scratch_ptr = (char *)malloc(scratch_bytes * n_points);
+      assert(scratch_ptr);
 
       std::vector<int> rank_by_point(graph.max_width);
       std::vector<int> tag_bits_by_point(graph.max_width);
@@ -161,7 +161,8 @@ int main(int argc, char *argv[])
 
         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-        for (long point = first_point; point <= last_point; ++point) {
+        #pragma omp parallel for schedule(runtime)
+        for (long point = std::max(first_point, offset); point <= std::min(last_point, offset + width - 1); ++point) {
           long point_index = point - first_point;
 
           auto &point_input_ptr = input_ptr[point_index];
@@ -169,12 +170,10 @@ int main(int argc, char *argv[])
           auto &point_n_inputs = n_inputs[point_index];
           auto &point_output = outputs[point_index];
 
-          if (point >= offset && point < offset + width) {
-            graph.execute_point(timestep, point,
-                                point_output.data(), point_output.size(),
-                                point_input_ptr.data(), point_input_bytes.data(), point_n_inputs,
-                                scratch_ptr, scratch_bytes);
-          }
+          graph.execute_point(timestep, point,
+                              point_output.data(), point_output.size(),
+                              point_input_ptr.data(), point_input_bytes.data(), point_n_inputs,
+                              scratch_ptr + scratch_bytes * point_index, scratch_bytes);
         }
       }
       free(scratch_ptr);

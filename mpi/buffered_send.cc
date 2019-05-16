@@ -13,13 +13,16 @@
  * limitations under the License.
  */
 
-#include <float.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cfloat>
+#include <cstdio>
+#include <cstdlib>
 #include <map>
-#include "../core/core.h"
-#include "../core/timer.h"
+
+#include "core.h"
 #include "mpi.h"
+#include "timer.h"
+
 #define MASTER 0
 #define NUM_ITER 1
 #define NUM_BUFFERS 1
@@ -152,6 +155,7 @@ int main(int argc, char *argv[])
       char *output_ptr = output_ptrs[i];
       size_t scratch_bytes = graph.scratch_bytes_per_task;
       char *scratch_ptr = (char *)malloc(scratch_bytes);
+      assert(scratch_ptr);
 
       int current_buf = 0;
       // bool looped_buffers = false;

@@ -16,7 +16,10 @@
 #include <cassert>
 #include <cmath>
 
+#if (__AVX2__ == 1) || (__AVX__ == 1)
 #include <immintrin.h>
+#endif
+
 #include <string.h>
 
 #include "core.h"

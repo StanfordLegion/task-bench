@@ -31,6 +31,22 @@ if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     make -C mpi all -j$THREADS
 fi
 
+if [[ $USE_MPI_OPENMP -eq 1 ]]; then
+    make -C mpi_openmp clean
+    make -C mpi_openmp all -j$THREADS
+
+    (
+        if [[ -n $CRAYPE_VERSION ]]; then
+            export LDFLAGS="-L/opt/intel/compilers_and_libraries_2018.1.163/linux/compiler/lib/intel64 -liomp5 -lpthread"
+
+            rm -rf mpi_openmp_kmp
+            cp -r mpi_openmp mpi_openmp_kmp
+            make -C mpi_openmp_kmp clean
+            make -C mpi_openmp_kmp all -j$THREADS
+        fi
+    )
+fi
+
 if [[ $USE_GASNET -eq 1 ]]; then
     make -C "$GASNET_DIR"
 fi

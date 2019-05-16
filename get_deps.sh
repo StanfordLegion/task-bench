@@ -17,6 +17,7 @@ if [[ $(hostname --fqdn) = *"summit"* ]]; then
 module load gcc/6.4.0
 module load cuda/9.2.148
 module load cmake/3.14.2
+module load git/2.13.0
 export CC=gcc
 export CXX=g++
 export MPICXX=mpicxx
@@ -33,10 +34,22 @@ export CXX=CC
 export MPICXX=CC
 
 EOF
+elif [[ $(hostname) = "daint"* ]]; then
+    cat >>deps/env.sh <<EOF
+module load daint-gpu
+module unload PrgEnv-cray
+module load PrgEnv-gnu
+module load cudatoolkit
+export CC=cc
+export CXX=CC
+export MPICXX=CC
+
+EOF
 fi
 
 cat >>deps/env.sh <<EOF
 export TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
+export USE_MPI_OPENMP=${USE_MPI_OPENMP:-$DEFAULT_FEATURES}
 export USE_GASNET=${USE_GASNET:-0}
 export TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
 export USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
