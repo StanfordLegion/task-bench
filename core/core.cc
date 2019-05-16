@@ -559,7 +559,7 @@ static TaskGraph default_graph(long graph_index)
   graph.period = -1;
   graph.fraction_connected = 0.25;
 #ifdef ENABLE_CUDA
-  graph.kernel = {KernelType::EMPTY, 0, 16, 0.0, 1, 32, 0, 0};
+  graph.kernel = {KernelType::EMPTY, 0, 16, 0.0, 1, 32, 0, 0, 1};
 #else
   graph.kernel = {KernelType::EMPTY, 0, 16, 0.0};
 #endif
@@ -596,6 +596,7 @@ static void needs_argument(int i, int argc, const char *flag) {
 #define CUDA_NB_BLOCKS_FLAG "-nb_blocks"
 #define CUDA_THREADS_PER_BLOCK_FLAG "-threads_per_block"
 #define CUDA_MEMCPY_FLAG "-memcpy"
+#define CUDA_UNROLL_FLAG "-cuda_unroll"
 #endif
 
 #define SKIP_GRAPH_VALIDATION_FLAG "-skip-graph-validation"
@@ -819,11 +820,21 @@ App::App(int argc, char **argv)
     if (!strcmp(argv[i], CUDA_MEMCPY_FLAG)) {
       needs_argument(i, argc, CUDA_MEMCPY_FLAG);
       int value  = atoi(argv[++i]);
-      if (value <= 0) {
-        fprintf(stderr, "error: Invalid flag \"" CUDA_MEMCPY_FLAG " %d\" must be > 1\n", value);
+      if (value != 0 && value != 1) {
+        fprintf(stderr, "error: Invalid flag \"" CUDA_MEMCPY_FLAG " %d\" must be 0 or 1\n", value);
         abort();
       }
       graph.kernel.memcpy_required = value;
+    }
+    
+    if (!strcmp(argv[i], CUDA_UNROLL_FLAG)) {
+      needs_argument(i, argc, CUDA_UNROLL_FLAG);
+      int value  = atoi(argv[++i]);
+      if (value <= 1) {
+        fprintf(stderr, "error: Invalid flag \"" CUDA_UNROLL_FLAG " %d\" must be >= 1\n", value);
+        abort();
+      }
+      graph.kernel.cuda_unroll = value;
     }
 #endif
 
@@ -1019,7 +1030,7 @@ long long count_flops_per_task(const TaskGraph &g, long timestep, long point)
   
 #ifdef ENABLE_CUDA
   case KernelType::CUDA_COMPUTE_BOUND:
-    return 2 * g.kernel.nb_blocks * g.kernel.threads_per_block * g.kernel.iterations;
+    return 2 * g.kernel.nb_blocks * g.kernel.threads_per_block * g.kernel.iterations * g.kernel.cuda_unroll;
 #endif
 
   default:
