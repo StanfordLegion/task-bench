@@ -23,6 +23,8 @@ sbatch --nodes 1 metg_legion.sh
 
 ### Summit
 
+Note: This configuration has not been tested for performance and has
+been provided for informational purposes only.
 
 ```
 git clone https://github.com/StanfordLegion/task-bench.git
