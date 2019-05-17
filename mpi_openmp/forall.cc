@@ -126,14 +126,20 @@ int main(int argc, char *argv[])
                   continue;
                 }
 
-                int from = tag_bits_by_point[dep];
-                int to = tag_bits_by_point[point];
-                int tag = (from << 8) | to;
-                MPI_Request req;
-                MPI_Irecv(point_inputs[point_n_inputs].data(),
-                          point_inputs[point_n_inputs].size(), MPI_BYTE,
-                          rank_by_point[dep], tag, MPI_COMM_WORLD, &req);
-                requests.push_back(req);
+                // Use shared memory for on-node data.
+                if (first_point <= dep && dep <= last_point) {
+                  auto &output = outputs[dep - first_point];
+                  point_inputs[point_n_inputs].assign(output.begin(), output.end());
+                } else {
+                  int from = tag_bits_by_point[dep];
+                  int to = tag_bits_by_point[point];
+                  int tag = (from << 8) | to;
+                  MPI_Request req;
+                  MPI_Irecv(point_inputs[point_n_inputs].data(),
+                            point_inputs[point_n_inputs].size(), MPI_BYTE,
+                            rank_by_point[dep], tag, MPI_COMM_WORLD, &req);
+                  requests.push_back(req);
+                }
                 point_n_inputs++;
               }
             }
@@ -143,7 +149,7 @@ int main(int argc, char *argv[])
           if (point >= last_offset && point < last_offset + last_width) {
             for (auto interval : graph.reverse_dependencies(dset, point)) {
               for (long dep = interval.first; dep <= interval.second; dep++) {
-                if (dep < offset || dep >= offset + width) {
+                if (dep < offset || dep >= offset + width || (first_point <= dep && dep <= last_point)) {
                   continue;
                 }
 

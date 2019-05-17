@@ -112,6 +112,61 @@ if [[ $(basename $PWD) = compute ]]; then
     crop weak_mpi.pdf
     crop strong_mpi.pdf
 
+elif [[ $(basename $PWD) = cuda_compute ]]; then
+    "$root_dir"/metg.py -m daint -g 1 -d stencil_1d --csv excel > metg_stencil.csv
+    for pattern in nearest spread fft; do
+        "$root_dir"/metg.py -m daint -g 1 -d $pattern --csv excel > metg_${pattern}.csv
+    done
+
+    "$root_dir"/efficiency.py -m daint -g 1 -d stencil_1d -n 1 --csv excel > efficiency_stencil.csv
+
+    "$root_dir"/flops.py -m daint -g 1 -d stencil_1d -n 1 --csv excel > flops_stencil.csv
+
+    "$root_dir"/render_metg.py metg_stencil.csv \
+               --legend ../gpu_legend.csv # \
+               # --title "METG vs Nodes (Piz Daint, Compute, Stencil)"
+    for pattern in nearest spread; do
+        "$root_dir"/render_metg.py metg_${pattern}.csv \
+               --legend ../gpu_legend.csv # \
+               # --title "METG vs Nodes (Piz Daint, Compute, ${pattern})"
+    done
+
+    "$root_dir"/render_metg.py efficiency_stencil.csv \
+               --xlabel 'Task Granularity (ms)' \
+               --xdata 'time_per_task' \
+               --x-invert \
+               --xbase 10 \
+               --no-xticks \
+               --ylabel 'Efficiency' \
+               --ylim '(-0.05,1.05)' \
+               --no-ylog \
+               --y-percent \
+               --highlight-column 'metg' \
+               --legend ../gpu_legend.csv # \
+               # --title 'Efficiency vs Task Granularity (Piz Daint, Compute, Stencil)'
+
+    "$root_dir"/render_metg.py flops_stencil.csv \
+               --xlabel 'Problem Size' \
+               --xdata 'iterations' \
+               --x-invert \
+               --no-xticks \
+               --ylabel 'TFLOPS' \
+               --yscale 1e-12 \
+               --no-ylog \
+               --highlight-column 'metg' \
+               --legend ../gpu_legend.csv # \
+               # --title 'FLOPS vs Problem Size (Piz Daint, Compute, Stencil)'
+
+    crop metg_stencil.pdf
+    for pattern in nearest spread; do
+        crop metg_${pattern}.pdf
+    done
+    crop metg_ngraphs_4_nearest.pdf
+    crop efficiency_stencil.pdf
+    crop efficiency_stencil_mpi.pdf
+    crop flops_stencil.pdf
+    crop flops_stencil_mpi.pdf
+
 elif [[ $(basename $PWD) = memory ]]; then
 
     "$root_dir"/flops.py -m cori -r bytes -g 1 -d stencil_1d -n 1 --csv excel > bytes_stencil.csv

@@ -17,153 +17,44 @@
 
 from __future__ import absolute_import, division, print_function
 
+import dask
 import sys
-import cffi
-import subprocess
 import time
 
-import dask
-import numpy as np
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('-scheduler', required=False)
-    parser.add_argument('-expect-workers', type=int, default=0)
-    args, unknown = parser.parse_known_args()
-
-    if args.scheduler:
-        from dask.distributed import Client
-        client = Client(args.scheduler)
-        if args.expect_workers > 0:
-            while True:
-                num_workers = len(client.ncores())
-                if num_workers >= args.expect_workers:
-                    break
-                print('Client waiting for workers (have %s expect %s)' % (num_workers, args.expect_workers), flush=True)
-                import time
-                time.sleep(5)
-    else:
-        client = None
-
-def encode_task_graph(graph):
-    from task_bench_core import ffi, c
-    return np.frombuffer(ffi.buffer(ffi.addressof(graph), ffi.sizeof(graph)), dtype=np.ubyte)
-
-
-def decode_task_graph(graph_array):
-    from task_bench_core import ffi, c
-    return ffi.cast("task_graph_t *", graph_array.ctypes.data)[0]
-
-
-def execute_point(graph_array, timestep, point, scratch, *inputs):
-    from task_bench_core import ffi, c
-
-    graph = decode_task_graph(graph_array)
-
-    input_ptrs = ffi.new("char *[]", [ffi.cast("char *", i.ctypes.data) for i in inputs])
-    input_sizes = ffi.new("size_t []", [i.shape[0] for i in inputs])
-
-    output = np.empty(graph.output_bytes_per_task, dtype=np.ubyte)
-    output_ptr = ffi.cast("char *", output.ctypes.data)
-
-    if scratch is not None:
-        scratch_ptr = ffi.cast("char *", scratch.ctypes.data)
-        scratch_size = scratch.shape[0]
-    else:
-        scratch_ptr = ffi.NULL
-        scratch_size = 0
-
-    c.task_graph_execute_point_scratch(
-        graph, timestep, point,
-        output_ptr, output.shape[0],
-        input_ptrs, input_sizes, len(inputs),
-        scratch_ptr, scratch_size)
-
-    if scratch is not None:
-        return output, scratch
-    else:
-        return output
-
-def splitter(value, idx):
-    return value[idx]
-
-def init_scratch(scratch_bytes):
-    return np.empty(scratch_bytes, dtype=np.ubyte)
-
-def app_create(args):
-    from task_bench_core import ffi, c
-
-    c_args = []
-    c_argv = ffi.new("char *[]", len(args) + 1)
-    for i, arg in enumerate(args):
-        c_args.append(ffi.new("char []", arg.encode('utf-8')))
-        c_argv[i] = c_args[-1]
-    c_argv[len(args)] = ffi.NULL
-
-    app = c.app_create(len(args), c_argv)
-    c.app_display(app)
-    return app
-
-
-def app_task_graphs(app):
-    from task_bench_core import ffi, c
-
-    result = []
-    graphs = c.app_task_graphs(app)
-    for i in range(c.task_graph_list_num_task_graphs(graphs)):
-        result.append(c.task_graph_list_task_graph(graphs, i))
-
-    return result
-
-def task_graph_dependencies(graph, timestep, point):
-    from task_bench_core import ffi, c
-
-    last_offset = c.task_graph_offset_at_timestep(graph, timestep - 1)
-    last_width = c.task_graph_width_at_timestep(graph, timestep - 1)
-
-    if timestep == 0:
-        last_offset, last_width = 0, 0
-
-    dset = c.task_graph_dependence_set_at_timestep(graph, timestep)
-    ilist = c.task_graph_dependencies(graph, dset, point)
-    for i in range(0, c.interval_list_num_intervals(ilist)):
-        interval = c.interval_list_interval(ilist, i)
-        for dep in range(interval.start, interval.end + 1):
-            if last_offset <= dep < last_offset + last_width:
-                yield dep
+import task_bench_core as core
 
 
 def execute_task_graph(graph, computations, next_tid):
-    from task_bench_core import ffi, c
-
-    graph_array = encode_task_graph(graph)
+    graph_array = core.encode_task_graph(graph)
 
     scratch = [None for _ in range(graph.max_width)]
     if graph.scratch_bytes_per_task > 0:
         for point in range(graph.max_width):
             scratch[point] = 'task_%s' % next_tid
             next_tid += 1
-            computations[scratch[point]] = (init_scratch, graph.scratch_bytes_per_task)
+            computations[scratch[point]] = (
+                core.init_scratch_direct, graph.scratch_bytes_per_task)
 
     outputs = []
     last_row = None
     for timestep in range(0, graph.timesteps):
-        offset = c.task_graph_offset_at_timestep(graph, timestep)
-        width = c.task_graph_width_at_timestep(graph, timestep)
-        dset = c.task_graph_dependence_set_at_timestep(graph, timestep)
+        offset = core.c.task_graph_offset_at_timestep(graph, timestep)
+        width = core.c.task_graph_width_at_timestep(graph, timestep)
+        dset = core.c.task_graph_dependence_set_at_timestep(graph, timestep)
         row = []
         for point in range(0, offset):
             row.append(None)
         for point in range(offset, offset + width):
             inputs = []
-            for dep in task_graph_dependencies(graph, timestep, point):
+            for dep in core.task_graph_dependencies(graph, timestep, point):
                 inputs.append(last_row[dep])
 
             result = 'task_%s' % next_tid
             next_tid += 1
 
-            computations[result] = (execute_point, graph_array, timestep, point, scratch[point], *inputs)
+            computations[result] = (
+                core.execute_point_direct, graph_array, timestep, point,
+                scratch[point], *inputs)
 
             if scratch[point] is not None:
                 output = 'task_%s' % next_tid
@@ -171,8 +62,8 @@ def execute_task_graph(graph, computations, next_tid):
                 scratch[point] = 'task_%s' % next_tid
                 next_tid += 1
 
-                computations[output] = (splitter, result, 0)
-                computations[scratch[point]] = (splitter, result, 1)
+                computations[output] = (core.splitter, result, 0)
+                computations[scratch[point]] = (core.splitter, result, 1)
             else:
                 output = result
 
@@ -180,30 +71,32 @@ def execute_task_graph(graph, computations, next_tid):
             outputs.append(output)
         for point in range(offset + width, graph.max_width):
             row.append(None)
-        assert(len(row) == graph.max_width)
+        assert len(row) == graph.max_width
         last_row = row
     return outputs, next_tid
 
 
-def execute_task_bench():
-    from task_bench_core import ffi, c
-
-    app = app_create(sys.argv)
-    task_graphs = app_task_graphs(app)
+def execute_task_bench(client):
+    app = core.app_create(sys.argv)
+    task_graphs = core.app_task_graphs(app)
     start_time = time.perf_counter()
     computations = {}
     next_tid = 0
     results = []
     for task_graph in task_graphs:
-        result, next_tid = execute_task_graph(task_graph, computations, next_tid)
+        result, next_tid = execute_task_graph(
+            task_graph, computations, next_tid)
         results.extend(result)
     if client:
-        client.get(computations, results)
+        from dask.distributed import wait
+        futures = client.get(computations, results, sync=False)
+        wait(futures)
     else:
         dask.get(computations, results)
     total_time = time.perf_counter() - start_time
-    c.app_report_timing(app, total_time)
+    core.c.app_report_timing(app, total_time)
 
 
 if __name__ == "__main__":
-    execute_task_bench()
+    client = core.init_client()
+    execute_task_bench(client)
