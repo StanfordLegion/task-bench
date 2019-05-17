@@ -84,7 +84,9 @@ def execute_task_bench(client):
         result, next_tid = execute_task_graph(task_graph, computations, next_tid)
         results.extend(result)
     if client:
-        client.get(computations, results)
+        from dask.distributed import wait
+        futures = client.get(computations, results, sync=False)
+        wait(futures)
     else:
         dask.get(computations, results)
     total_time = time.perf_counter() - start_time
