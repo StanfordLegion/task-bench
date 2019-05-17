@@ -58,7 +58,7 @@ def app_task_graphs(app):
     return result
 
 
-def build_task_graph_tensor(task_graph):
+def build_task_graph_tensor(graph):
     return tf.convert_to_tensor(
         np.frombuffer(
             ffi.buffer(ffi.addressof(graph), ffi.sizeof(graph)),
