@@ -54,7 +54,7 @@ class Parser(util.Parser):
                 key=float)
 
             self.metg[items['iterations']] = min(
-                util.get_machine_parameters(self.machine, self.resource)['peak_%s' % self.resource] * self.threshold,
+                util.get_machine_parameters(self.machine, row['processor_kind'], self.resource)['peak_%s' % self.resource] * self.threshold,
                 self.metg[items['iterations']],
                 key=float)
 

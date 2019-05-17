@@ -22,12 +22,31 @@ import traceback
 
 import chart_metg
 
-def get_machine_parameters(machine, resource):
+def get_machine_parameters(machine, processor_kind, resource):
     if machine == 'cori':
+        assert processor_kind == 'cpu'
         if resource == 'flops':
             return {'cores': 32, 'peak_flops': 1.263719e+12, 'peak_bytes': None}
         elif resource == 'bytes':
             return {'cores': 32, 'peak_flops': None, 'peak_bytes': 1.074944e+11}
+        else:
+            assert False
+    elif machine == 'daint':
+        if processor_kind == 'cpu':
+            if resource == 'flops':
+                return {'cores': 12, 'peak_flops': 5.726025e+11, 'peak_bytes': None} # CPU
+            elif resource == 'bytes':
+                assert False
+            else:
+                assert False
+        elif processor_kind == 'gpu':
+            if resource == 'flops':
+                # return {'cores': 1, 'peak_flops': 4.351454e+12, 'peak_bytes': None} # GPU 1 rank
+                return {'cores': 1, 'peak_flops': 4.761341e+12, 'peak_bytes': None} # GPU 12 ranks
+            elif resource == 'bytes':
+                assert False
+            else:
+                assert False
         else:
             assert False
     else:
@@ -52,6 +71,7 @@ def parse_filename(filename):
     node_idx = fields.index('nodes')
     return {
         'name': ' '.join(fields[:graph_idx]),
+        'processor_kind': 'gpu' if 'gpu' in fields[:graph_idx] else 'cpu',
         'ngraphs': int(' '.join(fields[graph_idx+1:type_idx])),
         'type': ' '.join(fields[type_idx+1:radix_idx or imbalance_idx or comm_idx or node_idx]),
         'radix': radix_idx and ' '.join(fields[radix_idx+1:imbalance_idx or comm_idx or node_idx]),
@@ -74,14 +94,13 @@ class Parser:
         raise Exception('complete() must be customized by the subclass')
 
     def parse(self, machine, resource, threshold, summary, verbose):
-        params = get_machine_parameters(machine, resource)
-
         has_exception = False
         log_filenames = glob.glob('**/*.log', recursive=False)
         for filename in log_filenames:
             row = parse_filename(filename)
             if not self.filter(row):
                 continue
+            params = get_machine_parameters(machine, row['processor_kind'], resource)
             try:
                 data = chart_metg.analyze(filename, row['ngraphs'], row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=summary)
             except Exception as e:
