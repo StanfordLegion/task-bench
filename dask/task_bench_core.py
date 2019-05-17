@@ -32,8 +32,10 @@ import subprocess
 
 root_dir = os.path.dirname(os.path.dirname(__file__))
 core_header = subprocess.check_output(
-    ["gcc", "-D", "__attribute__(x)=", "-E", "-P", os.path.join(root_dir, "core/core_c.h")]
-).decode("utf-8")
+    [
+        "gcc", "-D", "__attribute__(x)=", "-E", "-P",
+        os.path.join(root_dir, "core/core_c.h")
+    ]).decode("utf-8")
 ffi = cffi.FFI()
 ffi.cdef(core_header)
 c = ffi.dlopen("libcore.so")
@@ -54,7 +56,10 @@ def init_client():
                 num_workers = len(client.ncores())
                 if num_workers >= args.expect_workers:
                     break
-                print('Client waiting for workers (have %s expect %s)' % (num_workers, args.expect_workers), flush=True)
+                print(
+                    'Client waiting for workers (have %s expect %s)' %
+                    (num_workers, args.expect_workers),
+                    flush=True)
                 import time
                 time.sleep(5)
     else:
@@ -64,7 +69,8 @@ def init_client():
 
 
 def encode_task_graph(graph):
-    return np.frombuffer(ffi.buffer(ffi.addressof(graph), ffi.sizeof(graph)), dtype=np.ubyte)
+    return np.frombuffer(
+        ffi.buffer(ffi.addressof(graph), ffi.sizeof(graph)), dtype=np.ubyte)
 
 
 def decode_task_graph(graph_array):
@@ -92,6 +98,7 @@ def app_task_graphs(app):
 
     return result
 
+
 def task_graph_dependencies(graph, timestep, point):
     last_offset = c.task_graph_offset_at_timestep(graph, timestep - 1)
     last_width = c.task_graph_width_at_timestep(graph, timestep - 1)
@@ -111,7 +118,8 @@ def task_graph_dependencies(graph, timestep, point):
 def execute_point_impl(graph_array, timestep, point, scratch, *inputs):
     graph = decode_task_graph(graph_array)
 
-    input_ptrs = ffi.new("char *[]", [ffi.cast("char *", i.ctypes.data) for i in inputs])
+    input_ptrs = ffi.new(
+        "char *[]", [ffi.cast("char *", i.ctypes.data) for i in inputs])
     input_sizes = ffi.new("size_t []", [i.shape[0] for i in inputs])
 
     output = np.empty(graph.output_bytes_per_task, dtype=np.ubyte)
@@ -125,17 +133,16 @@ def execute_point_impl(graph_array, timestep, point, scratch, *inputs):
         scratch_size = 0
 
     c.task_graph_execute_point_scratch(
-        graph, timestep, point,
-        output_ptr, output.shape[0],
-        input_ptrs, input_sizes, len(inputs),
-        scratch_ptr, scratch_size)
+        graph, timestep, point, output_ptr, output.shape[0], input_ptrs,
+        input_sizes, len(inputs), scratch_ptr, scratch_size)
 
     return output
 
 
 @dask.delayed(nout=2)
 def execute_point_scratch(graph_array, timestep, point, scratch, *inputs):
-    return execute_point_impl(graph_array, timestep, point, scratch, *inputs), scratch
+    return execute_point_impl(
+        graph_array, timestep, point, scratch, *inputs), scratch
 
 
 @dask.delayed
@@ -164,7 +171,8 @@ def splitter(value, idx):
 # Entry point for direct graph construction
 def execute_point_direct(graph_array, timestep, point, scratch, *inputs):
     if scratch is not None:
-        return execute_point_impl(graph_array, timestep, point, scratch, *inputs), scratch
+        return execute_point_impl(
+            graph_array, timestep, point, scratch, *inputs), scratch
     else:
         return execute_point_impl(graph_array, timestep, point, None, *inputs)
 
@@ -172,6 +180,8 @@ def execute_point_direct(graph_array, timestep, point, scratch, *inputs):
 # Entry points for dask.delayed
 def execute_point_delayed(graph_array, timestep, point, scratch, *inputs):
     if scratch is not None:
-        return execute_point_scratch(graph_array, timestep, point, scratch, *inputs)
+        return execute_point_scratch(
+            graph_array, timestep, point, scratch, *inputs)
     else:
-        return execute_point_no_scratch(graph_array, timestep, point, *inputs), None
+        return execute_point_no_scratch(
+            graph_array, timestep, point, *inputs), None

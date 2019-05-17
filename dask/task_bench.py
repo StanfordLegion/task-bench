@@ -28,7 +28,10 @@ def execute_task_graph(graph):
     graph_array = core.encode_task_graph(graph)
 
     if graph.scratch_bytes_per_task > 0:
-        scratch = [core.init_scratch_delayed(graph.scratch_bytes_per_task) for _ in range(graph.max_width)]
+        scratch = [
+            core.init_scratch_delayed(graph.scratch_bytes_per_task)
+            for _ in range(graph.max_width)
+        ]
     else:
         scratch = [None for _ in range(graph.max_width)]
 
@@ -45,12 +48,13 @@ def execute_task_graph(graph):
             inputs = []
             for dep in core.task_graph_dependencies(graph, timestep, point):
                 inputs.append(last_row[dep])
-            output, scratch[point] = core.execute_point_delayed(graph_array, timestep, point, scratch[point], *inputs)
+            output, scratch[point] = core.execute_point_delayed(
+                graph_array, timestep, point, scratch[point], *inputs)
             row.append(output)
             outputs.append(output)
         for point in range(offset + width, graph.max_width):
             row.append(None)
-        assert(len(row) == graph.max_width)
+        assert len(row) == graph.max_width
         last_row = row
     return outputs
 

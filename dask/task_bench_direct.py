@@ -32,7 +32,8 @@ def execute_task_graph(graph, computations, next_tid):
         for point in range(graph.max_width):
             scratch[point] = 'task_%s' % next_tid
             next_tid += 1
-            computations[scratch[point]] = (core.init_scratch_direct, graph.scratch_bytes_per_task)
+            computations[scratch[point]] = (
+                core.init_scratch_direct, graph.scratch_bytes_per_task)
 
     outputs = []
     last_row = None
@@ -51,7 +52,9 @@ def execute_task_graph(graph, computations, next_tid):
             result = 'task_%s' % next_tid
             next_tid += 1
 
-            computations[result] = (core.execute_point_direct, graph_array, timestep, point, scratch[point], *inputs)
+            computations[result] = (
+                core.execute_point_direct, graph_array, timestep, point,
+                scratch[point], *inputs)
 
             if scratch[point] is not None:
                 output = 'task_%s' % next_tid
@@ -68,7 +71,7 @@ def execute_task_graph(graph, computations, next_tid):
             outputs.append(output)
         for point in range(offset + width, graph.max_width):
             row.append(None)
-        assert(len(row) == graph.max_width)
+        assert len(row) == graph.max_width
         last_row = row
     return outputs, next_tid
 
@@ -81,7 +84,8 @@ def execute_task_bench(client):
     next_tid = 0
     results = []
     for task_graph in task_graphs:
-        result, next_tid = execute_task_graph(task_graph, computations, next_tid)
+        result, next_tid = execute_task_graph(
+            task_graph, computations, next_tid)
         results.extend(result)
     if client:
         from dask.distributed import wait
