@@ -63,7 +63,7 @@ void execute_kernel_compute_cuda(const Kernel &kernel, char *scratch_ptr, size_t
   assert(kernel.gpu_id == 0);
     
   if (kernel.memcpy_required == 1) {
-    printf("enable memcpy in\n");
+ //   printf("enable memcpy in\n");
     gpuErrchk( cudaMemcpyAsync(local_buffer[kernel.gpu_id], scratch_ptr, scratch_bytes, cudaMemcpyHostToDevice, cuda_stream_array[kernel.gpu_id]) ); 
     gpuErrchk( cudaStreamSynchronize(cuda_stream_array[kernel.gpu_id]) );
   }
@@ -79,7 +79,7 @@ void execute_kernel_compute_cuda(const Kernel &kernel, char *scratch_ptr, size_t
   gpuErrchk( cudaPeekAtLastError() );
   gpuErrchk( cudaStreamSynchronize(cuda_stream_array[kernel.gpu_id]) );
   if (kernel.memcpy_required == 1) {
-    printf("enable memcpy out\n");
+ //   printf("enable memcpy out\n");
     gpuErrchk( cudaMemcpyAsync(scratch_ptr, local_buffer[kernel.gpu_id], scratch_bytes, cudaMemcpyDeviceToHost, cuda_stream_array[kernel.gpu_id]) );
     gpuErrchk( cudaStreamSynchronize(cuda_stream_array[kernel.gpu_id]) );
   }

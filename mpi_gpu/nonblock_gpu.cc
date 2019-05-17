@@ -16,6 +16,8 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <cuda.h>
+#include <cuda_runtime.h>
 
 #include "core.h"
 
@@ -41,7 +43,9 @@ int main(int argc, char *argv[])
 
     for (auto graph : app.graphs) {
       size_t scratch_bytes = graph.scratch_bytes_per_task;
-      char *scratch_ptr = (char *)malloc(scratch_bytes);
+      //char *scratch_ptr = (char *)malloc(scratch_bytes);
+      char *scratch_ptr = NULL;
+      cudaMallocHost((void**)&(scratch_ptr), scratch_bytes);
 
       long first_point = rank * graph.max_width / n_ranks;
       long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
@@ -176,7 +180,8 @@ int main(int argc, char *argv[])
           }
         }
       }
-      free(scratch_ptr);
+      //free(scratch_ptr);
+      cudaFreeHost(scratch_ptr);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
