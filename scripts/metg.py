@@ -55,7 +55,7 @@ class Parser(util.Parser):
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()
-        for x in sorted(self.table.keys(), key=int):
+        for x in sorted(self.table.keys(), key=float if self.x_axis == 'imbalance' else int):
             row = self.table[x]
             row = {k: None if v == float('inf') else v for k, v in row.items()}
             row[self.x_axis] = x

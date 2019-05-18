@@ -296,7 +296,7 @@ elif [[ $(basename $PWD) = communication ]]; then
     done
 
 elif [[ $(basename $PWD) = imbalance ]]; then
-    "$root_dir"/imbalance.py -m cori -g 4 -d nearest -n 1 --csv excel > metg_ngraphs_4_nearest.csv
+    "$root_dir"/metg.py -m cori -g 4 -d nearest -n 1 -x imbalance --csv excel > metg_ngraphs_4_nearest.csv
 
     for imbalance in 0.0 0.5 1.0 1.5 2.0; do
         "$root_dir"/efficiency.py -m cori -g 4 -d nearest -n 1 -i ${imbalance} --hide-metg --csv excel > efficiency_imbalance_${imbalance}.csv
