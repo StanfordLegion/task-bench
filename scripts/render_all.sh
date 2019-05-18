@@ -202,7 +202,7 @@ elif [[ $(basename $PWD) = memory ]]; then
 
 elif [[ $(basename $PWD) = radix ]]; then
 
-    "$root_dir"/radix.py -m cori -g 1 -d nearest -n 1 --csv excel > metg_nearest.csv
+    "$root_dir"/metg.py -m cori -g 1 -d nearest -n 1 -x radix --csv excel > metg_nearest.csv
 
     "$root_dir"/render_metg.py metg_nearest.csv \
                --xlabel 'Dependencies per Task' \
