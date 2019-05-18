@@ -6,7 +6,7 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
 function launch {
     total_cores_per_rank=$2
