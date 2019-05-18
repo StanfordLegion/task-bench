@@ -57,8 +57,8 @@ for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
             for c in ${CORES_PER_RANK:-1}; do
-                sweep launch_util_0 $n $g $t > regent${VARIANT+_}${VARIANT}_util_0_ngraphs_${g}_type_${t}_coresperrank_$(( c - 1 ))_nodes_${n}.log
-                # sweep launch_util_1 $n $g $t > regent${VARIANT+_}${VARIANT_}_util_1_ngraphs_${g}_type_${t}_coresperrank_$(( c - 1 ))_nodes_${n}.log
+                sweep launch_util_0 $n $g $t $c > regent${VARIANT+_}${VARIANT}_util_0_ngraphs_${g}_type_${t}_coresperrank_$(( c - 1 ))_nodes_${n}.log
+                # sweep launch_util_1 $n $g $t $c > regent${VARIANT+_}${VARIANT_}_util_1_ngraphs_${g}_type_${t}_coresperrank_$(( c - 1 ))_nodes_${n}.log
             done
         done
     done
