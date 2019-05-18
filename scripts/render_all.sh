@@ -212,6 +212,20 @@ elif [[ $(basename $PWD) = radix ]]; then
 
     crop metg_nearest.pdf
 
+elif [[ $(basename $PWD) = cores_per_rank ]]; then
+
+    "$root_dir"/metg.py -m cori -g 1 -d stencil_1d -n 1 -x cores_per_rank --csv excel > metg_stencil.csv
+
+    "$root_dir"/render_metg.py metg_stencil.csv \
+               --xlabel 'Cores per Rank' \
+               --xdata 'cores_per_rank' \
+               --connect-missing \
+               --no-xticks \
+               --no-xlog # \
+               # --title 'METG vs Cores per Rank (Cori, Compute, Stencil)'
+
+    crop metg_stencil.pdf
+
 elif [[ $(basename $PWD) = communication ]]; then
     "$root_dir"/metg.py -m cori -g 4 -d spread -n 16 -x comm --csv excel > metg_nodes_16.csv
     "$root_dir"/metg.py -m cori -g 4 -d spread -n 64 -x comm --csv excel > metg_nodes_64.csv

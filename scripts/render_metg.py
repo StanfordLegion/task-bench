@@ -48,6 +48,7 @@ parser.add_argument('--xbase', type=int, default=2)
 parser.add_argument('--no-xlog', action='store_false', dest='xlog')
 parser.add_argument('--no-ylog', action='store_false', dest='ylog')
 parser.add_argument('--no-xticks', action='store_false', dest='xticks')
+parser.add_argument('--connect-missing', action='store_true')
 parser.add_argument('--highlight-column')
 args = parser.parse_args()
 
@@ -203,7 +204,8 @@ for column in columns:
     if args.yscale:
         column_data = column_data * args.yscale
 
-    plt.plot(nodes, column_data, linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
+    mask = np.isfinite(column_data)
+    plt.plot(nodes[mask] if args.connect_missing else nodes, column_data[mask] if args.connect_missing else column_data, linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
 
 if args.xticks:
     plt.xticks(nodes, nodes) #, rotation=30)
