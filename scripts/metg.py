@@ -24,22 +24,24 @@ import sys
 import chart_util as util
 
 class Parser(util.Parser):
-    def __init__(self, ngraphs, dependence, csv_dialect):
+    def __init__(self, ngraphs, dependence, nodes, x_axis, csv_dialect):
         self.ngraphs = ngraphs
         self.dependence = dependence.replace('_', ' ')
+        self.nodes = nodes
+        self.x_axis = x_axis
         self.csv_dialect = csv_dialect
 
         self.header = []
         self.table = collections.defaultdict(lambda: collections.defaultdict(lambda: float('inf')))
 
     def filter(self, row):
-        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence
+        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and (self.nodes is None or row['nodes'] == self.nodes)
 
     def process(self, row, data):
         if row['name'] not in self.header:
             self.header.append(row['name'])
 
-        self.table[row['nodes']][row['name']] = min(data, self.table[row['nodes']][row['name']])
+        self.table[row[self.x_axis]][row['name']] = min(data, self.table[row[self.x_axis]][row['name']])
 
     def error_value(self):
         return float('inf')
@@ -49,27 +51,30 @@ class Parser(util.Parser):
         # we'd prefer to sort so that the list of names roughly parallels
         # the order of the bars in the graph.
         self.header.sort()
-        self.header.insert(0, 'nodes')
+        self.header.insert(0, self.x_axis)
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()
-        for nodes in sorted(self.table.keys()):
-            row = self.table[nodes]
+        for x in sorted(self.table.keys(), key=int):
+            row = self.table[x]
             row = {k: None if v == float('inf') else v for k, v in row.items()}
-            row['nodes'] = nodes
+            row[self.x_axis] = x
             out.writerow(row)
 
-def driver(ngraphs, dependence, machine, resource, threshold, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, csv_dialect)
+def driver(ngraphs, dependence, nodes, machine, resource, threshold, x_axis, csv_dialect, verbose):
+    if nodes < 0: nodes = None
+    parser = Parser(ngraphs, dependence, nodes, x_axis, csv_dialect)
     parser.parse(machine, resource, threshold, True, verbose)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--ngraphs', type=int, required=True)
     parser.add_argument('-d', '--dependence', required=True)
+    parser.add_argument('-n', '--nodes', type=int, default=-1)
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-r', '--resource', default='flops')
     parser.add_argument('-t', '--threshold', type=float, default=0.5)
+    parser.add_argument('-x', '--x-axis', default='nodes')
     parser.add_argument('--csv-dialect', default='excel-tab')
     parser.add_argument('-v', '--verbose', action='store_true')
     args = parser.parse_args()

@@ -213,9 +213,9 @@ elif [[ $(basename $PWD) = radix ]]; then
     crop metg_nearest.pdf
 
 elif [[ $(basename $PWD) = communication ]]; then
-    "$root_dir"/comm.py -m cori -g 4 -d spread -n 16 --csv excel > metg_nodes_16.csv
-    "$root_dir"/comm.py -m cori -g 4 -d spread -n 64 --csv excel > metg_nodes_64.csv
-    "$root_dir"/comm.py -m cori -g 4 -d spread -n 256 --csv excel > metg_nodes_256.csv
+    "$root_dir"/metg.py -m cori -g 4 -d spread -n 16 -x comm --csv excel > metg_nodes_16.csv
+    "$root_dir"/metg.py -m cori -g 4 -d spread -n 64 -x comm --csv excel > metg_nodes_64.csv
+    "$root_dir"/metg.py -m cori -g 4 -d spread -n 256 -x comm --csv excel > metg_nodes_256.csv
 
     for comm in 16 256 4096 65536; do
         "$root_dir"/efficiency.py -m cori -g 4 -d spread -n 16 -c ${comm} --hide-metg --csv excel > efficiency_nodes_16_comm_${comm}.csv
