@@ -579,9 +579,11 @@ void TaskGraph::execute_point(long timestep, long point,
   {
     size_t idx = 0;
     long dset = dependence_set_at_timestep(timestep);
-    std::vector<std::pair<long, long> > deps = dependencies(dset, point);
-    for (auto span : deps) {
-      for (long dep = span.first; dep <= span.second; dep++) {
+    size_t max_deps = num_dependencies(dset, point);
+    std::pair<long, long> *deps = reinterpret_cast<std::pair<long, long> *>(alloca(sizeof(std::pair<long, long>) * max_deps));
+    size_t num_deps = dependencies(dset, point, deps);
+    for (size_t span = 0; span < num_deps; span++) {
+      for (long dep = deps[span].first; dep <= deps[span].second; dep++) {
         if (last_offset <= dep && dep < last_offset + last_width) {
           assert(idx < n_inputs);
 
