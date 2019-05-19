@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
         }
       }
 
+      // Create input and output buffers.
       std::vector<std::vector<std::vector<char> > > inputs(n_points);
       std::vector<std::vector<const char *> > input_ptr(n_points);
       std::vector<std::vector<size_t> > input_bytes(n_points);
@@ -99,6 +100,21 @@ int main(int argc, char *argv[])
         point_outputs.resize(graph.output_bytes_per_task);
       }
 
+      // Cache dependencies.
+      std::vector<std::vector<std::vector<std::pair<long, long> > > > dependencies(graph.max_dependence_sets());
+      std::vector<std::vector<std::vector<std::pair<long, long> > > > reverse_dependencies(graph.max_dependence_sets());
+      for (long dset = 0; dset < graph.max_dependence_sets(); ++dset) {
+        dependencies[dset].resize(n_points);
+        reverse_dependencies[dset].resize(n_points);
+
+        for (long point = first_point; point <= last_point; ++point) {
+          long point_index = point - first_point;
+
+          dependencies[dset][point_index] = graph.dependencies(dset, point);
+          reverse_dependencies[dset][point_index] = graph.reverse_dependencies(dset, point);
+        }
+      }
+
       for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
         long offset = graph.offset_at_timestep(timestep);
         long width = graph.width_at_timestep(timestep);
@@ -107,6 +123,8 @@ int main(int argc, char *argv[])
         long last_width = graph.width_at_timestep(timestep-1);
 
         long dset = graph.dependence_set_at_timestep(timestep);
+        auto &deps = dependencies[dset];
+        auto &rev_deps = reverse_dependencies[dset];
 
         requests.clear();
 
@@ -117,10 +135,13 @@ int main(int argc, char *argv[])
           auto &point_n_inputs = n_inputs[point_index];
           auto &point_output = outputs[point_index];
 
+          auto &point_deps = deps[point_index];
+          auto &point_rev_deps = rev_deps[point_index];
+
           /* Receive */
           point_n_inputs = 0;
           if (point >= offset && point < offset + width) {
-            for (auto interval : graph.dependencies(dset, point)) {
+            for (auto interval : point_deps) {
               for (long dep = interval.first; dep <= interval.second; ++dep) {
                 if (dep < last_offset || dep >= last_offset + last_width) {
                   continue;
@@ -147,7 +168,7 @@ int main(int argc, char *argv[])
 
           /* Send */
           if (point >= last_offset && point < last_offset + last_width) {
-            for (auto interval : graph.reverse_dependencies(dset, point)) {
+            for (auto interval : point_rev_deps) {
               for (long dep = interval.first; dep <= interval.second; dep++) {
                 if (dep < offset || dep >= offset + width || (first_point <= dep && dep <= last_point)) {
                   continue;
