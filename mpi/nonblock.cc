@@ -40,13 +40,13 @@ int main(int argc, char *argv[])
     std::vector<MPI_Request> requests;
 
     for (auto graph : app.graphs) {
-      size_t scratch_bytes = graph.scratch_bytes_per_task;
-      char *scratch_ptr = (char *)malloc(scratch_bytes);
-      assert(scratch_ptr);
-
       long first_point = rank * graph.max_width / n_ranks;
       long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
       long n_points = last_point - first_point + 1;
+
+      size_t scratch_bytes = graph.scratch_bytes_per_task;
+      char *scratch_ptr = (char *)malloc(scratch_bytes * n_points);
+      assert(scratch_ptr);
 
       std::vector<int> rank_by_point(graph.max_width);
       std::vector<int> tag_bits_by_point(graph.max_width);
@@ -126,14 +126,20 @@ int main(int argc, char *argv[])
                   continue;
                 }
 
-                int from = tag_bits_by_point[dep];
-                int to = tag_bits_by_point[point];
-                int tag = (from << 8) | to;
-                MPI_Request req;
-                MPI_Irecv(point_inputs[point_n_inputs].data(),
-                          point_inputs[point_n_inputs].size(), MPI_BYTE,
-                          rank_by_point[dep], tag, MPI_COMM_WORLD, &req);
-                requests.push_back(req);
+                // Use shared memory for on-node data.
+                if (first_point <= dep && dep <= last_point) {
+                  auto &output = outputs[dep - first_point];
+                  point_inputs[point_n_inputs].assign(output.begin(), output.end());
+                } else {
+                  int from = tag_bits_by_point[dep];
+                  int to = tag_bits_by_point[point];
+                  int tag = (from << 8) | to;
+                  MPI_Request req;
+                  MPI_Irecv(point_inputs[point_n_inputs].data(),
+                            point_inputs[point_n_inputs].size(), MPI_BYTE,
+                            rank_by_point[dep], tag, MPI_COMM_WORLD, &req);
+                  requests.push_back(req);
+                }
                 point_n_inputs++;
               }
             }
@@ -143,7 +149,7 @@ int main(int argc, char *argv[])
           if (point >= last_offset && point < last_offset + last_width) {
             for (auto interval : graph.reverse_dependencies(dset, point)) {
               for (long dep = interval.first; dep <= interval.second; dep++) {
-                if (dep < offset || dep >= offset + width) {
+                if (dep < offset || dep >= offset + width || (first_point <= dep && dep <= last_point)) {
                   continue;
                 }
 
@@ -161,7 +167,7 @@ int main(int argc, char *argv[])
 
         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-        for (long point = first_point; point <= last_point; ++point) {
+        for (long point = std::max(first_point, offset); point <= std::min(last_point, offset + width - 1); ++point) {
           long point_index = point - first_point;
 
           auto &point_input_ptr = input_ptr[point_index];
@@ -169,12 +175,10 @@ int main(int argc, char *argv[])
           auto &point_n_inputs = n_inputs[point_index];
           auto &point_output = outputs[point_index];
 
-          if (point >= offset && point < offset + width) {
-            graph.execute_point(timestep, point,
-                                point_output.data(), point_output.size(),
-                                point_input_ptr.data(), point_input_bytes.data(), point_n_inputs,
-                                scratch_ptr, scratch_bytes);
-          }
+          graph.execute_point(timestep, point,
+                              point_output.data(), point_output.size(),
+                              point_input_ptr.data(), point_input_bytes.data(), point_n_inputs,
+                              scratch_ptr + scratch_bytes * point_index, scratch_bytes);
         }
       }
       free(scratch_ptr);
