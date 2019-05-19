@@ -263,76 +263,90 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
 
 std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, long point) const
 {
-  std::vector<std::pair<long, long> > deps;
+  size_t count = num_reverse_dependencies(dset, point);
+  std::vector<std::pair<long, long> > deps(count);
+  size_t actual_count = reverse_dependencies(dset, point, deps.data());
+  assert(actual_count <= count);
+  deps.resize(actual_count);
+  return deps;
+}
 
+size_t TaskGraph::reverse_dependencies(long dset, long point, std::pair<long, long> *deps) const
+{
   switch (dependence) {
   case DependenceType::TRIVIAL:
-    break;
+    return 0;
   case DependenceType::NO_COMM:
-    deps.push_back(std::pair<long, long>(point, point));
-    break;
+    deps[0] = std::pair<long, long>(point, point);
+    return 1;
   case DependenceType::STENCIL_1D:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
-                                         std::min(point+1, max_width-1)));
-    break;
+    deps[0] = std::pair<long, long>(std::max(0L, point-1),
+                                    std::min(point+1, max_width-1));
+    return 1;
   case DependenceType::STENCIL_1D_PERIODIC:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
-                                         std::min(point+1, max_width-1)));
-    if (point-1 < 0) { // Wrap around negative case
-      deps.push_back(std::pair<long, long>(max_width-1, max_width-1));
+    {
+      size_t idx = 0;
+      deps[idx++] = std::pair<long, long>(std::max(0L, point-1),
+                                          std::min(point+1, max_width-1));
+      if (point-1 < 0) { // Wrap around negative case
+        deps[idx++] = std::pair<long, long>(max_width-1, max_width-1);
+      }
+      if (point+1 >= max_width) { // Wrap around positive case
+        deps[idx++] = std::pair<long, long>(0, 0);
+      }
+      return idx;
     }
-    if (point+1 >= max_width) { // Wrap around positive case
-      deps.push_back(std::pair<long, long>(0, 0));
-    }
-    break;
   case DependenceType::DOM:
-    deps.push_back(std::pair<long, long>(point, std::min(max_width-1, point+1)));
-    break;
+    deps[0] = std::pair<long, long>(point, std::min(max_width-1, point+1));
+    return 1;
   case DependenceType::TREE:
     {
       long child1 = point*2;
       long child2 = point*2 + 1;
-      if (child1 < max_width && child2 < max_width)
-        deps.push_back(std::pair<long, long>(child1, child2));
-      else if (child1 < max_width)
-        deps.push_back(std::pair<long, long>(child1, child1));
-
+      if (child1 < max_width && child2 < max_width) {
+        deps[0] = std::pair<long, long>(child1, child2);
+        return 1;
+      } else if (child1 < max_width) {
+        deps[0] = std::pair<long, long>(child1, child1);
+        return 1;
+      }
+      return 0;
     }
-    break;
   case DependenceType::FFT:
     {
+      size_t idx = 0;
       long d1 = point - (1 << dset);
       long d2 = point + (1 << dset);
       if (d1 >= 0) {
-        deps.push_back(std::pair<long, long>(d1, d1));
+        deps[idx++] = std::pair<long, long>(d1, d1);
       }
-      deps.push_back(std::pair<long, long>(point, point));
+      deps[idx++] = std::pair<long, long>(point, point);
       if (d2 < max_width) {
-        deps.push_back(std::pair<long, long>(d2, d2));
+        deps[idx++] = std::pair<long, long>(d2, d2);
       }
+      return idx;
     }
-    break;
   case DependenceType::ALL_TO_ALL:
-    deps.push_back(std::pair<long, long>(0, max_width-1));
-    break;
+    deps[0] = std::pair<long, long>(0, max_width-1);
+    return 1;
   case DependenceType::NEAREST:
     if (radix > 0) {
-      deps.push_back(std::pair<long, long>(std::max(0L, point - (radix-1)/2),
-                                           std::min(point + radix/2,
-                                                    max_width-1)));
+      deps[0] = std::pair<long, long>(std::max(0L, point - (radix-1)/2),
+                                      std::min(point + radix/2,
+                                               max_width-1));
+      return 1;
     }
-    break;
+    return 0;
   case DependenceType::SPREAD:
-    {
-      for (long i = 0; i < radix; ++i) {
-        long dep = (point - i*max_width/radix - (i>0 ? dset : 0)) % max_width;
-        if (dep < 0) dep += max_width;
-        deps.push_back(std::pair<long, long>(dep, dep));
-      }
+    for (long i = 0; i < radix; ++i) {
+      long dep = (point - i*max_width/radix - (i>0 ? dset : 0)) % max_width;
+      if (dep < 0) dep += max_width;
+      deps[i] = std::pair<long, long>(dep, dep);
     }
-    break;
+    return radix;
   case DependenceType::RANDOM_NEAREST:
     {
+      size_t idx = 0;
       long run_start = -1;
       long i, last_i;
       for (i = std::max(0L, point - (radix-1)/2),
@@ -349,89 +363,131 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
           }
         } else {
           if (run_start >= 0) {
-            deps.push_back(std::pair<long, long>(run_start, i-1));
+            deps[idx++] = std::pair<long, long>(run_start, i-1);
           }
           run_start = -1;
         }
       }
       if (run_start >= 0) {
-        deps.push_back(std::pair<long, long>(run_start, i-1));
+        deps[idx++] = std::pair<long, long>(run_start, i-1);
       }
+      return idx;
     }
     break;
   default:
     assert(false && "unexpected dependence type");
   };
 
-  return deps;
+  return SIZE_MAX;
+}
+
+size_t TaskGraph::num_reverse_dependencies(long dset, long point) const
+{
+  switch (dependence) {
+  case DependenceType::TRIVIAL:
+    return 0;
+  case DependenceType::NO_COMM:
+  case DependenceType::STENCIL_1D:
+    return 1;
+  case DependenceType::STENCIL_1D_PERIODIC:
+    return max_width > 1 ? 2 : 3;
+  case DependenceType::DOM:
+  case DependenceType::TREE:
+    return 1;
+  case DependenceType::FFT:
+    return 3;
+  case DependenceType::ALL_TO_ALL:
+    return 1;
+  case DependenceType::NEAREST:
+    return radix > 0 ? 1 : 0;
+  case DependenceType::SPREAD:
+  case DependenceType::RANDOM_NEAREST:
+    return radix;
+  default:
+    assert(false && "unexpected dependence type");
+  };
+
+  return SIZE_MAX;
 }
 
 std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long point) const
 {
-  std::vector<std::pair<long, long> > deps;
+  size_t count = num_dependencies(dset, point);
+  std::vector<std::pair<long, long> > deps(count);
+  size_t actual_count = dependencies(dset, point, deps.data());
+  assert(actual_count <= count);
+  deps.resize(actual_count);
+  return deps;
+}
 
+size_t TaskGraph::dependencies(long dset, long point, std::pair<long, long> *deps) const
+{
   switch (dependence) {
   case DependenceType::TRIVIAL:
-    break;
+    return 0;
   case DependenceType::NO_COMM:
-    deps.push_back(std::pair<long, long>(point, point));
-    break;
+    deps[0] = std::pair<long, long>(point, point);
+    return 1;
   case DependenceType::STENCIL_1D:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
-                                         std::min(point+1, max_width-1)));
-    break;
+    deps[0] = std::pair<long, long>(std::max(0L, point-1),
+                                    std::min(point+1, max_width-1));
+    return 1;
   case DependenceType::STENCIL_1D_PERIODIC:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
-                                         std::min(point+1, max_width-1)));
-    if (point-1 < 0) { // Wrap around negative case
-      deps.push_back(std::pair<long, long>(max_width-1, max_width-1));
+    {
+      size_t idx = 0;
+      deps[idx++] = std::pair<long, long>(std::max(0L, point-1),
+                                          std::min(point+1, max_width-1));
+      if (point-1 < 0) { // Wrap around negative case
+        deps[idx++] = std::pair<long, long>(max_width-1, max_width-1);
+      }
+      if (point+1 >= max_width) { // Wrap around positive case
+        deps[idx++] = std::pair<long, long>(0, 0);
+      }
+      return idx;
     }
-    if (point+1 >= max_width) { // Wrap around positive case
-      deps.push_back(std::pair<long, long>(0, 0));
-    }
-    break;
   case DependenceType::DOM:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1), point));
-    break;
+    deps[0] = std::pair<long, long>(std::max(0L, point-1), point);
+    return 1;
   case DependenceType::TREE:
     {
       long parent = point/2;
-      deps.push_back(std::pair<long, long>(parent, parent));
+      deps[0] = std::pair<long, long>(parent, parent);
+      return 1;
     }
-    break;
   case DependenceType::FFT:
     {
+      size_t idx = 0;
       long d1 = point - (1 << dset);
       long d2 = point + (1 << dset);
       if (d1 >= 0) {
-        deps.push_back(std::pair<long, long>(d1, d1));
+        deps[idx++] = std::pair<long, long>(d1, d1);
       }
-      deps.push_back(std::pair<long, long>(point, point));
+      deps[idx++] = std::pair<long, long>(point, point);
       if (d2 < max_width) {
-        deps.push_back(std::pair<long, long>(d2, d2));
+        deps[idx++] = std::pair<long, long>(d2, d2);
       }
+      return idx;
     }
-    break;
   case DependenceType::ALL_TO_ALL:
-    deps.push_back(std::pair<long, long>(0, max_width-1));
-    break;
+    deps[0] = std::pair<long, long>(0, max_width-1);
+    return 1;
   case DependenceType::NEAREST:
     if (radix > 0) {
-      deps.push_back(std::pair<long, long>(std::max(0L, point - radix/2),
-                                           std::min(point + (radix-1)/2,
-                                                    max_width-1)));
+      deps[0] = std::pair<long, long>(std::max(0L, point - radix/2),
+                                      std::min(point + (radix-1)/2,
+                                               max_width-1));
+      return 1;
     }
-    break;
+    return 0;
   case DependenceType::SPREAD:
-    {
-      for (long i = 0; i < radix; ++i) {
-        long dep = (point + i*max_width/radix + (i>0 ? dset : 0)) % max_width;
-        deps.push_back(std::pair<long, long>(dep, dep));
-      }
+    for (long i = 0; i < radix; ++i) {
+      long dep = (point + i*max_width/radix + (i>0 ? dset : 0)) % max_width;
+      deps[i] = std::pair<long, long>(dep, dep);
     }
-    break;
+    return radix;
   case DependenceType::RANDOM_NEAREST:
     {
+      size_t idx = 0;
       long run_start = -1;
       long i, last_i;
       for (i = std::max(0L, point - radix/2),
@@ -448,21 +504,53 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
           }
         } else {
           if (run_start >= 0) {
-            deps.push_back(std::pair<long, long>(run_start, i-1));
+            deps[idx++] = std::pair<long, long>(run_start, i-1);
           }
           run_start = -1;
         }
       }
       if (run_start >= 0) {
-        deps.push_back(std::pair<long, long>(run_start, i-1));
+        deps[idx++] = std::pair<long, long>(run_start, i-1);
       }
+      return idx;
     }
     break;
   default:
     assert(false && "unexpected dependence type");
   };
 
-  return deps;
+  return SIZE_MAX;
+}
+
+size_t TaskGraph::num_dependencies(long dset, long point) const
+{
+  size_t count = 0;
+
+  switch (dependence) {
+  case DependenceType::TRIVIAL:
+    return 0;
+  case DependenceType::NO_COMM:
+  case DependenceType::STENCIL_1D:
+    return 1;
+  case DependenceType::STENCIL_1D_PERIODIC:
+    return max_width > 1 ? 2 : 3;
+  case DependenceType::DOM:
+  case DependenceType::TREE:
+    return 1;
+  case DependenceType::FFT:
+    return 3;
+  case DependenceType::ALL_TO_ALL:
+    return 1;
+  case DependenceType::NEAREST:
+    return radix > 0 ? 1 : 0;
+  case DependenceType::SPREAD:
+  case DependenceType::RANDOM_NEAREST:
+    return radix;
+  default:
+    assert(false && "unexpected dependence type");
+  };
+
+  return SIZE_MAX;
 }
 
 void TaskGraph::execute_point(long timestep, long point,
