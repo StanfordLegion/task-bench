@@ -214,17 +214,42 @@ elif [[ $(basename $PWD) = radix ]]; then
 
 elif [[ $(basename $PWD) = cores_per_rank ]]; then
 
-    "$root_dir"/metg.py -m cori -g 1 -d stencil_1d -n 1 -x cores_per_rank --csv excel > metg_stencil.csv
+    "$root_dir"/metg.py -m cori -g 1 -d stencil_1d -n 1 -x cores_per_rank --csv excel > metg_stencil_nodes_1.csv
 
-    "$root_dir"/render_metg.py metg_stencil.csv \
+    "$root_dir"/metg.py -m cori -g 1 -d stencil_1d -n 16 -x cores_per_rank --csv excel > metg_stencil_nodes_16.csv
+
+    "$root_dir"/metg.py -m cori -g 1 -d nearest -n 16 -x cores_per_rank --csv excel > metg_nearest_nodes_16.csv
+
+    "$root_dir"/render_metg.py metg_stencil_nodes_1.csv \
                --xlabel 'Cores per Rank' \
                --xdata 'cores_per_rank' \
                --connect-missing \
                --no-xticks \
-               --no-xlog # \
+               --no-xlog \
+               --no-ylog # \
                # --title 'METG vs Cores per Rank (Cori, Compute, Stencil)'
 
-    crop metg_stencil.pdf
+    "$root_dir"/render_metg.py metg_stencil_nodes_16.csv \
+               --xlabel 'Cores per Rank' \
+               --xdata 'cores_per_rank' \
+               --connect-missing \
+               --no-xticks \
+               --no-xlog \
+               --no-ylog # \
+               # --title 'METG vs Cores per Rank (Cori, Compute, Stencil)'
+
+    "$root_dir"/render_metg.py metg_nearest_nodes_16.csv \
+               --xlabel 'Cores per Rank' \
+               --xdata 'cores_per_rank' \
+               --connect-missing \
+               --no-xticks \
+               --no-xlog \
+               --no-ylog # \
+               # --title 'METG vs Cores per Rank (Cori, Compute, Stencil)'
+
+    crop metg_stencil_nodes_1.pdf
+    crop metg_stencil_nodes_16.pdf
+    crop metg_nearest_nodes_16.pdf
 
 elif [[ $(basename $PWD) = communication ]]; then
     "$root_dir"/metg.py -m cori -g 4 -d spread -n 16 -x comm --csv excel > metg_nodes_16.csv
@@ -307,6 +332,31 @@ elif [[ $(basename $PWD) = communication ]]; then
     done
     for comm in 256 4096 65536 1048576; do
         crop efficiency_nodes_256_comm_${comm}.pdf
+    done
+
+elif [[ $(basename $PWD) = cuda_communication ]]; then
+    for comm in 16 256 4096 65536; do
+        "$root_dir"/efficiency.py -m daint -g 4 -d spread -n 64 -c ${comm} --hide-metg --csv excel > efficiency_nodes_64_comm_${comm}.csv
+    done
+
+    for comm in 16 256 4096 65536; do
+        "$root_dir"/render_metg.py efficiency_nodes_64_comm_${comm}.csv \
+                   --xlabel 'Task Granularity (ms)' \
+                   --xdata 'time_per_task' \
+                   --x-invert \
+                   --xbase 10 \
+                   --no-xticks \
+                   --ylabel 'Efficiency' \
+                   --ylim '(-0.05,1.05)' \
+                   --no-ylog \
+                   --y-percent \
+                   --highlight-column 'metg' \
+                   --legend ../gpu_legend.csv # \
+                   # --title "Efficiency vs Task Granularity (Piz Daint, Compute, Stencil, Comm ${comm})"
+    done
+
+    for comm in 16 256 4096 65536; do
+        crop efficiency_nodes_64_comm_${comm}.pdf
     done
 
 elif [[ $(basename $PWD) = imbalance ]]; then
