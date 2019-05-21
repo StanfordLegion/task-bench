@@ -40,7 +40,6 @@ def execute_task_graph(graph):
     for timestep in range(0, graph.timesteps):
         offset = core.c.task_graph_offset_at_timestep(graph, timestep)
         width = core.c.task_graph_width_at_timestep(graph, timestep)
-        dset = core.c.task_graph_dependence_set_at_timestep(graph, timestep)
         row = []
         for point in range(0, offset):
             row.append(None)
