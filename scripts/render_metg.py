@@ -33,6 +33,9 @@ parser.add_argument('--title')
 parser.add_argument('--width', type=float, default=9)
 parser.add_argument('--height', type=float, default=5)
 parser.add_argument('--legend', default='../legend.csv')
+parser.add_argument('--legend-ncol', type=int, default=1)
+parser.add_argument('--legend-fontsize', type=int, default=12)
+parser.add_argument('--legend-position', default='center left')
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
 parser.add_argument('--xdata', default='nodes')
@@ -224,12 +227,15 @@ box = ax.get_position()
 ax.set_position([box.x0, box.y0, box.width * 0.80, box.height])
 
 if args.legend:
-    plt.legend(
+    kwargs = {'loc': args.legend_position}
+    if args.legend_position == 'center left':
         # Put a legend to the right of the current axis
-        loc='center left', bbox_to_anchor=(1, 0.5),
-        ncol=1, fontsize=12,
+        kwargs['bbox_to_anchor'] = (1, 0.5)
+    plt.legend(
+        ncol=args.legend_ncol, fontsize=args.legend_fontsize,
         # Square corners, disable transparency, set color to black
-        fancybox=False, framealpha=1, edgecolor='black')
+        fancybox=False, framealpha=1, edgecolor='black',
+        **kwargs)
 
 plt.grid(True, color='black', linestyle='--', linewidth=0.5, dashes=(1, 5))
 output_filename = '%s.pdf' % os.path.splitext(args.filename)[0]

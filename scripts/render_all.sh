@@ -46,7 +46,7 @@ if [[ $(basename $PWD) = compute ]]; then
                # --title 'Efficiency vs Task Granularity (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py efficiency_stencil_mpi.csv \
-               --legend '' \
+               --legend-position 'lower left' \
                --height 4 \
                --xlabel 'Task Granularity (ms)' \
                --xdata 'time_per_task' \
@@ -72,7 +72,7 @@ if [[ $(basename $PWD) = compute ]]; then
                # --title 'FLOPS vs Problem Size (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py flops_stencil_mpi.csv \
-               --legend '' \
+               --legend-position 'lower left' \
                --height 4 \
                --xlabel 'Problem Size' \
                --xdata 'iterations' \
@@ -85,7 +85,9 @@ if [[ $(basename $PWD) = compute ]]; then
                # --title 'MPI FLOPS vs Problem Size (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py weak_mpi.csv \
-               --legend '' \
+               --legend-ncol 2 \
+               --legend-fontsize 10 \
+               --width 12 \
                --xlabel 'Nodes' \
                --xdata 'nodes' \
                --ylabel 'Wall Time (s)' \
@@ -93,7 +95,9 @@ if [[ $(basename $PWD) = compute ]]; then
                # --title 'Weak Scaling by Problem Size (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py strong_mpi.csv \
-               --legend '' \
+               --legend-ncol 2 \
+               --legend-fontsize 10 \
+               --width 12 \
                --xlabel 'Nodes' \
                --xdata 'nodes' \
                --ylabel 'Wall Time (s)' \
