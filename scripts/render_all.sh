@@ -172,11 +172,8 @@ elif [[ $(basename $PWD) = cuda_compute ]]; then
     for pattern in nearest spread; do
         crop metg_${pattern}.pdf
     done
-    crop metg_ngraphs_4_nearest.pdf
     crop efficiency_stencil.pdf
-    crop efficiency_stencil_mpi.pdf
     crop flops_stencil.pdf
-    crop flops_stencil_mpi.pdf
 
 elif [[ $(basename $PWD) = memory ]]; then
 
