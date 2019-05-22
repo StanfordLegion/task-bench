@@ -92,8 +92,8 @@ if [[ $(basename $PWD) = compute ]]; then
                # --title 'Weak Scaling by Problem Size (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py weak_mpi.csv \
-               --legend-ncol 2 \
                --legend-base 2 \
+               --filter-legend-even-powers \
                --width 12 \
                --ylabel 'Wall Time (s)' \
                --highlight-column 'metg' # \
@@ -104,8 +104,8 @@ if [[ $(basename $PWD) = compute ]]; then
                # --title 'Strong Scaling by Problem Size (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py strong_mpi.csv \
-               --legend-ncol 2 \
                --legend-base 2 \
+               --filter-legend-even-powers \
                --width 12 \
                --ylabel 'Wall Time (s)' \
                --highlight-column 'metg' # \

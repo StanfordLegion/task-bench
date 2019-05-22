@@ -38,6 +38,7 @@ parser.add_argument('--legend-ncol', type=int, default=1)
 parser.add_argument('--legend-fontsize', type=int, default=12)
 parser.add_argument('--legend-position', default='center left')
 parser.add_argument('--legend-base', type=int, default=0)
+parser.add_argument('--filter-legend-even-powers', action='store_true')
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
 parser.add_argument('--xdata', default='nodes')
@@ -191,8 +192,10 @@ for column in columns:
         next_idx += 1
 
     if args.legend_base > 0 and args.highlight_column != column:
-        exponent = '%.0f' % math.log(int(label), args.legend_base)
-        label = '$%s^{%s}$' % (args.legend_base, exponent)
+        exponent = int(math.log(int(label), args.legend_base))
+        if args.filter_legend_even_powers and exponent % 2 != 0:
+            continue
+        label = '$%s^{%.0f}$' % (args.legend_base, exponent)
 
     if not visible:
         continue
