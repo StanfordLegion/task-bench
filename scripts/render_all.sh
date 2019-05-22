@@ -93,7 +93,7 @@ if [[ $(basename $PWD) = compute ]]; then
 
     "$root_dir"/render_metg.py weak_mpi.csv \
                --legend-ncol 2 \
-               --legend-fontsize 10 \
+               --legend-base 2 \
                --width 12 \
                --ylabel 'Wall Time (s)' \
                --highlight-column 'metg' # \
@@ -105,7 +105,7 @@ if [[ $(basename $PWD) = compute ]]; then
 
     "$root_dir"/render_metg.py strong_mpi.csv \
                --legend-ncol 2 \
-               --legend-fontsize 10 \
+               --legend-base 2 \
                --width 12 \
                --ylabel 'Wall Time (s)' \
                --highlight-column 'metg' # \

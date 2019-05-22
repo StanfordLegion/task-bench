@@ -19,6 +19,7 @@
 import matplotlib
 matplotlib.use('PDF')
 import matplotlib.pyplot as plt
+import math
 import numpy as np
 import argparse
 import ast
@@ -36,6 +37,7 @@ parser.add_argument('--legend', default='../legend.csv')
 parser.add_argument('--legend-ncol', type=int, default=1)
 parser.add_argument('--legend-fontsize', type=int, default=12)
 parser.add_argument('--legend-position', default='center left')
+parser.add_argument('--legend-base', type=int, default=0)
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
 parser.add_argument('--xdata', default='nodes')
@@ -187,6 +189,10 @@ for column in columns:
         label = column.replace('_', ' ')
         idx = next_idx
         next_idx += 1
+
+    if args.legend_base > 0 and args.highlight_column != column:
+        exponent = '%.0f' % math.log(int(label), args.legend_base)
+        label = '$%s^{%s}$' % (args.legend_base, exponent)
 
     if not visible:
         continue
