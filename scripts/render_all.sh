@@ -68,11 +68,11 @@ if [[ $(basename $PWD) = compute ]]; then
                --xdata 'iterations' \
                --x-invert \
                --no-xticks \
-               --ylabel 'TFLOPS' \
+               --ylabel 'TFLOP/s' \
                --yscale 1e-12 \
                --no-ylog \
                --highlight-column 'metg' # \
-               # --title 'FLOPS vs Problem Size (Cori, Compute, Stencil)'
+               # --title 'FLOP/s vs Problem Size (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py flops_stencil_mpi.csv \
                --legend-position 'lower left' \
@@ -81,11 +81,11 @@ if [[ $(basename $PWD) = compute ]]; then
                --xdata 'iterations' \
                --x-invert \
                --no-xticks \
-               --ylabel 'TFLOPS' \
+               --ylabel 'TFLOP/s' \
                --yscale 1e-12 \
                --no-ylog \
                --highlight-column 'metg' # \
-               # --title 'MPI FLOPS vs Problem Size (Cori, Compute, Stencil)'
+               # --title 'MPI FLOP/s vs Problem Size (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py weak.csv \
                --ylabel 'Wall Time (s)' # \
@@ -162,26 +162,26 @@ elif [[ $(basename $PWD) = cuda_compute ]]; then
                --xdata 'iterations' \
                --x-invert \
                --no-xticks \
-               --ylabel 'TFLOPS' \
+               --ylabel 'TFLOP/s' \
                --yscale 1e-12 \
                --no-ylog \
                --highlight-column 'metg' \
                --legend ../gpu_legend.csv # \
-               # --title 'FLOPS vs Problem Size (Piz Daint, Compute, Stencil)'
+               # --title 'FLOP/s vs Problem Size (Piz Daint, Compute, Stencil)'
 
     "$root_dir"/render_metg.py flops_v_flops_stencil.csv \
-               --xlabel 'TFLOPS per Task' \
+               --xlabel 'TFLOP per Task' \
                --xscale 1e-12 \
                --xbase 10 \
                --xdata 'flops' \
                --x-invert \
                --no-xticks \
-               --ylabel 'TFLOPS/s' \
+               --ylabel 'TFLOP/s' \
                --yscale 1e-12 \
                --no-ylog \
                --connect-missing \
                --legend ../gpu_legend.csv # \
-               # --title 'FLOPS vs Problem Size (Piz Daint, Compute, Stencil)'
+               # --title 'FLOP/s vs Problem Size (Piz Daint, Compute, Stencil)'
 
     crop metg_stencil.pdf
     for pattern in nearest spread; do
