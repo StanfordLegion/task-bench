@@ -170,7 +170,7 @@ elif [[ $(basename $PWD) = cuda_compute ]]; then
                # --title 'FLOP/s vs Problem Size (Piz Daint, Compute, Stencil)'
 
     "$root_dir"/render_metg.py flops_v_flops_stencil.csv \
-               --xlabel 'TFLOP per Task' \
+               --xlabel 'TFLOP' \
                --xscale 1e-12 \
                --xbase 10 \
                --xdata 'flops' \
