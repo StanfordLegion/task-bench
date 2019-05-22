@@ -26,7 +26,7 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/weak.py -m cori -g 1 -d stencil_1d -p 262144 --csv excel > weak.csv
     "$root_dir"/weak.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' --csv excel > weak_mpi.csv
 
-    "$root_dir"/strong.py -m cori -g 1 -d stencil_1d -p 4194304 --csv excel > strong.csv
+    "$root_dir"/strong.py -m cori -g 1 -d stencil_1d -p 1048576 --csv excel > strong.csv
     "$root_dir"/strong.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' --csv excel > strong_mpi.csv
 
     "$root_dir"/render_metg.py metg_stencil.csv # --title "METG vs Nodes (Cori, Compute, Stencil)"
