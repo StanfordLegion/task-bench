@@ -23,7 +23,10 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/flops.py -m cori -g 1 -d stencil_1d -n 1 --csv excel > flops_stencil.csv
     "$root_dir"/flops.py -m cori -g 1 -d stencil_1d -n 1 -s 'mpi nonblock' --csv excel > flops_stencil_mpi.csv
 
+    "$root_dir"/weak.py -m cori -g 1 -d stencil_1d -p 262144 --csv excel > weak.csv
     "$root_dir"/weak.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' --csv excel > weak_mpi.csv
+
+    "$root_dir"/strong.py -m cori -g 1 -d stencil_1d -p 4194304 --csv excel > strong.csv
     "$root_dir"/strong.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' --csv excel > strong_mpi.csv
 
     "$root_dir"/render_metg.py metg_stencil.csv # --title "METG vs Nodes (Cori, Compute, Stencil)"
@@ -84,22 +87,26 @@ if [[ $(basename $PWD) = compute ]]; then
                --highlight-column 'metg' # \
                # --title 'MPI FLOPS vs Problem Size (Cori, Compute, Stencil)'
 
+    "$root_dir"/render_metg.py weak.csv \
+               --ylabel 'Wall Time (s)' # \
+               # --title 'Weak Scaling by Problem Size (Cori, Compute, Stencil)'
+
     "$root_dir"/render_metg.py weak_mpi.csv \
                --legend-ncol 2 \
                --legend-fontsize 10 \
                --width 12 \
-               --xlabel 'Nodes' \
-               --xdata 'nodes' \
                --ylabel 'Wall Time (s)' \
                --highlight-column 'metg' # \
                # --title 'Weak Scaling by Problem Size (Cori, Compute, Stencil)'
+
+    "$root_dir"/render_metg.py strong.csv \
+               --ylabel 'Wall Time (s)' # \
+               # --title 'Strong Scaling by Problem Size (Cori, Compute, Stencil)'
 
     "$root_dir"/render_metg.py strong_mpi.csv \
                --legend-ncol 2 \
                --legend-fontsize 10 \
                --width 12 \
-               --xlabel 'Nodes' \
-               --xdata 'nodes' \
                --ylabel 'Wall Time (s)' \
                --highlight-column 'metg' # \
                # --title 'Strong Scaling by Problem Size (Cori, Compute, Stencil)'
