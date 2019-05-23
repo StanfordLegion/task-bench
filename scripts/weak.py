@@ -65,7 +65,8 @@ class Parser(util.Parser):
         # we'd prefer to sort so that the list of names roughly parallels
         # the order of the bars in the graph.
         self.header.sort()
-        self.header.reverse()
+        if self.system is not None:
+            self.header.reverse()
         self.header.insert(0, 'nodes')
         if self.system is not None:
             self.header.append('metg')
