@@ -27,6 +27,7 @@ Implementations:
 [Dask](dask),
 [Legion](legion),
 [MPI](mpi),
+[MPI+OpenMP](mpi_openmp),
 [OmpSs](ompss),
 [OpenMP](openmp),
 [PaRSEC](parsec),
