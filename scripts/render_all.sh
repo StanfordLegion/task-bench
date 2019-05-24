@@ -204,6 +204,7 @@ elif [[ $(basename $PWD) = cuda_compute ]]; then
     crop efficiency_stencil.pdf
     crop flops_stencil.pdf
     crop flops_v_flops_stencil.pdf
+    crop flops_normalized_stencil.pdf
 
 elif [[ $(basename $PWD) = memory ]]; then
 
