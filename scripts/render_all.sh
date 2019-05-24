@@ -133,6 +133,7 @@ elif [[ $(basename $PWD) = cuda_compute ]]; then
 
     "$root_dir"/flops.py -m daint -g 1 -d stencil_1d -n 1 --hide-metg --csv excel > flops_stencil.csv
     "$root_dir"/flops.py -m daint -g 1 -d stencil_1d -n 1 -x flops --hide-metg --csv excel > flops_v_flops_stencil.csv
+    cp flops_v_flops_stencil.csv flops_normalized_stencil.csv # copy so we can render two ways
 
     "$root_dir"/render_metg.py metg_stencil.csv \
                --legend ../gpu_legend.csv # \
@@ -173,6 +174,19 @@ elif [[ $(basename $PWD) = cuda_compute ]]; then
                --xlabel 'TFLOP' \
                --xscale 1e-12 \
                --xbase 10 \
+               --xdata 'flops' \
+               --x-invert \
+               --no-xticks \
+               --ylabel 'TFLOP/s' \
+               --yscale 1e-12 \
+               --no-ylog \
+               --connect-missing \
+               --legend ../gpu_legend.csv # \
+               # --title 'FLOP/s vs Problem Size (Piz Daint, Compute, Stencil)'
+
+    "$root_dir"/render_metg.py flops_normalized_stencil.csv \
+               --xlabel 'Normalized Problem Size' \
+               --xscale $(bc <<< 'scale=20; 1/(2*64*1000*12)') \
                --xdata 'flops' \
                --x-invert \
                --no-xticks \
