@@ -81,31 +81,24 @@ void Kernel::execute(long graph_index, long timestep, long point,
   };
 }
 
-static const std::map<std::string, KernelType> &ktype_by_name()
+static const std::map<std::string, KernelType> ktype_by_name = {
+  {"empty", KernelType::EMPTY},
+  {"busy_wait", KernelType::BUSY_WAIT},
+  {"memory_bound", KernelType::MEMORY_BOUND},
+  {"compute_dgemm", KernelType::COMPUTE_DGEMM},
+  {"memory_daxpy", KernelType::MEMORY_DAXPY},
+  {"compute_bound", KernelType::COMPUTE_BOUND},
+  {"compute_bound2", KernelType::COMPUTE_BOUND2},
+  {"io_bound", KernelType::IO_BOUND},
+  {"load_imbalance", KernelType::LOAD_IMBALANCE},
+};
+
+static std::map<KernelType, std::string> make_name_by_ktype()
 {
-  static std::map<std::string, KernelType> types;
-
-  if (types.empty()) {
-    types["empty"] = KernelType::EMPTY;
-    types["busy_wait"] = KernelType::BUSY_WAIT;
-    types["memory_bound"] = KernelType::MEMORY_BOUND;
-    types["compute_dgemm"] = KernelType::COMPUTE_DGEMM;
-    types["memory_daxpy"] = KernelType::MEMORY_DAXPY;
-    types["compute_bound"] = KernelType::COMPUTE_BOUND;
-    types["compute_bound2"] = KernelType::COMPUTE_BOUND2;
-    types["io_bound"] = KernelType::IO_BOUND;
-    types["load_imbalance"] = KernelType::LOAD_IMBALANCE;
-  }
-
-  return types;
-}
-
-static const std::map<KernelType, std::string> &name_by_ktype()
-{
-  static std::map<KernelType, std::string> names;
+  std::map<KernelType, std::string> names;
 
   if (names.empty()) {
-    auto types = ktype_by_name();
+    auto types = ktype_by_name;
     for (auto pair : types) {
       names[pair.second] = pair.first;
     }
@@ -114,34 +107,29 @@ static const std::map<KernelType, std::string> &name_by_ktype()
   return names;
 }
 
-static const std::map<std::string, DependenceType> &dtype_by_name()
+static const std::map<KernelType, std::string> name_by_ktype = make_name_by_ktype();
+
+static const std::map<std::string, DependenceType> dtype_by_name = {
+  {"trivial", DependenceType::TRIVIAL},
+  {"no_comm", DependenceType::NO_COMM},
+  {"stencil_1d", DependenceType::STENCIL_1D},
+  {"stencil_1d_periodic", DependenceType::STENCIL_1D_PERIODIC},
+  {"dom", DependenceType::DOM},
+  {"tree", DependenceType::TREE},
+  {"fft", DependenceType::FFT},
+  {"all_to_all", DependenceType::ALL_TO_ALL},
+  {"nearest", DependenceType::NEAREST},
+  {"spread", DependenceType::SPREAD},
+  {"random_nearest", DependenceType::RANDOM_NEAREST},
+  {"random_spread", DependenceType::RANDOM_SPREAD},
+};
+
+static std::map<DependenceType, std::string> make_name_by_dtype()
 {
-  static std::map<std::string, DependenceType> types;
-
-  if (types.empty()) {
-    types["trivial"] = DependenceType::TRIVIAL;
-    types["no_comm"] = DependenceType::NO_COMM;
-    types["stencil_1d"] = DependenceType::STENCIL_1D;
-    types["stencil_1d_periodic"] = DependenceType::STENCIL_1D_PERIODIC;
-    types["dom"] = DependenceType::DOM;
-    types["tree"] = DependenceType::TREE;
-    types["fft"] = DependenceType::FFT;
-    types["all_to_all"] = DependenceType::ALL_TO_ALL;
-    types["nearest"] = DependenceType::NEAREST;
-    types["spread"] = DependenceType::SPREAD;
-    types["random_nearest"] = DependenceType::RANDOM_NEAREST;
-    types["random_spread"] = DependenceType::RANDOM_SPREAD;
-  }
-
-  return types;
-}
-
-static const std::map<DependenceType, std::string> &name_by_dtype()
-{
-  static std::map<DependenceType, std::string> names;
+  std::map<DependenceType, std::string> names;
 
   if (names.empty()) {
-    auto types = dtype_by_name();
+    auto types = dtype_by_name;
     for (auto pair : types) {
       names[pair.second] = pair.first;
     }
@@ -149,6 +137,8 @@ static const std::map<DependenceType, std::string> &name_by_dtype()
 
   return names;
 }
+
+static std::map<DependenceType, std::string> name_by_dtype = make_name_by_dtype();
 
 long TaskGraph::offset_at_timestep(long timestep) const
 {
@@ -692,12 +682,12 @@ static void show_help_message(int argc, char **argv) {
   printf("  %-18s amount of load imbalance\n", IMBALANCE_FLAG " [FLOAT]");
 
   printf("\nSupported dependency patterns:\n");
-  for (auto dtype : dtype_by_name()) {
+  for (auto dtype : dtype_by_name) {
     printf("  %s\n", dtype.first.c_str());
   }
 
   printf("\nSupported kernel types:\n");
-  for (auto ktype : ktype_by_name()) {
+  for (auto ktype : ktype_by_name) {
     printf("  %s\n", ktype.first.c_str());
   }
 
@@ -749,10 +739,9 @@ App::App(int argc, char **argv)
 
     if (!strcmp(argv[i], TYPE_FLAG)) {
       needs_argument(i, argc, TYPE_FLAG);
-      auto types = dtype_by_name();
       auto name = argv[++i];
-      auto type = types.find(name);
-      if (type == types.end()) {
+      auto type = dtype_by_name.find(name);
+      if (type == dtype_by_name.end()) {
         fprintf(stderr, "error: Invalid flag \"-type %s\"\n", name);
         abort();
       }
@@ -791,10 +780,9 @@ App::App(int argc, char **argv)
 
     if (!strcmp(argv[i], KERNEL_FLAG)) {
       needs_argument(i, argc, KERNEL_FLAG);
-      auto types = ktype_by_name();
       auto name = argv[++i];
-      auto type = types.find(name);
-      if (type == types.end()) {
+      auto type = ktype_by_name.find(name);
+      if (type == ktype_by_name.end()) {
         fprintf(stderr, "error: Invalid flag \"" KERNEL_FLAG " %s\"\n", name);
         abort();
       }
@@ -902,11 +890,11 @@ void App::check() const
   for (auto g : graphs) {
     if (needs_period(g.dependence) && g.period == 0) {
       fprintf(stderr, "error: Graph type \"%s\" requires a non-zero period (specify with -period)\n",
-              name_by_dtype().at(g.dependence).c_str());
+              name_by_dtype.at(g.dependence).c_str());
       abort();
     } else if (!needs_period(g.dependence) && g.period != 0) {
       fprintf(stderr, "error: Graph type \"%s\" does not support user-configurable period\n",
-              name_by_dtype().at(g.dependence).c_str());
+              name_by_dtype.at(g.dependence).c_str());
       abort();
     }
 
@@ -914,7 +902,7 @@ void App::check() const
     long spread = (g.max_width + g.radix - 1) / g.radix;
     if (g.dependence == DependenceType::SPREAD && g.period > spread) {
       fprintf(stderr, "error: Graph type \"%s\" requires a period that is at most %ld\n",
-              name_by_dtype().at(g.dependence).c_str(), spread);
+              name_by_dtype.at(g.dependence).c_str(), spread);
       abort();
     }
 
@@ -961,18 +949,15 @@ void App::display() const
   for (auto g : graphs) {
     ++i;
 
-    auto knames = name_by_ktype();
-    auto dnames = name_by_dtype();
-
     printf("    Task Graph %d:\n", i);
     printf("      Time Steps: %ld\n", g.timesteps);
     printf("      Max Width: %ld\n", g.max_width);
-    printf("      Dependence Type: %s\n", dnames.at(g.dependence).c_str());
+    printf("      Dependence Type: %s\n", name_by_dtype.at(g.dependence).c_str());
     printf("      Radix: %ld\n", g.radix);
     printf("      Period: %ld\n", g.period);
     printf("      Fraction Connected: %f\n", g.fraction_connected);
     printf("      Kernel:\n");
-    printf("        Type: %s\n", knames.at(g.kernel.type).c_str());
+    printf("        Type: %s\n", name_by_ktype.at(g.kernel.type).c_str());
     printf("        Iterations: %ld\n", g.kernel.iterations);
     printf("        Samples: %d\n", g.kernel.samples);
     printf("        Imbalance: %f\n", g.kernel.imbalance);
