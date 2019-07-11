@@ -53,6 +53,7 @@ export USE_MPI_OPENMP=${USE_MPI_OPENMP:-$DEFAULT_FEATURES}
 export USE_GASNET=${USE_GASNET:-0}
 export TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
 export USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
+export USE_LEGION_PYTHON=${USE_LEGION_PYTHON:-$DEFAULT_FEATURES}
 export USE_REGENT=${USE_REGENT:-$DEFAULT_FEATURES}
 export USE_REALM=${USE_REALM:-$DEFAULT_FEATURES}
 export USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
@@ -98,12 +99,13 @@ EOF
     rm -rf hwloc-1.11.10.tar.gz
 fi
 
-if [[ $USE_LEGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 || $USE_LEGION_PYTHON -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
     export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
 export LEGION_DIR="$LEGION_DIR"
 export LG_RT_DIR="\$LEGION_DIR"/runtime
 export REGENT_DIR="\$LEGION_DIR"/language
+export USE_PYTHON=$USE_LEGION_PYTHON
 export USE_LIBDL=0
 EOF
     if [[ $USE_REALM -eq 1 ]]; then

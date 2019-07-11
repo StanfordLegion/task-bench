@@ -70,6 +70,9 @@ fi
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion clean
 fi
+if [[ $USE_LEGION_PYTHON -eq 1 ]]; then
+    make -C "$LEGION_DIR"/bindings/python clean
+fi
 if [[ $USE_REGENT -eq 1 ]]; then
     SHARD_SIZE=30 make -C regent clean
     SHARD_SIZE=15 make -C regent clean
@@ -111,6 +114,9 @@ if [[ $USE_REGENT -eq 1 ]]; then
 fi
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j$THREADS
+fi
+if [[ $USE_LEGION_PYTHON -eq 1 ]]; then
+    make -C "$LEGION_DIR"/bindings/python -j$THREADS
 fi
 if [[ $USE_REALM -eq 1 ]]; then
     make -C realm -j$THREADS

@@ -84,6 +84,17 @@ if [[ $USE_LEGION -eq 1 ]]; then
     done
 fi
 
+(if [[ $USE_LEGION_PYTHON -eq 1 ]]; then
+    for t in "${extended_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            export PYTHONPATH="$PYTHONPATH:$PWD/legion_python"
+            export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/core"
+            "$LEGION_DIR"/bindings/python/legion_python main -steps $steps -type $t $k -ll:py 1
+            "$LEGION_DIR"/bindings/python/legion_python main -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:py 1
+        done
+    done
+fi)
+
 if [[ $USE_REALM -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
