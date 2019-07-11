@@ -368,9 +368,9 @@ void LegionApp::execute_main_loop()
     period = lcm(period, g.timestep_period());
   }
 
-  long max_timesteps = LONG_MAX;
+  long max_timesteps = LONG_MIN;
   for (auto g : graphs) {
-    max_timesteps = std::min(max_timesteps, g.timesteps);
+    max_timesteps = std::max(max_timesteps, g.timesteps);
   }
 
   for (long t = 0; t < max_timesteps; ++t) {
