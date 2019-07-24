@@ -35,6 +35,39 @@ if [[ $(basename $PWD) = compute ]]; then
     done
     "$root_dir"/render_metg.py metg_ngraphs_4_nearest.csv # --title 'METG vs Nodes (Cori, Compute, 4x Nearest)'
 
+    "$root_dir"/efficiency_3d.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' \
+               -x efficiency_3d_stencil_mpi_x.csv \
+               -y efficiency_3d_stencil_mpi_y.csv \
+               -z efficiency_3d_stencil_mpi_z.csv \
+               --metg-x efficiency_3d_stencil_mpi_metg_x.csv \
+               --metg-y efficiency_3d_stencil_mpi_metg_y.csv \
+               --metg-z efficiency_3d_stencil_mpi_metg_z.csv \
+               --csv excel
+    "$root_dir"/efficiency_3d.py -m cori -g 1 -d stencil_1d -s 'realm subgraph seema2 socket' \
+               -x efficiency_3d_stencil_realm_x.csv \
+               -y efficiency_3d_stencil_realm_y.csv \
+               -z efficiency_3d_stencil_realm_z.csv \
+               --metg-x efficiency_3d_stencil_realm_metg_x.csv \
+               --metg-y efficiency_3d_stencil_realm_metg_y.csv \
+               --metg-z efficiency_3d_stencil_realm_metg_z.csv \
+               --csv excel
+    "$root_dir"/efficiency_3d.py -m cori -g 1 -d stencil_1d -s 'parsec' \
+               -x efficiency_3d_stencil_parsec_x.csv \
+               -y efficiency_3d_stencil_parsec_y.csv \
+               -z efficiency_3d_stencil_parsec_z.csv \
+               --metg-x efficiency_3d_stencil_parsec_metg_x.csv \
+               --metg-y efficiency_3d_stencil_parsec_metg_y.csv \
+               --metg-z efficiency_3d_stencil_parsec_metg_z.csv \
+               --csv excel
+    "$root_dir"/efficiency_3d.py -m cori -g 1 -d stencil_1d -s 'dask core' \
+               -x efficiency_3d_stencil_dask_x.csv \
+               -y efficiency_3d_stencil_dask_y.csv \
+               -z efficiency_3d_stencil_dask_z.csv \
+               --metg-x efficiency_3d_stencil_dask_metg_x.csv \
+               --metg-y efficiency_3d_stencil_dask_metg_y.csv \
+               --metg-z efficiency_3d_stencil_dask_metg_z.csv \
+               --csv excel
+
     "$root_dir"/render_metg.py efficiency_stencil.csv \
                --xlabel 'Task Granularity (ms)' \
                --xdata 'time_per_task' \
@@ -111,6 +144,17 @@ if [[ $(basename $PWD) = compute ]]; then
                --highlight-column 'metg' # \
                # --title 'Strong Scaling by Problem Size (Cori, Compute, Stencil)'
 
+    for system in mpi realm parsec dask; do
+        "$root_dir"/render_efficiency_3d.py \
+                   -x efficiency_3d_stencil_${system}_x.csv \
+                   -y efficiency_3d_stencil_${system}_y.csv \
+                   -z efficiency_3d_stencil_${system}_z.csv \
+                   --metg-x efficiency_3d_stencil_${system}_metg_x.csv \
+                   --metg-y efficiency_3d_stencil_${system}_metg_y.csv \
+                   --metg-z efficiency_3d_stencil_${system}_metg_z.csv \
+                   -o efficiency_3d_stencil_${system}.pdf
+    done
+
     crop metg_stencil.pdf
     for pattern in nearest spread fft; do
         crop metg_${pattern}.pdf
@@ -122,6 +166,10 @@ if [[ $(basename $PWD) = compute ]]; then
     crop flops_stencil_mpi.pdf
     crop weak_mpi.pdf
     crop strong_mpi.pdf
+
+    for system in mpi realm parsec dask; do
+        crop efficiency_3d_stencil_${system}.pdf
+    done
 
 elif [[ $(basename $PWD) = cuda_compute ]]; then
     "$root_dir"/metg.py -m daint -g 1 -d stencil_1d --csv excel > metg_stencil.csv
