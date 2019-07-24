@@ -83,7 +83,7 @@ ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('$10^{%d}$'))
 ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('$2^{%d}$'))
 ax.zaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
 
-fig.colorbar(surf, shrink=0.5, aspect=5)
+fig.colorbar(surf, shrink=0.5, aspect=5, format=matplotlib.ticker.FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
 
 ax.set_xlabel("Task Granularity (ms)")
 ax.set_ylabel("Nodes")
