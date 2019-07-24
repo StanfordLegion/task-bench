@@ -22,7 +22,11 @@
 # 3.1.0 DO NOT work, due to bugs in the handling of zorder (if it
 # works at all??):
 #
-# https://stackoverflow.com/q/37611023/188046
+# > Axes3D ignores zorder and draws all artists in the order it thinks they should be.
+# >
+# > https://stackoverflow.com/q/37611023/188046
+#
+# See also: https://stackoverflow.com/q/52923540/188046
 #
 # Unfortunately this seems to require pinning this exact version of
 # matplotlib because no variation of the zorder and order of drawing
