@@ -117,6 +117,7 @@ void task_graph_execute_point_scratch_auto(task_graph_t graph, long timestep, lo
                                            size_t scratch_bytes)
 {
   std::vector<char> scratch(scratch_bytes);
+  TaskGraph::prepare_scratch(scratch.data(), scratch.size());
   TaskGraph t(graph);
   t.execute_point(timestep, point, output_ptr, output_bytes,
                   input_ptr, input_bytes, n_inputs,
