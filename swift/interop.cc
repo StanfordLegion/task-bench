@@ -124,7 +124,7 @@ void executePoint(task_graph_t graph, long timestep, long point, std::pair<long,
   std::pair<long,long> *outputPointer = new std::pair<long, long>;
   size_t outputBytes = sizeof(std::pair<long, long>);
   std::vector<char> scratch(graph.scratch_bytes_per_task);
-  TaskGraph::prepare_scratch(scratch.data(), scratch.size());
+  task_graph_prepare_scratch(scratch.data(), scratch.size());
   task_graph_execute_point_scratch(graph, timestep, point, (char *)outputPointer, outputBytes, (const char **)inputPointer, inputBytes, numInputs,
                                    const_cast<char *>(scratch.data()), scratch.size());
   delete outputPointer;
