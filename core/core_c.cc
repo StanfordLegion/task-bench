@@ -148,6 +148,11 @@ void task_graph_execute_point_scratch_nonconst(task_graph_t graph, long timestep
                   scratch_ptr, scratch_bytes);
 }
 
+void task_graph_prepare_scratch(char *scratch_ptr, size_t scratch_bytes)
+{
+  TaskGraph::prepare_scratch(scratch_ptr, scratch_bytes);
+}
+
 void interval_list_destroy(interval_list_t intervals)
 {
   std::vector<std::pair<long, long> > *i = unwrap(intervals);

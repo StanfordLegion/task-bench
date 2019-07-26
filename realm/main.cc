@@ -627,6 +627,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   // will be effectively serialized on this processor.
   char *scratch_ptr = reinterpret_cast<char *>(malloc(max_scratch_bytes));
   assert(scratch_ptr);
+  TaskGraph::prepare_scratch(scratch_ptr, max_scratch_bytes);
 
   // Statically allocate buffer to use for task input
   size_t leaf_bufsize = 0;

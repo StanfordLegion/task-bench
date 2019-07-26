@@ -31,6 +31,17 @@ int main(int argc, char *argv[])
   App app(argc, argv);
   if (rank == 0) app.display();
 
+  std::vector<std::vector<char> > scratch;
+  for (auto graph : app.graphs) {
+    long first_point = rank * graph.max_width / n_ranks;
+    long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
+    long n_points = last_point - first_point + 1;
+
+    size_t scratch_bytes = graph.scratch_bytes_per_task;
+    scratch.emplace_back(scratch_bytes * n_points);
+    TaskGraph::prepare_scratch(scratch.back().data(), scratch.back().size());
+  }
+
   double elapsed_time = 0.0;
   for (int iter = 0; iter < 2; ++iter) {
     MPI_Barrier(MPI_COMM_WORLD);
@@ -45,8 +56,7 @@ int main(int argc, char *argv[])
       long n_points = last_point - first_point + 1;
 
       size_t scratch_bytes = graph.scratch_bytes_per_task;
-      char *scratch_ptr = (char *)malloc(scratch_bytes * n_points);
-      assert(scratch_ptr);
+      char *scratch_ptr = scratch[graph.graph_index].data();
 
       std::vector<int> rank_by_point(graph.max_width);
       std::vector<int> tag_bits_by_point(graph.max_width);
@@ -203,7 +213,6 @@ int main(int argc, char *argv[])
                               scratch_ptr + scratch_bytes * point_index, scratch_bytes);
         }
       }
-      free(scratch_ptr);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);

@@ -121,6 +121,7 @@ int main(int argc, char *argv[])
       size_t scratch_bytes = graph.scratch_bytes_per_task;
       char *scratch_ptr = (char *)malloc(scratch_bytes);
       assert(scratch_ptr);
+      TaskGraph::prepare_scratch(scratch_ptr, scratch_bytes);
 
       for (long timestep = 0L; timestep < graph.timesteps; timestep += 1) {
         long old_dset = graph.dependence_set_at_timestep(timestep);

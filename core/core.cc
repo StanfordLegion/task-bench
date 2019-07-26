@@ -543,6 +543,8 @@ size_t TaskGraph::num_dependencies(long dset, long point) const
   return SIZE_MAX;
 }
 
+#define MAGIC_VALUE UINT64_C(0x5C4A7C8B) // can you read it? it says "SCRATCHB" (kinda)
+
 void TaskGraph::execute_point(long timestep, long point,
                               char *output_ptr, size_t output_bytes,
                               const char **input_ptr, const size_t *input_bytes,
@@ -607,10 +609,23 @@ void TaskGraph::execute_point(long timestep, long point,
 
   // Validate scratch
   assert(scratch_bytes == scratch_bytes_per_task);
+  if (scratch_bytes > 0) {
+    uint64_t *scratch = reinterpret_cast<uint64_t *>(scratch_ptr);
+    assert(*scratch == MAGIC_VALUE);
+  }
 
   // Execute kernel
   Kernel k(kernel);
   k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes);
+}
+
+void TaskGraph::prepare_scratch(char *scratch_ptr, size_t scratch_bytes)
+{
+  assert(scratch_bytes % sizeof(uint64_t) == 0);
+  uint64_t *base_ptr = reinterpret_cast<uint64_t *>(scratch_ptr);
+  for (long i = 0; i < scratch_bytes/sizeof(uint64_t); ++i) {
+    base_ptr[i] = MAGIC_VALUE;
+  }
 }
 
 static TaskGraph default_graph(long graph_index)

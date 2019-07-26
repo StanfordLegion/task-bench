@@ -144,6 +144,7 @@ KernelBenchApp::KernelBenchApp(int argc, char **argv)
   scratch_buff.reserve(nb_workers);
   for (i = 0; i < nb_workers; i++) {
     scratch_buff.emplace_back(graph.scratch_bytes_per_task, 0);
+    TaskGraph::prepare_scratch(scratch_buff[i].data(), graph.scratch_bytes_per_task);
   }
 
   // init timer array

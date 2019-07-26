@@ -96,6 +96,8 @@ void Subchare::initGraph(MulticastMsg* msg) {
   output.resize(graph.output_bytes_per_task);
   scratch.resize(graph.scratch_bytes_per_task);
 
+  TaskGraph::prepare_scratch(scratch.data(), scratch.size());
+
   CProxySection_Subchare::contribute(sid, CkCallback(CkReductionTarget(Main, workerReady), mainProxy));
 }
 

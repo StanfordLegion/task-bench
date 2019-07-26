@@ -247,6 +247,16 @@ public class TaskBench {
 
         val scratch = new Rail[UByte](scratch_bytes);
 
+        @Native("c++", "
+          assert(task_graph->FMGL(size) == sizeof(TaskGraph));
+          TaskGraph tg = *(TaskGraph *)task_graph->raw;
+
+          assert(scratch->FMGL(size) == tg.scratch_bytes_per_task);
+          char *scratch_ptr = (char *)scratch->raw;
+
+          TaskGraph::prepare_scratch(scratch_ptr, tg.scratch_bytes_per_task);
+        ") {}
+
         for (timestep in 0..(timesteps-1)) {
           val offset = offset_at_timestep(timestep);
           val width = width_at_timestep(timestep);

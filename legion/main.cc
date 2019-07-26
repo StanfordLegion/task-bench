@@ -28,6 +28,7 @@ using namespace Legion::Mapping;
 
 enum TaskIDs {
   TID_TOP,
+  TID_INIT,
   TID_LEAF,
   TID_DUMMY,
 };
@@ -97,6 +98,20 @@ void get_base_and_size(Runtime *runtime,
   bytes = rect.volume();
 }
 
+void init(const Task *task,
+          const std::vector<PhysicalRegion> &regions,
+          Context ctx, Runtime *runtime)
+{
+  log_taskbench.info("Init at point %lld", task->index_point[0]);
+
+  char *scratch_ptr = NULL;
+  size_t scratch_bytes = 0;
+  Rect<1> scratch_rect = runtime->get_index_space_domain(
+    regions[0].get_logical_region().get_index_space());
+  get_base_and_size(runtime, regions[0], task->regions[0], scratch_rect, scratch_ptr, scratch_bytes);
+  TaskGraph::prepare_scratch(scratch_ptr, scratch_bytes);
+}
+
 void leaf(const Task *task,
           const std::vector<PhysicalRegion> &regions,
           Context ctx, Runtime *runtime)
@@ -159,6 +174,8 @@ private:
   void execute_main_loop();
 
   void execute_timestep(size_t i, long t);
+
+  void init(size_t i);
 
   void issue_execution_fence_and_block();
 
@@ -269,6 +286,10 @@ void LegionApp::run()
     display();
   }
 
+  for (size_t idx = 0; idx < graphs.size(); ++idx) {
+    init(idx);
+  }
+
   execute_main_loop(); // warm-up
 
   issue_execution_fence_and_block();
@@ -329,6 +350,29 @@ void LegionApp::execute_main_loop()
   }
 }
 
+void LegionApp::init(size_t idx)
+{
+  const TaskGraph &g = graphs[idx];
+
+  Rect<1> bounds(0, g.max_width-1);
+
+  if (g.scratch_bytes_per_task != 0) {
+    for (long i = 0; i < num_fields; ++i) {
+      FieldID fout(FID_FIRST + i);
+      IndexLauncher launcher(TID_INIT, bounds, TaskArgument(), ArgumentMap());
+      MappingTagID tag = exact_instance ? Legion::Mapping::DefaultMapper::EXACT_REGION : 0;
+      const LogicalRegionT<1> &sratch_region = scratch_regions[idx];
+      const LogicalPartitionT<1> &scratch = scratch_partitions[idx];
+      launcher.add_region_requirement(
+        RegionRequirement(scratch, 0 /* default projection */,
+                          READ_WRITE, EXCLUSIVE, sratch_region, tag)
+        .add_field(fout));
+
+      runtime->execute_index_space(ctx, launcher);
+    }
+  }
+}
+
 void LegionApp::execute_timestep(size_t idx, long t)
 {
   const TaskGraph &g = graphs[idx];
@@ -372,7 +416,7 @@ void LegionApp::execute_timestep(size_t idx, long t)
     const LogicalPartitionT<1> &scratch = scratch_partitions[idx];
     launcher.add_region_requirement(
       RegionRequirement(scratch, 0 /* default projection */,
-                        WRITE_DISCARD, EXCLUSIVE, sratch_region, tag)
+                        READ_WRITE, EXCLUSIVE, sratch_region, tag)
       .add_field(fout));
   }
 
@@ -417,6 +461,13 @@ int main(int argc, char **argv)
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     registrar.set_replicable();
     Runtime::preregister_task_variant<top>(registrar, "top");
+  }
+
+  {
+    TaskVariantRegistrar registrar(TID_INIT, "init");
+    registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
+    registrar.set_leaf();
+    Runtime::preregister_task_variant<init>(registrar, "init");
   }
 
   {

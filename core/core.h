@@ -69,6 +69,7 @@ struct TaskGraph : public task_graph_t {
                      const char **input_ptr, const size_t *input_bytes,
                      size_t n_inputs,
                      char *scratch_ptr, size_t scratch_bytes) const;
+  static void prepare_scratch(char *scratch_ptr, size_t scratch_bytes);
 };
 
 struct App {

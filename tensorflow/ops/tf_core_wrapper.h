@@ -59,6 +59,7 @@ inline void compute_generic(OpKernelContext* context)
 
   std::vector<char> output(graph.output_bytes_per_task);
   std::vector<char> scratch(graph.scratch_bytes_per_task);
+  TaskGraph::prepare_scratch(scratch.data(), scratch.size());
 
   task_graph_execute_point_scratch(graph, timestep, point,
                            const_cast<char *>(output.data()), output.size(),

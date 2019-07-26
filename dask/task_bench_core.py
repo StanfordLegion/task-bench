@@ -151,7 +151,10 @@ def execute_point_no_scratch(graph_array, timestep, point, *inputs):
 
 
 def init_scratch_direct(scratch_bytes):
-    return np.empty(scratch_bytes, dtype=np.ubyte)
+    scratch = np.empty(scratch_bytes, dtype=np.ubyte)
+    scratch_ptr = ffi.cast("char *", scratch.ctypes.data)
+    c.task_graph_prepare_scratch(scratch_ptr, scratch_bytes)
+    return scratch
 
 
 @dask.delayed

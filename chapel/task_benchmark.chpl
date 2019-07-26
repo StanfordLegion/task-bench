@@ -131,6 +131,7 @@ proc execute_task_graph2(graph, task_result, task_ready, task_used) {
 
     var scratch_bytes = graph.scratch_bytes_per_task;
     var scratch_ptr = c_malloc(int(8), scratch_bytes);
+    task_graph_prepare_scratch(scratch_ptr, scratch_bytes);
 
     // Initialize input_ptr and input_bytes... these don't need to
     // change because we can just set n_inputs dynamically.

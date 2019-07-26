@@ -150,6 +150,21 @@ terra execute_point(runtime : c.legion_runtime_t,
   c.legion_accessor_array_1d_destroy(scratch_acc)
 end
 
+terra prepare_scratch(runtime : c.legion_runtime_t,
+                      scratch : c.legion_physical_region_t[1],
+                      scratch_fields : c.legion_field_id_t[1])
+  var scratch_acc = c.legion_physical_region_get_field_accessor_array_1d(
+    scratch[0], scratch_fields[0])
+
+  var scratch_r = c.legion_physical_region_get_logical_region(scratch[0])
+  var scratch_is = scratch_r.index_space
+  var scratch_ptr, scratch_size = get_base_and_size(runtime, scratch_acc, scratch_is)
+
+  core.task_graph_prepare_scratch([&int8](scratch_ptr), scratch_size)
+
+  c.legion_accessor_array_1d_destroy(scratch_acc)
+end
+
 local point_task = terralib.memoize(function(n_inputs, field_idx)
   local input_field = fields[(field_idx - 1 + #fields - 1) % #fields + 1]
   local output_field = fields[field_idx]
@@ -223,6 +238,11 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
   t:set_name("point_task_n_inputs_" .. n_inputs .. "_field_idx_" .. field_idx)
   return t
 end)
+
+task init_scratch(scratch : region(ispace(int1d), fs))
+where reads writes(scratch.x) do
+  prepare_scratch(__runtime(), __physical(scratch), __fields(scratch))
+end
 
 terra domain_point(point : c.coord_t)
   return c.legion_domain_point_from_point_1d(
@@ -423,9 +443,16 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
         regentlib.assert(period % core.task_graph_timestep_period(graph) == 0, "precomputed period is not divisible by task graph period")
         var [max_timesteps] = graph.timesteps
         var [max_width] = graph.max_width
-        __demand(__spmd, __trace)
-        for [timestep] = 0, max_timesteps + period - 1, period do
-          [body_actions]
+        __demand(__spmd)
+        do
+          for point = 0, max_width do
+            init_scratch([pscratch[graph_idx]][point])
+          end
+
+          __demand(__trace)
+          for [timestep] = 0, max_timesteps + period - 1, period do
+            [body_actions]
+          end
         end
       end)
     end
