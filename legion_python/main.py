@@ -25,7 +25,7 @@ import sys
 import time
 
 import legion
-from legion import task, R, RW, ID
+from legion import index_launch, task, Domain, Fspace, Ispace, Partition, R, Region, RW, ID
 
 
 root_dir = os.path.dirname(os.path.dirname(__file__))
@@ -109,15 +109,15 @@ def init_partitions(graphs, num_fields):
 
     dset_max_args = []
 
-    fspace = legion.Fspace.create(
+    fspace = Fspace(
         dict((str(x), legion.uint8) for x in range(num_fields)))
 
     for graph in graphs:
-        colors = legion.Ispace.create([graph.max_width])
+        colors = Ispace([graph.max_width])
         result.append(
-            legion.Region.create([graph.max_width * graph.output_bytes_per_task], fspace))
+            Region([graph.max_width * graph.output_bytes_per_task], fspace))
         primary.append(
-            legion.Partition.create_equal(result[-1], colors))
+            Partition.equal(result[-1], colors))
 
         num_dsets = c.task_graph_max_dependence_sets(graph)
         secondary.append([])
@@ -127,18 +127,18 @@ def init_partitions(graphs, num_fields):
             num_args = 0
             for arg in range(max_args):
                 secondary[-1][-1].append(
-                    legion.Partition.create_pending(result[-1], colors))
+                    Partition.pending(result[-1], colors))
                 for point in range(graph.max_width):
                     deps = list(task_graph_dependencies(graph, dset, point))
                     num_args = max(num_args, len(deps))
-                    secondary[-1][-1][-1].create_union([point], [primary[-1][deps[arg]]] if arg < len(deps) else [])
+                    secondary[-1][-1][-1].union([point], [primary[-1][deps[arg]]] if arg < len(deps) else [])
             dset_max_args[-1].append(num_args)
 
         if graph.scratch_bytes_per_task > 0:
             scratch.append(
-                legion.Region.create([graph.max_width * graph.scratch_bytes_per_task], fspace))
+                Region([graph.max_width * graph.scratch_bytes_per_task], fspace))
             p_scratch.append(
-                legion.Partition.create_equal(scratch[-1], colors))
+                Partition.equal(scratch[-1], colors))
         else:
             scratch.append(None)
             p_scratch.append(None)
@@ -285,7 +285,7 @@ def execute_timestep(graph, num_fields, timestep,
     width = c.task_graph_width_at_timestep(graph, timestep)
     dset = c.task_graph_dependence_set_at_timestep(graph, timestep)
 
-    colors = legion.Domain.create([width], [offset])
+    colors = Domain([width], [offset])
 
     num_args = dset_max_args[dset]
 
@@ -300,7 +300,7 @@ def execute_timestep(graph, num_fields, timestep,
     else:
         point_task_args.append(p_scratch[ID])
     point_task_args.extend(secondary[dset][arg][ID] for arg in range(num_args))
-    legion.index_launch(colors, point_task, *point_task_args)
+    index_launch(colors, point_task, *point_task_args)
 
 
 def execute_main_loop(graphs, num_fields,
