@@ -39,7 +39,14 @@ int main(int argc, char *argv[])
 
     size_t scratch_bytes = graph.scratch_bytes_per_task;
     scratch.emplace_back(scratch_bytes * n_points);
-    TaskGraph::prepare_scratch(scratch.back().data(), scratch.back().size());
+
+    char *scratch_ptr = scratch.back().data();
+
+    #pragma omp parallel for schedule(runtime)
+    for (long point = first_point; point <= last_point; ++point) {
+      long point_index = point - first_point;
+      TaskGraph::prepare_scratch(scratch_ptr + scratch_bytes * point_index, scratch_bytes);
+    }
   }
 
   double elapsed_time = 0.0;
