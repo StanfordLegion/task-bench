@@ -8,7 +8,7 @@
 
 module unload PrgEnv-intel
 module load PrgEnv-gnu
-module load openmpi
+#module load openmpi
 
 cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
