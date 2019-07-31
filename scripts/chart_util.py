@@ -28,7 +28,7 @@ def get_machine_parameters(machine, processor_kind, resource):
         if resource == 'flops':
             return {'cores': 32, 'peak_flops': 1.263719e+12, 'peak_bytes': None}
         elif resource == 'bytes':
-            return {'cores': 32, 'peak_flops': None, 'peak_bytes': 1.074944e+11}
+            return {'cores': 32, 'peak_flops': None, 'peak_bytes': 7.902120e+10}
         else:
             assert False
     elif machine == 'daint':
