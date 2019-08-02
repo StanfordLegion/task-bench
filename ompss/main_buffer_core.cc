@@ -1,18 +1,3 @@
-/* Copyright 2019 Los Alamos National Laboratory
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include <stdarg.h>
 #include <assert.h>
 #include <string.h>
@@ -25,8 +10,6 @@
 #define VERBOSE_LEVEL 0
 
 #define USE_CORE_VERIFICATION
-
-#define MAX_NUM_ARGS 10
 
 typedef struct tile_s {
   float dep;
@@ -50,9 +33,13 @@ typedef struct matrix_s {
   int N;
 }matrix_t;
 
-char **extra_local_memory;
+#define NB_LOCAL_MEMORY 8
 
-static inline void task1(tile_t *tile_out, payload_t payload)
+char **extra_local_memory;
+int *extra_local_memory_idx;
+int memory_block_size = -1;
+
+void task1(tile_t *tile_out, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -65,14 +52,16 @@ static inline void task1(tile_t *tile_out, payload_t payload)
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else  
   tile_out->dep = 0;
   printf("Task1 tid %d, x %d, y %d, out %f\n", tid, payload.x, payload.y, tile_out->dep);
 #endif  
 }
 
-static inline void task2(tile_t *tile_out, tile_t *tile_in1, payload_t payload)
+void task2(tile_t *tile_out, tile_t *tile_in1, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -85,14 +74,16 @@ static inline void task2(tile_t *tile_out, tile_t *tile_in1, payload_t payload)
   input_bytes.push_back(graph.output_bytes_per_task);
   
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else  
   tile_out->dep = tile_in1->dep + 1;
   printf("Task2 tid %d, x %d, y %d, out %f, in1 %f\n", tid, payload.x, payload.y, tile_out->dep,tile_in1->dep);
 #endif
 }
 
-static inline void task3(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, payload_t payload)
+void task3(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -107,14 +98,16 @@ static inline void task3(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, p
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                     input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                     input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else  
   tile_out->dep = tile_in1->dep + tile_in2->dep + 1;
   printf("Task3 tid %d, x %d, y %d, out %f, in1 %f, in2 %f\n", tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep);
 #endif
 }
 
-static inline void task4(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, payload_t payload)
+void task4(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -131,14 +124,16 @@ static inline void task4(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, t
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + 1;
   printf("Task4 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f\n", tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep, tile_in3->dep);
 #endif
 }
 
-static inline void task5(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, payload_t payload)
+void task5(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -157,14 +152,16 @@ static inline void task5(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, t
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + 1;
   printf("Task5 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f\n", tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep, tile_in3->dep, tile_in4->dep);
 #endif
 }
 
-static inline void task6(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, payload_t payload)
+void task6(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -185,14 +182,16 @@ static inline void task6(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, t
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + 1;
   printf("Task6 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f\n", tid, payload.x, payload.y, tile_out->dep,tile_in1->dep, tile_in2->dep, tile_in3->dep, tile_in4->dep, tile_in5->dep);
 #endif
 }
 
-static inline void task7(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, payload_t payload)
+void task7(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -215,7 +214,9 @@ static inline void task7(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, t
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6->dep + 1;
   printf("Task7 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f\n", 
@@ -223,7 +224,7 @@ static inline void task7(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, t
 #endif
 }
 
-static inline void task8(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, tile_t *tile_in7, payload_t payload)
+void task8(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, tile_t *tile_in7, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -248,7 +249,9 @@ static inline void task8(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, t
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6->dep + tile_in7->dep + 1;
   printf("Task8 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f, in7 %f\n", 
@@ -256,7 +259,7 @@ static inline void task8(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, t
 #endif
 }
 
-static inline void task9(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, tile_t *tile_in7, tile_t *tile_in8, payload_t payload)
+void task9(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, tile_t *tile_in7, tile_t *tile_in8, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -283,7 +286,9 @@ static inline void task9(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, t
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  extra_local_memory_idx[tid]++;
+  extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6->dep + tile_in7->dep + tile_in8->dep + 1;
   printf("Task9 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f, in7 %f, in8 %f\n", 
@@ -291,7 +296,7 @@ static inline void task9(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, t
 #endif
 }
 
-static inline void task10(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, tile_t *tile_in7, tile_t *tile_in8, tile_t *tile_in9, payload_t payload)
+void task10(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in3, tile_t *tile_in4, tile_t *tile_in5, tile_t *tile_in6, tile_t *tile_in7, tile_t *tile_in8, tile_t *tile_in9, payload_t payload)
 {
   int tid = omp_get_thread_num();
 #if defined (USE_CORE_VERIFICATION)    
@@ -320,7 +325,7 @@ static inline void task10(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, 
   input_bytes.push_back(graph.output_bytes_per_task);
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid], graph.scratch_bytes_per_task);
+                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
 #else
   tile_out->dep = tile_in1->dep + tile_in2->dep + tile_in3->dep + tile_in4->dep + tile_in5->dep + tile_in6->dep + tile_in7->dep + tile_in8->dep + tile_in9->dep + 1;
   printf("Task10 tid %d, x %d, y %d, out %f, in1 %f, in2 %f, in3 %f, in4 %f, in5 %f, in6 %f, in7 %f, in8 %f, in9 %f\n", 
@@ -328,22 +333,22 @@ static inline void task10(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, 
 #endif
 }
 
-struct OpenMPApp : public App {
-  OpenMPApp(int argc, char **argv);
-  ~OpenMPApp();
+struct OmpSsApp : public App {
+  OmpSsApp(int argc, char **argv);
+  ~OmpSsApp();
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
 private:
-  void insert_task(task_args_t *args, int num_args, payload_t payload, size_t graph_id);
+  void insert_task(std::vector<task_args_t> args, payload_t payload, size_t graph_id);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
   int nb_workers;
-//  matrix_t *matrix;
+  //matrix_t *matrix;
 };
 
 matrix_t *matrix = NULL;
 
-OpenMPApp::OpenMPApp(int argc, char **argv)
+OmpSsApp::OmpSsApp(int argc, char **argv)
   : App(argc, argv)
 { 
   nb_workers = 1;
@@ -373,35 +378,49 @@ OpenMPApp::OpenMPApp(int argc, char **argv)
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
     
-    printf("graph id %d, M = %d, N = %d, data %p, nb_fields %d\n", i, matrix[i].M, matrix[i].N, matrix[i].data, graph.nb_fields);
+    printf("graph id %d, M = %d, N = %d\n, nb_fields %d", i, matrix[i].M, matrix[i].N, graph.nb_fields);
   }
   
-  extra_local_memory = (char**)malloc(sizeof(char*) * nb_workers);
+  extra_local_memory = (char**)malloc(sizeof(char*) * (nb_workers+1));
   assert(extra_local_memory != NULL);
-  for (int k = 0; k < nb_workers; k++) {
+  extra_local_memory_idx = (int*)malloc(sizeof(int) * nb_workers);
+  assert(extra_local_memory_idx != NULL);
+  for (int k = 0; k < (nb_workers+1); k++) {
     if (max_scratch_bytes_per_task > 0) {
-      extra_local_memory[k] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
-      TaskGraph::prepare_scratch(extra_local_memory[k], sizeof(char)*max_scratch_bytes_per_task);
+      extra_local_memory[k] = (char*)malloc(sizeof(char) * max_scratch_bytes_per_task * NB_LOCAL_MEMORY);
+      //TaskGraph::prepare_scratch(extra_local_memory[k], sizeof(char)*max_scratch_bytes_per_task);
     } else {
       extra_local_memory[k] = NULL;
     }
+    extra_local_memory_idx[k] = 0;
   }
   
- // omp_set_dynamic(1);
-  omp_set_num_threads(nb_workers);
+  memory_block_size = max_scratch_bytes_per_task;
   
+  // omp_set_dynamic(1);
+  omp_set_num_threads(nb_workers);
+
   if (max_scratch_bytes_per_task > 0) {
-    #pragma omp parallel
-    {
-      int tid = omp_get_thread_num();
-      //printf("im tid %d\n", tid);
-      TaskGraph::prepare_scratch(extra_local_memory[tid], sizeof(char)*max_scratch_bytes_per_task);
+    int numa_nodes;
+    nanos_get_num_sockets( &numa_nodes );
+    size_t buffer_size_bytes = sizeof(char)*max_scratch_bytes_per_task;
+    for (int kk = 0; kk < (nb_workers); kk++) {
+      nanos_current_socket( kk % numa_nodes );
+//      printf("init %p, numa_nodes %d\n", extra_local_memory[kk], numa_nodes);
+      #pragma omp task in(kk, buffer_size_bytes)
+      {
+        //printf("init tid %d\n", omp_get_thread_num());
+        for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+          TaskGraph::prepare_scratch(extra_local_memory[kk] + k * max_scratch_bytes_per_task, sizeof(char)*max_scratch_bytes_per_task);
+        }
+      }
     }
+    #pragma omp taskwait
   }
 
 }
 
-OpenMPApp::~OpenMPApp()
+OmpSsApp::~OmpSsApp()
 {
   for (unsigned i = 0; i < graphs.size(); i++) {
     for (int j = 0; j < matrix[i].M * matrix[i].N; j++) {
@@ -423,35 +442,37 @@ OpenMPApp::~OpenMPApp()
   }
   free(extra_local_memory);
   extra_local_memory = NULL;
+  free(extra_local_memory_idx);
+  extra_local_memory_idx = NULL;
 }
 
-void OpenMPApp::execute_main_loop()
+void OmpSsApp::execute_main_loop()
 { 
   display();
   
   Timer::time_start();
   
-  #pragma omp parallel
-  {
-    #pragma omp master
-    {
-      for (unsigned i = 0; i < graphs.size(); i++) {
-        const TaskGraph &g = graphs[i];
+  for (unsigned i = 0; i < graphs.size(); i++) {
+    const TaskGraph &g = graphs[i];
+  
+/*#pragma omp parallel*/
+    //{
+//#pragma omp master
+      /*{*/
         for (int y = 0; y < g.timesteps; y++) {
           execute_timestep(i, y);
         }
-        
-      }
-//      #pragma omp taskwait
-    }
-    #pragma omp barrier
+/*      }*/
+    //}
   }
+
+#pragma omp taskwait  
   
   double elapsed = Timer::time_end();
   report_timing(elapsed);
 }
 
-void OpenMPApp::execute_timestep(size_t idx, long t)
+void OmpSsApp::execute_timestep(size_t idx, long t)
 {
   const TaskGraph &g = graphs[idx];
   long offset = g.offset_at_timestep(t);
@@ -459,34 +480,32 @@ void OpenMPApp::execute_timestep(size_t idx, long t)
   long dset = g.dependence_set_at_timestep(t);
   int nb_fields = g.nb_fields;
   
-  task_args_t args[MAX_NUM_ARGS];
+  std::vector<task_args_t> args;
   payload_t payload;
-  int num_args = 0;
-  int ct = 0;  
-  
+  task_args_t task_args;
+
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);   
-    num_args = 0;
-    ct = 0;    
+    int num_args;    
     
     if (deps.size() == 0) {
       num_args = 1;
       debug_printf(1, "%d[%d] ", x, num_args);
-      args[ct].x = x;
-      args[ct].y = t % nb_fields;
-      ct ++;
+      task_args.x = x;
+      task_args.y = t % nb_fields;
+      args.push_back(task_args);
     } else {
       if (t == 0) {
         num_args = 1;
         debug_printf(1, "%d[%d] ", x, num_args);
-        args[ct].x = x;
-        args[ct].y = t % nb_fields;
-        ct ++;
+        task_args.x = x;
+        task_args.y = t % nb_fields;
+        args.push_back(task_args);
       } else {
         num_args = 1;
-        args[ct].x = x;
-        args[ct].y = t % nb_fields;
-        ct ++;
+        task_args.x = x;
+        task_args.y = t % nb_fields;
+        args.push_back(task_args);
         long last_offset = g.offset_at_timestep(t-1);
         long last_width = g.width_at_timestep(t-1);
         for (std::pair<long, long> dep : deps) {
@@ -494,9 +513,9 @@ void OpenMPApp::execute_timestep(size_t idx, long t)
           debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
             if (i >= last_offset && i < last_offset + last_width) {
-              args[ct].x = i;
-              args[ct].y = (t-1) % nb_fields;
-              ct ++;
+              task_args.x = i;
+              task_args.y = (t-1) % nb_fields;
+              args.push_back(task_args);
             } else {
               num_args --;
             }
@@ -505,25 +524,25 @@ void OpenMPApp::execute_timestep(size_t idx, long t)
       }
     }
     
-    assert(num_args == ct);
-    
     payload.y = t;
     payload.x = x;
     payload.graph = g;
-    insert_task(args, num_args, payload, idx);
+    insert_task(args, payload, idx);
+    args.clear();
   }
 }
 
-void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, size_t graph_id)
+void OmpSsApp::insert_task(std::vector<task_args_t> args, payload_t payload, size_t graph_id)
 {
+  int num_args = args.size();
   tile_t *mat = matrix[graph_id].data;
   int x0 = args[0].x;
   int y0 = args[0].y;
-//  printf("x %d, y %d, mat %p\n", x0, y0, mat);
+ // printf("x %d, y %d\n", x0, y0);
   switch(num_args) {
   case 1:
   {
-    #pragma omp task depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+#pragma omp task depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task1(&mat[y0 * matrix[graph_id].N + x0], payload);
     break;
   }
@@ -532,7 +551,7 @@ void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, 
   {
     int x1 = args[1].x;
     int y1 = args[1].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task2(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], payload);
     break;
@@ -544,7 +563,7 @@ void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, 
     int y1 = args[1].y;
     int x2 = args[2].x;
     int y2 = args[2].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task3(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], payload);
@@ -559,7 +578,7 @@ void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, 
     int y2 = args[2].y;
     int x3 = args[3].x;
     int y3 = args[3].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task4(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -577,7 +596,7 @@ void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, 
     int y3 = args[3].y;
     int x4 = args[4].x;
     int y4 = args[4].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task5(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -598,7 +617,7 @@ void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, 
     int y4 = args[4].y;
     int x5 = args[5].x;
     int y5 = args[5].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(inout: mat[y0 * matrix[graph_id].N + x0])
       task6(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -622,7 +641,7 @@ void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, 
     int y5 = args[5].y;
     int x6 = args[6].x;
     int y6 = args[6].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
       task7(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -649,7 +668,7 @@ void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, 
     int y6 = args[6].y;
     int x7 = args[7].x;
     int y7 = args[7].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(in: mat[y7 * matrix[graph_id].N + x7]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(in: mat[y7 * matrix[graph_id].N + x7]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
       task8(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -679,7 +698,7 @@ void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, 
     int y7 = args[7].y;
     int x8 = args[8].x;
     int y8 = args[8].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(in: mat[y7 * matrix[graph_id].N + x7]) depend(in: mat[y8 * matrix[graph_id].N + x8]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(in: mat[y7 * matrix[graph_id].N + x7]) depend(in: mat[y8 * matrix[graph_id].N + x8]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
       task9(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -712,7 +731,7 @@ void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, 
     int y8 = args[8].y;
     int x9 = args[9].x;
     int y9 = args[9].y;
-    #pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(in: mat[y7 * matrix[graph_id].N + x7]) depend(in: mat[y8 * matrix[graph_id].N + x8]) depend(in: mat[y9 * matrix[graph_id].N + x9]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
+#pragma omp task depend(in: mat[y1 * matrix[graph_id].N + x1]) depend(in: mat[y2 * matrix[graph_id].N + x2]) depend(in: mat[y3 * matrix[graph_id].N + x3]) depend(in: mat[y4 * matrix[graph_id].N + x4]) depend(in: mat[y5 * matrix[graph_id].N + x5]) depend(in: mat[y6 * matrix[graph_id].N + x6]) depend(in: mat[y7 * matrix[graph_id].N + x7]) depend(in: mat[y8 * matrix[graph_id].N + x8]) depend(in: mat[y9 * matrix[graph_id].N + x9]) depend(inout: mat[y0 * matrix[graph_id].N + x0]) untied mergeable
       task10(&mat[y0 * matrix[graph_id].N + x0], 
             &mat[y1 * matrix[graph_id].N + x1], 
             &mat[y2 * matrix[graph_id].N + x2], 
@@ -731,7 +750,7 @@ void OpenMPApp::insert_task(task_args_t *args, int num_args, payload_t payload, 
   };
 }
 
-void OpenMPApp::debug_printf(int verbose_level, const char *format, ...)
+void OmpSsApp::debug_printf(int verbose_level, const char *format, ...)
 {
   if (verbose_level > VERBOSE_LEVEL) {
     return;
@@ -744,7 +763,7 @@ void OpenMPApp::debug_printf(int verbose_level, const char *format, ...)
 
 int main(int argc, char ** argv)
 {
-  OpenMPApp app(argc, argv);
+  OmpSsApp app(argc, argv);
   app.execute_main_loop();
 
   return 0;
