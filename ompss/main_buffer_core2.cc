@@ -38,6 +38,7 @@ typedef struct matrix_s {
 char **extra_local_memory;
 int *extra_local_memory_idx;
 int memory_block_size = -1;
+int *extra_local_memory_init_flag;
 
 void task1(tile_t *tile_out, payload_t payload)
 {
@@ -50,6 +51,13 @@ void task1(tile_t *tile_out, payload_t payload)
   std::vector<size_t> input_bytes;
   input_ptrs.push_back((char*)tile_out->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
+  
+  if (extra_local_memory_init_flag[tid] == 1) {
+    for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+    }
+    extra_local_memory_init_flag[tid] = 2;
+  }
   
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
@@ -72,6 +80,13 @@ void task2(tile_t *tile_out, tile_t *tile_in1, payload_t payload)
   std::vector<size_t> input_bytes;
   input_ptrs.push_back((char*)tile_in1->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
+  
+  if (extra_local_memory_init_flag[tid] == 1) {
+    for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+    }
+    extra_local_memory_init_flag[tid] = 2;
+  }
   
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
@@ -96,6 +111,13 @@ void task3(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, payload_t paylo
   input_bytes.push_back(graph.output_bytes_per_task);
   input_ptrs.push_back((char*)tile_in2->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
+  
+  if (extra_local_memory_init_flag[tid] == 1) {
+    for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+    }
+    extra_local_memory_init_flag[tid] = 2;
+  }
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
@@ -122,6 +144,13 @@ void task4(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
   input_ptrs.push_back((char*)tile_in3->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
+  
+  if (extra_local_memory_init_flag[tid] == 1) {
+    for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+    }
+    extra_local_memory_init_flag[tid] = 2;
+  }
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
@@ -150,6 +179,13 @@ void task5(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
   input_ptrs.push_back((char*)tile_in4->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
+  
+  if (extra_local_memory_init_flag[tid] == 1) {
+    for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+    }
+    extra_local_memory_init_flag[tid] = 2;
+  }
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
@@ -180,6 +216,13 @@ void task6(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
   input_ptrs.push_back((char*)tile_in5->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
+  
+  if (extra_local_memory_init_flag[tid] == 1) {
+    for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+    }
+    extra_local_memory_init_flag[tid] = 2;
+  }
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
@@ -212,6 +255,13 @@ void task7(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
   input_ptrs.push_back((char*)tile_in6->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
+  
+  if (extra_local_memory_init_flag[tid] == 1) {
+    for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+    }
+    extra_local_memory_init_flag[tid] = 2;
+  }
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
@@ -247,6 +297,13 @@ void task8(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
   input_ptrs.push_back((char*)tile_in7->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
+  
+  if (extra_local_memory_init_flag[tid] == 1) {
+    for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+    }
+    extra_local_memory_init_flag[tid] = 2;
+  }
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
@@ -284,6 +341,13 @@ void task9(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_in
   input_bytes.push_back(graph.output_bytes_per_task);
   input_ptrs.push_back((char*)tile_in8->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
+  
+  if (extra_local_memory_init_flag[tid] == 1) {
+    for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+    }
+    extra_local_memory_init_flag[tid] = 2;
+  }
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
@@ -323,6 +387,13 @@ void task10(tile_t *tile_out, tile_t *tile_in1, tile_t *tile_in2, tile_t *tile_i
   input_bytes.push_back(graph.output_bytes_per_task);
   input_ptrs.push_back((char*)tile_in9->output_buff);
   input_bytes.push_back(graph.output_bytes_per_task);
+  
+  if (extra_local_memory_init_flag[tid] == 1) {
+    for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+    }
+    extra_local_memory_init_flag[tid] = 2;
+  }
 
   graph.execute_point(payload.y, payload.x, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
@@ -387,12 +458,16 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   assert(extra_local_memory != NULL);
   extra_local_memory_idx = (int*)malloc(sizeof(int) * nb_workers);
   assert(extra_local_memory_idx != NULL);
+  extra_local_memory_init_flag = (int*)malloc(sizeof(int) * nb_workers);
+  assert(extra_local_memory_init_flag != NULL);
   for (int k = 0; k < (nb_workers+1); k++) {
     if (max_scratch_bytes_per_task > 0) {
       extra_local_memory[k] = (char*)malloc(sizeof(char) * max_scratch_bytes_per_task * NB_LOCAL_MEMORY);
       //TaskGraph::prepare_scratch(extra_local_memory[k], sizeof(char)*max_scratch_bytes_per_task);
+      extra_local_memory_init_flag[k] = 1;
     } else {
       extra_local_memory[k] = NULL;
+      extra_local_memory_init_flag[k] = 0;
     }
     extra_local_memory_idx[k] = 0;
   }
@@ -401,24 +476,6 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   
   // omp_set_dynamic(1);
   omp_set_num_threads(nb_workers);
-
-  if (max_scratch_bytes_per_task > 0) {
-    int numa_nodes;
-    nanos_get_num_sockets( &numa_nodes );
-    size_t buffer_size_bytes = sizeof(char)*max_scratch_bytes_per_task;
-    for (int kk = 0; kk < (nb_workers); kk++) {
-      nanos_current_socket( kk % numa_nodes );
-//      printf("init %p, numa_nodes %d\n", extra_local_memory[kk], numa_nodes);
-      #pragma omp task in(kk, buffer_size_bytes)
-      {
-        //printf("init tid %d\n", omp_get_thread_num());
-        for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-          TaskGraph::prepare_scratch(extra_local_memory[kk] + k * max_scratch_bytes_per_task, sizeof(char)*max_scratch_bytes_per_task);
-        }
-      }
-    }
-    #pragma omp taskwait
-  }
 
 }
 
@@ -446,6 +503,8 @@ OmpSsApp::~OmpSsApp()
   extra_local_memory = NULL;
   free(extra_local_memory_idx);
   extra_local_memory_idx = NULL;
+  free(extra_local_memory_init_flag);
+  extra_local_memory_init_flag = NULL;
 }
 
 void OmpSsApp::execute_main_loop()
