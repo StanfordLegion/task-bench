@@ -47,8 +47,13 @@ if [[ $USE_MPI_OPENMP -eq 1 ]]; then
     )
 fi
 
-if [[ $USE_GASNET -eq 1 ]]; then
+if [[ $USE_GASNET -eq 1 || $TASKBENCH_USE_GASNET -eq 1 ]]; then
     make -C "$GASNET_DIR"
+fi
+
+if [[ $TASKBENCH_USE_GASNET -eq 1 ]]; then
+    make -C gasnet clean
+    make -C gasnet -j$THREADS
 fi
 
 if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
