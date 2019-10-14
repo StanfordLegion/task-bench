@@ -150,7 +150,6 @@ static bool check_and_run(long graph_index, long point) {
 
   bool ready = point_timestep < graph.timesteps && point_input_ready == n_inputs && point_output_empty;
   if (ready) {
-    printf("check_and_run graph %ld timestep %ld point %ld last_field %ld ready %d\n", graph_index, timestep, point, last_field, ready);
     graph.execute_point(timestep, point,
                         point_output.data(), point_output.size(),
                         point_input_ptr.data(), point_input_bytes.data(), n_inputs,
@@ -200,8 +199,6 @@ static void recv_handler(gex_Token_t token, void *buffer, size_t size,
     assert(first_dep <= last_dep);
     input_idx += std::min(last_dep, (long)source_point) - std::min(first_dep, (long)source_point);
   }
-
-  printf("recv_handler graph %d timestep %d source %d dest %d last_field %ld input_idx %ld input %p\n", graph_index, timestep, source_point, dest_point, input_idx, last_field, point_inputs[input_idx].data());
 
   point_inputs[input_idx].assign((char *)buffer, ((char *)buffer) + size);
   point_input_ready++;
@@ -447,8 +444,6 @@ int main(int argc, char *argv[])
           long point;
           std::tie<long, long, long>(graph_index, timestep, point) = send;
 
-          printf("local completion for graph %ld timestep %ld point %ld\n", graph_index, timestep, point);
-
           auto &graph = state.graphs[graph_index];
 
           long first_point = rank * graph.max_width / n_ranks;
@@ -493,4 +488,8 @@ int main(int argc, char *argv[])
   }
 
   gex_HSL_Destroy(&state.lock);
+
+  gex_Event_Wait(gex_Coll_BarrierNB(tm, 0));
+
+  gasnet_exit(0);
 }
