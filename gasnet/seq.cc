@@ -129,7 +129,11 @@ static bool check_and_run(long graph_index, long point) {
   long last_offset = graph.offset_at_timestep(timestep-1);
   long last_width = graph.width_at_timestep(timestep-1);
 
+  long next_offset = graph.offset_at_timestep(timestep+1);
+  long next_width = graph.width_at_timestep(timestep+1);
+
   long dset = graph.dependence_set_at_timestep(timestep);
+  long next_dset = graph.dependence_set_at_timestep(timestep+1);
 
   auto &point_inputs = state.inputs[graph_index][point_index][last_field];
   auto &point_input_ready = state.input_ready[graph_index][point_index][last_field];
@@ -139,6 +143,7 @@ static bool check_and_run(long graph_index, long point) {
   auto &point_output_empty = state.output_empty[graph_index][point_index][field];
   auto &point_scratch = state.scratch[graph_index][point_index];
   auto &point_deps = state.dependencies[graph_index][dset][point_index];
+  auto &point_rev_deps = state.reverse_dependencies[graph_index][next_dset][point_index];
 
   long n_inputs = 0;
   for (auto interval : point_deps) {
@@ -148,16 +153,26 @@ static bool check_and_run(long graph_index, long point) {
     n_inputs += last_dep - first_dep;
   }
 
+  long n_outputs = 0;
+  for (auto interval : point_rev_deps) {
+    long first_dep = std::min(std::max(interval.first, next_offset), next_offset + next_width);
+    long last_dep = std::min(interval.second + 1, next_offset + next_width);
+    assert(first_dep <= last_dep);
+    n_outputs += last_dep - first_dep;
+  }
+
   bool ready = point_timestep < graph.timesteps && point_input_ready == n_inputs && point_output_empty;
+  printf("check_and_run graph %ld timestep %ld point %ld last_field %ld ready %d (timestep %d input %d output %d)\n",
+         graph_index, timestep, point, last_field, ready,
+         point_timestep < graph.timesteps, point_input_ready == n_inputs, point_output_empty);
   if (ready) {
-    printf("check_and_run graph %ld timestep %ld point %ld last_field %ld ready %d\n", graph_index, timestep, point, last_field, ready);
     graph.execute_point(timestep, point,
                         point_output.data(), point_output.size(),
                         point_input_ptr.data(), point_input_bytes.data(), n_inputs,
                         point_scratch.data(), point_scratch.size());
 
     point_input_ready = 0;
-    point_output_empty = 0;
+    point_output_empty = n_outputs == 0;
 
     ++point_timestep;
 
