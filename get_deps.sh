@@ -84,7 +84,12 @@ if [[ $USE_GASNET -eq 1 || $TASKBENCH_USE_GASNET -eq 1 ]]; then
     export GASNET_DIR="$PWD"/deps/gasnet
     cat >>deps/env.sh <<EOF
 export GASNET_DIR="$GASNET_DIR"
-export GASNET="\$GASNET_DIR"/release
+export GASNET_DEBUG="${GASNET_DEBUG:-0}"
+if [[ \$GASNET_DEBUG -eq 0 ]]; then
+    export GASNET="\$GASNET_DIR"/release
+else
+    export GASNET="\$GASNET_DIR"/debug
+fi
 export CONDUIT=$CONDUIT
 EOF
     git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
