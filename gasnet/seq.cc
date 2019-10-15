@@ -76,7 +76,20 @@ static bool is_complete() {
       long point_index = point - first_point;
 
       auto &point_timestep = state.timesteps[graph.graph_index][point_index];
-      complete = complete && point_timestep == graph.timesteps;
+
+      // Copy so we don't modify the global value.
+      long timestep = point_timestep;
+
+      for (; timestep < graph.timesteps; ++timestep) {
+        long offset = graph.offset_at_timestep(timestep);
+        long width = graph.width_at_timestep(timestep);
+
+        if (point >= offset && point < offset + width)
+          break;
+        printf("is_complete point %ld timestep %ld offset %ld width %ld\n", point, timestep, offset, width);
+      }
+
+      complete = complete && timestep == graph.timesteps;
       if (!complete) break;
     }
     if (!complete) break;
@@ -121,19 +134,26 @@ static bool check_and_run(long graph_index, long point) {
 
   auto &point_timestep = state.timesteps[graph_index][point_index];
 
-  long timestep = point_timestep;
+  for (; point_timestep < graph.timesteps; ++point_timestep) {
+    long offset = graph.offset_at_timestep(point_timestep);
+    long width = graph.width_at_timestep(point_timestep);
 
-  long last_field = (timestep + state.num_fields - 1) % state.num_fields;
-  long field = timestep % state.num_fields;
+    if (point >= offset && point < offset + width)
+      break;
+  }
+  assert(point_timestep < graph.timesteps);
 
-  long last_offset = graph.offset_at_timestep(timestep-1);
-  long last_width = graph.width_at_timestep(timestep-1);
+  long last_offset = graph.offset_at_timestep(point_timestep-1);
+  long last_width = graph.width_at_timestep(point_timestep-1);
 
-  long next_offset = graph.offset_at_timestep(timestep+1);
-  long next_width = graph.width_at_timestep(timestep+1);
+  long next_offset = graph.offset_at_timestep(point_timestep+1);
+  long next_width = graph.width_at_timestep(point_timestep+1);
 
-  long dset = graph.dependence_set_at_timestep(timestep);
-  long next_dset = graph.dependence_set_at_timestep(timestep+1);
+  long last_field = (point_timestep + state.num_fields - 1) % state.num_fields;
+  long field = point_timestep % state.num_fields;
+
+  long dset = graph.dependence_set_at_timestep(point_timestep);
+  long next_dset = graph.dependence_set_at_timestep(point_timestep+1);
 
   auto &point_inputs = state.inputs[graph_index][point_index][last_field];
   auto &point_input_ready = state.input_ready[graph_index][point_index][last_field];
@@ -162,14 +182,15 @@ static bool check_and_run(long graph_index, long point) {
   }
 
   bool ready = point_timestep < graph.timesteps && point_input_ready == n_inputs && point_output_empty;
-  printf("check_and_run graph %ld timestep %ld point %ld last_field %ld ready %d (timestep %d input %d output %d)\n",
-         graph_index, timestep, point, last_field, ready,
-         point_timestep < graph.timesteps, point_input_ready == n_inputs, point_output_empty);
+  printf("check_and_run graph %ld timestep %ld point %ld last_field %ld ready %d (timestep %d input %d output %d) n_inputs %ld n_outputs %ld input_ready %ld\n",
+         graph_index, point_timestep, point, last_field, ready,
+         point_timestep < graph.timesteps, point_input_ready == n_inputs, point_output_empty,
+         n_inputs, n_outputs, point_input_ready);
   for (long input_idx = 0; input_idx < n_inputs; ++input_idx) {
     printf("  input %ld content %ld %ld\n", input_idx, ((long *)(point_input_ptr[input_idx]))[0], ((long *)(point_input_ptr[input_idx]))[1]);
   }
   if (ready) {
-    graph.execute_point(timestep, point,
+    graph.execute_point(point_timestep, point,
                         point_output.data(), point_output.size(),
                         point_input_ptr.data(), point_input_bytes.data(), n_inputs,
                         point_scratch.data(), point_scratch.size());
@@ -412,6 +433,7 @@ int main(int argc, char *argv[])
     double start_time = Timer::get_cur_time();
 
     while (!is_complete()) {
+      // Send data for RAW dependencies
       for (auto graph : app.graphs) {
         long first_point = rank * graph.max_width / n_ranks;
         long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
@@ -441,13 +463,14 @@ int main(int argc, char *argv[])
             auto &point_output = outputs[point_index][last_field];
             auto &point_rev_deps = rev_deps[point_index];
 
-            // Send data for RAW dependencies
             if (point >= last_offset && point < last_offset + last_width) {
               for (auto interval : point_rev_deps) {
                 for (long dep = interval.first; dep <= interval.second; dep++) {
                   if (dep < offset || dep >= offset + width) {
                     continue;
                   }
+
+                  printf("send graph %ld timestep %ld source %ld dest %ld\n", graph.graph_index, timestep, point, dep);
 
                   CHECK_OK(gex_AM_RequestMedium(tm, rank_by_point[dep], handlers[0].gex_index,
                                                 point_output.data(), point_output.size(),
@@ -500,7 +523,16 @@ int main(int argc, char *argv[])
           long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
 
           for (long point = first_point; point <= last_point; ++point) {
-            check_and_run(graph.graph_index, point);
+            long point_index = point - first_point;
+
+            long timestep = state.timesteps[graph.graph_index][point_index];
+
+            long offset = graph.offset_at_timestep(timestep);
+            long width = graph.width_at_timestep(timestep);
+
+            if (point >= offset && point < offset + width) {
+              check_and_run(graph.graph_index, point);
+            }
           }
         }
       }
