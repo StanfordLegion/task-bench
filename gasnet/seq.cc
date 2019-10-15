@@ -52,6 +52,7 @@ struct RankState {
   std::vector<std::vector<std::vector<int> > > input_ready;
   std::vector<std::vector<std::vector<int> > > input_consumed;
   std::vector<std::vector<std::vector<int> > > remote_input_empty;
+  std::vector<std::vector<std::vector<long> > > remote_input_timestep;
   std::vector<std::vector<std::vector<std::vector<const char *> > > > input_ptr;
   std::vector<std::vector<std::vector<std::vector<size_t> > > > input_bytes;
   std::vector<std::vector<std::vector<std::vector<char> > > > outputs;
@@ -319,10 +320,18 @@ static void WAR_handler(gex_Token_t token,
 
   long last_field = (timestep + state.num_fields - 1) % state.num_fields;
 
-  printf("WAR_handler graph %d timestep %d dest %d last_field %ld\n", graph_index, timestep, point, last_field);
-
   auto &point_remote_input_empty = state.remote_input_empty[graph_index][point_index][last_field];
+  auto &point_remote_input_timestep = state.remote_input_timestep[graph_index][point_index][last_field];
+
+  if (point_remote_input_timestep != timestep) {
+    point_remote_input_empty = 0;
+    point_remote_input_timestep = timestep;
+  }
+
   point_remote_input_empty++;
+
+  printf("WAR_handler graph %d timestep %d dest %d last_field %ld remote_input_empty %d\n",
+         graph_index, timestep, point, last_field, point_remote_input_empty);
 }
 
 const int N_HANDLERS = 2;
@@ -378,6 +387,7 @@ int main(int argc, char *argv[])
   state.input_ready.resize(app.graphs.size());
   state.input_consumed.resize(app.graphs.size());
   state.remote_input_empty.resize(app.graphs.size());
+  state.remote_input_timestep.resize(app.graphs.size());
   state.input_ptr.resize(app.graphs.size());
   state.input_bytes.resize(app.graphs.size());
   state.outputs.resize(app.graphs.size());
@@ -424,6 +434,7 @@ int main(int argc, char *argv[])
       auto &input_ready = state.input_ready[graph.graph_index];
       auto &input_consumed = state.input_consumed[graph.graph_index];
       auto &remote_input_empty = state.remote_input_empty[graph.graph_index];
+      auto &remote_input_timestep = state.remote_input_timestep[graph.graph_index];
       auto &input_ptr = state.input_ptr[graph.graph_index];
       auto &input_bytes = state.input_bytes[graph.graph_index];
       auto &outputs = state.outputs[graph.graph_index];
@@ -435,6 +446,7 @@ int main(int argc, char *argv[])
       input_ready.resize(n_points);
       input_consumed.resize(n_points);
       remote_input_empty.resize(n_points);
+      remote_input_timestep.resize(n_points);
       input_ptr.resize(n_points);
       input_bytes.resize(n_points);
       outputs.resize(n_points);
@@ -451,6 +463,7 @@ int main(int argc, char *argv[])
         auto &point_input_ready = input_ready[point_index];
         auto &point_input_consumed = input_consumed[point_index];
         auto &point_remote_input_empty = remote_input_empty[point_index];
+        auto &point_remote_input_timestep = remote_input_timestep[point_index];
         auto &point_input_ptr = input_ptr[point_index];
         auto &point_input_bytes = input_bytes[point_index];
         auto &point_outputs = outputs[point_index];
@@ -460,6 +473,7 @@ int main(int argc, char *argv[])
         point_input_ready.resize(state.num_fields);
         point_input_consumed.resize(state.num_fields);
         point_remote_input_empty.resize(state.num_fields);
+        point_remote_input_timestep.resize(state.num_fields);
         point_input_ptr.resize(state.num_fields);
         point_input_bytes.resize(state.num_fields);
         point_outputs.resize(state.num_fields);
@@ -488,6 +502,9 @@ int main(int argc, char *argv[])
 
           auto &field_remote_input_empty = point_remote_input_empty[field];
           field_remote_input_empty = 0;
+
+          auto &field_remote_input_timestep = point_remote_input_timestep[field];
+          field_remote_input_timestep = 0;
 
           auto &field_outputs = point_outputs[field];
           field_outputs.resize(graph.output_bytes_per_task);
@@ -658,16 +675,17 @@ int main(int argc, char *argv[])
 
           long point_index = point - first_point;
 
+          long last_field = (timestep + state.num_fields - 1) % state.num_fields;
           long field = timestep % state.num_fields;
 
-          auto &point_remote_input_empty = state.remote_input_empty[graph_index][point_index][field];
-          point_remote_input_empty = 0;
+          // auto &point_remote_input_empty = state.remote_input_empty[graph_index][point_index][field];
+          // point_remote_input_empty = 0;
 
           auto &point_output_empty = state.output_empty[graph_index][point_index][field];
           point_output_empty = 1;
 
-          printf("marking RAW graph %ld timestep %ld point %ld field %ld remote_input_empty %d output_empty %d\n",
-                 graph_index, timestep, point, field, point_remote_input_empty, point_output_empty);
+          printf("marking RAW graph %ld timestep %ld point %ld last_field %ld field %ld output_empty %d\n",
+                 graph_index, timestep, point, last_field, field, point_output_empty);
         }
         for (auto &send : sends_war) {
           long graph_index;
