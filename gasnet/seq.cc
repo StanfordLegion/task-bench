@@ -159,7 +159,9 @@ static bool check_and_run(long graph_index, long point) {
   }
   // printf("check_and_run graph %ld timestep %ld point %ld\n",
   //        graph_index, point_timestep, point);
-  assert(point_timestep < graph.timesteps);
+  if (point_timestep >= graph.timesteps) {
+    return false;
+  }
 
   long last_offset = graph.offset_at_timestep(point_timestep-1);
   long last_width = graph.width_at_timestep(point_timestep-1);
@@ -190,7 +192,7 @@ static bool check_and_run(long graph_index, long point) {
   long n_inputs = 0;
   for (auto interval : point_deps) {
     long first_dep = std::min(std::max(interval.first, last_offset), last_offset + last_width);
-    long last_dep = std::min(interval.second + 1, last_offset + last_width);
+    long last_dep = std::min(std::max(interval.second + 1, last_offset), last_offset + last_width);
     assert(first_dep <= last_dep);
     n_inputs += last_dep - first_dep;
   }
@@ -198,7 +200,7 @@ static bool check_and_run(long graph_index, long point) {
   long n_outputs = 0;
   for (auto interval : point_rev_deps) {
     long first_dep = std::min(std::max(interval.first, next_offset), next_offset + next_width);
-    long last_dep = std::min(interval.second + 1, next_offset + next_width);
+    long last_dep = std::min(std::max(interval.second + 1, next_offset), next_offset + next_width);
     assert(first_dep <= last_dep);
     n_outputs += last_dep - first_dep;
   }
@@ -206,7 +208,7 @@ static bool check_and_run(long graph_index, long point) {
   long n_consumed = 0;
   for (auto interval : point_deps) {
     long first_dep = std::min(std::max(interval.first, next_field_offset), next_field_offset + next_field_width);
-    long last_dep = std::min(interval.second + 1, next_field_offset + next_field_width);
+    long last_dep = std::min(std::max(interval.second + 1, next_field_offset), next_field_offset + next_field_width);
     assert(first_dep <= last_dep);
     n_consumed += last_dep - first_dep;
   }
@@ -708,12 +710,7 @@ int main(int argc, char *argv[])
               continue;
             }
 
-            long offset = graph.offset_at_timestep(timestep);
-            long width = graph.width_at_timestep(timestep);
-
-            if (point >= offset && point < offset + width) {
-              check_and_run(graph.graph_index, point);
-            }
+            check_and_run(graph.graph_index, point);
           }
         }
       }
