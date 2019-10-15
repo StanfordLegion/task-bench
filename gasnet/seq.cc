@@ -167,6 +167,9 @@ static bool check_and_run(long graph_index, long point) {
   long next_offset = graph.offset_at_timestep(point_timestep+1);
   long next_width = graph.width_at_timestep(point_timestep+1);
 
+  long next_field_offset = graph.offset_at_timestep(point_timestep + state.num_fields - 1);
+  long next_field_width = graph.width_at_timestep(point_timestep + state.num_fields - 1);
+
   long last_field = (point_timestep + state.num_fields - 1) % state.num_fields;
   long field = point_timestep % state.num_fields;
 
@@ -200,6 +203,14 @@ static bool check_and_run(long graph_index, long point) {
     n_outputs += last_dep - first_dep;
   }
 
+  long n_consumed = 0;
+  for (auto interval : point_deps) {
+    long first_dep = std::min(std::max(interval.first, next_field_offset), next_field_offset + next_field_width);
+    long last_dep = std::min(interval.second + 1, next_field_offset + next_field_width);
+    assert(first_dep <= last_dep);
+    n_consumed += last_dep - first_dep;
+  }
+
   bool ready = point_timestep < graph.timesteps && point_input_ready == n_inputs && point_output_empty == 1 && point_input_consumed == 0;
   printf("before check_and_run graph %ld timestep %ld point %ld field %ld last_field %ld input_ready %d n_inputs %ld output_empty %d input_consumed %d\n",
          graph_index, point_timestep, point, field, last_field,
@@ -215,7 +226,7 @@ static bool check_and_run(long graph_index, long point) {
                         point_scratch.data(), point_scratch.size());
 
     point_input_ready = 0;
-    point_input_consumed = 1;
+    point_input_consumed = n_consumed != 0;
     point_output_empty = n_outputs == 0;
 
     printf("after check_and_run graph %ld timestep %ld point %ld field %ld last_field %ld input_ready %d n_inputs %ld output_empty %d input_consumed %d\n",
@@ -600,8 +611,8 @@ int main(int argc, char *argv[])
             long offset = graph.offset_at_timestep(timestep);
             long width = graph.width_at_timestep(timestep);
 
-            long next_offset = graph.offset_at_timestep(timestep + state.num_fields - 1);
-            long next_width = graph.width_at_timestep(timestep + state.num_fields - 1);
+            long next_field_offset = graph.offset_at_timestep(timestep + state.num_fields - 1);
+            long next_field_width = graph.width_at_timestep(timestep + state.num_fields - 1);
 
             long dset = graph.dependence_set_at_timestep(timestep);
 
@@ -610,7 +621,7 @@ int main(int argc, char *argv[])
             if (point >= offset && point < offset + width) {
               for (auto interval : point_deps) {
                 for (long dep = interval.first; dep <= interval.second; dep++) {
-                  if (dep < next_offset || dep >= next_offset + next_width) {
+                  if (dep < next_field_offset || dep >= next_field_offset + next_field_width) {
                     continue;
                   }
 
