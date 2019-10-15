@@ -165,6 +165,9 @@ static bool check_and_run(long graph_index, long point) {
   printf("check_and_run graph %ld timestep %ld point %ld last_field %ld ready %d (timestep %d input %d output %d)\n",
          graph_index, timestep, point, last_field, ready,
          point_timestep < graph.timesteps, point_input_ready == n_inputs, point_output_empty);
+  for (long input_idx = 0; input_idx < n_inputs; ++input_idx) {
+    printf("  input %ld content %ld %ld\n", input_idx, ((long *)(point_input_ptr[input_idx]))[0], ((long *)(point_input_ptr[input_idx]))[1]);
+  }
   if (ready) {
     graph.execute_point(timestep, point,
                         point_output.data(), point_output.size(),
@@ -208,15 +211,24 @@ static void recv_handler(gex_Token_t token, void *buffer, size_t size,
   auto &point_input_ready = state.input_ready[graph_index][point_index][last_field];
   auto &point_deps = state.dependencies[graph_index][dset][point_index];
 
+  printf("recv_handler graph %d timestep %d source %d dest %d\n", graph_index, timestep, source_point, dest_point);
   long input_idx = 0;
   for (auto interval : point_deps) {
     long first_dep = std::min(std::max(interval.first, last_offset), last_offset + last_width);
     long last_dep = std::min(interval.second + 1, last_offset + last_width);
     assert(first_dep <= last_dep);
-    input_idx += std::min(last_dep, (long)source_point) - std::min(first_dep, (long)source_point);
+    if (first_dep <= source_point && source_point <= last_dep) {
+      first_dep = std::min(first_dep, (long)source_point);
+      last_dep = std::min(last_dep, (long)source_point);
+    }
+    printf("  interval %ld %ld first_dep %ld last_dep %ld\n", interval.first, interval.second, first_dep, last_dep);
+    input_idx += last_dep - first_dep;
+    if (first_dep <= source_point && source_point <= last_dep) {
+      break;
+    }
   }
 
-  printf("recv_handler graph %d timestep %d source %d dest %d last_field %ld input_idx %ld input %p\n", graph_index, timestep, source_point, dest_point, input_idx, last_field, point_inputs[input_idx].data());
+  printf("  input_idx %ld input %p\n", input_idx, point_inputs[input_idx].data());
 
   point_inputs[input_idx].assign((char *)buffer, ((char *)buffer) + size);
   point_input_ready++;
