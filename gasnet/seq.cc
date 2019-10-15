@@ -26,6 +26,8 @@
 
 #define CHECK_OK(x) assert((x) == GASNET_OK);
 
+#define printf(...) do {} while(false)
+
 class AutoLock {
 public:
   AutoLock(gex_HSL_t &lock_) : lock(&lock_) {
@@ -140,7 +142,11 @@ static bool check_and_run(long graph_index, long point) {
 
     if (point >= offset && point < offset + width)
       break;
+    printf("advancing graph %ld timestep %ld point %ld\n",
+           graph_index, point_timestep, point);
   }
+  printf("check_and_run graph %ld timestep %ld point %ld\n",
+         graph_index, point_timestep, point);
   assert(point_timestep < graph.timesteps);
 
   long last_offset = graph.offset_at_timestep(point_timestep-1);
@@ -182,7 +188,7 @@ static bool check_and_run(long graph_index, long point) {
   }
 
   bool ready = point_timestep < graph.timesteps && point_input_ready == n_inputs && point_output_empty;
-  printf("check_and_run graph %ld timestep %ld point %ld last_field %ld ready %d (timestep %d input %d output %d) n_inputs %ld n_outputs %ld input_ready %ld\n",
+  printf("check_and_run graph %ld timestep %ld point %ld last_field %ld ready %d (timestep %d input %d output %d) n_inputs %ld n_outputs %ld input_ready %d\n",
          graph_index, point_timestep, point, last_field, ready,
          point_timestep < graph.timesteps, point_input_ready == n_inputs, point_output_empty,
          n_inputs, n_outputs, point_input_ready);
@@ -198,6 +204,7 @@ static bool check_and_run(long graph_index, long point) {
     point_input_ready = 0;
     point_output_empty = n_outputs == 0;
 
+    printf("incrementing graph %ld timestep %ld point %ld\n", graph_index, point_timestep, point);
     ++point_timestep;
 
     return true;
@@ -526,6 +533,10 @@ int main(int argc, char *argv[])
             long point_index = point - first_point;
 
             long timestep = state.timesteps[graph.graph_index][point_index];
+
+            if (timestep >= graph.timesteps) {
+              continue;
+            }
 
             long offset = graph.offset_at_timestep(timestep);
             long width = graph.width_at_timestep(timestep);
