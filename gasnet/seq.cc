@@ -340,9 +340,9 @@ int main(int argc, char *argv[])
   state.rank = rank;
   state.n_ranks = n_ranks;
 
-  uintptr_t max_size = 0; // gasnet_getMaxLocalSegmentSize(); // don't need this with AM Medium
-  gex_Segment_t segment;
-  CHECK_OK(gex_Segment_Attach(&segment, tm, max_size));
+  // uintptr_t max_size = 0; // gasnet_getMaxLocalSegmentSize(); // don't need this with AM Medium
+  // gex_Segment_t segment;
+  // CHECK_OK(gex_Segment_Attach(&segment, tm, max_size));
 
   CHECK_OK(gex_EP_RegisterHandlers(ep, handlers, N_HANDLERS));
 
