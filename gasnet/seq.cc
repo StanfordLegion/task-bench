@@ -26,7 +26,7 @@
 
 #define CHECK_OK(x) assert((x) == GASNET_OK);
 
-// #define printf(...) do {} while(false)
+#define printf(...) do {} while(false)
 
 class AutoLock {
 public:
@@ -181,6 +181,7 @@ static bool check_and_run(long graph_index, long point) {
   long dset = graph.dependence_set_at_timestep(point_timestep);
   long next_dset = graph.dependence_set_at_timestep(point_timestep+1);
   long last_field_dset = graph.dependence_set_at_timestep(point_timestep - state.num_fields + 1);
+  long next_field_dset = graph.dependence_set_at_timestep(point_timestep + state.num_fields - 1);
 
   auto &point_inputs = state.inputs[graph_index][point_index][last_field];
   auto &point_input_ready = state.input_ready[graph_index][point_index][last_field];
@@ -193,7 +194,8 @@ static bool check_and_run(long graph_index, long point) {
   auto &point_scratch = state.scratch[graph_index][point_index];
   auto &point_deps = state.dependencies[graph_index][dset][point_index];
   auto &point_rev_deps = state.reverse_dependencies[graph_index][next_dset][point_index];
-  auto &point_last_field_rev_deps = state.reverse_dependencies[graph_index][next_dset][point_index];
+  auto &point_last_field_rev_deps = state.reverse_dependencies[graph_index][last_field_dset][point_index];
+  auto &point_next_field_rev_deps = state.reverse_dependencies[graph_index][next_field_dset][point_index];
 
   long n_inputs = 0;
   for (auto interval : point_deps) {
@@ -548,6 +550,28 @@ int main(int argc, char *argv[])
     double start_time = Timer::get_cur_time();
 
     while (!is_complete()) {
+      // Run any ready tasks.
+      {
+        AutoLock guard(state.lock);
+
+        for (auto graph : app.graphs) {
+          long first_point = rank * graph.max_width / n_ranks;
+          long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
+
+          for (long point = first_point; point <= last_point; ++point) {
+            long point_index = point - first_point;
+
+            long timestep = state.timesteps[graph.graph_index][point_index];
+
+            if (timestep >= graph.timesteps) {
+              continue;
+            }
+
+            check_and_run(graph.graph_index, point);
+          }
+        }
+      }
+
       // Send data for RAW dependencies
       for (auto graph : app.graphs) {
         long first_point = rank * graph.max_width / n_ranks;
@@ -577,6 +601,8 @@ int main(int argc, char *argv[])
             auto &point_output = outputs[point_index][field];
             auto &point_rev_deps = reverse_dependencies[dset][point_index];
 
+            printf("considering RAW graph %ld timestep %ld point %ld offset %ld width %ld next offset %ld width %ld\n",
+                   graph.graph_index, timestep, point, offset, width, next_offset, next_width);
             if (point >= offset && point < offset + width) {
               for (auto interval : point_rev_deps) {
                 for (long dep = interval.first; dep <= interval.second; dep++) {
@@ -694,28 +720,6 @@ int main(int argc, char *argv[])
       }
       sends_raw.clear();
       sends_war.clear();
-
-      // Run any ready tasks.
-      {
-        AutoLock guard(state.lock);
-
-        for (auto graph : app.graphs) {
-          long first_point = rank * graph.max_width / n_ranks;
-          long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
-
-          for (long point = first_point; point <= last_point; ++point) {
-            long point_index = point - first_point;
-
-            long timestep = state.timesteps[graph.graph_index][point_index];
-
-            if (timestep >= graph.timesteps) {
-              continue;
-            }
-
-            check_and_run(graph.graph_index, point);
-          }
-        }
-      }
 
       // Poll the network to make sure we're making progress.
       CHECK_OK(gasnet_AMPoll());
