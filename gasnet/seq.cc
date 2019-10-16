@@ -26,7 +26,7 @@
 
 #define CHECK_OK(x) assert((x) == GASNET_OK);
 
-#define printf(...) do {} while(false)
+// #define printf(...) do {} while(false)
 
 class AutoLock {
 public:
@@ -52,7 +52,6 @@ struct RankState {
   std::vector<std::vector<std::vector<int> > > input_ready;
   std::vector<std::vector<std::vector<int> > > input_consumed;
   std::vector<std::vector<std::vector<int> > > remote_input_empty;
-  std::vector<std::vector<std::vector<long> > > remote_input_timestep;
   std::vector<std::vector<std::vector<std::vector<const char *> > > > input_ptr;
   std::vector<std::vector<std::vector<std::vector<size_t> > > > input_bytes;
   std::vector<std::vector<std::vector<std::vector<char> > > > outputs;
@@ -170,6 +169,9 @@ static bool check_and_run(long graph_index, long point) {
   long next_offset = graph.offset_at_timestep(point_timestep+1);
   long next_width = graph.width_at_timestep(point_timestep+1);
 
+  long last_field_offset = graph.offset_at_timestep(point_timestep - state.num_fields + 1);
+  long last_field_width = graph.width_at_timestep(point_timestep - state.num_fields + 1);
+
   long next_field_offset = graph.offset_at_timestep(point_timestep + state.num_fields - 1);
   long next_field_width = graph.width_at_timestep(point_timestep + state.num_fields - 1);
 
@@ -182,6 +184,7 @@ static bool check_and_run(long graph_index, long point) {
   auto &point_inputs = state.inputs[graph_index][point_index][last_field];
   auto &point_input_ready = state.input_ready[graph_index][point_index][last_field];
   auto &point_input_consumed = state.input_consumed[graph_index][point_index][last_field];
+  auto &point_remote_input_empty = state.remote_input_empty[graph_index][point_index][field];
   auto &point_input_ptr = state.input_ptr[graph_index][point_index][last_field];
   auto &point_input_bytes = state.input_bytes[graph_index][point_index][last_field];
   auto &point_output = state.outputs[graph_index][point_index][field];
@@ -206,19 +209,29 @@ static bool check_and_run(long graph_index, long point) {
     n_outputs += last_dep - first_dep;
   }
 
-  long n_consumed = 0;
+  long n_war_in = 0;
+  for (auto interval : point_deps) {
+    long first_dep = std::min(std::max(interval.first, last_field_offset), last_field_offset + last_field_width);
+    long last_dep = std::min(std::max(interval.second + 1, last_field_offset), last_field_offset + last_field_width);
+    assert(first_dep <= last_dep);
+    n_war_in += last_dep - first_dep;
+  }
+
+  long n_war_out = 0;
   for (auto interval : point_deps) {
     long first_dep = std::min(std::max(interval.first, next_field_offset), next_field_offset + next_field_width);
     long last_dep = std::min(std::max(interval.second + 1, next_field_offset), next_field_offset + next_field_width);
     assert(first_dep <= last_dep);
-    n_consumed += last_dep - first_dep;
+    n_war_out += last_dep - first_dep;
   }
 
-  bool ready = point_timestep < graph.timesteps && point_input_ready == n_inputs && point_output_empty == 1 && point_input_consumed == 0;
-  printf("before check_and_run graph %ld timestep %ld point %ld field %ld last_field %ld input_ready %d n_inputs %ld output_empty %d input_consumed %d\n",
+  bool ready = point_timestep < graph.timesteps && point_input_ready == n_inputs && point_remote_input_empty == n_war_in && point_output_empty == 1 && point_input_consumed == 0;
+  printf("before check_and_run graph %ld timestep %ld point %ld field %ld last_field %ld input_ready %d n_inputs %ld remote_input_empty %d %p n_war_in %ld output_empty %d input_consumed %d last_field_offset %ld width %ld\n",
          graph_index, point_timestep, point, field, last_field,
          point_input_ready, n_inputs,
-         point_output_empty, point_input_consumed);
+         point_remote_input_empty, &point_remote_input_empty, n_war_in,
+         point_output_empty, point_input_consumed,
+         last_field_offset, last_field_width);
   // for (long input_idx = 0; input_idx < n_inputs; ++input_idx) {
   //   printf("  input %ld content %ld %ld\n", input_idx, ((long *)(point_input_ptr[input_idx]))[0], ((long *)(point_input_ptr[input_idx]))[1]);
   // }
@@ -229,13 +242,15 @@ static bool check_and_run(long graph_index, long point) {
                         point_scratch.data(), point_scratch.size());
 
     point_input_ready = 0;
-    point_input_consumed = n_consumed != 0;
+    point_remote_input_empty = 0;
+    point_input_consumed = n_war_out != 0;
     point_output_empty = n_outputs == 0;
 
-    printf("after check_and_run graph %ld timestep %ld point %ld field %ld last_field %ld input_ready %d n_inputs %ld output_empty %d input_consumed %d\n",
-           graph_index, point_timestep, point, field, last_field,
-           point_input_ready, n_inputs,
-           point_output_empty, point_input_consumed);
+  printf("after check_and_run graph %ld timestep %ld point %ld field %ld last_field %ld input_ready %d n_inputs %ld remote_input_empty %d n_war_in %ld output_empty %d input_consumed %d\n",
+         graph_index, point_timestep, point, field, last_field,
+         point_input_ready, n_inputs,
+         point_remote_input_empty, n_war_in,
+         point_output_empty, point_input_consumed);
 
     ++point_timestep;
 
@@ -321,17 +336,10 @@ static void WAR_handler(gex_Token_t token,
   long last_field = (timestep + state.num_fields - 1) % state.num_fields;
 
   auto &point_remote_input_empty = state.remote_input_empty[graph_index][point_index][last_field];
-  auto &point_remote_input_timestep = state.remote_input_timestep[graph_index][point_index][last_field];
-
-  if (point_remote_input_timestep != timestep) {
-    point_remote_input_empty = 0;
-    point_remote_input_timestep = timestep;
-  }
-
   point_remote_input_empty++;
 
-  printf("WAR_handler graph %d timestep %d dest %d last_field %ld remote_input_empty %d\n",
-         graph_index, timestep, point, last_field, point_remote_input_empty);
+  printf("WAR_handler graph %d timestep %d dest %d last_field %ld remote_input_empty %d %p\n",
+         graph_index, timestep, point, last_field, point_remote_input_empty, &point_remote_input_empty);
 }
 
 const int N_HANDLERS = 2;
@@ -387,7 +395,6 @@ int main(int argc, char *argv[])
   state.input_ready.resize(app.graphs.size());
   state.input_consumed.resize(app.graphs.size());
   state.remote_input_empty.resize(app.graphs.size());
-  state.remote_input_timestep.resize(app.graphs.size());
   state.input_ptr.resize(app.graphs.size());
   state.input_bytes.resize(app.graphs.size());
   state.outputs.resize(app.graphs.size());
@@ -434,7 +441,6 @@ int main(int argc, char *argv[])
       auto &input_ready = state.input_ready[graph.graph_index];
       auto &input_consumed = state.input_consumed[graph.graph_index];
       auto &remote_input_empty = state.remote_input_empty[graph.graph_index];
-      auto &remote_input_timestep = state.remote_input_timestep[graph.graph_index];
       auto &input_ptr = state.input_ptr[graph.graph_index];
       auto &input_bytes = state.input_bytes[graph.graph_index];
       auto &outputs = state.outputs[graph.graph_index];
@@ -446,7 +452,6 @@ int main(int argc, char *argv[])
       input_ready.resize(n_points);
       input_consumed.resize(n_points);
       remote_input_empty.resize(n_points);
-      remote_input_timestep.resize(n_points);
       input_ptr.resize(n_points);
       input_bytes.resize(n_points);
       outputs.resize(n_points);
@@ -463,7 +468,6 @@ int main(int argc, char *argv[])
         auto &point_input_ready = input_ready[point_index];
         auto &point_input_consumed = input_consumed[point_index];
         auto &point_remote_input_empty = remote_input_empty[point_index];
-        auto &point_remote_input_timestep = remote_input_timestep[point_index];
         auto &point_input_ptr = input_ptr[point_index];
         auto &point_input_bytes = input_bytes[point_index];
         auto &point_outputs = outputs[point_index];
@@ -473,7 +477,6 @@ int main(int argc, char *argv[])
         point_input_ready.resize(state.num_fields);
         point_input_consumed.resize(state.num_fields);
         point_remote_input_empty.resize(state.num_fields);
-        point_remote_input_timestep.resize(state.num_fields);
         point_input_ptr.resize(state.num_fields);
         point_input_bytes.resize(state.num_fields);
         point_outputs.resize(state.num_fields);
@@ -502,9 +505,6 @@ int main(int argc, char *argv[])
 
           auto &field_remote_input_empty = point_remote_input_empty[field];
           field_remote_input_empty = 0;
-
-          auto &field_remote_input_timestep = point_remote_input_timestep[field];
-          field_remote_input_timestep = 0;
 
           auto &field_outputs = point_outputs[field];
           field_outputs.resize(graph.output_bytes_per_task);
@@ -548,7 +548,6 @@ int main(int argc, char *argv[])
         long first_point = rank * graph.max_width / n_ranks;
         long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
 
-        auto &remote_input_empty = state.remote_input_empty[graph.graph_index];
         auto &outputs = state.outputs[graph.graph_index];
 
         auto &reverse_dependencies = state.reverse_dependencies[graph.graph_index];
@@ -566,45 +565,28 @@ int main(int argc, char *argv[])
             long next_offset = graph.offset_at_timestep(timestep+1);
             long next_width = graph.width_at_timestep(timestep+1);
 
-            long prev_offset = graph.offset_at_timestep(timestep - state.num_fields + 1);
-            long prev_width = graph.width_at_timestep(timestep - state.num_fields + 1);
-
             long field = timestep % state.num_fields;
 
             long dset = graph.dependence_set_at_timestep(timestep);
 
-            auto &point_remote_input_empty = remote_input_empty[point_index][field];
             auto &point_output = outputs[point_index][field];
             auto &point_rev_deps = reverse_dependencies[dset][point_index];
 
             if (point >= offset && point < offset + width) {
-              long n_war_deps = 0;
               for (auto interval : point_rev_deps) {
-                long start = std::max(interval.first, prev_offset);
-                long stop = std::min(interval.second + 1, prev_offset + prev_width);
-                if (stop > start) {
-                  n_war_deps += stop - start;
-                }
-              }
-
-              printf("considering RAW graph %ld timestep %ld point %ld field %ld remote_input_empty %d n_war_deps %ld\n",
-                     graph.graph_index, timestep, point, field, point_remote_input_empty, n_war_deps);
-              if (point_remote_input_empty == n_war_deps) {
-                for (auto interval : point_rev_deps) {
-                  for (long dep = interval.first; dep <= interval.second; dep++) {
-                    if (dep < next_offset || dep >= next_offset + next_width) {
-                      continue;
-                    }
-
-                    printf("send RAW graph %ld timestep %ld source %ld dest %ld\n", graph.graph_index, timestep, point, dep);
-
-                    CHECK_OK(gex_AM_RequestMedium(tm, rank_by_point[dep], handlers[0].gex_index,
-                                                  point_output.data(), point_output.size(),
-                                                  GEX_EVENT_GROUP, 0,
-                                                  (gex_AM_Arg_t)graph.graph_index, (gex_AM_Arg_t)timestep,
-                                                  (gex_AM_Arg_t)point, (gex_AM_Arg_t)dep));
-                    sends_raw.push_back(std::tuple<long, long, long>(graph.graph_index, timestep, point));
+                for (long dep = interval.first; dep <= interval.second; dep++) {
+                  if (dep < next_offset || dep >= next_offset + next_width) {
+                    continue;
                   }
+
+                  printf("send RAW graph %ld timestep %ld source %ld dest %ld\n", graph.graph_index, timestep, point, dep);
+
+                  CHECK_OK(gex_AM_RequestMedium(tm, rank_by_point[dep], handlers[0].gex_index,
+                                                point_output.data(), point_output.size(),
+                                                GEX_EVENT_GROUP, 0,
+                                                (gex_AM_Arg_t)graph.graph_index, (gex_AM_Arg_t)timestep,
+                                                (gex_AM_Arg_t)point, (gex_AM_Arg_t)dep));
+                  sends_raw.push_back(std::tuple<long, long, long>(graph.graph_index, timestep, point));
                 }
               }
             }
@@ -677,9 +659,6 @@ int main(int argc, char *argv[])
 
           long last_field = (timestep + state.num_fields - 1) % state.num_fields;
           long field = timestep % state.num_fields;
-
-          // auto &point_remote_input_empty = state.remote_input_empty[graph_index][point_index][field];
-          // point_remote_input_empty = 0;
 
           auto &point_output_empty = state.output_empty[graph_index][point_index][field];
           point_output_empty = 1;
