@@ -4,11 +4,11 @@ DEBUG ?= 0
 
 CXXFLAGS ?=
 CXXFLAGS += -std=c++11 -I../core
-CXXFLAGS += $(shell PKG_CONFIG_PATH="$(GASNET)/lib/pkgconfig" pkg-config gasnet-$(CONDUIT)-par --cflags)
+CXXFLAGS += $(shell PKG_CONFIG_PATH="$(GASNET)/lib/pkgconfig" pkg-config gasnet-$(CONDUIT)-seq --cflags)
 
 LDFLAGS ?=
 LDFLAGS += -L../core -lcore_s
-LDFLAGS += $(shell PKG_CONFIG_PATH="$(GASNET)/lib/pkgconfig" pkg-config gasnet-$(CONDUIT)-par --libs)
+LDFLAGS += $(shell PKG_CONFIG_PATH="$(GASNET)/lib/pkgconfig" pkg-config gasnet-$(CONDUIT)-seq --libs)
 
 ifeq ($(strip $(DEBUG)),0)
 	CXXFLAGS += -O3
