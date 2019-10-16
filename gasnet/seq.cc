@@ -180,6 +180,7 @@ static bool check_and_run(long graph_index, long point) {
 
   long dset = graph.dependence_set_at_timestep(point_timestep);
   long next_dset = graph.dependence_set_at_timestep(point_timestep+1);
+  long last_field_dset = graph.dependence_set_at_timestep(point_timestep - state.num_fields + 1);
 
   auto &point_inputs = state.inputs[graph_index][point_index][last_field];
   auto &point_input_ready = state.input_ready[graph_index][point_index][last_field];
@@ -192,6 +193,7 @@ static bool check_and_run(long graph_index, long point) {
   auto &point_scratch = state.scratch[graph_index][point_index];
   auto &point_deps = state.dependencies[graph_index][dset][point_index];
   auto &point_rev_deps = state.reverse_dependencies[graph_index][next_dset][point_index];
+  auto &point_last_field_rev_deps = state.reverse_dependencies[graph_index][next_dset][point_index];
 
   long n_inputs = 0;
   for (auto interval : point_deps) {
@@ -210,9 +212,12 @@ static bool check_and_run(long graph_index, long point) {
   }
 
   long n_war_in = 0;
-  for (auto interval : point_deps) {
+  for (auto interval : point_last_field_rev_deps) {
     long first_dep = std::min(std::max(interval.first, last_field_offset), last_field_offset + last_field_width);
     long last_dep = std::min(std::max(interval.second + 1, last_field_offset), last_field_offset + last_field_width);
+    printf("computing n_war_in interval %ld %ld last_field_offset %ld width %ld first %ld last %ld\n",
+           interval.first, interval.second, last_field_offset, last_field_width,
+           first_dep, last_dep);
     assert(first_dep <= last_dep);
     n_war_in += last_dep - first_dep;
   }
