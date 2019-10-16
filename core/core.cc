@@ -238,14 +238,26 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::TREE:
     return 0;
   case DependenceType::FFT:
-    return (timestep + max_dependence_sets() - 1) % max_dependence_sets();
+    {
+      long dset = (timestep - 1) % max_dependence_sets();
+      if (dset < 0) {
+        dset += max_dependence_sets();
+      }
+      return dset;
+    }
   case DependenceType::ALL_TO_ALL:
   case DependenceType::NEAREST:
     return 0;
   case DependenceType::SPREAD:
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
-    return timestep % max_dependence_sets();
+    {
+      long dset = timestep % max_dependence_sets();
+      if (dset < 0) {
+        dset += max_dependence_sets();
+      }
+      return dset;
+    }
   default:
     assert(false && "unexpected dependence type");
   };
