@@ -287,7 +287,7 @@ static void RAW_handler(gex_Token_t token, void *buffer, size_t size,
   long offset = graph.offset_at_timestep(timestep);
   long width = graph.width_at_timestep(timestep);
 
-  long dset = graph.dependence_set_at_timestep(timestep);
+  long dset = graph.dependence_set_at_timestep(timestep+1);
 
   auto &point_inputs = state.inputs[graph_index][point_index][field];
   auto &point_input_ready = state.input_ready[graph_index][point_index][field];
@@ -529,8 +529,8 @@ int main(int argc, char *argv[])
       auto &dependencies = state.dependencies[graph.graph_index];
       auto &reverse_dependencies = state.reverse_dependencies[graph.graph_index];
 
-      dependencies.resize(n_points);
-      reverse_dependencies.resize(n_points);
+      dependencies.resize(graph.max_dependence_sets());
+      reverse_dependencies.resize(graph.max_dependence_sets());
 
       for (long dset = 0; dset < graph.max_dependence_sets(); ++dset) {
         dependencies[dset].resize(n_points);
@@ -596,7 +596,7 @@ int main(int argc, char *argv[])
 
             long field = timestep % state.num_fields;
 
-            long dset = graph.dependence_set_at_timestep(timestep);
+            long dset = graph.dependence_set_at_timestep(timestep + 1);
 
             auto &point_output = outputs[point_index][field];
             auto &point_rev_deps = reverse_dependencies[dset][point_index];
