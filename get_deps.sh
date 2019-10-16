@@ -92,7 +92,7 @@ else
 fi
 export CONDUIT=$CONDUIT
 EOF
-    git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
+    git clone -b task-bench https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
 fi
 
 if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
