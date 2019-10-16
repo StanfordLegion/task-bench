@@ -26,8 +26,6 @@
 
 #define CHECK_OK(x) assert((x) == GASNET_OK);
 
-#define printf(...) do {} while(false)
-
 class AutoLock {
 public:
   AutoLock(gex_HSL_t &lock_) : lock(&lock_) {
@@ -132,9 +130,6 @@ static std::pair<long, long> timestep_to_send(long graph_index, long point) {
       war_timestep = timestep;
     }
   }
-  printf("timestep_to_send graph %ld timestep %ld point %ld field %ld last_field %ld output_empty %d input_consumed %d raw %ld war %ld\n",
-         graph_index, timestep, point, field, last_field, point_output_empty, point_input_consumed,
-         raw_timestep, war_timestep);
   return std::pair<long, long>(raw_timestep, war_timestep);
 }
 
@@ -157,8 +152,6 @@ static bool check_and_run(long graph_index, long point) {
     if (point >= offset && point < offset + width)
       break;
   }
-  // printf("check_and_run graph %ld timestep %ld point %ld\n",
-  //        graph_index, point_timestep, point);
   if (point_timestep >= graph.timesteps) {
     return false;
   }
@@ -217,9 +210,6 @@ static bool check_and_run(long graph_index, long point) {
   for (auto interval : point_last_field_rev_deps) {
     long first_dep = std::min(std::max(interval.first, last_field_offset), last_field_offset + last_field_width);
     long last_dep = std::min(std::max(interval.second + 1, last_field_offset), last_field_offset + last_field_width);
-    printf("computing n_war_in interval %ld %ld last_field_offset %ld width %ld first %ld last %ld\n",
-           interval.first, interval.second, last_field_offset, last_field_width,
-           first_dep, last_dep);
     assert(first_dep <= last_dep);
     n_war_in += last_dep - first_dep;
   }
@@ -233,15 +223,6 @@ static bool check_and_run(long graph_index, long point) {
   }
 
   bool ready = point_timestep < graph.timesteps && point_input_ready == n_inputs && point_remote_input_empty == n_war_in && point_output_empty == 1 && point_input_consumed == 0;
-  printf("before check_and_run graph %ld timestep %ld point %ld field %ld last_field %ld input_ready %d n_inputs %ld remote_input_empty %d %p n_war_in %ld output_empty %d input_consumed %d last_field_offset %ld width %ld\n",
-         graph_index, point_timestep, point, field, last_field,
-         point_input_ready, n_inputs,
-         point_remote_input_empty, &point_remote_input_empty, n_war_in,
-         point_output_empty, point_input_consumed,
-         last_field_offset, last_field_width);
-  // for (long input_idx = 0; input_idx < n_inputs; ++input_idx) {
-  //   printf("  input %ld content %ld %ld\n", input_idx, ((long *)(point_input_ptr[input_idx]))[0], ((long *)(point_input_ptr[input_idx]))[1]);
-  // }
   if (ready) {
     graph.execute_point(point_timestep, point,
                         point_output.data(), point_output.size(),
@@ -252,12 +233,6 @@ static bool check_and_run(long graph_index, long point) {
     point_remote_input_empty = 0;
     point_input_consumed = n_war_out != 0;
     point_output_empty = n_outputs == 0;
-
-  printf("after check_and_run graph %ld timestep %ld point %ld field %ld last_field %ld input_ready %d n_inputs %ld remote_input_empty %d n_war_in %ld output_empty %d input_consumed %d\n",
-         graph_index, point_timestep, point, field, last_field,
-         point_input_ready, n_inputs,
-         point_remote_input_empty, n_war_in,
-         point_output_empty, point_input_consumed);
 
     ++point_timestep;
 
@@ -293,7 +268,6 @@ static void RAW_handler(gex_Token_t token, void *buffer, size_t size,
   auto &point_input_ready = state.input_ready[graph_index][point_index][field];
   auto &point_deps = state.dependencies[graph_index][dset][point_index];
 
-  printf("RAW_handler graph %d timestep %d source %d dest %d\n", graph_index, timestep, source_point, dest_point);
   long input_idx = 0;
   for (auto interval : point_deps) {
     long first_dep = std::min(std::max(interval.first, offset), offset + width);
@@ -311,19 +285,6 @@ static void RAW_handler(gex_Token_t token, void *buffer, size_t size,
 
   point_inputs[input_idx].assign((char *)buffer, ((char *)buffer) + size);
   point_input_ready++;
-
-  // FIXME: there is a bug that occurs like this:
-  //
-  //  * send RAW
-  //    * run RAW handler (note: happens before the send returns)
-  //      * run task
-  //        * increments timestep
-  //  * send WAR
-  //    * check fails because the timestep has already been incremented
-  //
-  // in other words, there is (probably) a missing synchronization between the WAR send completion and the task being able to run
-
-  // check_and_run(graph_index, dest_point);
 }
 
 static void WAR_handler(gex_Token_t token,
@@ -344,9 +305,6 @@ static void WAR_handler(gex_Token_t token,
 
   auto &point_remote_input_empty = state.remote_input_empty[graph_index][point_index][last_field];
   point_remote_input_empty++;
-
-  printf("WAR_handler graph %d timestep %d dest %d last_field %ld remote_input_empty %d %p\n",
-         graph_index, timestep, point, last_field, point_remote_input_empty, &point_remote_input_empty);
 }
 
 const int N_HANDLERS = 2;
@@ -601,16 +559,12 @@ int main(int argc, char *argv[])
             auto &point_output = outputs[point_index][field];
             auto &point_rev_deps = reverse_dependencies[dset][point_index];
 
-            printf("considering RAW graph %ld timestep %ld point %ld offset %ld width %ld next offset %ld width %ld\n",
-                   graph.graph_index, timestep, point, offset, width, next_offset, next_width);
             if (point >= offset && point < offset + width) {
               for (auto interval : point_rev_deps) {
                 for (long dep = interval.first; dep <= interval.second; dep++) {
                   if (dep < next_offset || dep >= next_offset + next_width) {
                     continue;
                   }
-
-                  printf("send RAW graph %ld timestep %ld source %ld dest %ld\n", graph.graph_index, timestep, point, dep);
 
                   CHECK_OK(gex_AM_RequestMedium(tm, rank_by_point[dep], handlers[0].gex_index,
                                                 point_output.data(), point_output.size(),
@@ -657,8 +611,6 @@ int main(int argc, char *argv[])
                     continue;
                   }
 
-                  printf("send WAR graph %ld timestep %ld source %ld dest %ld\n", graph.graph_index, timestep, point, dep);
-
                   CHECK_OK(gex_AM_RequestShort(tm, rank_by_point[dep], handlers[1].gex_index, 0,
                                                (gex_AM_Arg_t)graph.graph_index, (gex_AM_Arg_t)timestep, (gex_AM_Arg_t)dep));
                   sends_war.push_back(std::tuple<long, long, long>(graph.graph_index, timestep, point));
@@ -693,9 +645,6 @@ int main(int argc, char *argv[])
 
           auto &point_output_empty = state.output_empty[graph_index][point_index][field];
           point_output_empty = 1;
-
-          printf("marking RAW graph %ld timestep %ld point %ld last_field %ld field %ld output_empty %d\n",
-                 graph_index, timestep, point, last_field, field, point_output_empty);
         }
         for (auto &send : sends_war) {
           long graph_index;
@@ -714,8 +663,6 @@ int main(int argc, char *argv[])
 
           auto &point_input_consumed = state.input_consumed[graph_index][point_index][last_field];
           point_input_consumed = 0;
-
-          printf("marking WAR graph %ld timestep %ld point %ld last_field %ld input_consumed %d\n", graph_index, timestep, point, last_field, point_input_consumed);
         }
       }
       sends_raw.clear();
