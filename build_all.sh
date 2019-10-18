@@ -64,11 +64,6 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
 fi
 
 (
-if [[ -n $TRAVIS ]]; then
-  if [[ "$(uname)" = "Linux" && "$CXX" = "g++"* ]]; then
-      export CXX="g++-4.9" CC="gcc-4.9"
-  fi
-fi
 if [[ -n $CRAYPE_VERSION ]]; then
     export HOST_CC=gcc HOST_CXX=g++
 fi
