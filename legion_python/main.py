@@ -25,7 +25,7 @@ import sys
 import time
 
 import legion
-from legion import index_launch, task, Domain, Fspace, Ispace, Partition, R, Region, RW, ID
+from legion import index_launch, task, Domain, Fspace, Ispace, ID, Partition, R, Region, RW, Trace, WD
 
 
 root_dir = os.path.dirname(os.path.dirname(__file__))
@@ -98,6 +98,12 @@ def task_graph_point_dependencies(graph, timestep, point):
                 yield dep
 
 
+@task(leaf=True, privileges=[WD('0')])
+def init_scratch_task(scratch):
+    scratch_ptr = ffi.cast("char *", getattr(scratch, '0').ctypes.data)
+    scratch_size = getattr(scratch, '0').shape[0]
+    c.task_graph_prepare_scratch(scratch_ptr, scratch_size)
+
 
 def init_partitions(graphs, num_fields):
     result = []
@@ -119,6 +125,9 @@ def init_partitions(graphs, num_fields):
         primary.append(
             Partition.equal(result[-1], colors))
 
+        for field in fspace.keys():
+            legion.fill(result[-1], field, 0)
+
         num_dsets = c.task_graph_max_dependence_sets(graph)
         secondary.append([])
         dset_max_args.append([])
@@ -139,6 +148,7 @@ def init_partitions(graphs, num_fields):
                 Region([graph.max_width * graph.scratch_bytes_per_task], fspace))
             p_scratch.append(
                 Partition.equal(scratch[-1], colors))
+            index_launch(colors, init_scratch_task, p_scratch[-1][ID])
         else:
             scratch.append(None)
             p_scratch.append(None)
@@ -305,9 +315,16 @@ def execute_timestep(graph, num_fields, timestep,
 
 def execute_main_loop(graphs, num_fields,
                       result, primary, secondary, scratch, p_scratch, dset_max_args):
+    period = reduce(np.lcm, [c.task_graph_timestep_period(graph) for graph in graphs])
     max_timesteps = max(graph.timesteps for graph in graphs)
-
-    for timestep in range(max_timesteps):
+    trace = Trace()
+    for block in range(0, max_timesteps - period + 1, period):
+        with trace:
+            for timestep in range(block, block+period):
+                for i, graph in enumerate(graphs):
+                    execute_timestep(graph, num_fields, timestep,
+                                     result[i], primary[i], secondary[i], scratch[i], p_scratch[i], dset_max_args[i])
+    for timestep in range(block+period, max_timesteps):
         for i, graph in enumerate(graphs):
             execute_timestep(graph, num_fields, timestep,
                              result[i], primary[i], secondary[i], scratch[i], p_scratch[i], dset_max_args[i])
