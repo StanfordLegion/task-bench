@@ -209,7 +209,7 @@ export PATH="\$X10_DIR"/x10/x10.dist/bin:"\$PATH"
 export JAVA_HOME="\$X10_DIR"/jdk1.8.0_131
 export PATH="\$JAVA_HOME"/bin:"\$PATH"
 
-export ANT_HOME="\$X10_DIR"/apache-ant-1.10.5
+export ANT_HOME="\$X10_DIR"/apache-ant-1.10.7
 export PATH="\$ANT_HOME"/bin:"\$PATH"
 EOF
 
@@ -217,9 +217,9 @@ EOF
     tar -zxf jdk-8u131-linux-x64.tar.gz -C "$X10_DIR"
     rm jdk-8u131-linux-x64.tar.gz
 
-    wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.5-bin.tar.gz
-    tar xfz apache-ant-1.10.5-bin.tar.gz -C "$X10_DIR"
-    rm apache-ant-1.10.5-bin.tar.gz
+    wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.7-bin.tar.gz
+    tar xfz apache-ant-1.10.7-bin.tar.gz -C "$X10_DIR"
+    rm apache-ant-1.10.7-bin.tar.gz
 
     git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
     git -C "$X10_DIR"/x10 reset --hard 9212dc271c8bcba805c82114617d47506747ee3a
@@ -322,10 +322,10 @@ EOF
     tar xfz openjdk-10.0.2_linux-x64_bin.tar.gz -C "$SWIFT_DIR"/java --strip-components=1
     rm openjdk-10.0.2_linux-x64_bin.tar.gz
 
-    wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.5-bin.tar.gz
+    wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.7-bin.tar.gz
     mkdir "$SWIFT_DIR"/ant
-    tar xfz apache-ant-1.10.5-bin.tar.gz -C "$SWIFT_DIR"/ant --strip-components=1
-    rm apache-ant-1.10.5-bin.tar.gz
+    tar xfz apache-ant-1.10.7-bin.tar.gz -C "$SWIFT_DIR"/ant --strip-components=1
+    rm apache-ant-1.10.7-bin.tar.gz
 
     wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz
     tar xfz ncurses-6.1.tar.gz -C "$SWIFT_DIR"
