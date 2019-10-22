@@ -132,19 +132,27 @@ void leaf(const Task *task,
   size_t output_bytes;
   get_base_and_size(runtime, regions[0], task->regions[0], output_rect, output_ptr, output_bytes);
 
+  long last_offset = graph.offset_at_timestep(timestep-1);
+  long last_width = graph.width_at_timestep(timestep-1);
+
   long dset = graph.dependence_set_at_timestep(timestep);
   std::vector<std::pair<long, long> > deps = graph.dependencies(dset, point);
+
   std::vector<const char *> input_ptrs;
   std::vector<size_t> input_bytes;
+  long ninput = 1;
   for (auto span : deps) {
     for (long dep = span.first; dep <= span.second; dep++) {
-      IndexSpaceT<1> is = runtime->get_index_subspace<1>(primary, Point<1>(dep));
-      Rect<1> rect = Domain(runtime->get_index_space_domain(is));
-      char *ptr;
-      size_t bytes;
-      get_base_and_size(runtime, regions[1], task->regions[1], rect, ptr, bytes);
-      input_ptrs.push_back(ptr);
-      input_bytes.push_back(bytes);
+      if (dep >= last_offset && dep < last_offset + last_width) {
+        IndexSpaceT<1> is = runtime->get_index_subspace<1>(primary, Point<1>(dep));
+        Rect<1> rect = Domain(runtime->get_index_space_domain(is));
+        char *ptr;
+        size_t bytes;
+        get_base_and_size(runtime, regions[ninput], task->regions[ninput], rect, ptr, bytes);
+        input_ptrs.push_back(ptr);
+        input_bytes.push_back(bytes);
+      }
+      ninput++;
     }
   }
 
@@ -152,9 +160,10 @@ void leaf(const Task *task,
   size_t scratch_bytes = 0;
   if (graph.scratch_bytes_per_task != 0) {
     Rect<1> scratch_rect = runtime->get_index_space_domain(
-      regions[2].get_logical_region().get_index_space());
-    get_base_and_size(runtime, regions[2], task->regions[2], scratch_rect, scratch_ptr, scratch_bytes);
+      regions.back().get_logical_region().get_index_space());
+    get_base_and_size(runtime, regions.back(), task->regions.back(), scratch_rect, scratch_ptr, scratch_bytes);
   }
+
   graph.execute_point(timestep, point, output_ptr, output_bytes,
                       input_ptrs.data(), input_bytes.data(), input_ptrs.size(),
                       scratch_ptr, scratch_bytes);
@@ -185,10 +194,10 @@ private:
   long num_fields;
   bool exact_instance;
   std::vector<LogicalRegionT<1> > regions;
-  std::vector<LogicalRegionT<1> > scratch_regions;
   std::vector<LogicalPartitionT<1> > primary_partitions;
+  std::vector<std::vector<std::vector<LogicalPartitionT<1> > > > secondary_partitions;
+  std::vector<LogicalRegionT<1> > scratch_regions;
   std::vector<LogicalPartitionT<1> > scratch_partitions;
-  std::vector<std::vector<LogicalPartitionT<1> > > secondary_partitions;
 };
 
 LegionApp::LegionApp(Runtime *runtime, Context ctx)
@@ -238,32 +247,52 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
     LogicalPartitionT<1> primary_lp = runtime->get_logical_partition(result_lr, primary_ip);
 
     // Next create secondary partitions for dependencies
-    std::vector<LogicalPartitionT<1> >secondary_lps;
-
     long ndsets = g.max_dependence_sets();
+
+    long max_deps = 0;
     for (long dset = 0; dset < ndsets; ++dset) {
-      IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, ts);
-
       for (long point = 0; point < g.max_width; ++point) {
-        std::vector<std::pair<long, long> > deps = g.dependencies(dset, point);
+        long deps = 0;
 
-        std::vector<IndexSpace> subspaces;
-        for (auto dep : deps) {
-          for (long i = dep.first; i <= dep.second; ++i) {
-            subspaces.push_back(runtime->get_index_subspace(ctx, primary_ip, i));
-          }
+        for (auto dep : g.dependencies(dset, point)) {
+          deps += dep.second - dep.first + 1;
         }
-        runtime->create_index_space_union(ctx, secondary_ip, point, subspaces);
-      }
 
-      LogicalPartitionT<1> secondary_lp = runtime->get_logical_partition(result_lr, secondary_ip);
-      secondary_lps.push_back(secondary_lp);
+        max_deps = std::max(max_deps, deps);
+      }
+    }
+
+    std::vector<std::vector<LogicalPartitionT<1> > > secondary_lps(ndsets);
+    for (long dset = 0; dset < ndsets; ++dset) {
+      for (long ndep = 0; ndep < max_deps; ++ndep) {
+        IndexPartitionT<1> secondary_ip = runtime->create_pending_partition(ctx, is, ts);
+
+        for (long point = 0; point < g.max_width; ++point) {
+          std::vector<IndexSpace> subspaces;
+          long ninput = 0;
+          for (auto dep : g.dependencies(dset, point)) {
+            for (long i = dep.first; i <= dep.second; ++i) {
+              if (ninput == ndep) {
+                subspaces.push_back(runtime->get_index_subspace(ctx, primary_ip, i));
+                break;
+              }
+              ++ninput;
+            }
+          }
+          runtime->create_index_space_union(ctx, secondary_ip, point, subspaces);
+        }
+
+        LogicalPartitionT<1> secondary_lp = runtime->get_logical_partition(result_lr, secondary_ip);
+        secondary_lps[dset].push_back(secondary_lp);
+      }
     }
 
     // Initialize primary partition
     {
       char zero = 0;
-      IndexFillLauncher launcher(ts, primary_lp, result_lr, TaskArgument(&zero, sizeof(zero)), 0 /* projection */);
+      IndexFillLauncher launcher(ts, primary_lp, result_lr,
+                                 TaskArgument(&zero, sizeof(zero)),
+                                 0 /* default projection */);
       for (long i = 0; i < num_fields; ++i) {
         launcher.add_field(FID_FIRST+i);
       }
@@ -388,7 +417,7 @@ void LegionApp::execute_timestep(size_t idx, long t)
   const TaskGraph &g = graphs[idx];
   const LogicalRegionT<1> &region = regions[idx];
   const LogicalPartitionT<1> &primary = primary_partitions[idx];
-  const std::vector<LogicalPartitionT<1> > &secondary = secondary_partitions[idx];
+  const std::vector<std::vector<LogicalPartitionT<1> > > &secondary = secondary_partitions[idx];
 
   long offset = g.offset_at_timestep(t);
   long width = g.width_at_timestep(t);
@@ -416,10 +445,12 @@ void LegionApp::execute_timestep(size_t idx, long t)
                       WRITE_DISCARD, EXCLUSIVE, region, tag)
     .add_field(fout));
   if (dset < g.max_dependence_sets()) {
-    launcher.add_region_requirement(
-      RegionRequirement(secondary[dset], 0 /* default projection */,
-                        READ_ONLY, EXCLUSIVE, region, tag)
-      .add_field(fin));
+    for (auto s : secondary[dset]) {
+      launcher.add_region_requirement(
+        RegionRequirement(s, 0 /* default projection */,
+                          READ_ONLY, EXCLUSIVE, region, tag)
+        .add_field(fin));
+    }
   }
   if (g.scratch_bytes_per_task != 0) {
     const LogicalRegionT<1> &sratch_region = scratch_regions[idx];
