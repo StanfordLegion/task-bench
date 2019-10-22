@@ -260,6 +260,16 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
       secondary_lps.push_back(secondary_lp);
     }
 
+    // Initialize primary partition
+    {
+      char zero = 0;
+      IndexFillLauncher launcher(ts, primary_lp, result_lr, TaskArgument(&zero, sizeof(zero)), 0 /* projection */);
+      for (long i = 0; i < num_fields; ++i) {
+        launcher.add_field(FID_FIRST+i);
+      }
+      runtime->fill_fields(ctx, launcher);
+    }
+
     regions.push_back(result_lr);
     primary_partitions.push_back(primary_lp);
     secondary_partitions.push_back(secondary_lps);
@@ -365,7 +375,7 @@ void LegionApp::init(size_t idx)
       const LogicalPartitionT<1> &scratch = scratch_partitions[idx];
       launcher.add_region_requirement(
         RegionRequirement(scratch, 0 /* default projection */,
-                          READ_WRITE, EXCLUSIVE, sratch_region, tag)
+                          WRITE_DISCARD, EXCLUSIVE, sratch_region, tag)
         .add_field(fout));
 
       runtime->execute_index_space(ctx, launcher);
