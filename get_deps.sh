@@ -109,7 +109,7 @@ EOF
     if [[ $USE_REALM -eq 1 ]]; then
         git clone -b subgraph https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
     else
-        git clone -b master https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+        git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
     fi
 fi
 

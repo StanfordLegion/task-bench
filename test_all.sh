@@ -75,6 +75,10 @@ if [[ $USE_LEGION -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
             ./legion/task_bench -steps $steps -type $t $k -ll:cpu 2
+            if [[ $USE_GASNET -eq 1 ]]; then
+                mpirun -np 2 ./legion/task_bench -steps $steps -type $t $k -ll:cpu 1
+                mpirun -np 4 ./legion/task_bench -steps $steps -type $t $k -ll:cpu 1
+            fi
             ./legion/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2
         done
     done
