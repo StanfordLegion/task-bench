@@ -261,7 +261,7 @@ execute_point_tasks = [
         execute_point_task_1_2,
         execute_point_task_1_3,
         execute_point_task_1_4,
-    ],   
+    ],
 ]
 execute_point_tasks_scratch = [
     [
@@ -277,7 +277,7 @@ execute_point_tasks_scratch = [
         execute_point_task_scratch_1_2,
         execute_point_task_scratch_1_3,
         execute_point_task_scratch_1_4,
-    ],   
+    ],
 ]
 
 # for field in range(max_fields):

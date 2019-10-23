@@ -84,8 +84,8 @@ if [[ $USE_LEGION -eq 1 ]]; then
     done
 fi
 
-(if [[ $USE_LEGION_PYTHON -eq 1 ]]; then
-     export PYTHONPATH="$PYTHONPATH:$PWD/legion_python"
+(if [[ $USE_PYGION -eq 1 ]]; then
+     export PYTHONPATH="$PYTHONPATH:$PWD/pygion"
      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/core"
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
