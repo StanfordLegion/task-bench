@@ -115,6 +115,30 @@ EOF
     fi
 fi
 
+(if [[ $USE_PYGION -eq 1 ]]; then
+    export PYGION_DIR="$PWD"/deps/pygion
+    cat >>deps/env.sh <<EOF
+export PYGION_DIR="$PYGION_DIR"
+# see pygion/env.sh for Pygion configuration
+EOF
+
+    mkdir -p "$PYGION_DIR"
+
+    cat >>"$PYGION_DIR"/env.sh <<EOF
+export PYGION_DIR="$PYGION_DIR"
+export CONDA_PREFIX="\$PYGION_DIR"/conda
+export PATH="\$CONDA_PREFIX"/bin:"\$PATH"
+EOF
+
+    source "$PYGION_DIR"/env.sh
+
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
+    rm Miniconda3-latest-Linux-x86_64.sh
+    conda update -y conda
+    conda install -y cffi
+fi)
+
 if [[ $USE_STARPU -eq 1 ]]; then
     export STARPU_DL_DIR="$PWD"/deps/starpu
     cat >>deps/env.sh <<EOF
