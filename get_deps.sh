@@ -106,7 +106,7 @@ export LEGION_DIR="$LEGION_DIR"
 export LG_RT_DIR="\$LEGION_DIR"/runtime
 export REGENT_DIR="\$LEGION_DIR"/language
 export USE_PYTHON=\$USE_PYGION
-export USE_LIBDL=\$(( 1 - \$USE_PYGION ))
+export USE_LIBDL=\$USE_PYGION
 EOF
     if [[ $USE_REALM -eq 1 ]]; then
         git clone -b subgraph https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
