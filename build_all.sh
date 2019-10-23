@@ -101,7 +101,7 @@ if [[ $USE_REGENT -eq 1 ]]; then
         if [[ -z $TRAVIS ]]; then
             ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38
         else
-            LLVM_CONFIG=llvm-config-3.5 ./install.py --terra-no-cmake --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --rdir=auto
+            LLVM_CONFIG=llvm-config-3.5 ./install.py --no-terra-cmake --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --rdir=auto
         fi
     )
     popd
