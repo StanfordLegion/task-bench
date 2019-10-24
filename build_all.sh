@@ -67,6 +67,9 @@ fi
 if [[ -n $CRAYPE_VERSION ]]; then
     export HOST_CC=gcc HOST_CXX=g++
 fi
+if [[ $USE_PYGION -eq 1 ]]; then
+    source "$PYGION_DIR"/env.sh
+fi
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion clean
 fi
