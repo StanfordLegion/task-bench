@@ -136,7 +136,7 @@ EOF
     bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
     rm Miniconda3-latest-Linux-x86_64.sh
     conda update -y conda
-    conda install -y cffi
+    conda install -y cffi numpy
 fi)
 
 if [[ $USE_STARPU -eq 1 ]]; then
