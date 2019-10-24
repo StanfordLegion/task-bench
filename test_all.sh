@@ -86,8 +86,6 @@ fi
 
 (if [[ $USE_PYGION -eq 1 ]]; then
     source "$PYGION_DIR"/env.sh
-    export PYTHONPATH="$PYTHONPATH:$PWD/pygion"
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/core"
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
             "$LEGION_DIR"/bindings/python/legion_python main -steps $steps -type $t $k -ll:py 1

@@ -128,6 +128,9 @@ EOF
 export PYGION_DIR="$PYGION_DIR"
 export CONDA_PREFIX="\$PYGION_DIR"/conda
 export PATH="\$CONDA_PREFIX"/bin:"\$PATH"
+
+export PYTHONPATH="$PYTHONPATH:$LEGION_DIR/bindings/python:$PWD/pygion"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/core"
 EOF
 
     source "$PYGION_DIR"/env.sh
