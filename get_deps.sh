@@ -53,6 +53,7 @@ export USE_MPI_OPENMP=${USE_MPI_OPENMP:-$DEFAULT_FEATURES}
 export USE_GASNET=${USE_GASNET:-0}
 export TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
 export USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
+export USE_PYGION=${USE_PYGION:-$DEFAULT_FEATURES}
 export USE_REGENT=${USE_REGENT:-$DEFAULT_FEATURES}
 export USE_REALM=${USE_REALM:-$DEFAULT_FEATURES}
 export USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
@@ -98,13 +99,14 @@ EOF
     rm -rf hwloc-1.11.10.tar.gz
 fi
 
-if [[ $USE_LEGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
     export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
 export LEGION_DIR="$LEGION_DIR"
 export LG_RT_DIR="\$LEGION_DIR"/runtime
 export REGENT_DIR="\$LEGION_DIR"/language
-export USE_LIBDL=0
+export USE_PYTHON=\$USE_PYGION
+export USE_LIBDL=\$USE_PYGION
 EOF
     if [[ $USE_REALM -eq 1 ]]; then
         git clone -b subgraph https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
@@ -112,6 +114,33 @@ EOF
         git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
     fi
 fi
+
+(if [[ $USE_PYGION -eq 1 ]]; then
+    export PYGION_DIR="$PWD"/deps/pygion
+    cat >>deps/env.sh <<EOF
+export PYGION_DIR="$PYGION_DIR"
+# see pygion/env.sh for Pygion configuration
+EOF
+
+    mkdir -p "$PYGION_DIR"
+
+    cat >>"$PYGION_DIR"/env.sh <<EOF
+export PYGION_DIR="$PYGION_DIR"
+export CONDA_PREFIX="\$PYGION_DIR"/conda
+export PATH="\$CONDA_PREFIX"/bin:"\$PATH"
+
+export PYTHONPATH="$PYTHONPATH:$LEGION_DIR/bindings/python:$PWD/pygion"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/core"
+EOF
+
+    source "$PYGION_DIR"/env.sh
+
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
+    rm Miniconda3-latest-Linux-x86_64.sh
+    conda update -y conda
+    conda install -y cffi numpy
+fi)
 
 if [[ $USE_STARPU -eq 1 ]]; then
     export STARPU_DL_DIR="$PWD"/deps/starpu

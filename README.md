@@ -31,6 +31,7 @@ Implementations:
 [OmpSs](ompss),
 [OpenMP](openmp),
 [PaRSEC](parsec),
+[Pygion](pygion),
 [Realm](realm),
 [Regent](regent),
 [Spark](spark),

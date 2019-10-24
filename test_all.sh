@@ -84,6 +84,16 @@ if [[ $USE_LEGION -eq 1 ]]; then
     done
 fi
 
+(if [[ $USE_PYGION -eq 1 ]]; then
+    source "$PYGION_DIR"/env.sh
+    for t in "${extended_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            "$LEGION_DIR"/bindings/python/legion_python main -steps $steps -type $t $k -ll:py 1
+            "$LEGION_DIR"/bindings/python/legion_python main -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:py 1
+        done
+    done
+fi)
+
 if [[ $USE_REALM -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
