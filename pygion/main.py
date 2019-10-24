@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, print_function
 
 import cffi
+import functools
 import os
 import numpy as np
 import subprocess
@@ -315,7 +316,7 @@ def execute_timestep(graph, num_fields, timestep,
 
 def execute_main_loop(graphs, num_fields,
                       result, primary, secondary, scratch, p_scratch, dset_max_args):
-    period = reduce(np.lcm, [c.task_graph_timestep_period(graph) for graph in graphs])
+    period = functools.reduce(np.lcm, [c.task_graph_timestep_period(graph) for graph in graphs])
     max_timesteps = max(graph.timesteps for graph in graphs)
     trace = Trace()
     for block in range(0, max_timesteps - period + 1, period):
