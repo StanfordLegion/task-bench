@@ -64,11 +64,6 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
 fi
 
 (
-if [[ -n $TRAVIS ]]; then
-  if [[ "$(uname)" = "Linux" && "$CXX" = "g++"* ]]; then
-      export CXX="g++-4.9" CC="gcc-4.9"
-  fi
-fi
 if [[ -n $CRAYPE_VERSION ]]; then
     export HOST_CC=gcc HOST_CXX=g++
 fi
@@ -101,7 +96,7 @@ if [[ $USE_REGENT -eq 1 ]]; then
         if [[ -z $TRAVIS ]]; then
             ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38
         else
-            LLVM_CONFIG=llvm-config-3.5 ./install.py --no-terra-cmake --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --rdir=auto
+            ./install.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --rdir=auto
         fi
     )
     popd
