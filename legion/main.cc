@@ -63,12 +63,22 @@ struct Payload {
 
 class TaskBenchMapper : public DefaultMapper
 {
-  public:
-    TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor local,
-                    const char *mapper_name);
-    virtual void default_policy_select_target_processors(MapperContext ctx,
-                                                         const Task &task,
-                                                         std::vector<Processor> &target_procs);
+public:
+  TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor local,
+                  const char *mapper_name);
+  virtual void default_policy_select_target_processors(MapperContext ctx,
+                                                       const Task &task,
+                                                       std::vector<Processor> &target_procs);
+  virtual void slice_task(const MapperContext      ctx,
+                          const Task&              task,
+                          const SliceTaskInput&    input,
+                                SliceTaskOutput&   output);
+  void task_bench_slice_task(const Task &task,
+                             const std::vector<Processor> &local_procs,
+                             const std::vector<Processor> &remote_procs,
+                             const SliceTaskInput &input,
+                                   SliceTaskOutput &output,
+            std::map<Domain,std::vector<TaskSlice> > &cached_slices) const;
 };
 
 TaskBenchMapper::TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor local,
@@ -82,6 +92,142 @@ void TaskBenchMapper::default_policy_select_target_processors(MapperContext ctx,
                                                               std::vector<Processor> &target_procs)
 {
   target_procs.push_back(task.target_proc);
+}
+
+//--------------------------------------------------------------------------
+void TaskBenchMapper::slice_task(const MapperContext      ctx,
+                                 const Task&              task,
+                                 const SliceTaskInput&    input,
+                                       SliceTaskOutput&   output)
+//--------------------------------------------------------------------------
+{
+  std::vector<VariantID> variants;
+  runtime->find_valid_variants(ctx, task.task_id, variants);
+  /* find if we have a procset variant for task */
+  for(unsigned i = 0; i < variants.size(); i++)
+  {
+    const ExecutionConstraintSet exset =
+       runtime->find_execution_constraints(ctx, task.task_id, variants[i]);
+    if(exset.processor_constraint.can_use(Processor::PROC_SET)) {
+
+       // Before we do anything else, see if it is in the cache
+       std::map<Domain,std::vector<TaskSlice> >::const_iterator finder =
+         procset_slices_cache.find(input.domain);
+       if (finder != procset_slices_cache.end()) {
+               output.slices = finder->second;
+               return;
+       }
+
+      output.slices.resize(input.domain.get_volume());
+      unsigned idx = 0;
+      Rect<1> rect = input.domain;
+      for (PointInRectIterator<1> pir(rect); pir(); pir++, idx++)
+      {
+        Rect<1> slice(*pir, *pir);
+        output.slices[idx] = TaskSlice(slice,
+          remote_procsets[idx % remote_cpus.size()],
+          false/*recurse*/, false/*stealable*/);
+      }
+
+      // Save the result in the cache
+      procset_slices_cache[input.domain] = output.slices;
+      return;
+    }
+  }
+
+  // Whatever kind of processor we are is the one this task should
+  // be scheduled on as determined by select initial task
+  Processor::Kind target_kind =
+    task.must_epoch_task ? local_proc.kind() : task.target_proc.kind();
+  switch (target_kind)
+  {
+    case Processor::LOC_PROC:
+      {
+        task_bench_slice_task(task, local_cpus, remote_cpus,
+                           input, output, cpu_slices_cache);
+        break;
+      }
+    case Processor::TOC_PROC:
+      {
+        task_bench_slice_task(task, local_gpus, remote_gpus,
+                           input, output, gpu_slices_cache);
+        break;
+      }
+    case Processor::IO_PROC:
+      {
+        task_bench_slice_task(task, local_ios, remote_ios,
+                           input, output, io_slices_cache);
+        break;
+      }
+    case Processor::PY_PROC:
+      {
+        task_bench_slice_task(task, local_pys, remote_pys,
+                           input, output, py_slices_cache);
+        break;
+      }
+    case Processor::PROC_SET:
+      {
+        task_bench_slice_task(task, local_procsets, remote_procsets,
+                           input, output, procset_slices_cache);
+        break;
+      }
+    case Processor::OMP_PROC:
+      {
+        task_bench_slice_task(task, local_omps, remote_omps,
+                           input, output, omp_slices_cache);
+        break;
+      }
+    default:
+      assert(false); // unimplemented processor kind
+  }
+}
+
+//--------------------------------------------------------------------------
+void TaskBenchMapper::task_bench_slice_task(const Task &task,
+                                            const std::vector<Processor> &local,
+                                            const std::vector<Processor> &remote,
+                                            const SliceTaskInput& input,
+                                                  SliceTaskOutput &output,
+              std::map<Domain,std::vector<TaskSlice> > &cached_slices) const
+//--------------------------------------------------------------------------
+{
+  // Before we do anything else, see if it is in the cache
+  std::map<Domain,std::vector<TaskSlice> >::const_iterator finder =
+    cached_slices.find(input.domain);
+  if (finder != cached_slices.end()) {
+    output.slices = finder->second;
+    return;
+  }
+
+  // The two-level decomposition doesn't work so for now do a
+  // simple one-level decomposition across all the processors.
+  Machine::ProcessorQuery all_procs(machine);
+  all_procs.only_kind(local[0].kind());
+  if ((task.tag & SAME_ADDRESS_SPACE) != 0)
+	all_procs.local_address_space();
+  // Hack: This is a workaround for buggy code in the default mapper with DCR
+  std::vector<Processor> procs(local.begin(), local.end()); // (all_procs.begin(), all_procs.end());
+
+  switch (input.domain.get_dim())
+  {
+#define BLOCK(DIM) \
+    case DIM: \
+      { \
+        DomainT<DIM,coord_t> point_space = input.domain; \
+        Point<DIM,coord_t> num_blocks(procs.size()); \
+        default_decompose_points<DIM>(point_space, procs, \
+              num_blocks, false/*recurse*/, \
+              stealing_enabled, output.slices); \
+        break; \
+      }
+    LEGION_FOREACH_N(BLOCK)
+#undef BLOCK
+    default: // don't support other dimensions right now
+      assert(false);
+  }
+
+  // Save the result in the cache
+  cached_slices[input.domain] = output.slices;
 }
 
 void get_base_and_size(Runtime *runtime,
