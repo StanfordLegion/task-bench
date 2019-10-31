@@ -348,3 +348,8 @@ int desc_islocal(const starpu_ddesc_t *A, int m, int n)
 {
   return (A->myrank == A->get_rankof(A, m, n));
 }
+
+int handle_islocal(const starpu_ddesc_t *A, starpu_data_handle_t handle)
+{
+  return (A->myrank == starpu_mpi_data_get_rank(handle));
+}

@@ -31,6 +31,7 @@
 
 #define USE_CORE_VERIFICATION
 #define ENABLE_PRUNE_MPI_TASK_INSERT
+//#define ENABLE_PRUNE_MPI_TASK_INSERT2
 
 #define NB_LOCAL_MEMORY 8
 
@@ -591,6 +592,10 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
   starpu_ddesc_t *descA = mat_array[payload.graph_id].ddescA;
   switch(num_args) {
   case 1:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(handle_islocal(descA, args[0]) == 1) 
+#endif
+    {
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task1),
         STARPU_VALUE,    &payload, sizeof(payload_t),
@@ -599,8 +604,13 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_PRIORITY,  0,
         STARPU_NAME, "task1",
         0);
+    }
     break;
   case 2:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(handle_islocal(descA, args[0]) == 1 || handle_islocal(descA, args[1]) == 1)
+#endif
+    {
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task2),
         STARPU_VALUE,    &payload, sizeof(payload_t),
@@ -610,8 +620,13 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_PRIORITY,  0,
         STARPU_NAME, "task2",
         0);
+    }
     break;
   case 3:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(handle_islocal(descA, args[0]) == 1 || handle_islocal(descA, args[1]) == 1 || handle_islocal(descA, args[2]) == 1) 
+#endif
+    {
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task3),
         STARPU_VALUE,    &payload, sizeof(payload_t),
@@ -622,8 +637,13 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_PRIORITY,  0,
         STARPU_NAME, "task3",
         0);
+    }
     break;
   case 4:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(handle_islocal(descA, args[0]) == 1 || handle_islocal(descA, args[1]) == 1 || handle_islocal(descA, args[2]) == 1 || handle_islocal(descA, args[3]) == 1)
+#endif
+    {
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task4),
         STARPU_VALUE,    &payload, sizeof(payload_t),
@@ -635,8 +655,13 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_PRIORITY,  0,
         STARPU_NAME, "task4",
         0);
+    }
     break;
   case 5:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(handle_islocal(descA, args[0]) == 1 || handle_islocal(descA, args[1]) == 1 || handle_islocal(descA, args[2]) == 1 || handle_islocal(descA, args[3]) == 1 || handle_islocal(descA, args[4]) == 1)
+#endif
+    {
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task5),
         STARPU_VALUE,    &payload, sizeof(payload_t),
@@ -649,8 +674,13 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_PRIORITY,  0,
         STARPU_NAME, "task5",
         0);
+    }
     break;
   case 6:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(handle_islocal(descA, args[0]) == 1 || handle_islocal(descA, args[1]) == 1 || handle_islocal(descA, args[2]) == 1 || handle_islocal(descA, args[3]) == 1 || handle_islocal(descA, args[4]) == 1 || handle_islocal(descA, args[5]) == 1)
+#endif
+    {
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task6),
         STARPU_VALUE,    &payload, sizeof(payload_t),
@@ -664,8 +694,13 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_PRIORITY,  0,
         STARPU_NAME, "task6",
         0);
+    }
     break;
   case 7:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(handle_islocal(descA, args[0]) == 1 || handle_islocal(descA, args[1]) == 1 || handle_islocal(descA, args[2]) == 1 || handle_islocal(descA, args[3]) == 1 || handle_islocal(descA, args[4]) == 1 || handle_islocal(descA, args[5]) == 1 || handle_islocal(descA, args[6]) == 1)
+#endif
+    {
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task7),
         STARPU_VALUE,    &payload, sizeof(payload_t),
@@ -680,8 +715,13 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_PRIORITY,  0,
         STARPU_NAME, "task7",
         0);
+    }
     break;
   case 8:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(handle_islocal(descA, args[0]) == 1 || handle_islocal(descA, args[1]) == 1 || handle_islocal(descA, args[2]) == 1 || handle_islocal(descA, args[3]) == 1 || handle_islocal(descA, args[4]) == 1 || handle_islocal(descA, args[5]) == 1 || handle_islocal(descA, args[6]) == 1 || handle_islocal(descA, args[7]) == 1)
+#endif
+    {
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task8),
         STARPU_VALUE,    &payload, sizeof(payload_t),
@@ -697,8 +737,13 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_PRIORITY,  0,
         STARPU_NAME, "task8",
         0);
+    }
     break;
   case 9:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(handle_islocal(descA, args[0]) == 1 || handle_islocal(descA, args[1]) == 1 || handle_islocal(descA, args[2]) == 1 || handle_islocal(descA, args[3]) == 1 || handle_islocal(descA, args[4]) == 1 || handle_islocal(descA, args[5]) == 1 || handle_islocal(descA, args[6]) == 1 || handle_islocal(descA, args[7]) == 1 || handle_islocal(descA, args[8]) == 1)
+#endif
+    {
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task9),
         STARPU_VALUE,    &payload, sizeof(payload_t),
@@ -715,8 +760,13 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_PRIORITY,  0,
         STARPU_NAME, "task9",
         0);
+    }
     break;
   case 10:
+#if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
+    if(handle_islocal(descA, args[0]) == 1 || handle_islocal(descA, args[1]) == 1 || handle_islocal(descA, args[2]) == 1 || handle_islocal(descA, args[3]) == 1 || handle_islocal(descA, args[4]) == 1 || handle_islocal(descA, args[5]) == 1 || handle_islocal(descA, args[6]) == 1 || handle_islocal(descA, args[7]) == 1 || handle_islocal(descA, args[8]) == 1 || handle_islocal(descA, args[9]) == 1)
+#endif
+    {
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task10),
         STARPU_VALUE,    &payload, sizeof(payload_t),
@@ -734,6 +784,7 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_PRIORITY,  0,
         STARPU_NAME, "task10",
         0);
+    }
     break;
   default:
     assert(false && "unexpected num_args");
@@ -964,7 +1015,7 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args; 
-#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
+#ifdef ENABLE_PRUNE_MPI_TASK_INSERT2
     int has_task = 0;   
     
     if(desc_islocal(mat.ddescA, t%nb_fields, x)) {

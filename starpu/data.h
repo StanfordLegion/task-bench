@@ -79,6 +79,8 @@ starpu_data_handle_t starpu_desc_getaddr(starpu_ddesc_t *desc, int m, int n);
 
 int desc_islocal(const starpu_ddesc_t *A, int m, int n);
 
+int handle_islocal(const starpu_ddesc_t *A, starpu_data_handle_t handle);
+
 #ifdef __cplusplus
 }
 #endif
