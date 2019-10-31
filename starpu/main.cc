@@ -504,7 +504,7 @@ public:
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
 private:
-  void insert_task(int num_args, payload_t &payload, std::vector<starpu_data_handle_t> &args, std::vector<std::pair<long, long>> &args_loc);
+  void insert_task(int num_args, payload_t &payload, std::vector<starpu_data_handle_t> &args);
   void parse_argument(int argc, char **argv);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
@@ -518,7 +518,7 @@ private:
   matrix_t mat_array[10];
 };
 
-void StarPUApp::insert_task(int num_args, payload_t &payload, std::vector<starpu_data_handle_t> &args, std::vector<std::pair<long, long>> &args_loc)
+void StarPUApp::insert_task(int num_args, payload_t &payload, std::vector<starpu_data_handle_t> &args)
 {
   void (*callback)(void*) = NULL;
   starpu_ddesc_t *descA = mat_array[payload.graph_id].ddescA;
@@ -872,7 +872,6 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   int nb_fields = g.nb_fields;
   
   std::vector<starpu_data_handle_t> args;
-  std::vector<std::pair<long, long>> args_loc;
   payload_t payload;
   
   debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
@@ -924,17 +923,14 @@ void StarPUApp::execute_timestep(size_t idx, long t)
       num_args = 1;
       debug_printf(1, "%d[%d] ", x, num_args);
       args.push_back(starpu_desc_getaddr( mat.ddescA, t%nb_fields, x ));
-      args_loc.push_back(std::make_pair(t%nb_fields, x));
     } else {
       if (t == 0) {
         num_args = 1;
         debug_printf(1, "%d[%d] ", x, num_args);
         args.push_back(starpu_desc_getaddr( mat.ddescA, t%nb_fields, x ));
-        args_loc.push_back(std::make_pair(t%nb_fields, x));
       } else {
         num_args = 1;
         args.push_back(starpu_desc_getaddr( mat.ddescA, t%nb_fields, x ));
-        args_loc.push_back(std::make_pair(t%nb_fields, x));
         long last_offset = g.offset_at_timestep(t-1);
         long last_width = g.width_at_timestep(t-1);
         for (std::pair<long, long> dep : deps) {
@@ -943,7 +939,6 @@ void StarPUApp::execute_timestep(size_t idx, long t)
           for (int i = dep.first; i <= dep.second; i++) {
             if (i >= last_offset && i < last_offset + last_width) {
               args.push_back(starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, i ));
-              args_loc.push_back(std::make_pair((t-1)%nb_fields, i));
             } else {
               num_args --;
             }
@@ -956,9 +951,8 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     payload.j = x;
     payload.graph = g;
     payload.graph_id = idx;
-    insert_task(num_args, payload, args, args_loc); 
+    insert_task(num_args, payload, args); 
     args.clear();
-    args_loc.clear();
   }
   debug_printf(1, "\n");
 }
