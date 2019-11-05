@@ -29,6 +29,7 @@ legion_prof
 
 legion_defines.h
 realm_defines.h
+cached_legion.h
 
 *charmrun.*
 
