@@ -62,7 +62,6 @@ static Logger log_taskbench("taskbench");
 struct Payload {
   TaskGraph graph;
   long timestep;
-  IndexPartitionT<1> primary_partition;
 };
 
 class LinearShardingFunctor : public ShardingFunctor {
@@ -411,7 +410,6 @@ void leaf(const Task *task,
   Payload payload = *reinterpret_cast<Payload *>(task->args);
   TaskGraph graph = payload.graph;
   long timestep = payload.timestep;
-  IndexPartitionT<1> primary = payload.primary_partition;
 
   Point<1> point = task->index_point;
 
@@ -433,8 +431,8 @@ void leaf(const Task *task,
   for (auto span : deps) {
     for (long dep = span.first; dep <= span.second; dep++) {
       if (dep >= last_offset && dep < last_offset + last_width) {
-        IndexSpaceT<1> is = runtime->get_index_subspace<1>(primary, Point<1>(dep));
-        Rect<1> rect = Domain(runtime->get_index_space_domain(is));
+        Rect<1> rect = runtime->get_index_space_domain(
+          regions[ninput].get_logical_region().get_index_space());
         char *ptr;
         size_t bytes;
         get_base_and_size(runtime, regions[ninput], task->regions[ninput], rect, ptr, bytes);
@@ -720,7 +718,6 @@ void LegionApp::execute_timestep(size_t idx, long t)
   Payload payload;
   payload.graph = g;
   payload.timestep = t;
-  payload.primary_partition = primary.get_index_partition();
   IndexLauncher launcher(TID_LEAF, bounds,
                          TaskArgument(&payload, sizeof(payload)), ArgumentMap());
   MappingTagID tag = exact_instance ? Legion::Mapping::DefaultMapper::EXACT_REGION : 0;
