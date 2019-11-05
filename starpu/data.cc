@@ -317,7 +317,7 @@ starpu_ddesc_t* create_and_distribute_data(int rank, int world, int mb, int nb, 
 
   int m = mb * mt;
   int n = nb * nt;
-  desc_init(ddesc, 1, mb, nb, mb*nb, m, n, 0, 0, m, n, p, q, rank, desc_id);
+  desc_init(ddesc, 1, mb, nb, mb*nb, m, n, 0, 0, m, n, 1, world, rank, desc_id);
  // desc_init(ddesc, 1, mb, 1, mb, mt*mb, 1, 0, 0, mt*mb, 1, world, 1, rank);
 
   size_t size = (size_t)(ddesc->llm) * (size_t)(ddesc->lln)
