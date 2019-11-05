@@ -35,14 +35,19 @@ core_header = subprocess.check_output(
         "gcc", "-D", "__attribute__(x)=", "-E", "-P",
         os.path.join(root_dir, "core/core_c.h")
     ]).decode("utf-8")
-ffi = cffi.FFI()
+ffi = legion.ffi
 ffi.cdef(core_header)
-c = ffi.dlopen("libcore.so")
+c = legion.c
 
+
+task_graph = legion.Type(
+    np.dtype([('bytes', np.void, ffi.sizeof('task_graph_t'))]),
+    'task_graph_t')
 
 max_fields = 2
 max_args = 5
 
+use_native = os.environ.get('TASK_BENCH_USE_NATIVE') == '1'
 
 def app_create(args):
     c_args = []
@@ -184,69 +189,175 @@ def execute_point_impl(graph, num_fields, timestep, point, output, scratch, *inp
 
 # Hack: Not sure it's possible to generate these programmatically, so
 # until Legion supports variadic tasks this is what we have to do.
-@task(leaf=True, privileges=[None, None, None, None, RW('1'), None] + [R('0')] * 0)
-def execute_point_task_0_0(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('1'), None] + [R('0')] * 1)
-def execute_point_task_0_1(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('1'), None] + [R('0')] * 2)
-def execute_point_task_0_2(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('1'), None] + [R('0')] * 3)
-def execute_point_task_0_3(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('1'), None] + [R('0')] * 4)
-def execute_point_task_0_4(*args):
-    execute_point_impl(*args)
 
-@task(leaf=True, privileges=[None, None, None, None, RW('0'), None] + [R('1')] * 0)
-def execute_point_task_1_0(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('0'), None] + [R('1')] * 1)
-def execute_point_task_1_1(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('0'), None] + [R('1')] * 2)
-def execute_point_task_1_2(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('0'), None] + [R('1')] * 3)
-def execute_point_task_1_3(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('0'), None] + [R('1')] * 4)
-def execute_point_task_1_4(*args):
-    execute_point_impl(*args)
+if use_native:
+    execute_point_task_0_0 = legion.extern_task(
+        task_id=2,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 0,
+        privileges=[None, None, None, None, RW('1')] + [R('0')] * 0,
+        calling_convention='regent')
+    execute_point_task_0_1 = legion.extern_task(
+        task_id=3,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 1,
+        privileges=[None, None, None, None, RW('1')] + [R('0')] * 1,
+        calling_convention='regent')
+    execute_point_task_0_2 = legion.extern_task(
+        task_id=4,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 2,
+        privileges=[None, None, None, None, RW('1')] + [R('0')] * 2,
+        calling_convention='regent')
+    execute_point_task_0_3 = legion.extern_task(
+        task_id=5,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 3,
+        privileges=[None, None, None, None, RW('1')] + [R('0')] * 3,
+        calling_convention='regent')
+    execute_point_task_0_4 = legion.extern_task(
+        task_id=6,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 4,
+        privileges=[None, None, None, None, RW('1')] + [R('0')] * 4,
+        calling_convention='regent')
 
-@task(leaf=True, privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 0)
-def execute_point_task_scratch_0_0(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 1)
-def execute_point_task_scratch_0_1(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 2)
-def execute_point_task_scratch_0_2(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 3)
-def execute_point_task_scratch_0_3(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 4)
-def execute_point_task_scratch_0_4(*args):
-    execute_point_impl(*args)
+    execute_point_task_1_0 = legion.extern_task(
+        task_id=7,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 0,
+        privileges=[None, None, None, None, RW('0')] + [R('1')] * 0,
+        calling_convention='regent')
+    execute_point_task_1_1 = legion.extern_task(
+        task_id=8,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 1,
+        privileges=[None, None, None, None, RW('0')] + [R('1')] * 1,
+        calling_convention='regent')
+    execute_point_task_1_2 = legion.extern_task(
+        task_id=9,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 2,
+        privileges=[None, None, None, None, RW('0')] + [R('1')] * 2,
+        calling_convention='regent')
+    execute_point_task_1_3 = legion.extern_task(
+        task_id=10,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 3,
+        privileges=[None, None, None, None, RW('0')] + [R('1')] * 3,
+        calling_convention='regent')
+    execute_point_task_1_4 = legion.extern_task(
+        task_id=11,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 4,
+        privileges=[None, None, None, None, RW('0')] + [R('1')] * 4,
+        calling_convention='regent')
 
-@task(leaf=True, privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 0)
-def execute_point_task_scratch_1_0(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 1)
-def execute_point_task_scratch_1_1(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 2)
-def execute_point_task_scratch_1_2(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 3)
-def execute_point_task_scratch_1_3(*args):
-    execute_point_impl(*args)
-@task(leaf=True, privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 4)
-def execute_point_task_scratch_1_4(*args):
-    execute_point_impl(*args)
+    execute_point_task_scratch_0_0 = legion.extern_task(
+        task_id=12,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 0,
+        privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 0,
+        calling_convention='regent')
+    execute_point_task_scratch_0_1 = legion.extern_task(
+        task_id=13,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 1,
+        privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 1,
+        calling_convention='regent')
+    execute_point_task_scratch_0_2 = legion.extern_task(
+        task_id=14,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 2,
+        privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 2,
+        calling_convention='regent')
+    execute_point_task_scratch_0_3 = legion.extern_task(
+        task_id=15,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 3,
+        privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 3,
+        calling_convention='regent')
+    execute_point_task_scratch_0_4 = legion.extern_task(
+        task_id=16,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 4,
+        privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 4,
+        calling_convention='regent')
+
+    execute_point_task_scratch_1_0 = legion.extern_task(
+        task_id=17,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 0,
+        privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 0,
+        calling_convention='regent')
+    execute_point_task_scratch_1_1 = legion.extern_task(
+        task_id=18,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 1,
+        privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 1,
+        calling_convention='regent')
+    execute_point_task_scratch_1_2 = legion.extern_task(
+        task_id=19,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 2,
+        privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 2,
+        calling_convention='regent')
+    execute_point_task_scratch_1_3 = legion.extern_task(
+        task_id=20,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 3,
+        privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 3,
+        calling_convention='regent')
+    execute_point_task_scratch_1_4 = legion.extern_task(
+        task_id=21,
+        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 4,
+        privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 4,
+        calling_convention='regent')
+else:
+    @task(leaf=True, privileges=[None, None, None, None, RW('1'), None] + [R('0')] * 0)
+    def execute_point_task_0_0(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('1'), None] + [R('0')] * 1)
+    def execute_point_task_0_1(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('1'), None] + [R('0')] * 2)
+    def execute_point_task_0_2(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('1'), None] + [R('0')] * 3)
+    def execute_point_task_0_3(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('1'), None] + [R('0')] * 4)
+    def execute_point_task_0_4(*args):
+        execute_point_impl(*args)
+
+    @task(leaf=True, privileges=[None, None, None, None, RW('0'), None] + [R('1')] * 0)
+    def execute_point_task_1_0(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('0'), None] + [R('1')] * 1)
+    def execute_point_task_1_1(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('0'), None] + [R('1')] * 2)
+    def execute_point_task_1_2(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('0'), None] + [R('1')] * 3)
+    def execute_point_task_1_3(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('0'), None] + [R('1')] * 4)
+    def execute_point_task_1_4(*args):
+        execute_point_impl(*args)
+
+    @task(leaf=True, privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 0)
+    def execute_point_task_scratch_0_0(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 1)
+    def execute_point_task_scratch_0_1(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 2)
+    def execute_point_task_scratch_0_2(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 3)
+    def execute_point_task_scratch_0_3(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 4)
+    def execute_point_task_scratch_0_4(*args):
+        execute_point_impl(*args)
+
+    @task(leaf=True, privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 0)
+    def execute_point_task_scratch_1_0(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 1)
+    def execute_point_task_scratch_1_1(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 2)
+    def execute_point_task_scratch_1_2(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 3)
+    def execute_point_task_scratch_1_3(*args):
+        execute_point_impl(*args)
+    @task(leaf=True, privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 4)
+    def execute_point_task_scratch_1_4(*args):
+        execute_point_impl(*args)
 
 execute_point_tasks = [
     [
@@ -305,11 +416,17 @@ def execute_timestep(graph, num_fields, timestep,
     else:
         point_task = execute_point_tasks_scratch[fin][num_args]
 
-    point_task_args = [encode_task_graph(graph), num_fields, timestep, ID, primary[ID]]
-    if scratch is None:
-        point_task_args.append(None)
-    else:
+    point_task_args = [
+        graph if use_native else encode_task_graph(graph),
+        num_fields,
+        timestep,
+        0 if use_native else ID,
+        primary[ID],
+    ]
+    if scratch is not None:
         point_task_args.append(p_scratch[ID])
+    elif not use_native:
+        point_task_args.append(None)
     point_task_args.extend(secondary[dset][arg][ID] for arg in range(num_args))
     index_launch(colors, point_task, *point_task_args)
 

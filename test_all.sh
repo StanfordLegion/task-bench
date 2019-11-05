@@ -88,8 +88,11 @@ fi
     source "$PYGION_DIR"/env.sh
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            "$LEGION_DIR"/bindings/python/legion_python main -steps $steps -type $t $k -ll:py 1
-            "$LEGION_DIR"/bindings/python/legion_python main -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:py 1
+            for native in 0 1; do
+                export TASK_BENCH_USE_NATIVE=$native
+                ./pygion/task_bench -steps $steps -type $t $k -ll:py 1
+                ./pygion/task_bench -steps $steps -type $t $k -ll:py 1 -and  -steps $steps -type $t $k -ll:py 1
+            done
         done
     done
 fi)
