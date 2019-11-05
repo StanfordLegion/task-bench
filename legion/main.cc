@@ -557,14 +557,17 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
         for (long point = 0; point < g.max_width; ++point) {
           std::vector<IndexSpace> subspaces;
           long ninput = 0;
+          bool done = false;
           for (auto dep : g.dependencies(dset, point)) {
             for (long i = dep.first; i <= dep.second; ++i) {
               if (ninput == ndep) {
                 subspaces.push_back(runtime->get_index_subspace(ctx, primary_ip, i));
+                done = true;
                 break;
               }
               ++ninput;
             }
+            if (done) break;
           }
           runtime->create_index_space_union(ctx, secondary_ip, point, subspaces);
         }
