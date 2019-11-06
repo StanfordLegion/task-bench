@@ -74,6 +74,7 @@ if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion clean
 fi
 if [[ $USE_PYGION -eq 1 ]]; then
+    make -C "$LEGION_DIR"/bindings/python clean
     make -C pygion clean
 fi
 if [[ $USE_REGENT -eq 1 ]]; then
@@ -119,6 +120,7 @@ if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j$THREADS
 fi
 if [[ $USE_PYGION -eq 1 ]]; then
+    make -C "$LEGION_DIR"/bindings/python -j$THREADS
     make -C pygion -j$THREADS
 fi
 if [[ $USE_REALM -eq 1 ]]; then
