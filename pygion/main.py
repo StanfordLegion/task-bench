@@ -49,6 +49,11 @@ max_args = 5
 
 use_native = os.environ.get('TASK_BENCH_USE_NATIVE') == '1'
 
+
+def once_only():
+    return c.legion_context_get_shard_id(legion._my.ctx.runtime, legion._my.ctx.context, True) == 0
+
+
 def app_create(args):
     c_args = []
     c_argv = ffi.new("char *[]", len(args) + 1)
@@ -58,7 +63,6 @@ def app_create(args):
     c_argv[len(args)] = ffi.NULL
 
     app = c.app_create(len(args), c_argv)
-    c.app_display(app)
     return app
 
 
@@ -453,6 +457,9 @@ def main():
     app = app_create(legion.input_args())
     graphs = app_task_graphs(app)
 
+    if once_only():
+        c.app_display(app)
+
     num_fields = max_fields
     result, primary, secondary, scratch, p_scratch, dset_max_args = init_partitions(graphs, num_fields)
 
@@ -466,4 +473,5 @@ def main():
 
     total_time = (stop_time - start_time)/1e9
 
-    c.app_report_timing(app, total_time) # FIXME: will print multiple times in control replication
+    if once_only():
+        c.app_report_timing(app, total_time)
