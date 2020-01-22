@@ -27,6 +27,7 @@ elif [[ $(hostname) = "cori"* ]]; then
     cat >>deps/env.sh <<EOF
 module unload PrgEnv-intel
 module load PrgEnv-gnu
+module load gcc/7.3.0 # GCC 8 cannot build LLVM 3.8
 module load cmake
 module load pcre
 export CC=cc
