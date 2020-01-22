@@ -101,7 +101,7 @@ if [[ $USE_REGENT -eq 1 ]]; then
         fi
         unset LG_RT_DIR
         if [[ -z $TRAVIS ]]; then
-            ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38
+            ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38 --terra-cmake -j$THREADS
         else
             ./install.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --rdir=auto
         fi
