@@ -30,6 +30,7 @@ module load PrgEnv-gnu
 module swap gcc/8.3.0 gcc/7.3.0 # GCC 8 cannot build LLVM 3.8
 module load cmake
 module load pcre
+module unload craype-hugepages2M # this got added after the 2019-07-30 system maintenance, but it causes some systems to stop building
 export CC=cc
 export CXX=CC
 export MPICXX=CC
