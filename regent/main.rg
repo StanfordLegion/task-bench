@@ -201,7 +201,7 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
       end)
   end
 
-  local task t(output : region(ispace(int1d), fs),
+  local __demand(__leaf) task t(output : region(ispace(int1d), fs),
                [inputs],
                scratch : region(ispace(int1d), fs),
                time : region(ispace(int1d), times),
@@ -249,9 +249,30 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
   return t
 end)
 
+__demand(__leaf)
 task init_scratch(scratch : region(ispace(int1d), fs))
 where reads writes(scratch.x) do
   prepare_scratch(__runtime(), __physical(scratch), __fields(scratch))
+end
+
+__demand(__leaf)
+task compute_start_time(time : region(ispace(int1d), times))
+where reads(time.start) do
+  var start_time = [uint64:max()]
+  for t in time do
+    start_time min= t.start
+  end
+  return start_time
+end
+
+__demand(__leaf)
+task compute_stop_time(time : region(ispace(int1d), times))
+where reads(time.stop) do
+  var stop_time = [uint64:min()]
+  for t in time do
+    stop_time max= t.stop
+  end
+  return stop_time
 end
 
 terra domain_point(point : c.coord_t)
@@ -480,10 +501,8 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
     for graph_idx = 1, n_graphs do
       local graph = graphs[graph_idx]
       actions:insert(rquote
-        for t in [timing[graph_idx]] do
-          start_time min= t.start
-          stop_time max= t.stop
-        end
+        start_time min= compute_start_time([timing[graph_idx]])
+        stop_time max= compute_stop_time([timing[graph_idx]])
       end)
     end
     actions:insert(rquote
@@ -503,7 +522,7 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
   local main_loop_actions = generate_main_loop(graphs, primary_partitions, secondary_partitions, pscratch, ptiming)
   local report_actions = generate_report(app, graphs, timing)
 
-  local task w()
+  local __demand(__inner) task w()
     var args = c.legion_runtime_get_input_args()
     var [app] = core.app_create(args.argc, args.argv)
     core.app_display(app)
@@ -662,6 +681,7 @@ function dispatch_work_task(n_graphs, n_dsets, max_inputs)
   return actions
 end
 
+__demand(__inner)
 task main()
   var args = c.legion_runtime_get_input_args()
   var app = core.app_create(args.argc, args.argv)
