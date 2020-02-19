@@ -30,7 +30,6 @@ enum TaskIDs {
   TID_TOP,
   TID_INIT,
   TID_LEAF,
-  TID_DUMMY,
 };
 
 enum ShardingFunctorIDs {
@@ -456,12 +455,6 @@ void leaf(const Task *task,
                       scratch_ptr, scratch_bytes);
 }
 
-void dummy(const Task *task,
-           const std::vector<PhysicalRegion> &regions,
-           Context ctx, Runtime *runtime)
-{
-}
-
 struct LegionApp : public App {
   LegionApp(Runtime *runtime, Context ctx);
 
@@ -755,10 +748,7 @@ void LegionApp::execute_timestep(size_t idx, long t)
 
 void LegionApp::issue_execution_fence_and_block()
 {
-  runtime->issue_execution_fence(ctx);
-
-  TaskLauncher launcher(TID_DUMMY, TaskArgument());
-  Future f = runtime->execute_task(ctx, launcher);
+  Future f = runtime->issue_execution_fence(ctx);
   f.get_void_result();
 }
 
@@ -805,13 +795,6 @@ int main(int argc, char **argv)
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     registrar.set_leaf();
     Runtime::preregister_task_variant<leaf>(registrar, "leaf");
-  }
-
-  {
-    TaskVariantRegistrar registrar(TID_DUMMY, "dummy");
-    registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
-    registrar.set_leaf();
-    Runtime::preregister_task_variant<dummy>(registrar, "dummy");
   }
 
   LinearShardingFunctor *sharding_functor = new LinearShardingFunctor();
