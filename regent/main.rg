@@ -224,7 +224,7 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
       var current = c.legion_get_current_time_in_nanos()
       __forbid(__vectorize) -- FIXME: Breaks vectorizer
       for t in time do
-        t.start min= current
+        t.start = current
       end
     end
 
@@ -241,7 +241,7 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
       var current = c.legion_get_current_time_in_nanos()
       __forbid(__vectorize) -- FIXME: Breaks vectorizer
       for t in time do
-        t.stop max= current
+        t.stop = current
       end
     end
   end
