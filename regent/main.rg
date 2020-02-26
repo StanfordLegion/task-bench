@@ -480,9 +480,11 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
             init_scratch([pscratch[graph_idx]][point])
           end
 
-          __demand(__trace)
-          for [timestep] = 0, max_timesteps + period - 1, period do
-            [body_actions]
+          for trial = 0, 2 do
+            __demand(__trace)
+            for [timestep] = 0, max_timesteps + period - 1, period do
+              [body_actions]
+            end
           end
         end
       end)
