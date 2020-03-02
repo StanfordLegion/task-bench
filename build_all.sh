@@ -111,9 +111,12 @@ if [[ $USE_REGENT -eq 1 ]]; then
         if [[ -n $CRAYPE_VERSION ]]; then
             export CC=gcc CXX=g++
         fi
-        SHARD_SIZE=30 make -C regent -j$THREADS
-        SHARD_SIZE=15 make -C regent -j$THREADS
-        SHARD_SIZE=14 make -C regent -j$THREADS
+        SHARD_SIZE=30 make -C regent -j$THREADS &
+        sleep 1
+        SHARD_SIZE=15 make -C regent -j$THREADS &
+        sleep 1
+        SHARD_SIZE=14 make -C regent -j$THREADS &
+        wait
     )
 fi
 if [[ $USE_LEGION -eq 1 ]]; then
