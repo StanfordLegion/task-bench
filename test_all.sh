@@ -288,6 +288,7 @@ fi)
     source "$TENSORFLOW_DIR"/env.sh
 
     export LD_LIBRARY_PATH="$PWD"/core:"$PWD"/tensorflow/ops:"$LD_LIBRARY_PATH"
+    export CUDA_VISIBLE_DEVICES=-1 # Travis breaks unless GPU is explicitly disabled
 
     pushd tensorflow
     for t in "${extended_types[@]}"; do

@@ -395,8 +395,7 @@ EOF
     conda update -y conda
     # Hack: Try to install via pip to avoid compiler version incompatibility
     # conda install -y tensorflow
-    conda install -y python=3.6
-    pip install tensorflow==1.12.0
+    pip install -q tensorflow==2.1.0
 fi)
 
 (if [[ $USE_DASK -eq 1 ]]; then
