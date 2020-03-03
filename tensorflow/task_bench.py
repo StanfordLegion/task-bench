@@ -23,8 +23,7 @@ import subprocess
 import time
 
 import numpy as np
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+import tensorflow as tf
 
 core_header = subprocess.check_output(
     ["gcc", "-D", "__attribute__(x)=", "-E", "-P",
@@ -61,7 +60,7 @@ def app_task_graphs(app):
 
 def build_task_graph_tensor(graph):
     return tf.convert_to_tensor(
-        np.frombuffer(
+        value=np.frombuffer(
             ffi.buffer(ffi.addressof(graph), ffi.sizeof(graph)),
             dtype=np.ubyte),
         dtype=tf.uint8,
@@ -84,20 +83,8 @@ def task_graph_dependencies(graph, timestep, point):
                 yield dep
 
 
-def execute_task_graph(graph):
-
-    sess = tf.Session()
-
-    graph_tensor = build_task_graph_tensor(graph)
-
-    feed = {}
-
-    dummy_name = "dummy_%s" % graph.graph_index
-    dummy = tf.placeholder(
-        tf.uint8, shape=(graph.output_bytes_per_task, ), name=dummy_name)
-    feed["%s:0" % dummy_name] = np.zeros(
-        graph.output_bytes_per_task, dtype=np.uint8)
-
+@tf.function
+def execute_task_graph(graph, graph_tensor):
     outputs = []
     last_row = None
     for timestep in range(0, graph.timesteps):
@@ -110,9 +97,6 @@ def execute_task_graph(graph):
             inputs = []
             for dep in task_graph_dependencies(graph, timestep, point):
                 inputs.append(last_row[dep])
-            if len(inputs) == 0:
-                # Add a dummy to tasks with no input so that they can't be constant-folded.
-                inputs.append(dummy)
             op = kernel_op(graph_tensor, timestep, point, inputs)
             row.append(op)
             outputs.append(op)
@@ -120,16 +104,16 @@ def execute_task_graph(graph):
             row.append(None)
         assert len(row) == graph.max_width
         last_row = row
-
-    sess.run(outputs, feed_dict=feed)
+    return outputs
 
 
 def execute_task_bench():
     app = app_create(sys.argv)
     task_graphs = app_task_graphs(app)
     start_time = time.perf_counter()
-    for task_graph in task_graphs:
-        execute_task_graph(task_graph)
+    for graph in task_graphs:
+        graph_tensor = build_task_graph_tensor(graph)
+        execute_task_graph(graph, graph_tensor)
     total_time = time.perf_counter() - start_time
     c.app_report_timing(app, total_time)
 
