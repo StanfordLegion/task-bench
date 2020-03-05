@@ -251,17 +251,12 @@ static void WAR_handler(gex_Token_t token,
 
   printf("WAR handler timestep %d point %d remote input empty (after) %d\n", timestep, point, point_remote_input_empty);
 
-  // FIXME: I think there are some conditions under which we need this
-  // (if a WAR handler comes very late) but if you just do it blindly
-  // you end up with double triggers.
-
-  // Need to check that timestep == next_field_timestep, or something like that.
-
-  // auto &point_timestep = state.timestep(graph_index, point_index);
-  // if (point_timestep < graph.timesteps && check_task_ready(graph_index, point, point_index, point_timestep)) {
-  //   state.task_ready_queue.push_back(
-  //     std::tuple<long, long, long>(graph_index, point, point_timestep));
-  // }
+  auto &point_timestep = state.timestep(graph_index, point_index);
+  if (timestep + state.num_fields - 1 == point_timestep && point_timestep < graph.timesteps && check_task_ready(graph_index, point, point_index, point_timestep)) {
+    printf("  queueing task timestep %ld point %d from WAR handler\n", point_timestep, point);
+    state.task_ready_queue.push_back(
+      std::tuple<long, long, long>(graph_index, point, point_timestep));
+  }
 }
 
 const int N_HANDLERS = 2;
