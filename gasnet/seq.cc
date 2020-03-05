@@ -528,6 +528,7 @@ int main(int argc, char *argv[])
           auto &point_rev_deps = state.reverse_dependencies(graph_index, dset, point_index);
 
           if (point >= offset && point < offset + width) {
+            bool sent = false;
             for (auto interval : point_rev_deps) {
               for (long dep = interval.first; dep <= interval.second; dep++) {
                 if (dep < next_offset || dep >= next_offset + next_width) {
@@ -539,9 +540,11 @@ int main(int argc, char *argv[])
                                               GEX_EVENT_GROUP, 0,
                                               (gex_AM_Arg_t)graph.graph_index, (gex_AM_Arg_t)raw_timestep,
                                               (gex_AM_Arg_t)point, (gex_AM_Arg_t)dep));
-                sends_raw.push_back(std::tuple<long, long, long>(graph.graph_index, raw_timestep, point));
+                sent = true;
               }
             }
+            if (sent)
+              sends_raw.push_back(std::tuple<long, long, long>(graph.graph_index, raw_timestep, point));
           }
         }
 
@@ -558,6 +561,7 @@ int main(int argc, char *argv[])
           auto &point_deps = state.dependencies(graph_index, dset, point_index);
 
           if (point >= offset && point < offset + width) {
+            bool sent = false;
             for (auto interval : point_deps) {
               for (long dep = interval.first; dep <= interval.second; dep++) {
                 if (dep < next_field_offset || dep >= next_field_offset + next_field_width) {
@@ -566,9 +570,11 @@ int main(int argc, char *argv[])
 
                 CHECK_OK(gex_AM_RequestShort(tm, rank_by_point[graph_index][dep], handlers[1].gex_index, 0,
                                              (gex_AM_Arg_t)graph.graph_index, (gex_AM_Arg_t)war_timestep, (gex_AM_Arg_t)dep));
-                sends_war.push_back(std::tuple<long, long, long>(graph.graph_index, war_timestep, point));
+                sent = true;
               }
             }
+            if (sent)
+              sends_war.push_back(std::tuple<long, long, long>(graph.graph_index, war_timestep, point));
           }
         }
       }
