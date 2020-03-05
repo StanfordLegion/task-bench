@@ -127,7 +127,6 @@ static std::pair<long, long> run_task_body(long graph_index, long point, long ti
   long point_index = point - first_point;
 
   auto &point_timestep = state.timestep(graph_index, point_index);
-  printf("sanity check timestep given %ld actual %ld\n", timestep, point_timestep);
   assert(point_timestep == timestep);
 
   long last_field = (point_timestep + state.num_fields - 1) % state.num_fields;
@@ -436,7 +435,7 @@ int main(int argc, char *argv[])
 
       for (long dset = 0; dset < graph.max_dependence_sets(); ++dset) {
         auto deps = graph.dependencies(dset, point);
-        auto rev_deps = graph.dependencies(dset, point);
+        auto rev_deps = graph.reverse_dependencies(dset, point);
 
         state.dependencies(graph.graph_index, dset, point_index) = deps;
         state.reverse_dependencies(graph.graph_index, dset, point_index) = rev_deps;
@@ -465,6 +464,7 @@ int main(int argc, char *argv[])
 
   double elapsed_time = 0.0;
   for (int iter = 0; iter < 2; ++iter) {
+    state.complete = 0;
     std::fill(state.timestep.begin(), state.timestep.end(), 0);
     std::fill(state.input_ready.begin(), state.input_ready.end(), 0);
     std::fill(state.input_consumed.begin(), state.input_consumed.end(), 0);
@@ -488,7 +488,9 @@ int main(int argc, char *argv[])
 
         auto &point_timestep = state.timestep(graph.graph_index, point_index);
 
-        if (check_task_ready(graph.graph_index, point_index, point_timestep)) {
+        if (point_timestep >= graph.timesteps) {
+          ++state.complete;
+        } else if (check_task_ready(graph.graph_index, point_index, point_timestep)) {
           state.task_ready_queue.push_back(
             std::tuple<long, long, long>(graph.graph_index, point_index, point_timestep));
         }
@@ -548,13 +550,18 @@ int main(int argc, char *argv[])
           auto &point_output = state.outputs(graph_index, point_index, field, 0);
           auto &point_rev_deps = state.reverse_dependencies(graph_index, dset, point_index);
 
+          printf("check for RAW send point %ld offset %ld width %ld\n", point, offset, width);
+
           if (point >= offset && point < offset + width) {
             for (auto interval : point_rev_deps) {
+              printf("  got interval %ld %ld\n", interval.first, interval.second);
               for (long dep = interval.first; dep <= interval.second; dep++) {
+                printf("    check for RAW send dep %ld next_offset %ld next_width %ld\n", dep, next_offset, next_width);
                 if (dep < next_offset || dep >= next_offset + next_width) {
                   continue;
                 }
 
+                printf("send RAW source %ld dest %ld timestep %ld\n", point, dep, raw_timestep);
                 CHECK_OK(gex_AM_RequestMedium(tm, rank_by_point[graph_index][dep], handlers[0].gex_index,
                                               &point_output, graph.output_bytes_per_task,
                                               GEX_EVENT_GROUP, 0,
