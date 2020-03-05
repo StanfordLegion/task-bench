@@ -75,7 +75,7 @@ T clamp(T value, T low, T high) {
 }
 
 // IMPORTANT: must be called with state lock held
-static bool check_task_ready(long graph_index, long point_index, long timestep) {
+static bool check_task_ready(long graph_index, long point, long point_index, long timestep) {
   auto &graph = state.graphs[graph_index];
 
   long last_field = (timestep + state.num_fields - 1) % state.num_fields;
@@ -89,8 +89,11 @@ static bool check_task_ready(long graph_index, long point_index, long timestep) 
   const auto point_n_war_in = state.n_war_in(graph_index, point_index, timestep);
 
   bool result = timestep < graph.timesteps && point_input_ready == point_n_raw_in && point_remote_input_empty == point_n_war_in && point_output_empty == 1 && point_input_consumed == 0;
-  printf("checking timestep %ld point_index %ld   RAW in %d (of %d)   WAR in %d (of %d)   output empty %d   input consumed %d   result %d\n",
-         timestep, point_index,
+  auto rank = state.rank;
+  auto n_ranks = state.n_ranks;
+  printf("[rank %d/%d] checking timestep %ld point %ld point_index %ld   RAW in %d (of %d)   WAR in %d (of %d)   output empty %d   input consumed %d   result %d\n",
+         rank, n_ranks,
+         timestep, point, point_index,
          point_input_ready, point_n_raw_in,
          point_remote_input_empty, point_n_war_in,
          point_output_empty, point_input_consumed, result);
@@ -126,6 +129,8 @@ static std::pair<long, long> run_task_body(long graph_index, long point, long ti
 
   long point_index = point - first_point;
 
+  printf("running task timestep %ld point %ld\n", timestep, point);
+
   auto &point_timestep = state.timestep(graph_index, point_index);
   assert(point_timestep == timestep);
 
@@ -144,8 +149,6 @@ static std::pair<long, long> run_task_body(long graph_index, long point, long ti
   const auto point_n_raw_out = state.n_raw_out(graph_index, point_index, timestep);
   const auto point_n_war_out = state.n_war_out(graph_index, point_index, timestep);
 
-  printf("running task timestep %ld point %ld\n", timestep, point);
-
   graph.execute_point(point_timestep, point,
                       &point_output, graph.output_bytes_per_task,
                       point_input_ptr, point_input_bytes, point_n_raw_in,
@@ -160,9 +163,9 @@ static std::pair<long, long> run_task_body(long graph_index, long point, long ti
   advance_timestep(graph_index, point, point_index);
   if (point_timestep >= graph.timesteps) {
     ++state.complete;
-  } else if (check_task_ready(graph_index, point_index, point_timestep)) {
+  } else if (check_task_ready(graph_index, point, point_index, point_timestep)) {
     state.task_ready_queue.push_back(
-      std::tuple<long, long, long>(graph_index, point_index, point_timestep));
+      std::tuple<long, long, long>(graph_index, point, point_timestep));
   }
 
   long send_raw = point_output_empty == 0 && timestep < graph.timesteps-1 ? timestep : -1;
@@ -220,9 +223,10 @@ static void RAW_handler(gex_Token_t token, void *buffer, size_t size,
   printf("RAW handler timestep %d source %d dest %d input ready (after) %d\n", timestep, source_point, dest_point, point_input_ready);
 
   auto &point_timestep = state.timestep(graph_index, point_index);
-  if (point_timestep < graph.timesteps && check_task_ready(graph_index, point_index, point_timestep)) {
+  if (timestep + 1 == point_timestep && point_timestep < graph.timesteps && check_task_ready(graph_index, point, point_index, point_timestep)) {
+    printf("  queueing task timestep %ld point %ld from RAW handler\n", point_timestep, point);
     state.task_ready_queue.push_back(
-      std::tuple<long, long, long>(graph_index, point_index, point_timestep));
+      std::tuple<long, long, long>(graph_index, point, point_timestep));
   }
 }
 
@@ -254,9 +258,9 @@ static void WAR_handler(gex_Token_t token,
   // Need to check that timestep == next_field_timestep, or something like that.
 
   // auto &point_timestep = state.timestep(graph_index, point_index);
-  // if (point_timestep < graph.timesteps && check_task_ready(graph_index, point_index, point_timestep)) {
+  // if (point_timestep < graph.timesteps && check_task_ready(graph_index, point, point_index, point_timestep)) {
   //   state.task_ready_queue.push_back(
-  //     std::tuple<long, long, long>(graph_index, point_index, point_timestep));
+  //     std::tuple<long, long, long>(graph_index, point, point_timestep));
   // }
 }
 
@@ -292,6 +296,9 @@ int main(int argc, char *argv[])
   gex_Rank_t n_ranks = gex_TM_QuerySize(tm);
   state.rank = rank;
   state.n_ranks = n_ranks;
+
+  // printf("[rank %d/%d] PID %d sleeping for 30 seconds...\n", rank, n_ranks, getpid());
+  // sleep(30);
 
   // uintptr_t max_size = 0; // gasnet_getMaxLocalSegmentSize(); // don't need this with AM Medium
   // gex_Segment_t segment;
@@ -463,7 +470,7 @@ int main(int argc, char *argv[])
   std::vector<std::tuple<long, long, long> > task_ready_queue_local;
 
   double elapsed_time = 0.0;
-  for (int iter = 0; iter < 2; ++iter) {
+  for (int iter = 0; iter < 1; ++iter) {
     state.complete = 0;
     std::fill(state.timestep.begin(), state.timestep.end(), 0);
     std::fill(state.input_ready.begin(), state.input_ready.end(), 0);
@@ -490,9 +497,9 @@ int main(int argc, char *argv[])
 
         if (point_timestep >= graph.timesteps) {
           ++state.complete;
-        } else if (check_task_ready(graph.graph_index, point_index, point_timestep)) {
+        } else if (check_task_ready(graph.graph_index, point, point_index, point_timestep)) {
           state.task_ready_queue.push_back(
-            std::tuple<long, long, long>(graph.graph_index, point_index, point_timestep));
+            std::tuple<long, long, long>(graph.graph_index, point, point_timestep));
         }
       }
     }
