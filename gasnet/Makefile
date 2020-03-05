@@ -13,17 +13,19 @@ LDFLAGS += $(shell PKG_CONFIG_PATH="$(GASNET)/lib/pkgconfig" pkg-config gasnet-$
 ifeq ($(strip $(DEBUG)),0)
 	CXXFLAGS += -O3
 else
-	CXXFLAGS += -O0 -ggdb
+	CXXFLAGS += -O0 -ggdb -DBOUNDS_CHECKS
 endif
 
 include ../core/make_blas.mk
 
 BIN := seq
 
+HEADERS := multi_dimensional_array.h
+
 .PHONY: all
 all:  $(BIN)
 
-$(BIN): %:%.cc
+$(BIN): %:%.cc $(HEADERS)
 	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
 
 .PHONY: clean

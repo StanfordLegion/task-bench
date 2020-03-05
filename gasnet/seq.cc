@@ -22,6 +22,8 @@
 #include "core.h"
 #include "timer.h"
 
+#include "multi_dimensional_array.h"
+
 #include "gasnetex.h"
 
 #define CHECK_OK(x) assert((x) == GASNET_OK);
@@ -44,106 +46,62 @@ struct RankState {
   gex_Rank_t rank;
   gex_Rank_t n_ranks;
   long num_fields;
+  long complete;
   std::vector<TaskGraph> graphs;
-  std::vector<std::vector<long> > timesteps;
-  std::vector<std::vector<std::vector<std::vector<std::vector<char> > > > > inputs;
-  std::vector<std::vector<std::vector<int> > > input_ready;
-  std::vector<std::vector<std::vector<int> > > input_consumed;
-  std::vector<std::vector<std::vector<int> > > remote_input_empty;
-  std::vector<std::vector<std::vector<std::vector<const char *> > > > input_ptr;
-  std::vector<std::vector<std::vector<std::vector<size_t> > > > input_bytes;
-  std::vector<std::vector<std::vector<std::vector<char> > > > outputs;
-  std::vector<std::vector<std::vector<int> > > output_empty;
-  std::vector<std::vector<std::vector<char> > > scratch;
-  std::vector<std::vector<std::vector<std::vector<std::pair<long, long> > > > > dependencies;
-  std::vector<std::vector<std::vector<std::vector<std::pair<long, long> > > > > reverse_dependencies;
+  std::vector<std::tuple<long, long, long> > task_ready_queue;
+  Array<2, long> timestep;
+  Array<5, char> inputs;
+  Array<3, int> input_ready;
+  Array<3, int> input_consumed;
+  Array<3, int> remote_input_empty;
+  Array<4, const char *> input_ptr;
+  Array<4, size_t> input_bytes;
+  Array<4, char> outputs;
+  Array<3, int> output_empty;
+  Array<3, int> n_raw_in;
+  Array<3, int> n_raw_out;
+  Array<3, int> n_war_in;
+  Array<3, int> n_war_out;
+  Array<3, char> scratch;
+  Array<3, std::vector<std::pair<long, long> > > dependencies;
+  Array<3, std::vector<std::pair<long, long> > > reverse_dependencies;
 };
 
 RankState state;
 
-static bool is_complete() {
-  AutoLock guard(state.lock);
-
-  auto rank = state.rank;
-  auto n_ranks = state.n_ranks;
-
-  auto &graphs = state.graphs;
-
-  bool complete = true;
-  for (auto graph : graphs) {
-    long first_point = rank * graph.max_width / n_ranks;
-    long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
-
-    for (long point = first_point; point <= last_point; ++point) {
-      long point_index = point - first_point;
-
-      auto &point_timestep = state.timesteps[graph.graph_index][point_index];
-
-      // Copy so we don't modify the global value.
-      long timestep = point_timestep;
-
-      for (; timestep < graph.timesteps; ++timestep) {
-        long offset = graph.offset_at_timestep(timestep);
-        long width = graph.width_at_timestep(timestep);
-
-        if (point >= offset && point < offset + width)
-          break;
-      }
-
-      complete = complete && timestep == graph.timesteps;
-      if (!complete) break;
-    }
-    if (!complete) break;
-  }
-  return complete;
+template<typename T>
+T clamp(T value, T low, T high) {
+  return std::min(std::max(value, low), high);
 }
 
-static std::pair<long, long> timestep_to_send(long graph_index, long point) {
-  AutoLock guard(state.lock);
-
-  auto rank = state.rank;
-  auto n_ranks = state.n_ranks;
-
+// IMPORTANT: must be called with state lock held
+static bool check_task_ready(long graph_index, long point_index, long timestep) {
   auto &graph = state.graphs[graph_index];
 
-  long first_point = rank * graph.max_width / n_ranks;
-  long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
-
-  long point_index = point - first_point;
-
-  auto &point_timestep = state.timesteps[graph_index][point_index];
-
-  long timestep = point_timestep - 1; // gets incremented at the end of check_and_run, so decrement here
-
-  long field = timestep % state.num_fields;
   long last_field = (timestep + state.num_fields - 1) % state.num_fields;
+  long field = timestep % state.num_fields;
 
-  auto &point_output_empty = state.output_empty[graph_index][point_index][field];
-  auto &point_input_consumed = state.input_consumed[graph_index][point_index][last_field];
+  const auto point_input_ready = state.input_ready(graph_index, point_index, last_field);
+  const auto point_input_consumed = state.input_consumed(graph_index, point_index, last_field);
+  const auto point_remote_input_empty = state.remote_input_empty(graph_index, point_index, field);
+  const auto point_output_empty = state.output_empty(graph_index, point_index, field);
+  const auto point_n_raw_in = state.n_raw_in(graph_index, point_index, timestep);
+  const auto point_n_war_in = state.n_war_in(graph_index, point_index, timestep);
 
-  long raw_timestep = -1, war_timestep = -1;
-  if (timestep >= 0 && timestep < graph.timesteps - 1) {
-    if (point_output_empty == 0) {
-      raw_timestep = timestep;
-    }
-    if (point_input_consumed == 1) {
-      war_timestep = timestep;
-    }
-  }
-  return std::pair<long, long>(raw_timestep, war_timestep);
+  bool result = timestep < graph.timesteps && point_input_ready == point_n_raw_in && point_remote_input_empty == point_n_war_in && point_output_empty == 1 && point_input_consumed == 0;
+  printf("checking timestep %ld point_index %ld   RAW in %d (of %d)   WAR in %d (of %d)   output empty %d   input consumed %d   result %d\n",
+         timestep, point_index,
+         point_input_ready, point_n_raw_in,
+         point_remote_input_empty, point_n_war_in,
+         point_output_empty, point_input_consumed, result);
+  return result;
 }
 
-static bool check_and_run(long graph_index, long point) {
-  auto rank = state.rank;
-  auto n_ranks = state.n_ranks;
-
+// IMPORTANT: must be called with state lock held
+static void advance_timestep(long graph_index, long point, long point_index) {
   auto &graph = state.graphs[graph_index];
-  long first_point = rank * graph.max_width / n_ranks;
-  long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
 
-  long point_index = point - first_point;
-
-  auto &point_timestep = state.timesteps[graph_index][point_index];
+  auto &point_timestep = state.timestep(graph_index, point_index);
 
   for (; point_timestep < graph.timesteps; ++point_timestep) {
     long offset = graph.offset_at_timestep(point_timestep);
@@ -151,95 +109,67 @@ static bool check_and_run(long graph_index, long point) {
 
     if (point >= offset && point < offset + width)
       break;
+
+    printf("advance skipping timestep %ld point %ld\n", point_timestep, point);
+
   }
-  if (point_timestep >= graph.timesteps) {
-    return false;
-  }
+}
 
-  long last_offset = graph.offset_at_timestep(point_timestep-1);
-  long last_width = graph.width_at_timestep(point_timestep-1);
+// IMPORTANT: must be called with state lock held
+static std::pair<long, long> run_task_body(long graph_index, long point, long timestep) {
+  auto rank = state.rank;
+  auto n_ranks = state.n_ranks;
 
-  long next_offset = graph.offset_at_timestep(point_timestep+1);
-  long next_width = graph.width_at_timestep(point_timestep+1);
+  auto &graph = state.graphs[graph_index];
+  long first_point = rank * graph.max_width / n_ranks;
+  long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
 
-  long last_field_offset = graph.offset_at_timestep(point_timestep - state.num_fields + 1);
-  long last_field_width = graph.width_at_timestep(point_timestep - state.num_fields + 1);
+  long point_index = point - first_point;
 
-  long next_field_offset = graph.offset_at_timestep(point_timestep + state.num_fields - 1);
-  long next_field_width = graph.width_at_timestep(point_timestep + state.num_fields - 1);
+  auto &point_timestep = state.timestep(graph_index, point_index);
+  printf("sanity check timestep given %ld actual %ld\n", timestep, point_timestep);
+  assert(point_timestep == timestep);
 
   long last_field = (point_timestep + state.num_fields - 1) % state.num_fields;
   long field = point_timestep % state.num_fields;
 
-  long dset = graph.dependence_set_at_timestep(point_timestep);
-  long next_dset = graph.dependence_set_at_timestep(point_timestep+1);
-  long last_field_dset = graph.dependence_set_at_timestep(point_timestep - state.num_fields + 1);
-  long next_field_dset = graph.dependence_set_at_timestep(point_timestep + state.num_fields - 1);
+  auto &point_input_ready = state.input_ready(graph_index, point_index, last_field);
+  auto &point_input_consumed = state.input_consumed(graph_index, point_index, last_field);
+  auto &point_remote_input_empty = state.remote_input_empty(graph_index, point_index, field);
+  auto point_input_ptr = state.input_ptr.empty() ? nullptr : &state.input_ptr(graph_index, point_index, last_field, 0);
+  auto point_input_bytes = state.input_bytes.empty() ? nullptr : &state.input_bytes(graph_index, point_index, last_field, 0);
+  auto &point_output = state.outputs(graph_index, point_index, field, 0);
+  auto &point_output_empty = state.output_empty(graph_index, point_index, field);
+  auto point_scratch = state.scratch.empty() ? nullptr : &state.scratch(graph_index, point_index, 0);
+  const auto point_n_raw_in = state.n_raw_in(graph_index, point_index, timestep);
+  const auto point_n_raw_out = state.n_raw_out(graph_index, point_index, timestep);
+  const auto point_n_war_out = state.n_war_out(graph_index, point_index, timestep);
 
-  auto &point_inputs = state.inputs[graph_index][point_index][last_field];
-  auto &point_input_ready = state.input_ready[graph_index][point_index][last_field];
-  auto &point_input_consumed = state.input_consumed[graph_index][point_index][last_field];
-  auto &point_remote_input_empty = state.remote_input_empty[graph_index][point_index][field];
-  auto &point_input_ptr = state.input_ptr[graph_index][point_index][last_field];
-  auto &point_input_bytes = state.input_bytes[graph_index][point_index][last_field];
-  auto &point_output = state.outputs[graph_index][point_index][field];
-  auto &point_output_empty = state.output_empty[graph_index][point_index][field];
-  auto &point_scratch = state.scratch[graph_index][point_index];
-  auto &point_deps = state.dependencies[graph_index][dset][point_index];
-  auto &point_rev_deps = state.reverse_dependencies[graph_index][next_dset][point_index];
-  auto &point_last_field_rev_deps = state.reverse_dependencies[graph_index][last_field_dset][point_index];
-  auto &point_next_field_rev_deps = state.reverse_dependencies[graph_index][next_field_dset][point_index];
+  printf("running task timestep %ld point %ld\n", timestep, point);
 
-  long n_inputs = 0;
-  for (auto interval : point_deps) {
-    long first_dep = std::min(std::max(interval.first, last_offset), last_offset + last_width);
-    long last_dep = std::min(std::max(interval.second + 1, last_offset), last_offset + last_width);
-    assert(first_dep <= last_dep);
-    n_inputs += last_dep - first_dep;
+  graph.execute_point(point_timestep, point,
+                      &point_output, graph.output_bytes_per_task,
+                      point_input_ptr, point_input_bytes, point_n_raw_in,
+                      point_scratch, graph.scratch_bytes_per_task);
+
+  point_input_ready = 0;
+  point_remote_input_empty = 0;
+  point_input_consumed = point_n_war_out != 0;
+  point_output_empty = point_n_raw_out == 0;
+
+  ++point_timestep;
+  advance_timestep(graph_index, point, point_index);
+  if (point_timestep >= graph.timesteps) {
+    ++state.complete;
+  } else if (check_task_ready(graph_index, point_index, point_timestep)) {
+    state.task_ready_queue.push_back(
+      std::tuple<long, long, long>(graph_index, point_index, point_timestep));
   }
 
-  long n_outputs = 0;
-  for (auto interval : point_rev_deps) {
-    long first_dep = std::min(std::max(interval.first, next_offset), next_offset + next_width);
-    long last_dep = std::min(std::max(interval.second + 1, next_offset), next_offset + next_width);
-    assert(first_dep <= last_dep);
-    n_outputs += last_dep - first_dep;
-  }
+  long send_raw = point_output_empty == 0 && timestep < graph.timesteps-1 ? timestep : -1;
+  long send_war = point_input_consumed == 1 && timestep < graph.timesteps-1 ? timestep : -1;
 
-  long n_war_in = 0;
-  for (auto interval : point_last_field_rev_deps) {
-    long first_dep = std::min(std::max(interval.first, last_field_offset), last_field_offset + last_field_width);
-    long last_dep = std::min(std::max(interval.second + 1, last_field_offset), last_field_offset + last_field_width);
-    assert(first_dep <= last_dep);
-    n_war_in += last_dep - first_dep;
-  }
-
-  long n_war_out = 0;
-  for (auto interval : point_deps) {
-    long first_dep = std::min(std::max(interval.first, next_field_offset), next_field_offset + next_field_width);
-    long last_dep = std::min(std::max(interval.second + 1, next_field_offset), next_field_offset + next_field_width);
-    assert(first_dep <= last_dep);
-    n_war_out += last_dep - first_dep;
-  }
-
-  bool ready = point_timestep < graph.timesteps && point_input_ready == n_inputs && point_remote_input_empty == n_war_in && point_output_empty == 1 && point_input_consumed == 0;
-  if (ready) {
-    graph.execute_point(point_timestep, point,
-                        point_output.data(), point_output.size(),
-                        point_input_ptr.data(), point_input_bytes.data(), n_inputs,
-                        point_scratch.data(), point_scratch.size());
-
-    point_input_ready = 0;
-    point_remote_input_empty = 0;
-    point_input_consumed = n_war_out != 0;
-    point_output_empty = n_outputs == 0;
-
-    ++point_timestep;
-
-    return true;
-  }
-
-  return false;
+  return std::pair<long, long>(send_raw, send_war);
 }
 
 static void RAW_handler(gex_Token_t token, void *buffer, size_t size,
@@ -264,14 +194,13 @@ static void RAW_handler(gex_Token_t token, void *buffer, size_t size,
 
   long dset = graph.dependence_set_at_timestep(timestep+1);
 
-  auto &point_inputs = state.inputs[graph_index][point_index][field];
-  auto &point_input_ready = state.input_ready[graph_index][point_index][field];
-  auto &point_deps = state.dependencies[graph_index][dset][point_index];
+  auto &point_input_ready = state.input_ready(graph_index, point_index, field);
+  auto &point_deps = state.dependencies(graph_index, dset, point_index);
 
   long input_idx = 0;
   for (auto interval : point_deps) {
-    long first_dep = std::min(std::max(interval.first, offset), offset + width);
-    long last_dep = std::min(interval.second + 1, offset + width);
+    long first_dep = clamp(interval.first,      offset, offset + width);
+    long last_dep  = clamp(interval.second + 1, offset, offset + width);
     assert(first_dep <= last_dep);
     if (first_dep <= source_point && source_point <= last_dep) {
       first_dep = std::min(first_dep, (long)source_point);
@@ -283,8 +212,19 @@ static void RAW_handler(gex_Token_t token, void *buffer, size_t size,
     }
   }
 
-  point_inputs[input_idx].assign((char *)buffer, ((char *)buffer) + size);
+  std::copy(
+    (char *)buffer, ((char *)buffer) + size,
+    &state.inputs(graph_index, point_index, field, input_idx, 0));
+
   point_input_ready++;
+
+  printf("RAW handler timestep %d source %d dest %d input ready (after) %d\n", timestep, source_point, dest_point, point_input_ready);
+
+  auto &point_timestep = state.timestep(graph_index, point_index);
+  if (point_timestep < graph.timesteps && check_task_ready(graph_index, point_index, point_timestep)) {
+    state.task_ready_queue.push_back(
+      std::tuple<long, long, long>(graph_index, point_index, point_timestep));
+  }
 }
 
 static void WAR_handler(gex_Token_t token,
@@ -303,8 +243,22 @@ static void WAR_handler(gex_Token_t token,
 
   long last_field = (timestep + state.num_fields - 1) % state.num_fields;
 
-  auto &point_remote_input_empty = state.remote_input_empty[graph_index][point_index][last_field];
+  auto &point_remote_input_empty = state.remote_input_empty(graph_index, point_index, last_field);
   point_remote_input_empty++;
+
+  printf("WAR handler timestep %d point %d remote input empty (after) %d\n", timestep, point, point_remote_input_empty);
+
+  // FIXME: I think there are some conditions under which we need this
+  // (if a WAR handler comes very late) but if you just do it blindly
+  // you end up with double triggers.
+
+  // Need to check that timestep == next_field_timestep, or something like that.
+
+  // auto &point_timestep = state.timestep(graph_index, point_index);
+  // if (point_timestep < graph.timesteps && check_task_ready(graph_index, point_index, point_timestep)) {
+  //   state.task_ready_queue.push_back(
+  //     std::tuple<long, long, long>(graph_index, point_index, point_timestep));
+  // }
 }
 
 const int N_HANDLERS = 2;
@@ -355,271 +309,291 @@ int main(int argc, char *argv[])
 
   state.graphs = app.graphs;
 
-  state.timesteps.resize(app.graphs.size());
-  state.inputs.resize(app.graphs.size());
-  state.input_ready.resize(app.graphs.size());
-  state.input_consumed.resize(app.graphs.size());
-  state.remote_input_empty.resize(app.graphs.size());
-  state.input_ptr.resize(app.graphs.size());
-  state.input_bytes.resize(app.graphs.size());
-  state.outputs.resize(app.graphs.size());
-  state.output_empty.resize(app.graphs.size());
-  state.scratch.resize(app.graphs.size());
-  state.dependencies.resize(app.graphs.size());
-  state.reverse_dependencies.resize(app.graphs.size());
+  long max_timesteps = 0;
+  long max_points = 0;
+  long max_dsets = 0;
+  long max_deps = 0;
+  size_t max_output_bytes = 0;
+  size_t max_scratch_bytes = 0;
+  long expected_tasks = 0;
+  for (auto graph : app.graphs) {
+    long first_point = rank * graph.max_width / n_ranks;
+    long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
+    long n_points = last_point - first_point + 1;
 
-  std::vector<std::vector<gex_Rank_t> > graph_rank_by_point(app.graphs.size());
+    max_timesteps = std::max(max_timesteps, graph.timesteps);
+
+    max_points = std::max(max_points, n_points);
+
+    max_output_bytes = std::max(max_output_bytes, graph.output_bytes_per_task);
+    max_scratch_bytes = std::max(max_scratch_bytes, graph.scratch_bytes_per_task);
+
+    max_dsets = std::max(max_dsets, graph.max_dependence_sets());
+
+    for (long dset = 0; dset < graph.max_dependence_sets(); ++dset) {
+      for (long point = first_point; point <= last_point; ++point) {
+        long deps = 0;
+        for (auto interval : graph.dependencies(dset, point)) {
+          deps += interval.second - interval.first + 1;
+        }
+        max_deps = std::max(max_deps, deps);
+      }
+    }
+
+    expected_tasks += n_points;
+  }
+
+  size_t n_graphs = app.graphs.size();
+
+  state.timestep.resize(            {n_graphs, (size_t)max_points});
+  state.inputs.resize(              {n_graphs, (size_t)max_points, (size_t)state.num_fields, (size_t)max_deps, max_output_bytes});
+  state.input_ready.resize(         {n_graphs, (size_t)max_points, (size_t)state.num_fields});
+  state.input_consumed.resize(      {n_graphs, (size_t)max_points, (size_t)state.num_fields});
+  state.remote_input_empty.resize(  {n_graphs, (size_t)max_points, (size_t)state.num_fields});
+  state.input_ptr.resize(           {n_graphs, (size_t)max_points, (size_t)state.num_fields, (size_t)max_deps});
+  state.input_bytes.resize(         {n_graphs, (size_t)max_points, (size_t)state.num_fields, (size_t)max_deps});
+  state.outputs.resize(             {n_graphs, (size_t)max_points, (size_t)state.num_fields, max_output_bytes});
+  state.output_empty.resize(        {n_graphs, (size_t)max_points, (size_t)state.num_fields});
+  state.n_raw_in.resize(            {n_graphs, (size_t)max_points, (size_t)max_timesteps});
+  state.n_raw_out.resize(           {n_graphs, (size_t)max_points, (size_t)max_timesteps});
+  state.n_war_in.resize(            {n_graphs, (size_t)max_points, (size_t)max_timesteps});
+  state.n_war_out.resize(           {n_graphs, (size_t)max_points, (size_t)max_timesteps});
+  state.scratch.resize(             {n_graphs, (size_t)max_points, max_scratch_bytes});
+  state.dependencies.resize(        {n_graphs, (size_t)max_dsets, (size_t)max_points});
+  state.reverse_dependencies.resize({n_graphs, (size_t)max_dsets, (size_t)max_points});
+
+  std::vector<std::vector<gex_Rank_t> > rank_by_point(app.graphs.size());
+
+  for (auto graph : app.graphs) {
+    long first_point = rank * graph.max_width / n_ranks;
+    long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
+    long n_points = last_point - first_point + 1;
+
+    for (long point = first_point; point <= last_point; ++point) {
+      long point_index = point - first_point;
+
+      for (long field = 0; field < state.num_fields; ++field) {
+        for (long dep = 0; dep < max_deps; ++dep) {
+          state.input_ptr(graph.graph_index, point_index, field, dep) = &state.inputs(graph.graph_index, point_index, field, dep, 0);
+          state.input_bytes(graph.graph_index, point_index, field, dep) = graph.output_bytes_per_task;
+        }
+      }
+
+      for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
+        long last_offset = graph.offset_at_timestep(timestep-1);
+        long last_width = graph.width_at_timestep(timestep-1);
+
+        long next_offset = graph.offset_at_timestep(timestep+1);
+        long next_width = graph.width_at_timestep(timestep+1);
+
+        long last_field_offset = graph.offset_at_timestep(timestep - state.num_fields + 1);
+        long last_field_width = graph.width_at_timestep(timestep - state.num_fields + 1);
+
+        long next_field_offset = graph.offset_at_timestep(timestep + state.num_fields - 1);
+        long next_field_width = graph.width_at_timestep(timestep + state.num_fields - 1);
+
+        long dset = graph.dependence_set_at_timestep(timestep);
+        long next_dset = graph.dependence_set_at_timestep(timestep+1);
+        long last_field_dset = graph.dependence_set_at_timestep(timestep - state.num_fields + 1);
+        long next_field_dset = graph.dependence_set_at_timestep(timestep + state.num_fields - 1);
+
+        long raw_in = 0;
+        for (auto interval : graph.dependencies(dset, point)) {
+          long first_dep = clamp(interval.first,      last_offset, last_offset + last_width);
+          long last_dep  = clamp(interval.second + 1, last_offset, last_offset + last_width);
+          assert(first_dep <= last_dep);
+          raw_in += last_dep - first_dep;
+        }
+        state.n_raw_in(graph.graph_index, point_index, timestep) = raw_in;
+
+        long raw_out = 0;
+        for (auto interval : graph.reverse_dependencies(next_dset, point)) {
+          long first_dep = clamp(interval.first,      next_offset, next_offset + next_width);
+          long last_dep  = clamp(interval.second + 1, next_offset, next_offset + next_width);
+          assert(first_dep <= last_dep);
+          raw_out += last_dep - first_dep;
+        }
+        state.n_raw_out(graph.graph_index, point_index, timestep) = raw_out;
+
+        long war_in = 0;
+        for (auto interval : graph.reverse_dependencies(last_field_dset, point)) {
+          long first_dep = clamp(interval.first,      last_field_offset, last_field_offset + last_field_width);
+          long last_dep  = clamp(interval.second + 1, last_field_offset, last_field_offset + last_field_width);
+          assert(first_dep <= last_dep);
+          war_in += last_dep - first_dep;
+        }
+        state.n_war_in(graph.graph_index, point_index, timestep) = war_in;
+
+        long war_out = 0;
+        for (auto interval : graph.dependencies(dset, point)) {
+          long first_dep = clamp(interval.first,      next_field_offset, next_field_offset + next_field_width);
+          long last_dep  = clamp(interval.second + 1, next_field_offset, next_field_offset + next_field_width);
+          assert(first_dep <= last_dep);
+          war_out += last_dep - first_dep;
+        }
+        state.n_war_out(graph.graph_index, point_index, timestep) = war_out;
+      }
+
+      for (long dset = 0; dset < graph.max_dependence_sets(); ++dset) {
+        auto deps = graph.dependencies(dset, point);
+        auto rev_deps = graph.dependencies(dset, point);
+
+        state.dependencies(graph.graph_index, dset, point_index) = deps;
+        state.reverse_dependencies(graph.graph_index, dset, point_index) = rev_deps;
+      }
+
+      if (!state.scratch.empty())
+        TaskGraph::prepare_scratch(&state.scratch(graph.graph_index, point_index, 0), graph.scratch_bytes_per_task);
+    }
+
+    rank_by_point[graph.graph_index].resize(graph.max_width);
+    for (gex_Rank_t r = 0; r < n_ranks; ++r) {
+      long r_first_point = r * graph.max_width / n_ranks;
+      long r_last_point = (r + 1) * graph.max_width / n_ranks - 1;
+      for (long p = r_first_point; p <= r_last_point; ++p) {
+        rank_by_point[graph.graph_index][p] = r;
+      }
+    }
+  }
+
+  std::vector<std::tuple<long, long, long, long> > send_queue;
 
   std::vector<std::tuple<long, long, long> > sends_raw;
   std::vector<std::tuple<long, long, long> > sends_war;
 
+  std::vector<std::tuple<long, long, long> > task_ready_queue_local;
+
   double elapsed_time = 0.0;
   for (int iter = 0; iter < 2; ++iter) {
-    for (auto graph : app.graphs) {
-      long first_point = rank * graph.max_width / n_ranks;
-      long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
-      long n_points = last_point - first_point + 1;
-
-      long max_deps = 0;
-      for (long dset = 0; dset < graph.max_dependence_sets(); ++dset) {
-        for (long point = first_point; point <= last_point; ++point) {
-          long deps = 0;
-          for (auto interval : graph.dependencies(dset, point)) {
-            deps += interval.second - interval.first + 1;
-          }
-          max_deps = std::max(max_deps, deps);
-        }
-      }
-
-      // Initialize data structures.
-      graph_rank_by_point[graph.graph_index].resize(graph.max_width);
-      for (gex_Rank_t r = 0; r < n_ranks; ++r) {
-        long r_first_point = r * graph.max_width / n_ranks;
-        long r_last_point = (r + 1) * graph.max_width / n_ranks - 1;
-        for (long p = r_first_point; p <= r_last_point; ++p) {
-          graph_rank_by_point[graph.graph_index][p] = r;
-        }
-      }
-
-      auto &timesteps = state.timesteps[graph.graph_index];
-      auto &inputs = state.inputs[graph.graph_index];
-      auto &input_ready = state.input_ready[graph.graph_index];
-      auto &input_consumed = state.input_consumed[graph.graph_index];
-      auto &remote_input_empty = state.remote_input_empty[graph.graph_index];
-      auto &input_ptr = state.input_ptr[graph.graph_index];
-      auto &input_bytes = state.input_bytes[graph.graph_index];
-      auto &outputs = state.outputs[graph.graph_index];
-      auto &output_empty = state.output_empty[graph.graph_index];
-      auto &scratch = state.scratch[graph.graph_index];
-
-      timesteps.resize(n_points);
-      inputs.resize(n_points);
-      input_ready.resize(n_points);
-      input_consumed.resize(n_points);
-      remote_input_empty.resize(n_points);
-      input_ptr.resize(n_points);
-      input_bytes.resize(n_points);
-      outputs.resize(n_points);
-      output_empty.resize(n_points);
-      scratch.resize(n_points);
-
-      for (long point = first_point; point <= last_point; ++point) {
-        long point_index = point - first_point;
-
-        auto &point_timestep = timesteps[point_index];
-        point_timestep = 0;
-
-        auto &point_inputs = inputs[point_index];
-        auto &point_input_ready = input_ready[point_index];
-        auto &point_input_consumed = input_consumed[point_index];
-        auto &point_remote_input_empty = remote_input_empty[point_index];
-        auto &point_input_ptr = input_ptr[point_index];
-        auto &point_input_bytes = input_bytes[point_index];
-        auto &point_outputs = outputs[point_index];
-        auto &point_output_empty = output_empty[point_index];
-
-        point_inputs.resize(state.num_fields);
-        point_input_ready.resize(state.num_fields);
-        point_input_consumed.resize(state.num_fields);
-        point_remote_input_empty.resize(state.num_fields);
-        point_input_ptr.resize(state.num_fields);
-        point_input_bytes.resize(state.num_fields);
-        point_outputs.resize(state.num_fields);
-        point_output_empty.resize(state.num_fields);
-
-        for (long field = 0; field < state.num_fields; ++field) {
-          auto &field_inputs = point_inputs[field];
-          auto &field_input_ptr = point_input_ptr[field];
-          auto &field_input_bytes = point_input_bytes[field];
-
-          field_inputs.resize(max_deps);
-          field_input_ptr.resize(max_deps);
-          field_input_bytes.resize(max_deps);
-
-          for (long dep = 0; dep < max_deps; ++dep) {
-            field_inputs[dep].resize(graph.output_bytes_per_task);
-            field_input_ptr[dep] = field_inputs[dep].data();
-            field_input_bytes[dep] = field_inputs[dep].size();
-          }
-
-          auto &field_input_ready = point_input_ready[field];
-          field_input_ready = 0;
-
-          auto &field_input_consumed = point_input_consumed[field];
-          field_input_consumed = 0;
-
-          auto &field_remote_input_empty = point_remote_input_empty[field];
-          field_remote_input_empty = 0;
-
-          auto &field_outputs = point_outputs[field];
-          field_outputs.resize(graph.output_bytes_per_task);
-
-          auto &field_output_empty = point_output_empty[field];
-          field_output_empty = 1;
-        }
-
-        auto &point_scratch = scratch[point_index];
-        point_scratch.resize(graph.scratch_bytes_per_task);
-        TaskGraph::prepare_scratch(point_scratch.data(), point_scratch.size());
-      }
-
-      // Cache dependencies.
-      auto &dependencies = state.dependencies[graph.graph_index];
-      auto &reverse_dependencies = state.reverse_dependencies[graph.graph_index];
-
-      dependencies.resize(graph.max_dependence_sets());
-      reverse_dependencies.resize(graph.max_dependence_sets());
-
-      for (long dset = 0; dset < graph.max_dependence_sets(); ++dset) {
-        dependencies[dset].resize(n_points);
-        reverse_dependencies[dset].resize(n_points);
-
-        for (long point = first_point; point <= last_point; ++point) {
-          long point_index = point - first_point;
-
-          dependencies[dset][point_index] = graph.dependencies(dset, point);
-          reverse_dependencies[dset][point_index] = graph.reverse_dependencies(dset, point);
-        }
-      }
-    }
+    std::fill(state.timestep.begin(), state.timestep.end(), 0);
+    std::fill(state.input_ready.begin(), state.input_ready.end(), 0);
+    std::fill(state.input_consumed.begin(), state.input_consumed.end(), 0);
+    std::fill(state.remote_input_empty.begin(), state.remote_input_empty.end(), 0);
+    std::fill(state.output_empty.begin(), state.output_empty.end(), 1);
 
     gex_Event_Wait(gex_Coll_BarrierNB(tm, 0));
 
     double start_time = Timer::get_cur_time();
 
-    while (!is_complete()) {
-      // Run any ready tasks.
+    // Advance and queue initial tasks.
+    for (auto graph : app.graphs) {
+      long first_point = rank * graph.max_width / n_ranks;
+      long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
+      long n_points = last_point - first_point + 1;
+
+      for (long point = first_point; point <= last_point; ++point) {
+        long point_index = point - first_point;
+
+        advance_timestep(graph.graph_index, point, point_index);
+
+        auto &point_timestep = state.timestep(graph.graph_index, point_index);
+
+        if (check_task_ready(graph.graph_index, point_index, point_timestep)) {
+          state.task_ready_queue.push_back(
+            std::tuple<long, long, long>(graph.graph_index, point_index, point_timestep));
+        }
+      }
+    }
+
+    while (true) {
       {
         AutoLock guard(state.lock);
 
-        for (auto graph : app.graphs) {
-          long first_point = rank * graph.max_width / n_ranks;
-          long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
+        // Check for completion.
+        if (state.complete == expected_tasks)
+          break;
 
-          for (long point = first_point; point <= last_point; ++point) {
-            long point_index = point - first_point;
+        // Run any ready tasks.
+        task_ready_queue_local.swap(state.task_ready_queue);
+        for (auto entry : task_ready_queue_local) {
+          long graph_index, point, timestep;
+          std::tie(graph_index, point, timestep) = entry;
 
-            long timestep = state.timesteps[graph.graph_index][point_index];
-
-            if (timestep >= graph.timesteps) {
-              continue;
-            }
-
-            check_and_run(graph.graph_index, point);
+          auto send = run_task_body(graph_index, point, timestep);
+          if (send.first >= 0 || send.second >= 0) {
+            send_queue.push_back(std::tuple<long, long, long, long>(graph_index, point, send.first, send.second));
           }
         }
+
+        // Clear the task queue.
+        task_ready_queue_local.clear();
       }
 
-      // Send data for RAW dependencies
-      for (auto graph : app.graphs) {
+      // Issue queued sends.
+      for (auto entry : send_queue) {
+        long graph_index, point, raw_timestep, war_timestep;
+        std::tie(graph_index, point, raw_timestep, war_timestep) = entry;
+
+        printf("processing queued send for point %ld RAW timestep %ld WAR timestep %ld\n", point, raw_timestep, war_timestep);
+
+        auto &graph = app.graphs[graph_index];
+
         long first_point = rank * graph.max_width / n_ranks;
         long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
 
-        auto &outputs = state.outputs[graph.graph_index];
+        long point_index = point - first_point;
 
-        auto &reverse_dependencies = state.reverse_dependencies[graph.graph_index];
+        // RAW dependencies:
+        if (raw_timestep >= 0) {
+          long offset = graph.offset_at_timestep(raw_timestep);
+          long width = graph.width_at_timestep(raw_timestep);
 
-        auto &rank_by_point = graph_rank_by_point[graph.graph_index];
+          long next_offset = graph.offset_at_timestep(raw_timestep+1);
+          long next_width = graph.width_at_timestep(raw_timestep+1);
 
-        for (long point = first_point; point <= last_point; ++point) {
-          long point_index = point - first_point;
+          long field = raw_timestep % state.num_fields;
 
-          long timestep = timestep_to_send(graph.graph_index, point).first;
-          if (timestep >= 0) {
-            long offset = graph.offset_at_timestep(timestep);
-            long width = graph.width_at_timestep(timestep);
+          long dset = graph.dependence_set_at_timestep(raw_timestep + 1);
 
-            long next_offset = graph.offset_at_timestep(timestep+1);
-            long next_width = graph.width_at_timestep(timestep+1);
+          auto &point_output = state.outputs(graph_index, point_index, field, 0);
+          auto &point_rev_deps = state.reverse_dependencies(graph_index, dset, point_index);
 
-            long field = timestep % state.num_fields;
-
-            long dset = graph.dependence_set_at_timestep(timestep + 1);
-
-            auto &point_output = outputs[point_index][field];
-            auto &point_rev_deps = reverse_dependencies[dset][point_index];
-
-            if (point >= offset && point < offset + width) {
-              for (auto interval : point_rev_deps) {
-                for (long dep = interval.first; dep <= interval.second; dep++) {
-                  if (dep < next_offset || dep >= next_offset + next_width) {
-                    continue;
-                  }
-
-                  CHECK_OK(gex_AM_RequestMedium(tm, rank_by_point[dep], handlers[0].gex_index,
-                                                point_output.data(), point_output.size(),
-                                                GEX_EVENT_GROUP, 0,
-                                                (gex_AM_Arg_t)graph.graph_index, (gex_AM_Arg_t)timestep,
-                                                (gex_AM_Arg_t)point, (gex_AM_Arg_t)dep));
-                  sends_raw.push_back(std::tuple<long, long, long>(graph.graph_index, timestep, point));
+          if (point >= offset && point < offset + width) {
+            for (auto interval : point_rev_deps) {
+              for (long dep = interval.first; dep <= interval.second; dep++) {
+                if (dep < next_offset || dep >= next_offset + next_width) {
+                  continue;
                 }
+
+                CHECK_OK(gex_AM_RequestMedium(tm, rank_by_point[graph_index][dep], handlers[0].gex_index,
+                                              &point_output, graph.output_bytes_per_task,
+                                              GEX_EVENT_GROUP, 0,
+                                              (gex_AM_Arg_t)graph.graph_index, (gex_AM_Arg_t)raw_timestep,
+                                              (gex_AM_Arg_t)point, (gex_AM_Arg_t)dep));
+                sends_raw.push_back(std::tuple<long, long, long>(graph.graph_index, raw_timestep, point));
+              }
+            }
+          }
+        }
+
+        // WAR dependencies:
+        if (war_timestep >= 0) {
+          long offset = graph.offset_at_timestep(war_timestep);
+          long width = graph.width_at_timestep(war_timestep);
+
+          long next_field_offset = graph.offset_at_timestep(war_timestep + state.num_fields - 1);
+          long next_field_width = graph.width_at_timestep(war_timestep + state.num_fields - 1);
+
+          long dset = graph.dependence_set_at_timestep(war_timestep);
+
+          auto &point_deps = state.dependencies(graph_index, dset, point_index);
+
+          if (point >= offset && point < offset + width) {
+            for (auto interval : point_deps) {
+              for (long dep = interval.first; dep <= interval.second; dep++) {
+                if (dep < next_field_offset || dep >= next_field_offset + next_field_width) {
+                  continue;
+                }
+
+                CHECK_OK(gex_AM_RequestShort(tm, rank_by_point[graph_index][dep], handlers[1].gex_index, 0,
+                                             (gex_AM_Arg_t)graph.graph_index, (gex_AM_Arg_t)war_timestep, (gex_AM_Arg_t)dep));
+                sends_war.push_back(std::tuple<long, long, long>(graph.graph_index, war_timestep, point));
               }
             }
           }
         }
       }
-
-      // Send data for WAR dependencies
-      for (auto graph : app.graphs) {
-        long first_point = rank * graph.max_width / n_ranks;
-        long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
-
-        auto &dependencies = state.dependencies[graph.graph_index];
-
-        auto &rank_by_point = graph_rank_by_point[graph.graph_index];
-
-        for (long point = first_point; point <= last_point; ++point) {
-          long point_index = point - first_point;
-
-          long timestep = timestep_to_send(graph.graph_index, point).second;
-          if (timestep >= 0) {
-
-            long offset = graph.offset_at_timestep(timestep);
-            long width = graph.width_at_timestep(timestep);
-
-            long next_field_offset = graph.offset_at_timestep(timestep + state.num_fields - 1);
-            long next_field_width = graph.width_at_timestep(timestep + state.num_fields - 1);
-
-            long dset = graph.dependence_set_at_timestep(timestep);
-
-            auto &point_deps = dependencies[dset][point_index];
-
-            if (point >= offset && point < offset + width) {
-              for (auto interval : point_deps) {
-                for (long dep = interval.first; dep <= interval.second; dep++) {
-                  if (dep < next_field_offset || dep >= next_field_offset + next_field_width) {
-                    continue;
-                  }
-
-                  CHECK_OK(gex_AM_RequestShort(tm, rank_by_point[dep], handlers[1].gex_index, 0,
-                                               (gex_AM_Arg_t)graph.graph_index, (gex_AM_Arg_t)timestep, (gex_AM_Arg_t)dep));
-                  sends_war.push_back(std::tuple<long, long, long>(graph.graph_index, timestep, point));
-                }
-              }
-            }
-          }
-        }
-      }
+      send_queue.clear();
 
       // Wait for local completion so it's safe to override output buffers.
       gex_NBI_Wait(GEX_EC_LC, 0);
@@ -643,7 +617,7 @@ int main(int argc, char *argv[])
           long last_field = (timestep + state.num_fields - 1) % state.num_fields;
           long field = timestep % state.num_fields;
 
-          auto &point_output_empty = state.output_empty[graph_index][point_index][field];
+          auto &point_output_empty = state.output_empty(graph_index, point_index, field);
           point_output_empty = 1;
         }
         for (auto &send : sends_war) {
@@ -661,7 +635,7 @@ int main(int argc, char *argv[])
 
           long last_field = (timestep + state.num_fields - 1) % state.num_fields;
 
-          auto &point_input_consumed = state.input_consumed[graph_index][point_index][last_field];
+          auto &point_input_consumed = state.input_consumed(graph_index, point_index, last_field);
           point_input_consumed = 0;
         }
       }
@@ -683,4 +657,7 @@ int main(int argc, char *argv[])
   }
 
   gex_HSL_Destroy(&state.lock);
+
+  return 0;
 }
+
