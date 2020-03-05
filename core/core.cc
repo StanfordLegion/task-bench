@@ -678,6 +678,7 @@ static void show_help_message(int argc, char **argv) {
   printf("\nGeneral options:\n");
   printf("  %-18s show this help message and exit\n", "-h");
   printf("  %-18s enable verbose output\n", "-v");
+  printf("  %-18s enable extra verbose output\n", "-vv");
 
   printf("\nOptions for configuring the task graph:\n");
   printf("  %-18s height of task graph\n", STEPS_FLAG " [INT]");
@@ -712,7 +713,7 @@ static void show_help_message(int argc, char **argv) {
 }
 
 App::App(int argc, char **argv)
-  : verbose(false)
+  : verbose(0)
   , enable_graph_validation(true)
 {
   TaskGraph graph = default_graph(graphs.size());
@@ -725,7 +726,11 @@ App::App(int argc, char **argv)
     }
 
     if (!strcmp(argv[i], "-v")) {
-      verbose = true;
+      verbose++;
+    }
+
+    if (!strcmp(argv[i], "-vv")) {
+      verbose += 2;
     }
 
     if (!strcmp(argv[i], SKIP_GRAPH_VALIDATION_FLAG)) {
@@ -979,37 +984,54 @@ void App::display() const
     printf("      Output Bytes: %lu\n", g.output_bytes_per_task);
     printf("      Scratch Bytes: %lu\n", g.scratch_bytes_per_task);
 
-    if (verbose) {
+    if (verbose > 0) {
       for (long t = 0; t < g.timesteps; ++t) {
         long offset = g.offset_at_timestep(t);
         long width = g.width_at_timestep(t);
+
+        long last_offset = g.offset_at_timestep(t-1);
+        long last_width = g.width_at_timestep(t-1);
+
         long dset = g.dependence_set_at_timestep(t);
-        printf("      Dependencies (offset %ld, width %ld):\n",
-               g.offset_at_timestep(t), g.width_at_timestep(t));
+
+        printf("      Timestep %ld (offset %ld, width %ld, last offset %ld, last width %ld):\n",
+               t, offset, width, last_offset, last_width);
+        printf("        Points:");
         for (long p = offset; p < offset + width; ++p) {
-          printf("        Point %ld:", p);
+          printf(" %ld", p);
+        }
+        printf("\n");
+
+        printf("        Dependencies:\n",
+               t, offset, width);
+        for (long p = offset; p < offset + width; ++p) {
+          printf("          Point %ld:", p);
           auto deps = g.dependencies(dset, p);
           for (auto dep : deps) {
             for (long dp = dep.first; dp <= dep.second; ++dp) {
-              printf(" %ld", dp);
+              if (dp >= last_offset && dp < last_offset + last_width) {
+                printf(" %ld", dp);
+              }
             }
           }
           printf("\n");
         }
-#ifdef EXTRA_VERBOSE
-        printf("      Reverse Dependencies (offset %ld, width %ld):\n",
-               g.offset_at_timestep(t), g.width_at_timestep(t));
-        for (long p = offset; p < offset + width; ++p) {
-          printf("        Point %ld:", p);
-          auto deps = g.reverse_dependencies(dset, p);
-          for (auto dep : deps) {
-            for (long dp = dep.first; dp <= dep.second; ++dp) {
-              printf(" %ld", dp);
+        if (verbose > 1) {
+          printf("        Reverse Dependencies:\n",
+                 t, last_offset, last_width);
+          for (long p = last_offset; p < last_offset + last_width; ++p) {
+            printf("          Point %ld:", p);
+            auto deps = g.reverse_dependencies(dset, p);
+            for (auto dep : deps) {
+              for (long dp = dep.first; dp <= dep.second; ++dp) {
+                if (dp >= offset && dp < offset + width) {
+                  printf(" %ld", dp);
+                }
+              }
             }
+            printf("\n");
           }
-          printf("\n");
         }
-#endif
       }
     }
   }
