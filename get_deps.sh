@@ -385,6 +385,7 @@ EOF
 export TENSORFLOW_DIR="$TENSORFLOW_DIR"
 export CONDA_PREFIX="\$TENSORFLOW_DIR"/conda
 export PATH="\$CONDA_PREFIX"/bin:"\$PATH"
+export CUDA_VISIBLE_DEVICES=-1 # explicitly disable GPU
 EOF
 
     source "$TENSORFLOW_DIR"/env.sh
