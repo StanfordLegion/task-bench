@@ -19,6 +19,11 @@ else
 fi
 THREADS=${THREADS:-$DEFAULT_THREADS}
 
+# On Cray machines, default to static build. (Cori switched this
+# default from static to dynamic in the January 2020 maintenance
+# cycle, but we want to stick with static builds.)
+export CRAYPE_LINK_TYPE=static
+
 make -C core clean
 make -C core -j$THREADS
 
