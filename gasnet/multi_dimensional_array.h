@@ -38,51 +38,79 @@ public:
     assert(ext.size() == N);
     std::copy(ext.begin(), ext.end(), extent);
 
-    total_extent = 1;
-    for (size_t dim = 0; dim < N; dim++) {
-      total_extent *= extent[dim];
+    compute_total_extent();
+    data = new T[total_extent];
+    owned = true;
+  }
+
+  Array(T *ptr, std::initializer_list<size_t> ext)
+  {
+    assert(ext.size() == N);
+    std::copy(ext.begin(), ext.end(), extent);
+
+    compute_total_extent();
+    data = ptr;
+    owned = false;
+  }
+
+  Array(const Array<N, T> &array)
+  {
+    std::copy(array.extent, array.extent+N, extent);
+    total_extent = array.total_extent;
+
+    if (array.owned) {
+      data = new T[total_extent];
+      std::copy(array.begin(), array.end(), begin());
+    } else {
+      data = array.data;
     }
-    data = new T[total_extent];
-  }
-
-  Array(Array<N, T> &array)
-    : extent(array.extent)
-    , total_extent(array.total_extent)
-  {
-    data = new T[total_extent];
-    std::copy(array.begin(), array.end(), begin());
-  }
-
-  ~Array()
-  {
-    if (data)
-      delete [] data;
+    owned = array.owned;
   }
 
   Array<N, T> & operator=(const Array<N, T> &array) {
-    if (data)
-      delete [] data;
+    destroy();
 
     extent = array.extent;
     total_extent = array.total_extent;
-    std::copy(array.begin(), array.end(), begin());
+
+    if (array.owned) {
+      data = new T[total_extent];
+      std::copy(array.begin(), array.end(), begin());
+    } else {
+      data = array.data;
+    }
+    owned = array.owned;
 
     return *this;
   }
 
+  ~Array()
+  {
+    destroy();
+  }
+
   void resize(std::initializer_list<size_t> ext)
   {
-    if (data)
-      delete [] data;
+    destroy();
 
     assert(ext.size() == N);
     std::copy(ext.begin(), ext.end(), extent);
 
-    total_extent = 1;
-    for (size_t dim = 0; dim < N; dim++) {
-      total_extent *= extent[dim];
-    }
+    compute_total_extent();
     data = new T[total_extent];
+    owned = true;
+  }
+
+  void resize(T *ptr, std::initializer_list<size_t> ext)
+  {
+    destroy();
+
+    assert(ext.size() == N);
+    std::copy(ext.begin(), ext.end(), extent);
+
+    compute_total_extent();
+    data = ptr;
+    owned = false;
   }
 
   size_t size() const
@@ -100,7 +128,17 @@ public:
     return data;
   }
 
+  const T * begin() const
+  {
+    return data;
+  }
+
   T * end()
+  {
+    return data + total_extent;
+  }
+
+  const T * end() const
   {
     return data + total_extent;
   }
@@ -116,6 +154,21 @@ public:
     assert(lin < total_extent);
 #endif
     return data[lin];
+  }
+
+private:
+  void compute_total_extent()
+  {
+    total_extent = 1;
+    for (size_t dim = 0; dim < N; dim++) {
+      total_extent *= extent[dim];
+    }
+  }
+
+  void destroy()
+  {
+    if (data && owned)
+      delete [] data;
   }
 
 private:
@@ -152,6 +205,7 @@ private:
   size_t extent[N];
   size_t total_extent;
   T *data;
+  bool owned;
 };
 
 #ifdef MAIN

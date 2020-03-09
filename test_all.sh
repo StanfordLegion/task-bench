@@ -74,10 +74,12 @@ fi
 if [[ $TASKBENCH_USE_GASNET -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-                mpirun -np 1 ./gasnet/seq -steps $steps -type $t $k
-                mpirun -np 2 ./gasnet/seq -steps $steps -type $t $k
-                mpirun -np 4 ./gasnet/seq -steps $steps -type $t $k
-                mpirun -np 4 ./gasnet/seq -steps $steps -type $t $k -and -steps $steps -type $t $k
+            for binary in seq seq_long; do
+                mpirun -np 1 ./gasnet/$binary -steps $steps -type $t $k
+                mpirun -np 2 ./gasnet/$binary -steps $steps -type $t $k
+                mpirun -np 4 ./gasnet/$binary -steps $steps -type $t $k
+                mpirun -np 4 ./gasnet/$binary -steps $steps -type $t $k -and -steps $steps -type $t $k
+            done
         done
     done
 fi

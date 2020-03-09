@@ -49,14 +49,17 @@ struct RankState {
   long complete;
   std::vector<TaskGraph> graphs;
   std::vector<std::tuple<long, long, long> > task_ready_queue;
-  Array<2, long> timestep;
   Array<5, char> inputs;
+  Array<4, char> outputs;
+  std::vector<Array<5, char> > remote_inputs;
+  std::vector<Array<4, char> > remote_outputs;
+
+  Array<2, long> timestep;
   Array<3, int> input_ready;
   Array<3, int> input_consumed;
   Array<3, int> remote_input_empty;
   Array<4, const char *> input_ptr;
   Array<4, size_t> input_bytes;
-  Array<4, char> outputs;
   Array<3, int> output_empty;
   Array<3, int> n_raw_in;
   Array<3, int> n_raw_out;
@@ -161,7 +164,7 @@ static std::pair<long, long> run_task_body(long graph_index, long point, long ti
 }
 
 static void RAW_handler(gex_Token_t token, void *buffer, size_t size,
-                        gex_AM_Arg_t graph_index, gex_AM_Arg_t timestep, gex_AM_Arg_t source_point, gex_AM_Arg_t dest_point)
+                        gex_AM_Arg_t graph_index, gex_AM_Arg_t timestep, gex_AM_Arg_t dest_point)
 {
   AutoLock guard(state.lock);
 
@@ -177,32 +180,7 @@ static void RAW_handler(gex_Token_t token, void *buffer, size_t size,
 
   long field = timestep % state.num_fields;
 
-  long offset = graph.offset_at_timestep(timestep);
-  long width = graph.width_at_timestep(timestep);
-
-  long dset = graph.dependence_set_at_timestep(timestep+1);
-
   auto &point_input_ready = state.input_ready(graph_index, point_index, field);
-  auto &point_deps = state.dependencies(graph_index, dset, point_index);
-
-  long input_idx = 0;
-  for (auto interval : point_deps) {
-    long first_dep = clamp(interval.first,      offset, offset + width);
-    long last_dep  = clamp(interval.second + 1, offset, offset + width);
-    assert(first_dep <= last_dep);
-    if (first_dep <= source_point && source_point <= last_dep) {
-      first_dep = std::min(first_dep, (long)source_point);
-      last_dep = std::min(last_dep, (long)source_point);
-    }
-    input_idx += last_dep - first_dep;
-    if (first_dep <= source_point && source_point <= last_dep) {
-      break;
-    }
-  }
-
-  std::copy(
-    (char *)buffer, ((char *)buffer) + size,
-    &state.inputs(graph_index, point_index, field, input_idx, 0));
 
   point_input_ready++;
 
@@ -245,8 +223,8 @@ gex_AM_Entry_t handlers[N_HANDLERS] = {
   gex_AM_Entry_t {
     .gex_index = 0,
     .gex_fnptr = (void (*)())RAW_handler,
-    .gex_flags = GEX_FLAG_AM_MEDIUM | GEX_FLAG_AM_REQUEST,
-    .gex_nargs = 4,
+    .gex_flags = GEX_FLAG_AM_LONG | GEX_FLAG_AM_REQUEST,
+    .gex_nargs = 3,
     .gex_cdata = NULL,
     .gex_name = "RAW handler",
   },
@@ -272,9 +250,9 @@ int main(int argc, char *argv[])
   state.rank = rank;
   state.n_ranks = n_ranks;
 
-  // uintptr_t max_size = 0; // gasnet_getMaxLocalSegmentSize(); // don't need this with AM Medium
-  // gex_Segment_t segment;
-  // CHECK_OK(gex_Segment_Attach(&segment, tm, max_size));
+  uintptr_t max_size = gasnet_getMaxLocalSegmentSize();
+  gex_Segment_t segment;
+  CHECK_OK(gex_Segment_Attach(&segment, tm, max_size));
 
   CHECK_OK(gex_EP_RegisterHandlers(ep, handlers, N_HANDLERS));
 
@@ -323,14 +301,45 @@ int main(int argc, char *argv[])
 
   size_t n_graphs = app.graphs.size();
 
+  size_t total_input_bytes = n_graphs * max_points * state.num_fields * max_deps * max_output_bytes;
+  size_t total_output_bytes = n_graphs * max_points * state.num_fields * max_output_bytes;
+
+  assert(total_input_bytes + total_output_bytes < max_size);
+
+  void *segment_start = gex_Segment_QueryAddr(segment);
+
+  char *input_addr = (char *)segment_start;
+  char *output_addr = (char *)segment_start + total_input_bytes;
+
+  state.inputs.resize(input_addr,   {n_graphs, (size_t)max_points, (size_t)state.num_fields, (size_t)max_deps, max_output_bytes});
+  state.outputs.resize(output_addr, {n_graphs, (size_t)max_points, (size_t)state.num_fields, max_output_bytes});
+
+  state.remote_inputs.resize(n_ranks);
+  state.remote_outputs.resize(n_ranks);
+
+  for (size_t other_rank = 0; other_rank < n_ranks; ++other_rank) {
+    void *other_segment_start;
+    void *local_other_segment_start;
+    size_t other_size;
+    CHECK_OK(gex_Segment_QueryBound(tm,
+                                    other_rank,
+                                    &other_segment_start,
+                                    &local_other_segment_start,
+                                    &other_size));
+
+    char *other_input_addr = (char *)other_segment_start;
+    char *other_output_addr = (char *)other_segment_start + total_input_bytes;
+
+    state.remote_inputs[other_rank].resize(other_input_addr,   {n_graphs, (size_t)max_points, (size_t)state.num_fields, (size_t)max_deps, max_output_bytes});
+    state.remote_outputs[other_rank].resize(other_output_addr, {n_graphs, (size_t)max_points, (size_t)state.num_fields, max_output_bytes});
+  }
+
   state.timestep.resize(            {n_graphs, (size_t)max_points});
-  state.inputs.resize(              {n_graphs, (size_t)max_points, (size_t)state.num_fields, (size_t)max_deps, max_output_bytes});
   state.input_ready.resize(         {n_graphs, (size_t)max_points, (size_t)state.num_fields});
   state.input_consumed.resize(      {n_graphs, (size_t)max_points, (size_t)state.num_fields});
   state.remote_input_empty.resize(  {n_graphs, (size_t)max_points, (size_t)state.num_fields});
   state.input_ptr.resize(           {n_graphs, (size_t)max_points, (size_t)state.num_fields, (size_t)max_deps});
   state.input_bytes.resize(         {n_graphs, (size_t)max_points, (size_t)state.num_fields, (size_t)max_deps});
-  state.outputs.resize(             {n_graphs, (size_t)max_points, (size_t)state.num_fields, max_output_bytes});
   state.output_empty.resize(        {n_graphs, (size_t)max_points, (size_t)state.num_fields});
   state.n_raw_in.resize(            {n_graphs, (size_t)max_points, (size_t)max_timesteps});
   state.n_raw_out.resize(           {n_graphs, (size_t)max_points, (size_t)max_timesteps});
@@ -535,11 +544,39 @@ int main(int argc, char *argv[])
                   continue;
                 }
 
-                CHECK_OK(gex_AM_RequestMedium(tm, rank_by_point[graph_index][dep], handlers[0].gex_index,
-                                              &point_output, graph.output_bytes_per_task,
-                                              GEX_EVENT_GROUP, 0,
-                                              (gex_AM_Arg_t)graph.graph_index, (gex_AM_Arg_t)raw_timestep,
-                                              (gex_AM_Arg_t)point, (gex_AM_Arg_t)dep));
+                int other_rank = rank_by_point[graph_index][dep];
+
+                long other_first_point = other_rank * graph.max_width / n_ranks;
+                long other_last_point = (other_rank + 1) * graph.max_width / n_ranks - 1;
+
+                long other_point = dep;
+                long other_point_index = other_point - other_first_point;
+
+                auto &other_point_deps = state.dependencies(graph_index, dset, other_point_index);
+
+                long input_idx = 0;
+                for (auto interval : other_point_deps) {
+                  long first_dep = clamp(interval.first,      offset, offset + width);
+                  long last_dep  = clamp(interval.second + 1, offset, offset + width);
+                  assert(first_dep <= last_dep);
+                  if (first_dep <= point && point <= last_dep) {
+                    first_dep = std::min(first_dep, point);
+                    last_dep = std::min(last_dep, point);
+                  }
+                  input_idx += last_dep - first_dep;
+                  if (first_dep <= point && point <= last_dep) {
+                    break;
+                  }
+                }
+
+                auto &other_point_input = state.remote_inputs[other_rank](graph_index, other_point_index, field, input_idx, 0);
+
+                CHECK_OK(gex_AM_RequestLong(tm, other_rank, handlers[0].gex_index,
+                                            &point_output, graph.output_bytes_per_task,
+                                            &other_point_input,
+                                            GEX_EVENT_GROUP, 0,
+                                            (gex_AM_Arg_t)graph.graph_index, (gex_AM_Arg_t)raw_timestep,
+                                            (gex_AM_Arg_t)dep));
                 sent = true;
               }
             }

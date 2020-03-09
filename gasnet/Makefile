@@ -18,7 +18,7 @@ endif
 
 include ../core/make_blas.mk
 
-BIN := seq
+BIN := seq seq_long
 
 HEADERS := multi_dimensional_array.h
 
