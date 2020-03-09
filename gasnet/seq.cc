@@ -643,6 +643,9 @@ int main(int argc, char *argv[])
 
   gex_HSL_Destroy(&state.lock);
 
+  // Barrier to make sure report gets flushed before nodes exit.
+  gex_Event_Wait(gex_Coll_BarrierNB(tm, 0));
+
   return 0;
 }
 
