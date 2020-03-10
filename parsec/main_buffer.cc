@@ -1,5 +1,5 @@
-/* Copyright 2019 Los Alamos National Laboratory
- * Copyright 2019 The University of Tennessee and The University 
+/* Copyright 2020 Los Alamos National Laboratory
+ * Copyright 2020 The University of Tennessee and The University 
  *                of Tennessee Research Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
