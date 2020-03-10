@@ -95,7 +95,7 @@ EOF
     mkdir -p "$PARSEC_DL_DIR"
     git clone https://bitbucket.org/icldistcomp/parsec.git "$PARSEC_DL_DIR" 
     pushd "$PARSEC_DL_DIR"
-    git checkout 0729fb0
+    git checkout master
     popd
 fi
 

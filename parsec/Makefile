@@ -50,37 +50,37 @@ CFLAGS += $(INC)
 
 include ../core/make_blas.mk
 
-TARGET = main main_shard main_jdf main_buffer
+TARGET = main main_shard main_buffer
 all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
 
-stencil_1d.c stencil_1d.h: stencil_1d.jdf
-	$(PP) -E -i $< -o $(basename $<)
-	
-nearest_radix_5.c nearest_radix_5.h: nearest_radix_5.jdf
-	$(PP) -E -i $< -o $(basename $<)
-
-stencil_1d.o: stencil_1d.c stencil_1d.h benchmark_internal.h
-	$(cc) -c $(CFLAGS_JDF) $(INC) $<
-	
-nearest_radix_5.o: nearest_radix_5.c nearest_radix_5.h benchmark_internal.h
-	$(cc) -c $(CFLAGS_JDF) $(INC) $<
-
-benchmark.c benchmark.h: benchmark.jdf
-	$(PP) -E -i $< -o $(basename $<)
-
-benchmark.o: benchmark.c benchmark.h benchmark_internal.h
-	$(cc) -c $(CFLAGS_JDF) $(INC) $<
-
-spread_radix5_period3.c spread_radix5_period3.h: spread_radix5_period3.jdf
-	$(PP) -E -i $< -o $(basename $<)
-
-spread_radix5_period3.o: spread_radix5_period3.c spread_radix5_period3.h benchmark_internal.h
-	$(cc) -c $(CFLAGS_JDF) $(INC) $<
-
-benchmark_internal.o: benchmark_internal.cc
-	$(CC) -c $(CFLAGS) $<
+# stencil_1d.c stencil_1d.h: stencil_1d.jdf
+# 	$(PP) -E -i $< -o $(basename $<)
+#
+# nearest_radix_5.c nearest_radix_5.h: nearest_radix_5.jdf
+# 	$(PP) -E -i $< -o $(basename $<)
+#
+# stencil_1d.o: stencil_1d.c stencil_1d.h benchmark_internal.h
+# 	$(cc) -c $(CFLAGS_JDF) $(INC) $<
+#
+# nearest_radix_5.o: nearest_radix_5.c nearest_radix_5.h benchmark_internal.h
+# 	$(cc) -c $(CFLAGS_JDF) $(INC) $<
+#
+# benchmark.c benchmark.h: benchmark.jdf
+# 	$(PP) -E -i $< -o $(basename $<)
+#
+# benchmark.o: benchmark.c benchmark.h benchmark_internal.h
+# 	$(cc) -c $(CFLAGS_JDF) $(INC) $<
+#
+# spread_radix5_period3.c spread_radix5_period3.h: spread_radix5_period3.jdf
+# 	$(PP) -E -i $< -o $(basename $<)
+#
+# spread_radix5_period3.o: spread_radix5_period3.c spread_radix5_period3.h benchmark_internal.h
+# 	$(cc) -c $(CFLAGS_JDF) $(INC) $<
+#
+# benchmark_internal.o: benchmark_internal.cc
+# 	$(CC) -c $(CFLAGS) $<
 
 common.o: common.cc common.h
 	$(CC) -c $(CFLAGS) $<
@@ -91,8 +91,8 @@ main.o: main.cc ../core/timer.h
 main_shard.o: main_shard.cc ../core/timer.h
 	$(CC) -c $(CFLAGS) $<
 
-main_jdf.o: main_jdf.cc ../core/timer.h ../core/core_c.h
-	$(CC) -c $(CFLAGS) $<
+# main_jdf.o: main_jdf.cc ../core/timer.h ../core/core_c.h
+# 	$(CC) -c $(CFLAGS) $<
 	
 main_buffer.o: main_buffer.cc ../core/timer.h
 	$(CC) -c $(CFLAGS) $<
@@ -103,8 +103,8 @@ main: main.o common.o
 main_shard: main_shard.o common.o 
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 
-main_jdf: main_jdf.o common.o stencil_1d.o nearest_radix_5.o benchmark_internal.o benchmark.o spread_radix5_period3.o
-	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
+# main_jdf: main_jdf.o common.o stencil_1d.o nearest_radix_5.o benchmark_internal.o benchmark.o spread_radix5_period3.o
+# 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 
 main_buffer: main_buffer.o common.o 
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
