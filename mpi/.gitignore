@@ -2,4 +2,5 @@
 /basic
 /bcast
 /buffered_send
+/bulk_synchronous
 /nonblock

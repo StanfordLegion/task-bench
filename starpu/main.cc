@@ -1,4 +1,4 @@
-/* Copyright 2019 Los Alamos National Laboratory
+/* Copyright 2020 Los Alamos National Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -787,6 +787,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   for (i = 0; i < nb_cores; i++) {
     if (max_scratch_bytes_per_task > 0) {
       extra_local_memory[i] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[i], sizeof(char)*max_scratch_bytes_per_task);
     } else {
       extra_local_memory[i] = NULL;
     }

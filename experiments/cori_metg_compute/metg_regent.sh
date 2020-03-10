@@ -16,12 +16,12 @@ function launch_util_0 {
 
 function launch_util_1 {
     memoize="-dm:memoize"
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:io 1 -ll:util 1 -ll:pin_util $memoize -scratch 64
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:io 1 -ll:util 1 $memoize -scratch 64
 }
 
 function launch_util_2 {
     memoize="-dm:memoize -lg:parallel_replay 2"
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:util 2 $memoize -scratch 64
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:io 1 -ll:util 2 $memoize -scratch 64
 }
 
 function repeat {

@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,6 +123,9 @@ void placeInput(std::pair<long,long> **inputArray, long timestep, long point, lo
 void executePoint(task_graph_t graph, long timestep, long point, std::pair<long,long> **inputPointer, size_t *inputBytes, size_t numInputs) {
   std::pair<long,long> *outputPointer = new std::pair<long, long>;
   size_t outputBytes = sizeof(std::pair<long, long>);
-  task_graph_execute_point(graph, timestep, point, (char *)outputPointer, outputBytes, (const char **)inputPointer, inputBytes, numInputs);
+  std::vector<char> scratch(graph.scratch_bytes_per_task);
+  task_graph_prepare_scratch(scratch.data(), scratch.size());
+  task_graph_execute_point_scratch(graph, timestep, point, (char *)outputPointer, outputBytes, (const char **)inputPointer, inputBytes, numInputs,
+                                   const_cast<char *>(scratch.data()), scratch.size());
   delete outputPointer;
 }

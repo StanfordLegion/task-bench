@@ -1,4 +1,4 @@
--- Copyright 2019 Stanford University
+-- Copyright 2020 Stanford University
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -19,7 +19,17 @@ local core = terralib.includec("core_c.h")
 
 do
   local root_dir = arg[0]:match(".*/") or "./"
-  local runtime_dir = os.getenv('LG_RT_DIR') .. "/"
+
+  local include_path = ""
+  local include_dirs = terralib.newlist()
+  include_dirs:insert("-I")
+  include_dirs:insert(root_dir)
+  for path in string.gmatch(os.getenv("INCLUDE_PATH"), "[^;]+") do
+    include_path = include_path .. " -I " .. path
+    include_dirs:insert("-I")
+    include_dirs:insert(path)
+  end
+
   local mapper_cc = root_dir .. "mapper.cc"
   if os.getenv('OBJNAME') then
     local out_dir = os.getenv('OBJNAME'):match('.*/') or './'
@@ -42,14 +52,14 @@ do
     cxx_flags = cxx_flags .. " -shared -fPIC"
   end
 
-  local cmd = (cxx .. " " .. cxx_flags .. " -I " .. runtime_dir .. " " ..
+  local cmd = (cxx .. " " .. cxx_flags .. include_path .. " " ..
                  mapper_cc .. " -o " .. mapper_so)
   if os.execute(cmd) ~= 0 then
     print("Error: failed to compile " .. mapper_cc)
     assert(false)
   end
   terralib.linklibrary(mapper_so)
-  cmapper = terralib.includec("mapper.h", {"-I", root_dir, "-I", runtime_dir})
+  cmapper = terralib.includec("mapper.h", include_dirs)
 end
 
 local MAX_GRAPHS = 1
@@ -150,6 +160,21 @@ terra execute_point(runtime : c.legion_runtime_t,
   c.legion_accessor_array_1d_destroy(scratch_acc)
 end
 
+terra prepare_scratch(runtime : c.legion_runtime_t,
+                      scratch : c.legion_physical_region_t[1],
+                      scratch_fields : c.legion_field_id_t[1])
+  var scratch_acc = c.legion_physical_region_get_field_accessor_array_1d(
+    scratch[0], scratch_fields[0])
+
+  var scratch_r = c.legion_physical_region_get_logical_region(scratch[0])
+  var scratch_is = scratch_r.index_space
+  var scratch_ptr, scratch_size = get_base_and_size(runtime, scratch_acc, scratch_is)
+
+  core.task_graph_prepare_scratch([&int8](scratch_ptr), scratch_size)
+
+  c.legion_accessor_array_1d_destroy(scratch_acc)
+end
+
 local point_task = terralib.memoize(function(n_inputs, field_idx)
   local input_field = fields[(field_idx - 1 + #fields - 1) % #fields + 1]
   local output_field = fields[field_idx]
@@ -176,7 +201,7 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
       end)
   end
 
-  local task t(output : region(ispace(int1d), fs),
+  local __demand(__leaf) task t(output : region(ispace(int1d), fs),
                [inputs],
                scratch : region(ispace(int1d), fs),
                time : region(ispace(int1d), times),
@@ -199,7 +224,7 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
       var current = c.legion_get_current_time_in_nanos()
       __forbid(__vectorize) -- FIXME: Breaks vectorizer
       for t in time do
-        t.start min= current
+        t.start = current
       end
     end
 
@@ -216,13 +241,39 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
       var current = c.legion_get_current_time_in_nanos()
       __forbid(__vectorize) -- FIXME: Breaks vectorizer
       for t in time do
-        t.stop max= current
+        t.stop = current
       end
     end
   end
   t:set_name("point_task_n_inputs_" .. n_inputs .. "_field_idx_" .. field_idx)
   return t
 end)
+
+__demand(__leaf)
+task init_scratch(scratch : region(ispace(int1d), fs))
+where reads writes(scratch.x) do
+  prepare_scratch(__runtime(), __physical(scratch), __fields(scratch))
+end
+
+__demand(__leaf)
+task compute_start_time(time : region(ispace(int1d), times))
+where reads(time.start) do
+  var start_time = [uint64:max()]
+  for t in time do
+    start_time min= t.start
+  end
+  return start_time
+end
+
+__demand(__leaf)
+task compute_stop_time(time : region(ispace(int1d), times))
+where reads(time.stop) do
+  var stop_time = [uint64:min()]
+  for t in time do
+    stop_time max= t.stop
+  end
+  return stop_time
+end
 
 terra domain_point(point : c.coord_t)
   return c.legion_domain_point_from_point_1d(
@@ -423,9 +474,18 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
         regentlib.assert(period % core.task_graph_timestep_period(graph) == 0, "precomputed period is not divisible by task graph period")
         var [max_timesteps] = graph.timesteps
         var [max_width] = graph.max_width
-        __demand(__spmd, __trace)
-        for [timestep] = 0, max_timesteps + period - 1, period do
-          [body_actions]
+        __demand(__spmd)
+        do
+          for point = 0, max_width do
+            init_scratch([pscratch[graph_idx]][point])
+          end
+
+          for trial = 0, 2 do
+            __demand(__trace)
+            for [timestep] = 0, max_timesteps + period - 1, period do
+              [body_actions]
+            end
+          end
         end
       end)
     end
@@ -443,10 +503,8 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
     for graph_idx = 1, n_graphs do
       local graph = graphs[graph_idx]
       actions:insert(rquote
-        for t in [timing[graph_idx]] do
-          start_time min= t.start
-          stop_time max= t.stop
-        end
+        start_time min= compute_start_time([timing[graph_idx]])
+        stop_time max= compute_stop_time([timing[graph_idx]])
       end)
     end
     actions:insert(rquote
@@ -466,7 +524,7 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
   local main_loop_actions = generate_main_loop(graphs, primary_partitions, secondary_partitions, pscratch, ptiming)
   local report_actions = generate_report(app, graphs, timing)
 
-  local task w()
+  local __demand(__inner) task w()
     var args = c.legion_runtime_get_input_args()
     var [app] = core.app_create(args.argc, args.argv)
     core.app_display(app)
@@ -625,6 +683,7 @@ function dispatch_work_task(n_graphs, n_dsets, max_inputs)
   return actions
 end
 
+__demand(__inner)
 task main()
   var args = c.legion_runtime_get_input_args()
   var app = core.app_create(args.argc, args.argv)

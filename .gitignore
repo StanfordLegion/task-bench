@@ -7,7 +7,9 @@
 *.o
 *.so
 *.dSYM
+*.pyc
 __pycache__
+core
 
 *.csv
 *.out
@@ -19,8 +21,18 @@ __pycache__
 *.blg
 *.aux
 
-legion_prof
-
 /deps
 /charm++_smp
+/mpi_openmp_kmp
+
+legion_prof
+
+legion_defines.h
+realm_defines.h
+cached_legion.h
+
 *charmrun.*
+
+# dask
+*.lock
+worker-*

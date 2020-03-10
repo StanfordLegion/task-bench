@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2019 Stanford University
+# Copyright 2020 Stanford University
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,11 +23,12 @@ import subprocess
 import time
 
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 core_header = subprocess.check_output(
-    ["gcc", "-D", "__attribute__(x)=", "-E", "-P", "../core/core_c.h"]
-).decode("utf-8")
+    ["gcc", "-D", "__attribute__(x)=", "-E", "-P",
+     "../core/core_c.h"]).decode("utf-8")
 ffi = cffi.FFI()
 ffi.cdef(core_header)
 c = ffi.dlopen("libcore.so")
@@ -58,9 +59,11 @@ def app_task_graphs(app):
     return result
 
 
-def build_task_graph_tensor(task_graph):
+def build_task_graph_tensor(graph):
     return tf.convert_to_tensor(
-        [ord(x) for x in ffi.buffer(ffi.addressof(task_graph), ffi.sizeof(task_graph))],
+        np.frombuffer(
+            ffi.buffer(ffi.addressof(graph), ffi.sizeof(graph)),
+            dtype=np.ubyte),
         dtype=tf.uint8,
     )
 
@@ -80,6 +83,7 @@ def task_graph_dependencies(graph, timestep, point):
             if last_offset <= dep < last_offset + last_width:
                 yield dep
 
+
 def execute_task_graph(graph):
 
     sess = tf.Session()
@@ -89,15 +93,16 @@ def execute_task_graph(graph):
     feed = {}
 
     dummy_name = "dummy_%s" % graph.graph_index
-    dummy = tf.placeholder(tf.uint8, shape=(graph.output_bytes_per_task,), name=dummy_name)
-    feed["%s:0" % dummy_name] = np.zeros(graph.output_bytes_per_task, dtype=np.uint8)
+    dummy = tf.placeholder(
+        tf.uint8, shape=(graph.output_bytes_per_task, ), name=dummy_name)
+    feed["%s:0" % dummy_name] = np.zeros(
+        graph.output_bytes_per_task, dtype=np.uint8)
 
     outputs = []
     last_row = None
     for timestep in range(0, graph.timesteps):
         offset = c.task_graph_offset_at_timestep(graph, timestep)
         width = c.task_graph_width_at_timestep(graph, timestep)
-        dset = c.task_graph_dependence_set_at_timestep(graph, timestep)
         row = []
         for point in range(0, offset):
             row.append(None)
@@ -113,10 +118,11 @@ def execute_task_graph(graph):
             outputs.append(op)
         for point in range(offset + width, graph.max_width):
             row.append(None)
-        assert(len(row) == graph.max_width)
+        assert len(row) == graph.max_width
         last_row = row
 
     sess.run(outputs, feed_dict=feed)
+
 
 def execute_task_bench():
     app = app_create(sys.argv)

@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,6 +95,8 @@ void Subchare::initGraph(MulticastMsg* msg) {
 
   output.resize(graph.output_bytes_per_task);
   scratch.resize(graph.scratch_bytes_per_task);
+
+  TaskGraph::prepare_scratch(scratch.data(), scratch.size());
 
   CProxySection_Subchare::contribute(sid, CkCallback(CkReductionTarget(Main, workerReady), mainProxy));
 }

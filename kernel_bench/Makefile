@@ -9,8 +9,8 @@ ifeq ($(strip $(DEBUG)),1)
 CXXFLAGS += -g -O0
 LDFLAGS  += -g -O0
 else
-CXXFLAGS += -O3 -march=native
-LDFLAGS  += -O3 -march=native
+CXXFLAGS += -O3 # -march=native
+LDFLAGS  += -O3 # -march=native
 endif
 
 # Include directories

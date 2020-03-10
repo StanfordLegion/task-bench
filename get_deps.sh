@@ -12,11 +12,50 @@ mkdir deps
 
 DEFAULT_FEATURES=${DEFAULT_FEATURES:-1}
 
+if [[ $(hostname --fqdn) = *"summit"* ]]; then
+    cat >>deps/env.sh <<EOF
+module load gcc/6.4.0
+module load cuda/9.2.148
+module load cmake/3.14.2
+module load git/2.13.0
+export CC=gcc
+export CXX=g++
+export MPICXX=mpicxx
+
+EOF
+elif [[ $(hostname) = "cori"* ]]; then
+    cat >>deps/env.sh <<EOF
+module unload PrgEnv-intel
+module load PrgEnv-gnu
+module swap gcc/8.3.0 gcc/7.3.0 # GCC 8 cannot build LLVM 3.8
+module load cmake
+module load pcre
+module unload craype-hugepages2M # this got added after the 2019-07-30 system maintenance, but it causes some systems to stop building
+export CC=cc
+export CXX=CC
+export MPICXX=CC
+
+EOF
+elif [[ $(hostname) = "daint"* ]]; then
+    cat >>deps/env.sh <<EOF
+module load daint-gpu
+module unload PrgEnv-cray
+module load PrgEnv-gnu
+module load cudatoolkit
+export CC=cc
+export CXX=CC
+export MPICXX=CC
+
+EOF
+fi
+
 cat >>deps/env.sh <<EOF
 export TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
+export USE_MPI_OPENMP=${USE_MPI_OPENMP:-$DEFAULT_FEATURES}
 export USE_GASNET=${USE_GASNET:-0}
 export TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
 export USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
+export USE_PYGION=${USE_PYGION:-$DEFAULT_FEATURES}
 export USE_REGENT=${USE_REGENT:-$DEFAULT_FEATURES}
 export USE_REALM=${USE_REALM:-$DEFAULT_FEATURES}
 export USE_STARPU=${USE_STARPU:-$DEFAULT_FEATURES}
@@ -29,6 +68,8 @@ export USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
 export USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 export USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 export USE_TENSORFLOW=${USE_TENSORFLOW:-$DEFAULT_FEATURES}
+export USE_DASK=${USE_DASK:-$DEFAULT_FEATURES}
+
 EOF
 
 source deps/env.sh
@@ -60,20 +101,49 @@ EOF
     rm -rf hwloc-1.11.10.tar.gz
 fi
 
-if [[ $USE_LEGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
     export LEGION_DIR="$PWD"/deps/legion
     cat >>deps/env.sh <<EOF
 export LEGION_DIR="$LEGION_DIR"
 export LG_RT_DIR="\$LEGION_DIR"/runtime
 export REGENT_DIR="\$LEGION_DIR"/language
-export USE_LIBDL=0
+export USE_PYTHON=\$USE_PYGION
+export USE_LIBDL=\$USE_PYGION
 EOF
     if [[ $USE_REALM -eq 1 ]]; then
         git clone -b subgraph https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+    elif [[ $USE_PYGION -eq 1 ]]; then
+        git clone -b regent-python-ctl https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
     else
-        git clone -b master https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+        git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
     fi
 fi
+
+(if [[ $USE_PYGION -eq 1 ]]; then
+    export PYGION_DIR="$PWD"/deps/pygion
+    cat >>deps/env.sh <<EOF
+export PYGION_DIR="$PYGION_DIR"
+# see pygion/env.sh for Pygion configuration
+EOF
+
+    mkdir -p "$PYGION_DIR"
+
+    cat >>"$PYGION_DIR"/env.sh <<EOF
+export PYGION_DIR="$PYGION_DIR"
+export CONDA_PREFIX="\$PYGION_DIR"/conda
+export PATH="\$CONDA_PREFIX"/bin:"\$PATH"
+
+export PYTHONPATH="\$PYTHONPATH:\$LEGION_DIR/bindings/python:$PWD/pygion"
+EOF
+
+    source "$PYGION_DIR"/env.sh
+
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
+    rm Miniconda3-latest-Linux-x86_64.sh
+    conda update -y conda
+    conda install -y cffi numpy
+fi)
 
 if [[ $USE_STARPU -eq 1 ]]; then
     export STARPU_DL_DIR="$PWD"/deps/starpu
@@ -174,7 +244,7 @@ export PATH="\$X10_DIR"/x10/x10.dist/bin:"\$PATH"
 export JAVA_HOME="\$X10_DIR"/jdk1.8.0_131
 export PATH="\$JAVA_HOME"/bin:"\$PATH"
 
-export ANT_HOME="\$X10_DIR"/apache-ant-1.10.5
+export ANT_HOME="\$X10_DIR"/apache-ant-1.10.7
 export PATH="\$ANT_HOME"/bin:"\$PATH"
 EOF
 
@@ -182,9 +252,9 @@ EOF
     tar -zxf jdk-8u131-linux-x64.tar.gz -C "$X10_DIR"
     rm jdk-8u131-linux-x64.tar.gz
 
-    wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.5-bin.tar.gz
-    tar xfz apache-ant-1.10.5-bin.tar.gz -C "$X10_DIR"
-    rm apache-ant-1.10.5-bin.tar.gz
+    wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.7-bin.tar.gz
+    tar xfz apache-ant-1.10.7-bin.tar.gz -C "$X10_DIR"
+    rm apache-ant-1.10.7-bin.tar.gz
 
     git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
     git -C "$X10_DIR"/x10 reset --hard 9212dc271c8bcba805c82114617d47506747ee3a
@@ -287,10 +357,10 @@ EOF
     tar xfz openjdk-10.0.2_linux-x64_bin.tar.gz -C "$SWIFT_DIR"/java --strip-components=1
     rm openjdk-10.0.2_linux-x64_bin.tar.gz
 
-    wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.5-bin.tar.gz
+    wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.7-bin.tar.gz
     mkdir "$SWIFT_DIR"/ant
-    tar xfz apache-ant-1.10.5-bin.tar.gz -C "$SWIFT_DIR"/ant --strip-components=1
-    rm apache-ant-1.10.5-bin.tar.gz
+    tar xfz apache-ant-1.10.7-bin.tar.gz -C "$SWIFT_DIR"/ant --strip-components=1
+    rm apache-ant-1.10.7-bin.tar.gz
 
     wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz
     tar xfz ncurses-6.1.tar.gz -C "$SWIFT_DIR"
@@ -318,6 +388,7 @@ EOF
 export TENSORFLOW_DIR="$TENSORFLOW_DIR"
 export CONDA_PREFIX="\$TENSORFLOW_DIR"/conda
 export PATH="\$CONDA_PREFIX"/bin:"\$PATH"
+export CUDA_VISIBLE_DEVICES=-1 # explicitly disable GPU
 EOF
 
     source "$TENSORFLOW_DIR"/env.sh
@@ -328,6 +399,29 @@ EOF
     conda update -y conda
     # Hack: Try to install via pip to avoid compiler version incompatibility
     # conda install -y tensorflow
-    conda install -y python=3.6
-    pip install tensorflow
+    pip install -q tensorflow==2.1.0
+fi)
+
+(if [[ $USE_DASK -eq 1 ]]; then
+    export DASK_DIR="$PWD"/deps/dask
+    cat >>deps/env.sh <<EOF
+export DASK_DIR="$DASK_DIR"
+# see dask/env.sh for Dask configuration
+EOF
+
+    mkdir -p "$DASK_DIR"
+
+    cat >>"$DASK_DIR"/env.sh <<EOF
+export DASK_DIR="$DASK_DIR"
+export CONDA_PREFIX="\$DASK_DIR"/conda
+export PATH="\$CONDA_PREFIX"/bin:"\$PATH"
+EOF
+
+    source "$DASK_DIR"/env.sh
+
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
+    rm Miniconda3-latest-Linux-x86_64.sh
+    conda update -y conda
+    conda install -y dask
 fi)

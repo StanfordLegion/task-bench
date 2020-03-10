@@ -12,8 +12,13 @@
       * Measure memory usage of runtimes
   * Potential Implementations
       * DARMA
+      * GASNet
+      * Habanero
+      * Hadoop
+      * HPX
       * Julia
-      * OCR
-      * Dask
-      * Ray
       * Nimbus
+      * OCR
+      * OpenSHMEM
+      * Ray
+      * UPC

@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,15 +93,18 @@ long task_graph_timestep_period(task_graph_t graph);
 long task_graph_dependence_set_at_timestep(task_graph_t graph, long timestep);
 interval_list_t task_graph_reverse_dependencies(task_graph_t graph, long dset, long point);
 interval_list_t task_graph_dependencies(task_graph_t graph, long dset, long point);
-void task_graph_execute_point(task_graph_t graph, long timestep, long point,
-                              char *output_ptr, size_t output_bytes,
-                              const char **input_ptr, const size_t *input_bytes,
-                              size_t n_inputs);
 void task_graph_execute_point_scratch(task_graph_t graph, long timestep, long point,
                                       char *output_ptr, size_t output_bytes,
                                       const char **input_ptr, const size_t *input_bytes,
                                       size_t n_inputs,
                                       char *scratch_ptr, size_t scratch_bytes);
+// Hack: This version is here for Spark because allocating scratch_ptr
+// through the JVM seems to cause the GC to thrash.
+void task_graph_execute_point_scratch_auto(task_graph_t graph, long timestep, long point,
+                                           char *output_ptr, size_t output_bytes,
+                                           const char **input_ptr, const size_t *input_bytes,
+                                           size_t n_inputs,
+                                           size_t scratch_bytes);
 
 // FIXME: input_ptr should be const, but this breaks Chapel
 void task_graph_execute_point_nonconst(task_graph_t graph, long timestep, long point,
@@ -113,6 +116,7 @@ void task_graph_execute_point_scratch_nonconst(task_graph_t graph, long timestep
                                                int64_t **input_ptr, const size_t *input_bytes,
                                                size_t n_inputs,
                                                char *scratch_ptr, size_t scratch_bytes);
+void task_graph_prepare_scratch(char *scratch_ptr, size_t scratch_bytes);
 
 typedef struct task_graph_list_t {
   void *impl;

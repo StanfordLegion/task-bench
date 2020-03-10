@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,31 +81,24 @@ void Kernel::execute(long graph_index, long timestep, long point,
   };
 }
 
-static const std::map<std::string, KernelType> &ktype_by_name()
+static const std::map<std::string, KernelType> ktype_by_name = {
+  {"empty", KernelType::EMPTY},
+  {"busy_wait", KernelType::BUSY_WAIT},
+  {"memory_bound", KernelType::MEMORY_BOUND},
+  {"compute_dgemm", KernelType::COMPUTE_DGEMM},
+  {"memory_daxpy", KernelType::MEMORY_DAXPY},
+  {"compute_bound", KernelType::COMPUTE_BOUND},
+  {"compute_bound2", KernelType::COMPUTE_BOUND2},
+  {"io_bound", KernelType::IO_BOUND},
+  {"load_imbalance", KernelType::LOAD_IMBALANCE},
+};
+
+static std::map<KernelType, std::string> make_name_by_ktype()
 {
-  static std::map<std::string, KernelType> types;
-
-  if (types.empty()) {
-    types["empty"] = KernelType::EMPTY;
-    types["busy_wait"] = KernelType::BUSY_WAIT;
-    types["memory_bound"] = KernelType::MEMORY_BOUND;
-    types["compute_dgemm"] = KernelType::COMPUTE_DGEMM;
-    types["memory_daxpy"] = KernelType::MEMORY_DAXPY;
-    types["compute_bound"] = KernelType::COMPUTE_BOUND;
-    types["compute_bound2"] = KernelType::COMPUTE_BOUND2;
-    types["io_bound"] = KernelType::IO_BOUND;
-    types["load_imbalance"] = KernelType::LOAD_IMBALANCE;
-  }
-
-  return types;
-}
-
-static const std::map<KernelType, std::string> &name_by_ktype()
-{
-  static std::map<KernelType, std::string> names;
+  std::map<KernelType, std::string> names;
 
   if (names.empty()) {
-    auto types = ktype_by_name();
+    auto types = ktype_by_name;
     for (auto pair : types) {
       names[pair.second] = pair.first;
     }
@@ -114,34 +107,29 @@ static const std::map<KernelType, std::string> &name_by_ktype()
   return names;
 }
 
-static const std::map<std::string, DependenceType> &dtype_by_name()
+static const std::map<KernelType, std::string> name_by_ktype = make_name_by_ktype();
+
+static const std::map<std::string, DependenceType> dtype_by_name = {
+  {"trivial", DependenceType::TRIVIAL},
+  {"no_comm", DependenceType::NO_COMM},
+  {"stencil_1d", DependenceType::STENCIL_1D},
+  {"stencil_1d_periodic", DependenceType::STENCIL_1D_PERIODIC},
+  {"dom", DependenceType::DOM},
+  {"tree", DependenceType::TREE},
+  {"fft", DependenceType::FFT},
+  {"all_to_all", DependenceType::ALL_TO_ALL},
+  {"nearest", DependenceType::NEAREST},
+  {"spread", DependenceType::SPREAD},
+  {"random_nearest", DependenceType::RANDOM_NEAREST},
+  {"random_spread", DependenceType::RANDOM_SPREAD},
+};
+
+static std::map<DependenceType, std::string> make_name_by_dtype()
 {
-  static std::map<std::string, DependenceType> types;
-
-  if (types.empty()) {
-    types["trivial"] = DependenceType::TRIVIAL;
-    types["no_comm"] = DependenceType::NO_COMM;
-    types["stencil_1d"] = DependenceType::STENCIL_1D;
-    types["stencil_1d_periodic"] = DependenceType::STENCIL_1D_PERIODIC;
-    types["dom"] = DependenceType::DOM;
-    types["tree"] = DependenceType::TREE;
-    types["fft"] = DependenceType::FFT;
-    types["all_to_all"] = DependenceType::ALL_TO_ALL;
-    types["nearest"] = DependenceType::NEAREST;
-    types["spread"] = DependenceType::SPREAD;
-    types["random_nearest"] = DependenceType::RANDOM_NEAREST;
-    types["random_spread"] = DependenceType::RANDOM_SPREAD;
-  }
-
-  return types;
-}
-
-static const std::map<DependenceType, std::string> &name_by_dtype()
-{
-  static std::map<DependenceType, std::string> names;
+  std::map<DependenceType, std::string> names;
 
   if (names.empty()) {
-    auto types = dtype_by_name();
+    auto types = dtype_by_name;
     for (auto pair : types) {
       names[pair.second] = pair.first;
     }
@@ -149,6 +137,8 @@ static const std::map<DependenceType, std::string> &name_by_dtype()
 
   return names;
 }
+
+static std::map<DependenceType, std::string> name_by_dtype = make_name_by_dtype();
 
 long TaskGraph::offset_at_timestep(long timestep) const
 {
@@ -263,76 +253,90 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
 
 std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, long point) const
 {
-  std::vector<std::pair<long, long> > deps;
+  size_t count = num_reverse_dependencies(dset, point);
+  std::vector<std::pair<long, long> > deps(count);
+  size_t actual_count = reverse_dependencies(dset, point, deps.data());
+  assert(actual_count <= count);
+  deps.resize(actual_count);
+  return deps;
+}
 
+size_t TaskGraph::reverse_dependencies(long dset, long point, std::pair<long, long> *deps) const
+{
   switch (dependence) {
   case DependenceType::TRIVIAL:
-    break;
+    return 0;
   case DependenceType::NO_COMM:
-    deps.push_back(std::pair<long, long>(point, point));
-    break;
+    deps[0] = std::pair<long, long>(point, point);
+    return 1;
   case DependenceType::STENCIL_1D:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
-                                         std::min(point+1, max_width-1)));
-    break;
+    deps[0] = std::pair<long, long>(std::max(0L, point-1),
+                                    std::min(point+1, max_width-1));
+    return 1;
   case DependenceType::STENCIL_1D_PERIODIC:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
-                                         std::min(point+1, max_width-1)));
-    if (point-1 < 0) { // Wrap around negative case
-      deps.push_back(std::pair<long, long>(max_width-1, max_width-1));
+    {
+      size_t idx = 0;
+      deps[idx++] = std::pair<long, long>(std::max(0L, point-1),
+                                          std::min(point+1, max_width-1));
+      if (point-1 < 0) { // Wrap around negative case
+        deps[idx++] = std::pair<long, long>(max_width-1, max_width-1);
+      }
+      if (point+1 >= max_width) { // Wrap around positive case
+        deps[idx++] = std::pair<long, long>(0, 0);
+      }
+      return idx;
     }
-    if (point+1 >= max_width) { // Wrap around positive case
-      deps.push_back(std::pair<long, long>(0, 0));
-    }
-    break;
   case DependenceType::DOM:
-    deps.push_back(std::pair<long, long>(point, std::min(max_width-1, point+1)));
-    break;
+    deps[0] = std::pair<long, long>(point, std::min(max_width-1, point+1));
+    return 1;
   case DependenceType::TREE:
     {
       long child1 = point*2;
       long child2 = point*2 + 1;
-      if (child1 < max_width && child2 < max_width)
-        deps.push_back(std::pair<long, long>(child1, child2));
-      else if (child1 < max_width)
-        deps.push_back(std::pair<long, long>(child1, child1));
-
+      if (child1 < max_width && child2 < max_width) {
+        deps[0] = std::pair<long, long>(child1, child2);
+        return 1;
+      } else if (child1 < max_width) {
+        deps[0] = std::pair<long, long>(child1, child1);
+        return 1;
+      }
+      return 0;
     }
-    break;
   case DependenceType::FFT:
     {
+      size_t idx = 0;
       long d1 = point - (1 << dset);
       long d2 = point + (1 << dset);
       if (d1 >= 0) {
-        deps.push_back(std::pair<long, long>(d1, d1));
+        deps[idx++] = std::pair<long, long>(d1, d1);
       }
-      deps.push_back(std::pair<long, long>(point, point));
+      deps[idx++] = std::pair<long, long>(point, point);
       if (d2 < max_width) {
-        deps.push_back(std::pair<long, long>(d2, d2));
+        deps[idx++] = std::pair<long, long>(d2, d2);
       }
+      return idx;
     }
-    break;
   case DependenceType::ALL_TO_ALL:
-    deps.push_back(std::pair<long, long>(0, max_width-1));
-    break;
+    deps[0] = std::pair<long, long>(0, max_width-1);
+    return 1;
   case DependenceType::NEAREST:
     if (radix > 0) {
-      deps.push_back(std::pair<long, long>(std::max(0L, point - (radix-1)/2),
-                                           std::min(point + radix/2,
-                                                    max_width-1)));
+      deps[0] = std::pair<long, long>(std::max(0L, point - (radix-1)/2),
+                                      std::min(point + radix/2,
+                                               max_width-1));
+      return 1;
     }
-    break;
+    return 0;
   case DependenceType::SPREAD:
-    {
-      for (long i = 0; i < radix; ++i) {
-        long dep = (point - i*max_width/radix - (i>0 ? dset : 0)) % max_width;
-        if (dep < 0) dep += max_width;
-        deps.push_back(std::pair<long, long>(dep, dep));
-      }
+    for (long i = 0; i < radix; ++i) {
+      long dep = (point - i*max_width/radix - (i>0 ? dset : 0)) % max_width;
+      if (dep < 0) dep += max_width;
+      deps[i] = std::pair<long, long>(dep, dep);
     }
-    break;
+    return radix;
   case DependenceType::RANDOM_NEAREST:
     {
+      size_t idx = 0;
       long run_start = -1;
       long i, last_i;
       for (i = std::max(0L, point - (radix-1)/2),
@@ -349,89 +353,131 @@ std::vector<std::pair<long, long> > TaskGraph::reverse_dependencies(long dset, l
           }
         } else {
           if (run_start >= 0) {
-            deps.push_back(std::pair<long, long>(run_start, i-1));
+            deps[idx++] = std::pair<long, long>(run_start, i-1);
           }
           run_start = -1;
         }
       }
       if (run_start >= 0) {
-        deps.push_back(std::pair<long, long>(run_start, i-1));
+        deps[idx++] = std::pair<long, long>(run_start, i-1);
       }
+      return idx;
     }
     break;
   default:
     assert(false && "unexpected dependence type");
   };
 
-  return deps;
+  return SIZE_MAX;
+}
+
+size_t TaskGraph::num_reverse_dependencies(long dset, long point) const
+{
+  switch (dependence) {
+  case DependenceType::TRIVIAL:
+    return 0;
+  case DependenceType::NO_COMM:
+  case DependenceType::STENCIL_1D:
+    return 1;
+  case DependenceType::STENCIL_1D_PERIODIC:
+    return max_width > 1 ? 2 : 3;
+  case DependenceType::DOM:
+  case DependenceType::TREE:
+    return 1;
+  case DependenceType::FFT:
+    return 3;
+  case DependenceType::ALL_TO_ALL:
+    return 1;
+  case DependenceType::NEAREST:
+    return radix > 0 ? 1 : 0;
+  case DependenceType::SPREAD:
+  case DependenceType::RANDOM_NEAREST:
+    return radix;
+  default:
+    assert(false && "unexpected dependence type");
+  };
+
+  return SIZE_MAX;
 }
 
 std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long point) const
 {
-  std::vector<std::pair<long, long> > deps;
+  size_t count = num_dependencies(dset, point);
+  std::vector<std::pair<long, long> > deps(count);
+  size_t actual_count = dependencies(dset, point, deps.data());
+  assert(actual_count <= count);
+  deps.resize(actual_count);
+  return deps;
+}
 
+size_t TaskGraph::dependencies(long dset, long point, std::pair<long, long> *deps) const
+{
   switch (dependence) {
   case DependenceType::TRIVIAL:
-    break;
+    return 0;
   case DependenceType::NO_COMM:
-    deps.push_back(std::pair<long, long>(point, point));
-    break;
+    deps[0] = std::pair<long, long>(point, point);
+    return 1;
   case DependenceType::STENCIL_1D:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
-                                         std::min(point+1, max_width-1)));
-    break;
+    deps[0] = std::pair<long, long>(std::max(0L, point-1),
+                                    std::min(point+1, max_width-1));
+    return 1;
   case DependenceType::STENCIL_1D_PERIODIC:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1),
-                                         std::min(point+1, max_width-1)));
-    if (point-1 < 0) { // Wrap around negative case
-      deps.push_back(std::pair<long, long>(max_width-1, max_width-1));
+    {
+      size_t idx = 0;
+      deps[idx++] = std::pair<long, long>(std::max(0L, point-1),
+                                          std::min(point+1, max_width-1));
+      if (point-1 < 0) { // Wrap around negative case
+        deps[idx++] = std::pair<long, long>(max_width-1, max_width-1);
+      }
+      if (point+1 >= max_width) { // Wrap around positive case
+        deps[idx++] = std::pair<long, long>(0, 0);
+      }
+      return idx;
     }
-    if (point+1 >= max_width) { // Wrap around positive case
-      deps.push_back(std::pair<long, long>(0, 0));
-    }
-    break;
   case DependenceType::DOM:
-    deps.push_back(std::pair<long, long>(std::max(0L, point-1), point));
-    break;
+    deps[0] = std::pair<long, long>(std::max(0L, point-1), point);
+    return 1;
   case DependenceType::TREE:
     {
       long parent = point/2;
-      deps.push_back(std::pair<long, long>(parent, parent));
+      deps[0] = std::pair<long, long>(parent, parent);
+      return 1;
     }
-    break;
   case DependenceType::FFT:
     {
+      size_t idx = 0;
       long d1 = point - (1 << dset);
       long d2 = point + (1 << dset);
       if (d1 >= 0) {
-        deps.push_back(std::pair<long, long>(d1, d1));
+        deps[idx++] = std::pair<long, long>(d1, d1);
       }
-      deps.push_back(std::pair<long, long>(point, point));
+      deps[idx++] = std::pair<long, long>(point, point);
       if (d2 < max_width) {
-        deps.push_back(std::pair<long, long>(d2, d2));
+        deps[idx++] = std::pair<long, long>(d2, d2);
       }
+      return idx;
     }
-    break;
   case DependenceType::ALL_TO_ALL:
-    deps.push_back(std::pair<long, long>(0, max_width-1));
-    break;
+    deps[0] = std::pair<long, long>(0, max_width-1);
+    return 1;
   case DependenceType::NEAREST:
     if (radix > 0) {
-      deps.push_back(std::pair<long, long>(std::max(0L, point - radix/2),
-                                           std::min(point + (radix-1)/2,
-                                                    max_width-1)));
+      deps[0] = std::pair<long, long>(std::max(0L, point - radix/2),
+                                      std::min(point + (radix-1)/2,
+                                               max_width-1));
+      return 1;
     }
-    break;
+    return 0;
   case DependenceType::SPREAD:
-    {
-      for (long i = 0; i < radix; ++i) {
-        long dep = (point + i*max_width/radix + (i>0 ? dset : 0)) % max_width;
-        deps.push_back(std::pair<long, long>(dep, dep));
-      }
+    for (long i = 0; i < radix; ++i) {
+      long dep = (point + i*max_width/radix + (i>0 ? dset : 0)) % max_width;
+      deps[i] = std::pair<long, long>(dep, dep);
     }
-    break;
+    return radix;
   case DependenceType::RANDOM_NEAREST:
     {
+      size_t idx = 0;
       long run_start = -1;
       long i, last_i;
       for (i = std::max(0L, point - radix/2),
@@ -448,22 +494,56 @@ std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long poin
           }
         } else {
           if (run_start >= 0) {
-            deps.push_back(std::pair<long, long>(run_start, i-1));
+            deps[idx++] = std::pair<long, long>(run_start, i-1);
           }
           run_start = -1;
         }
       }
       if (run_start >= 0) {
-        deps.push_back(std::pair<long, long>(run_start, i-1));
+        deps[idx++] = std::pair<long, long>(run_start, i-1);
       }
+      return idx;
     }
     break;
   default:
     assert(false && "unexpected dependence type");
   };
 
-  return deps;
+  return SIZE_MAX;
 }
+
+size_t TaskGraph::num_dependencies(long dset, long point) const
+{
+  size_t count = 0;
+
+  switch (dependence) {
+  case DependenceType::TRIVIAL:
+    return 0;
+  case DependenceType::NO_COMM:
+  case DependenceType::STENCIL_1D:
+    return 1;
+  case DependenceType::STENCIL_1D_PERIODIC:
+    return max_width > 1 ? 2 : 3;
+  case DependenceType::DOM:
+  case DependenceType::TREE:
+    return 1;
+  case DependenceType::FFT:
+    return 3;
+  case DependenceType::ALL_TO_ALL:
+    return 1;
+  case DependenceType::NEAREST:
+    return radix > 0 ? 1 : 0;
+  case DependenceType::SPREAD:
+  case DependenceType::RANDOM_NEAREST:
+    return radix;
+  default:
+    assert(false && "unexpected dependence type");
+  };
+
+  return SIZE_MAX;
+}
+
+#define MAGIC_VALUE UINT64_C(0x5C4A7C8B) // can you read it? it says "SCRATCHB" (kinda)
 
 void TaskGraph::execute_point(long timestep, long point,
                               char *output_ptr, size_t output_bytes,
@@ -491,9 +571,11 @@ void TaskGraph::execute_point(long timestep, long point,
   {
     size_t idx = 0;
     long dset = dependence_set_at_timestep(timestep);
-    std::vector<std::pair<long, long> > deps = dependencies(dset, point);
-    for (auto span : deps) {
-      for (long dep = span.first; dep <= span.second; dep++) {
+    size_t max_deps = num_dependencies(dset, point);
+    std::pair<long, long> *deps = reinterpret_cast<std::pair<long, long> *>(alloca(sizeof(std::pair<long, long>) * max_deps));
+    size_t num_deps = dependencies(dset, point, deps);
+    for (size_t span = 0; span < num_deps; span++) {
+      for (long dep = deps[span].first; dep <= deps[span].second; dep++) {
         if (last_offset <= dep && dep < last_offset + last_width) {
           assert(idx < n_inputs);
 
@@ -527,10 +609,23 @@ void TaskGraph::execute_point(long timestep, long point,
 
   // Validate scratch
   assert(scratch_bytes == scratch_bytes_per_task);
+  if (scratch_bytes > 0) {
+    uint64_t *scratch = reinterpret_cast<uint64_t *>(scratch_ptr);
+    assert(*scratch == MAGIC_VALUE);
+  }
 
   // Execute kernel
   Kernel k(kernel);
   k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes);
+}
+
+void TaskGraph::prepare_scratch(char *scratch_ptr, size_t scratch_bytes)
+{
+  assert(scratch_bytes % sizeof(uint64_t) == 0);
+  uint64_t *base_ptr = reinterpret_cast<uint64_t *>(scratch_ptr);
+  for (long i = 0; i < scratch_bytes/sizeof(uint64_t); ++i) {
+    base_ptr[i] = MAGIC_VALUE;
+  }
 }
 
 static TaskGraph default_graph(long graph_index)
@@ -583,6 +678,7 @@ static void show_help_message(int argc, char **argv) {
   printf("\nGeneral options:\n");
   printf("  %-18s show this help message and exit\n", "-h");
   printf("  %-18s enable verbose output\n", "-v");
+  printf("  %-18s enable extra verbose output\n", "-vv");
 
   printf("\nOptions for configuring the task graph:\n");
   printf("  %-18s height of task graph\n", STEPS_FLAG " [INT]");
@@ -602,12 +698,12 @@ static void show_help_message(int argc, char **argv) {
   printf("  %-18s amount of load imbalance\n", IMBALANCE_FLAG " [FLOAT]");
 
   printf("\nSupported dependency patterns:\n");
-  for (auto dtype : dtype_by_name()) {
+  for (auto dtype : dtype_by_name) {
     printf("  %s\n", dtype.first.c_str());
   }
 
   printf("\nSupported kernel types:\n");
-  for (auto ktype : ktype_by_name()) {
+  for (auto ktype : ktype_by_name) {
     printf("  %s\n", ktype.first.c_str());
   }
 
@@ -617,7 +713,7 @@ static void show_help_message(int argc, char **argv) {
 }
 
 App::App(int argc, char **argv)
-  : verbose(false)
+  : verbose(0)
   , enable_graph_validation(true)
 {
   TaskGraph graph = default_graph(graphs.size());
@@ -630,7 +726,11 @@ App::App(int argc, char **argv)
     }
 
     if (!strcmp(argv[i], "-v")) {
-      verbose = true;
+      verbose++;
+    }
+
+    if (!strcmp(argv[i], "-vv")) {
+      verbose += 2;
     }
 
     if (!strcmp(argv[i], SKIP_GRAPH_VALIDATION_FLAG)) {
@@ -659,10 +759,9 @@ App::App(int argc, char **argv)
 
     if (!strcmp(argv[i], TYPE_FLAG)) {
       needs_argument(i, argc, TYPE_FLAG);
-      auto types = dtype_by_name();
       auto name = argv[++i];
-      auto type = types.find(name);
-      if (type == types.end()) {
+      auto type = dtype_by_name.find(name);
+      if (type == dtype_by_name.end()) {
         fprintf(stderr, "error: Invalid flag \"-type %s\"\n", name);
         abort();
       }
@@ -701,10 +800,9 @@ App::App(int argc, char **argv)
 
     if (!strcmp(argv[i], KERNEL_FLAG)) {
       needs_argument(i, argc, KERNEL_FLAG);
-      auto types = ktype_by_name();
       auto name = argv[++i];
-      auto type = types.find(name);
-      if (type == types.end()) {
+      auto type = ktype_by_name.find(name);
+      if (type == ktype_by_name.end()) {
         fprintf(stderr, "error: Invalid flag \"" KERNEL_FLAG " %s\"\n", name);
         abort();
       }
@@ -812,11 +910,11 @@ void App::check() const
   for (auto g : graphs) {
     if (needs_period(g.dependence) && g.period == 0) {
       fprintf(stderr, "error: Graph type \"%s\" requires a non-zero period (specify with -period)\n",
-              name_by_dtype().at(g.dependence).c_str());
+              name_by_dtype.at(g.dependence).c_str());
       abort();
     } else if (!needs_period(g.dependence) && g.period != 0) {
       fprintf(stderr, "error: Graph type \"%s\" does not support user-configurable period\n",
-              name_by_dtype().at(g.dependence).c_str());
+              name_by_dtype.at(g.dependence).c_str());
       abort();
     }
 
@@ -824,7 +922,7 @@ void App::check() const
     long spread = (g.max_width + g.radix - 1) / g.radix;
     if (g.dependence == DependenceType::SPREAD && g.period > spread) {
       fprintf(stderr, "error: Graph type \"%s\" requires a period that is at most %ld\n",
-              name_by_dtype().at(g.dependence).c_str(), spread);
+              name_by_dtype.at(g.dependence).c_str(), spread);
       abort();
     }
 
@@ -871,55 +969,69 @@ void App::display() const
   for (auto g : graphs) {
     ++i;
 
-    auto knames = name_by_ktype();
-    auto dnames = name_by_dtype();
-
     printf("    Task Graph %d:\n", i);
     printf("      Time Steps: %ld\n", g.timesteps);
     printf("      Max Width: %ld\n", g.max_width);
-    printf("      Dependence Type: %s\n", dnames.at(g.dependence).c_str());
+    printf("      Dependence Type: %s\n", name_by_dtype.at(g.dependence).c_str());
     printf("      Radix: %ld\n", g.radix);
     printf("      Period: %ld\n", g.period);
     printf("      Fraction Connected: %f\n", g.fraction_connected);
     printf("      Kernel:\n");
-    printf("        Type: %s\n", knames.at(g.kernel.type).c_str());
+    printf("        Type: %s\n", name_by_ktype.at(g.kernel.type).c_str());
     printf("        Iterations: %ld\n", g.kernel.iterations);
     printf("        Samples: %d\n", g.kernel.samples);
     printf("        Imbalance: %f\n", g.kernel.imbalance);
     printf("      Output Bytes: %lu\n", g.output_bytes_per_task);
     printf("      Scratch Bytes: %lu\n", g.scratch_bytes_per_task);
 
-    if (verbose) {
+    if (verbose > 0) {
       for (long t = 0; t < g.timesteps; ++t) {
         long offset = g.offset_at_timestep(t);
         long width = g.width_at_timestep(t);
+
+        long last_offset = g.offset_at_timestep(t-1);
+        long last_width = g.width_at_timestep(t-1);
+
         long dset = g.dependence_set_at_timestep(t);
-        printf("      Dependencies (offset %ld, width %ld):\n",
-               g.offset_at_timestep(t), g.width_at_timestep(t));
+
+        printf("      Timestep %ld (offset %ld, width %ld, last offset %ld, last width %ld):\n",
+               t, offset, width, last_offset, last_width);
+        printf("        Points:");
         for (long p = offset; p < offset + width; ++p) {
-          printf("        Point %ld:", p);
+          printf(" %ld", p);
+        }
+        printf("\n");
+
+        printf("        Dependencies:\n",
+               t, offset, width);
+        for (long p = offset; p < offset + width; ++p) {
+          printf("          Point %ld:", p);
           auto deps = g.dependencies(dset, p);
           for (auto dep : deps) {
             for (long dp = dep.first; dp <= dep.second; ++dp) {
-              printf(" %ld", dp);
+              if (dp >= last_offset && dp < last_offset + last_width) {
+                printf(" %ld", dp);
+              }
             }
           }
           printf("\n");
         }
-#ifdef EXTRA_VERBOSE
-        printf("      Reverse Dependencies (offset %ld, width %ld):\n",
-               g.offset_at_timestep(t), g.width_at_timestep(t));
-        for (long p = offset; p < offset + width; ++p) {
-          printf("        Point %ld:", p);
-          auto deps = g.reverse_dependencies(dset, p);
-          for (auto dep : deps) {
-            for (long dp = dep.first; dp <= dep.second; ++dp) {
-              printf(" %ld", dp);
+        if (verbose > 1) {
+          printf("        Reverse Dependencies:\n",
+                 t, last_offset, last_width);
+          for (long p = last_offset; p < last_offset + last_width; ++p) {
+            printf("          Point %ld:", p);
+            auto deps = g.reverse_dependencies(dset, p);
+            for (auto dep : deps) {
+              for (long dp = dep.first; dp <= dep.second; ++dp) {
+                if (dp >= offset && dp < offset + width) {
+                  printf(" %ld", dp);
+                }
+              }
             }
+            printf("\n");
           }
-          printf("\n");
         }
-#endif
       }
     }
   }

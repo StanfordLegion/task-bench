@@ -128,11 +128,11 @@ if [[ $USE_PARSEC -eq 1 ]]; then
             mpirun -np 1 ./parsec/main_shard -steps $steps -type $t $k -c 2 -p 1
             mpirun -np 4 ./parsec/main_shard -width 16 -steps $steps -type $t $k -p 1 -c 2 -S 4
             mpirun -np 1 ./parsec/main_shard -steps $steps -type $t $k -and -steps $steps -type $t $k -c 2 -p 1
-            mpirun -np 1 ./parsec/main -steps $steps -type $t $k -c 2
-            mpirun -np 4 ./parsec/main -steps $steps -type $t $k -p 1 -c 2
-            mpirun -np 4 ./parsec/main -steps $steps -type $t $k -p 2 -c 2
-            mpirun -np 4 ./parsec/main -steps $steps -type $t $k -p 4 -c 2
-            mpirun -np 1 ./parsec/main -steps $steps -type $t $k -and -steps $steps -type $t $k -c 2
+            mpirun -np 1 ./parsec/main_buffer -steps $steps -type $t $k -c 2
+            mpirun -np 4 ./parsec/main_buffer -steps $steps -type $t $k -p 1 -c 2
+            mpirun -np 4 ./parsec/main_buffer -steps $steps -type $t $k -p 2 -c 2
+            mpirun -np 4 ./parsec/main_buffer -steps $steps -type $t $k -p 4 -c 2
+            mpirun -np 1 ./parsec/main_buffer -steps $steps -type $t $k -and -steps $steps -type $t $k -c 2
         done
     done
     for k in "${kernels[@]}"; do

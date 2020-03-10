@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,19 +170,8 @@ object Main {
         }
 
         val scratchBytesPerTask = taskGraph.getScratch_bytes_per_task();
-        if (scratchBytesPerTask > 0) { //memory-bound
-            val scratch_ptr = new Array[Byte](scratchBytesPerTask.asInstanceOf[Int]);
-            for (c <- 0 until scratch_ptr.length) { //this may be needed for typemap
-                scratch_ptr(c) = 1;
-            }
-
-            core_c.task_graph_execute_point_scratch(taskGraph, ts, point, output_ptr, output_bytes, 
-                input_ptr, input_bytes, n_inputs, scratch_ptr, scratchBytesPerTask);
-        }
-        else {
-            core_c.task_graph_execute_point(taskGraph, ts, point, output_ptr, output_bytes, 
-                input_ptr, input_bytes, n_inputs);
-        }
+        core_c.task_graph_execute_point_scratch_auto(taskGraph, ts, point, output_ptr, output_bytes, 
+            input_ptr, input_bytes, n_inputs, scratchBytesPerTask);
         output_ptr;
     }
 

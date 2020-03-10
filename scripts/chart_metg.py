@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2019 Stanford University
+# Copyright 2020 Stanford University
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -81,8 +81,14 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
         assert all(same(elt) for elt in elts), "graphs are not identical"
         table[column] = table[column][::ngraphs]
 
-    # Check consistency of data:
     assert same([len(column) for column in table.values()]), "columns are uneven"
+
+    # Sort data by iteration count.
+    permutation = table['iterations'].argsort()[::-1]
+    for column in table.keys():
+        table[column] = table[column][permutation]
+
+    # Check consistency of data:
     assert same(table['steps']), "steps are not identical"
     assert same(table['width']), "widths are not identical"
     assert same(table['tasks']), "tasks are not identical"
@@ -122,6 +128,8 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
     # Compute minimum efficient task granularity:
     assert any(table['efficiency'] >= threshold), "no data above threshold, was run properly configured?"
     assert any(table['efficiency'] < threshold), "no data below threshold, maybe run was truncated?"
+
+    assert all(table['efficiency'] < 1.5), "suspiciously high efficiency over 150%, was run timed correctly?"
 
     # Find smallest task granularity above efficiency threshold:
     min_i, min_efficiency = min(

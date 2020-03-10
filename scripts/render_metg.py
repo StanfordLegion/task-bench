@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# Copyright 2019 Stanford University
-# Copyright 2019 Los Alamos National Laboratory
+# Copyright 2020 Stanford University
+# Copyright 2020 Los Alamos National Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@
 import matplotlib
 matplotlib.use('PDF')
 import matplotlib.pyplot as plt
+import math
 import numpy as np
 import argparse
 import ast
@@ -30,7 +31,14 @@ def csv2rec(filename):
 parser = argparse.ArgumentParser()
 parser.add_argument('filename')
 parser.add_argument('--title')
+parser.add_argument('--width', type=float, default=9)
+parser.add_argument('--height', type=float, default=5)
 parser.add_argument('--legend', default='../legend.csv')
+parser.add_argument('--legend-ncol', type=int, default=1)
+parser.add_argument('--legend-fontsize', type=int, default=12)
+parser.add_argument('--legend-position', default='center left')
+parser.add_argument('--legend-base', type=int, default=0)
+parser.add_argument('--filter-legend-even-powers', action='store_true')
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
 parser.add_argument('--xdata', default='nodes')
@@ -38,12 +46,15 @@ parser.add_argument('--xscale', type=float, default=0)
 parser.add_argument('--yscale', type=float, default=0)
 parser.add_argument('--xlim', type=ast.literal_eval, default='None')
 parser.add_argument('--ylim', type=ast.literal_eval, default='None')
+parser.add_argument('--x-invert', action='store_true')
+parser.add_argument('--y-invert', action='store_true')
 parser.add_argument('--x-percent', action='store_true')
 parser.add_argument('--y-percent', action='store_true')
 parser.add_argument('--xbase', type=int, default=2)
 parser.add_argument('--no-xlog', action='store_false', dest='xlog')
 parser.add_argument('--no-ylog', action='store_false', dest='ylog')
 parser.add_argument('--no-xticks', action='store_false', dest='xticks')
+parser.add_argument('--connect-missing', action='store_true')
 parser.add_argument('--highlight-column')
 args = parser.parse_args()
 
@@ -119,7 +130,7 @@ matplotlib.rcParams["mathtext.fontset"] = "stixsans"
 matplotlib.rc('xtick', labelsize=12)
 matplotlib.rc('ytick', labelsize=12)
 
-fig = plt.figure(figsize=(9, 5))
+fig = plt.figure(figsize=(args.width, args.height))
 ax = fig.add_subplot(111)
 plt.subplots_adjust(bottom=0.16, left=0.10)
 
@@ -134,6 +145,11 @@ if args.x_percent:
     ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
 if args.y_percent:
     ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+
+if args.x_invert:
+    ax.invert_xaxis()
+if args.y_invert:
+    ax.invert_yaxis()
 
 if args.xlog and args.ylog:
     plt.loglog(basex=args.xbase)
@@ -175,6 +191,12 @@ for column in columns:
         idx = next_idx
         next_idx += 1
 
+    if args.legend_base > 0 and args.highlight_column != column:
+        exponent = int(math.log(int(label), args.legend_base))
+        if args.filter_legend_even_powers and exponent % 2 != 0:
+            continue
+        label = '$%s^{%.0f}$' % (args.legend_base, exponent)
+
     if not visible:
         continue
 
@@ -194,7 +216,8 @@ for column in columns:
     if args.yscale:
         column_data = column_data * args.yscale
 
-    plt.plot(nodes, column_data, linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
+    mask = np.isfinite(column_data)
+    plt.plot(nodes[mask] if args.connect_missing else nodes, column_data[mask] if args.connect_missing else column_data, linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
 
 if args.xticks:
     plt.xticks(nodes, nodes) #, rotation=30)
@@ -213,12 +236,15 @@ box = ax.get_position()
 ax.set_position([box.x0, box.y0, box.width * 0.80, box.height])
 
 if args.legend:
-    plt.legend(
+    kwargs = {'loc': args.legend_position}
+    if args.legend_position == 'center left':
         # Put a legend to the right of the current axis
-        loc='center left', bbox_to_anchor=(1, 0.5),
-        ncol=1, fontsize=12,
+        kwargs['bbox_to_anchor'] = (1, 0.5)
+    plt.legend(
+        ncol=args.legend_ncol, fontsize=args.legend_fontsize,
         # Square corners, disable transparency, set color to black
-        fancybox=False, framealpha=1, edgecolor='black')
+        fancybox=False, framealpha=1, edgecolor='black',
+        **kwargs)
 
 plt.grid(True, color='black', linestyle='--', linewidth=0.5, dashes=(1, 5))
 output_filename = '%s.pdf' % os.path.splitext(args.filename)[0]

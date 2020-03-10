@@ -35,7 +35,7 @@ ifneq ($(strip $(HAVE_AVX2)),0)
 	HAVE_AVX2 = 1
 endif
 ifneq ($(strip $(HAVE_AVX)),0)
-  HAVE_AVX = 1
+	HAVE_AVX = 1
 endif
 ifeq ($(strip $(HAVE_AVX2)),1)
 	CFLAGS += -mavx2 -mfma

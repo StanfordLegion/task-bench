@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,17 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <cfloat>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <map>
+
 #include "core.h"
 #include "mpi.h"
 #include "timer.h"
+
 #define MASTER 0
 #define NUM_ITER 1
 
@@ -290,6 +295,8 @@ int main(int argc, char *argv[])
       char *output_ptr = output_ptrs[graph_num];
       size_t scratch_bytes = graph.scratch_bytes_per_task;
       char *scratch_ptr = (char *)malloc(scratch_bytes);
+      assert(scratch_ptr);
+      TaskGraph::prepare_scratch(scratch_ptr, scratch_bytes);
 
       char *saved_ptr = NULL;
       for (long timestep = 0L; timestep < graph.timesteps; timestep++) {

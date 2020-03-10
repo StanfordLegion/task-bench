@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,6 +160,8 @@ int main(int argc, char *argv[])
       char *output_ptr = output_ptrs[i];
       size_t scratch_bytes = graph.scratch_bytes_per_task;
       char *scratch_ptr = (char *)malloc(scratch_bytes);
+      assert(scratch_ptr);
+      TaskGraph::prepare_scratch(scratch_ptr, scratch_bytes);
 
       int *final_send_counts;
       int *final_recv_counts;

@@ -16,27 +16,14 @@ endif
 
 include ../core/make_blas.mk
 
-all: nonblock basic bcast alltoall buffered_send
+BIN := alltoall basic bcast buffered_send bulk_synchronous nonblock
 
-alltoall: alltoall.cc
+.PHONY: all
+all:  $(BIN)
+
+$(BIN): %:%.cc
 	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
 
-basic: basic.cc
-	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
-
-bcast: bcast.cc
-	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
-
-buffered_send: buffered_send.cc
-	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
-
-nonblock: nonblock.cc
-	$(MPICXX) -o $@ $(CXXFLAGS) $< $(LDFLAGS)
-
+.PHONY: clean
 clean:
-	rm -f *.o
-	rm -f alltoall
-	rm -f basic
-	rm -f bcast
-	rm -f buffered_send
-	rm -f nonblock
+	rm -f *.o $(BIN)

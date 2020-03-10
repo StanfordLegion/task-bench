@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,6 +131,7 @@ proc execute_task_graph2(graph, task_result, task_ready, task_used) {
 
     var scratch_bytes = graph.scratch_bytes_per_task;
     var scratch_ptr = c_malloc(int(8), scratch_bytes);
+    task_graph_prepare_scratch(scratch_ptr, scratch_bytes);
 
     // Initialize input_ptr and input_bytes... these don't need to
     // change because we can just set n_inputs dynamically.
@@ -194,9 +195,12 @@ proc execute_task_graph2(graph, task_result, task_ready, task_used) {
                 inputs[n_inputs, offset] = task_result[graph_index, dep, offset];
               }
             } else {
-              serial {
-                inputs[n_inputs, ..] = task_result[graph_index, dep, ..];
-              }
+              ref DestRef = inputs[n_inputs, 0];
+              ref SrcRef = task_result[graph_index, dep, 0];
+              __primitive("chpl_comm_array_get", DestRef, SrcRef.locale.id, SrcRef, output_bytes/8);
+              // serial {
+              //   inputs[n_inputs, ..] = task_result[graph_index, dep, ..];
+              // }
             }
 
             task_used[graph_index, dep, timestep].add(1);

@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 #include <cassert>
 #include <cmath>
 
+#if (__AVX2__ == 1) || (__AVX__ == 1)
 #include <immintrin.h>
+#endif
+
 #include <string.h>
 
 #include "core.h"
