@@ -35,7 +35,7 @@
 #include <mpi.h>
 #endif
 #if defined(PARSEC_HAVE_CUDA)
-#include "parsec/devices/cuda/dev_cuda.h"
+#include "parsec/mca/device/cuda/device_cuda.h"
 #endif
 
 const char *PARSEC_SCHED_NAME[] = {
