@@ -52,7 +52,6 @@ struct RankState {
   Array<5, char> inputs;
   Array<4, char> outputs;
   std::vector<Array<5, char> > remote_inputs;
-  std::vector<Array<4, char> > remote_outputs;
 
   Array<2, long> timestep;
   Array<3, int> input_ready;
@@ -68,6 +67,7 @@ struct RankState {
   Array<3, char> scratch;
   Array<3, std::vector<std::pair<long, long> > > dependencies;
   Array<3, std::vector<std::pair<long, long> > > reverse_dependencies;
+  Array<3, std::vector<std::pair<long, long> > > remote_dependencies;
 };
 
 RankState state;
@@ -267,6 +267,7 @@ int main(int argc, char *argv[])
 
   long max_timesteps = 0;
   long max_points = 0;
+  long max_width = 0;
   long max_dsets = 0;
   long max_deps = 0;
   size_t max_output_bytes = 0;
@@ -280,6 +281,8 @@ int main(int argc, char *argv[])
     max_timesteps = std::max(max_timesteps, graph.timesteps);
 
     max_points = std::max(max_points, n_points);
+
+    max_width = std::max(max_width, graph.max_width);
 
     max_output_bytes = std::max(max_output_bytes, graph.output_bytes_per_task);
     max_scratch_bytes = std::max(max_scratch_bytes, graph.scratch_bytes_per_task);
@@ -315,7 +318,6 @@ int main(int argc, char *argv[])
   state.outputs.resize(output_addr, {n_graphs, (size_t)max_points, (size_t)state.num_fields, max_output_bytes});
 
   state.remote_inputs.resize(n_ranks);
-  state.remote_outputs.resize(n_ranks);
 
   for (size_t other_rank = 0; other_rank < n_ranks; ++other_rank) {
     void *other_segment_start;
@@ -328,10 +330,28 @@ int main(int argc, char *argv[])
                                     &other_size));
 
     char *other_input_addr = (char *)other_segment_start;
-    char *other_output_addr = (char *)other_segment_start + total_input_bytes;
 
-    state.remote_inputs[other_rank].resize(other_input_addr,   {n_graphs, (size_t)max_points, (size_t)state.num_fields, (size_t)max_deps, max_output_bytes});
-    state.remote_outputs[other_rank].resize(other_output_addr, {n_graphs, (size_t)max_points, (size_t)state.num_fields, max_output_bytes});
+    long other_max_points = 0;
+    long other_max_deps = 0;
+    for (auto graph : app.graphs) {
+      long other_first_point = other_rank * graph.max_width / n_ranks;
+      long other_last_point = (other_rank + 1) * graph.max_width / n_ranks - 1;
+      long other_n_points = other_last_point - other_first_point + 1;
+
+      other_max_points = std::max(other_max_points, other_n_points);
+
+      for (long dset = 0; dset < graph.max_dependence_sets(); ++dset) {
+        for (long other_point = other_first_point; other_point <= other_last_point; ++other_point) {
+          long deps = 0;
+          for (auto interval : graph.dependencies(dset, other_point)) {
+            deps += interval.second - interval.first + 1;
+          }
+          other_max_deps = std::max(other_max_deps, deps);
+        }
+      }
+    }
+
+    state.remote_inputs[other_rank].resize(other_input_addr,   {n_graphs, (size_t)other_max_points, (size_t)state.num_fields, (size_t)other_max_deps, max_output_bytes});
   }
 
   state.timestep.resize(            {n_graphs, (size_t)max_points});
@@ -348,6 +368,7 @@ int main(int argc, char *argv[])
   state.scratch.resize(             {n_graphs, (size_t)max_points, max_scratch_bytes});
   state.dependencies.resize(        {n_graphs, (size_t)max_dsets, (size_t)max_points});
   state.reverse_dependencies.resize({n_graphs, (size_t)max_dsets, (size_t)max_points});
+  state.remote_dependencies.resize( {n_graphs, (size_t)max_dsets, (size_t)max_width});
 
   std::vector<std::vector<gex_Rank_t> > rank_by_point(app.graphs.size());
 
@@ -439,6 +460,16 @@ int main(int argc, char *argv[])
       long r_last_point = (r + 1) * graph.max_width / n_ranks - 1;
       for (long p = r_first_point; p <= r_last_point; ++p) {
         rank_by_point[graph.graph_index][p] = r;
+      }
+    }
+  }
+
+  for (auto graph : app.graphs) {
+    for (long point = 0; point < graph.max_width; ++point) {
+      for (long dset = 0; dset < graph.max_dependence_sets(); ++dset) {
+        auto deps = graph.dependencies(dset, point);
+
+        state.remote_dependencies(graph.graph_index, dset, point) = deps;
       }
     }
   }
@@ -552,7 +583,7 @@ int main(int argc, char *argv[])
                 long other_point = dep;
                 long other_point_index = other_point - other_first_point;
 
-                auto &other_point_deps = state.dependencies(graph_index, dset, other_point_index);
+                auto &other_point_deps = state.remote_dependencies(graph_index, dset, other_point);
 
                 long input_idx = 0;
                 for (auto interval : other_point_deps) {
