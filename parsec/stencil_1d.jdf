@@ -30,7 +30,7 @@ static inline int get_num_args_internal(void *L, void *B, void *R){
  * 3. Create own startup 
  */
 static uint32_t pretermined_nb_tasks(struct __parsec_stencil_1d_internal_taskpool_s *__tp);
-static parsec_key_t my_make_key_task(const parsec_taskpool_t * tp, const assignment_t * as);
+static parsec_key_t my_make_key_task(const parsec_taskpool_t * tp, const parsec_assignment_t * as);
 struct __parsec_stencil_1d_task_task_s *this_task;
 static int my_startup_task(parsec_execution_stream_t * es, struct __parsec_stencil_1d_task_task_s * this_task);
 
@@ -95,10 +95,10 @@ static uint32_t pretermined_nb_tasks(struct __parsec_stencil_1d_internal_taskpoo
     }
 }
 
-static parsec_key_t my_make_key_task(const parsec_taskpool_t * tp, const assignment_t * as)
+static parsec_key_t my_make_key_task(const parsec_taskpool_t * tp, const parsec_assignment_t * as)
 {
     const __parsec_stencil_1d_internal_taskpool_t *__parsec_tp = (const __parsec_stencil_1d_internal_taskpool_t *) tp;
-    const __parsec_stencil_1d_task_assignment_t *assignment = (const __parsec_stencil_1d_task_assignment_t *) as;
+    const __parsec_stencil_1d_task_parsec_assignment_t *assignment = (const __parsec_stencil_1d_task_parsec_assignment_t *) as;
     int t_range = __parsec_tp->super._g_time_steps;
     uintptr_t __parsec_id = 0;
     const int t = assignment->t.value;
@@ -213,7 +213,7 @@ static int wrap_task(parsec_execution_stream_t * es,
     int myid = es->th_id;
     parsec_stencil_1d_taskpool_t *parsec_tp = (parsec_stencil_1d_taskpool_t*)this_task->taskpool;
     stime = MPI_Wtime();
-    val = parsec_tp->_g_wrap_task(es, this_task); 
+    val = parsec_tp->_g_wrap_task(es, (parsec_task_t *)this_task); 
     timecount[myid] += MPI_Wtime() - stime;
     return val;
 }
@@ -230,7 +230,7 @@ parsec_stencil_1d_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fi
   stencil_1d_taskpool = (parsec_taskpool_t*)taskpool;
 
   taskpool->_g_wrap_task = taskpool->super.task_classes_array[0]->incarnations[0].hook;
-  hook = &taskpool->super.task_classes_array[0]->incarnations[0].hook;
+  hook = (void *)&taskpool->super.task_classes_array[0]->incarnations[0].hook;
   *hook = &wrap_task;
 
   parsec_matrix_add2arena(taskpool->arenas[PARSEC_stencil_1d_DEFAULT_ARENA],
