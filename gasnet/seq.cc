@@ -442,7 +442,9 @@ int main(int argc, char *argv[])
   std::vector<std::tuple<long, long, long> > task_ready_queue_local;
 
   double elapsed_time = 0.0;
-  for (int iter = 0; iter < 2; ++iter) {
+  // FIXME: This can't be set to 2 because it seems to result in a low
+  // probability (< 1%) hang
+  for (int iter = 0; iter < 1; ++iter) {
     state.complete = 0;
     std::fill(state.timestep.begin(), state.timestep.end(), 0);
     std::fill(state.input_ready.begin(), state.input_ready.end(), 0);
