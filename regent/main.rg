@@ -196,8 +196,8 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
     input_privileges:insert(regentlib.privilege(regentlib.reads, input, input_field))
     make_input_arrays:insert(
       rquote
-        [input_pr_array][ [idx-1] ] = __physical([input])[0];
-        [input_fid_array][ [idx-1] ] = __fields([input])[0]
+        [input_pr_array][ [idx-1] ] = __physical([input].{[input_field]})[0];
+        [input_fid_array][ [idx-1] ] = __fields([input].{[input_field]})[0]
       end)
   end
 
@@ -232,9 +232,9 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
 
     execute_point(
       __runtime(),
-      __physical(output), __fields(output),
+      __physical(output.{[output_field]}), __fields(output.{[output_field]}),
       [input_pr_array], [input_fid_array], [n_inputs],
-      __physical(scratch), __fields(scratch),
+      __physical(scratch.x), __fields(scratch.x),
       task_graph, timestep, point)
 
     if timestep == task_graph.timesteps - 1 then
@@ -252,7 +252,7 @@ end)
 __demand(__leaf)
 task init_scratch(scratch : region(ispace(int1d), fs))
 where reads writes(scratch.x) do
-  prepare_scratch(__runtime(), __physical(scratch), __fields(scratch))
+  prepare_scratch(__runtime(), __physical(scratch.x), __fields(scratch.x))
 end
 
 __demand(__leaf)
