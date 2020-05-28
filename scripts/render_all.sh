@@ -23,11 +23,11 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/flops.py -m cori -g 1 -d stencil_1d -n 1 --csv excel > flops_stencil.csv
     "$root_dir"/flops.py -m cori -g 1 -d stencil_1d -n 1 -s 'mpi nonblock' --csv excel > flops_stencil_mpi.csv
 
-    "$root_dir"/weak.py -m cori -g 1 -d stencil_1d -p 262144 --csv excel > weak.csv
+    "$root_dir"/weak.py -m cori -g 1 -d stencil_1d --max-problem-size 262144 --min-problem-size 262144 --csv excel > weak.csv
     "$root_dir"/weak.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' --csv excel > weak_mpi.csv
 
-    "$root_dir"/strong.py -m cori -g 1 -d stencil_1d -p 1048576 --csv excel > strong.csv
-    "$root_dir"/strong.py -m cori -g 1 -d stencil_1d -s 'mpi nonblock' --csv excel > strong_mpi.csv
+    "$root_dir"/strong.py -m cori -g 1 -d stencil_1d --max-problem-size 1048576 --min-problem-size 1048576 --csv excel > strong.csv
+    "$root_dir"/strong.py -m cori -g 1 -d stencil_1d --max-problem-size 4294967296 --min-problem-size 256 -s 'mpi nonblock' --csv excel > strong_mpi.csv
 
     "$root_dir"/render_metg.py metg_stencil.csv # --title "METG vs Nodes (Cori, Compute, Stencil)"
     for pattern in nearest spread fft; do
@@ -83,7 +83,7 @@ if [[ $(basename $PWD) = compute ]]; then
 
     "$root_dir"/render_metg.py efficiency_stencil_mpi.csv \
                --legend-position 'lower left' \
-               --height 3.5 \
+               --height 3.25 \
                --xlabel 'Task Granularity (ms)' \
                --xdata 'time_per_task' \
                --x-invert \
@@ -109,7 +109,7 @@ if [[ $(basename $PWD) = compute ]]; then
 
     "$root_dir"/render_metg.py flops_stencil_mpi.csv \
                --legend-position 'lower left' \
-               --height 3.5 \
+               --height 3.25 \
                --xlabel 'Problem Size' \
                --xdata 'iterations' \
                --x-invert \
