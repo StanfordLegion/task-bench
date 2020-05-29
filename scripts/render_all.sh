@@ -29,6 +29,8 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/strong.py -m cori -g 1 -d stencil_1d --max-problem-size 1048576 --min-problem-size 1048576 --csv excel > strong.csv
     "$root_dir"/strong.py -m cori -g 1 -d stencil_1d --max-problem-size 4294967296 --min-problem-size 256 -s 'mpi nonblock' --csv excel > strong_mpi.csv
 
+    "$root_dir"/strong_limit.py -m cori -g 1 -d stencil_1d -p 1048576 -s 'mpi nonblock' -s 'charm' -s 'parsec ptg' --csv excel > strong_limit.csv
+
     "$root_dir"/render_metg.py metg_stencil.csv # --title "METG vs Nodes (Cori, Compute, Stencil)"
     for pattern in nearest spread fft; do
         "$root_dir"/render_metg.py metg_${pattern}.csv # --title "METG vs Nodes (Cori, Compute, ${pattern})"
@@ -143,6 +145,13 @@ if [[ $(basename $PWD) = compute ]]; then
                --ylabel 'Wall Time (s)' \
                --highlight-column 'metg' # \
                # --title 'Strong Scaling by Problem Size (Cori, Compute, Stencil)'
+
+    "$root_dir"/render_metg.py strong_limit.csv \
+               --ylabel 'Wall Time (s)' \
+               --legend-suffix '_actual' \
+               --legend-suffix '_limit' \
+               --limit '_limit' \
+               --ideal 'ideal'
 
     for system in mpi realm parsec dask; do
         "$root_dir"/render_efficiency_3d.py \

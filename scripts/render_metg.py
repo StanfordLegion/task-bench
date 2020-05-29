@@ -38,6 +38,8 @@ parser.add_argument('--legend-ncol', type=int, default=1)
 parser.add_argument('--legend-fontsize', type=int, default=12)
 parser.add_argument('--legend-position', default='center left')
 parser.add_argument('--legend-base', type=int, default=0)
+parser.add_argument('--legend-suffix', action='append', default=[])
+parser.add_argument('--limit-suffix')
 parser.add_argument('--filter-legend-even-powers', action='store_true')
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
@@ -56,6 +58,7 @@ parser.add_argument('--no-ylog', action='store_false', dest='ylog')
 parser.add_argument('--no-xticks', action='store_false', dest='xticks')
 parser.add_argument('--connect-missing', action='store_true')
 parser.add_argument('--highlight-column')
+parser.add_argument('--ideal-column')
 args = parser.parse_args()
 
 markers = [
@@ -84,9 +87,9 @@ colors = [
     # 'gold',
     'green',
     'red',
+    'black',
     'fuchsia',
     # 'yellow',
-    'black',
     'orange',
     'purple',
     'cyan',
@@ -182,10 +185,25 @@ else:
 
 for column in columns:
     visible = True
-    if args.legend and column in legend_label:
-        label = legend_label[column]
-        visible = legend_visible[column]
-        idx = legend_idx[column]
+    limit = False
+    if args.legend:
+        colname = column
+        colsuffix = ''
+        for suffix in args.legend_suffix:
+            if colname.endswith(suffix):
+                colname = colname[:-len(suffix)]
+                colsuffix = suffix.replace('_', ' ')
+                if args.limit_suffix == suffix:
+                    limit = True
+                break
+        if colname in legend_label:
+            label = legend_label[colname] + colsuffix
+            visible = legend_visible[colname]
+            idx = legend_idx[colname]
+        else:
+            label = column.replace('_', ' ')
+            idx = next_idx
+            next_idx += 1
     else:
         label = column.replace('_', ' ')
         idx = next_idx
@@ -206,6 +224,17 @@ for column in columns:
         linetype = '--'
         linewidth = 3
         label = None
+    elif args.ideal_column == column:
+        color = 'black'
+        marker = None
+        linetype = ':'
+        linewidth = 1
+        label = None
+    elif limit:
+        color = colors[idx]
+        marker = None
+        linetype = '--'
+        linewidth = 1
     else:
         color = colors[idx]
         marker = markers[idx]
