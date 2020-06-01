@@ -100,7 +100,7 @@ colors = [
     'darkslategrey',
     'navy',
     'lawngreen',
-    # 'pink',
+    'deeppink',
     'darkred',
     'olive',
     'deepskyblue',
