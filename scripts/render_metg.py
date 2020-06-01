@@ -19,10 +19,12 @@
 import matplotlib
 matplotlib.use('PDF')
 import matplotlib.pyplot as plt
-import math
-import numpy as np
+
 import argparse
 import ast
+import csv
+import math
+import numpy as np
 import os
 
 def csv2rec(filename):
@@ -40,6 +42,8 @@ parser.add_argument('--legend-position', default='center left')
 parser.add_argument('--legend-base', type=int, default=0)
 parser.add_argument('--legend-suffix', action='append', default=[])
 parser.add_argument('--limit-suffix')
+parser.add_argument('--limit-intersection-filename')
+parser.add_argument('--limit-intersection-system')
 parser.add_argument('--filter-legend-even-powers', action='store_true')
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
@@ -88,20 +92,20 @@ colors = [
     'green',
     'red',
     'black',
-    'fuchsia',
+    'darkorchid',
     # 'yellow',
-    'orange',
+    'fuchsia',
     'purple',
     'cyan',
     'darkslategrey',
-    'olive',
+    'navy',
+    'lawngreen',
     # 'pink',
     'darkred',
-    'lawngreen',
-    'grey',
+    'olive',
     'deepskyblue',
-    'darkorchid',
-    'navy',
+    'orange',
+    'grey',
 
     # Tableau colors
     # (0.968,0.714,0.824),
@@ -246,7 +250,19 @@ for column in columns:
         column_data = column_data * args.yscale
 
     mask = np.isfinite(column_data)
-    plt.plot(nodes[mask] if args.connect_missing else nodes, column_data[mask] if args.connect_missing else column_data, linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
+    plt.plot(nodes[mask] if args.connect_missing else nodes, column_data[mask] if args.connect_missing else column_data, linestyle=linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
+
+if args.limit_intersection_system:
+    assert args.limit_intersection_filename is not None
+    with open(args.limit_intersection_filename, newline='') as f:
+        intersections = list(csv.DictReader(f, dialect='excel'))
+
+    row = next(x for x in intersections if x['system'] == args.limit_intersection_system)
+
+    assert not args.yscale, 'unimplemented'
+
+    plt.plot(float(row['limit_actual_nodes']), float(row['limit_actual_time']), color='black', marker='s', markerfacecolor='none', markersize=12, markeredgewidth=3)
+    plt.plot(float(row['limit_ideal_nodes']), float(row['limit_ideal_time']), color='black', marker='o', markerfacecolor='none', markersize=12, markeredgewidth=3)
 
 if args.xticks:
     plt.xticks(nodes, nodes) #, rotation=30)

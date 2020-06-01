@@ -33,6 +33,9 @@ if [[ $(basename $PWD) = compute ]]; then
 
     "$root_dir"/strong_limit.py -m cori -g 1 -d stencil_1d -p 1048576 --csv excel > strong_limit_all.csv
 
+    # IMPORTANT: Use this only ONLY for rendering the graph so that the intersections appear in the right place for a log-log plot
+    "$root_dir"/limit_intersect.py strong_limit.csv --log-log --csv excel > strong_limit_intersect_log_log.csv
+
     "$root_dir"/limit_intersect.py strong_limit_all.csv --csv excel > strong_limit_intersect.csv
 
     "$root_dir"/render_metg.py metg_stencil.csv # --title "METG vs Nodes (Cori, Compute, Stencil)"
@@ -154,8 +157,10 @@ if [[ $(basename $PWD) = compute ]]; then
                --ylabel 'Wall Time (s)' \
                --legend-suffix '_actual' \
                --legend-suffix '_limit' \
-               --limit '_limit' \
-               --ideal 'ideal'
+               --limit-suffix '_limit' \
+               --ideal 'ideal' \
+               --limit-intersection-filename strong_limit_intersect_log_log.csv \
+               --limit-intersection-system 'charm'
 
     for system in mpi realm parsec dask; do
         "$root_dir"/render_efficiency_3d.py \

@@ -17,6 +17,7 @@
 
 import argparse
 import csv
+import math
 import numpy as np
 import sys
 
@@ -38,7 +39,7 @@ def get_intersect(a1, a2, b1, b2):
         return (float('inf'), float('inf'))
     return (x/z, y/z)
 
-def driver(filename, csv_dialect):
+def driver(filename, log_log, csv_dialect):
     with open(filename, newline='') as f:
         table = list(csv.DictReader(f, dialect=csv_dialect))
 
@@ -48,6 +49,13 @@ def driver(filename, csv_dialect):
     for key in table[0].keys():
         if key.endswith(limit):
             systems.append(key[:-len(limit)])
+
+    if log_log:
+        log2 = math.log2
+        exp2 = lambda x: 2**x
+    else:
+        log2 = lambda x: x
+        exp2 = lambda x: x
 
     rows = []
 
@@ -63,13 +71,13 @@ def driver(filename, csv_dialect):
                 if not this_row[system_limit] or not this_row[system_actual] or  not next_row[system_limit] or not next_row[system_actual]:
                     break
 
-                this_nodes = float(this_row['nodes'])
-                this_limit = float(this_row[system_limit])
-                this_actual = float(this_row[system_actual])
+                this_nodes = log2(float(this_row['nodes']))
+                this_limit = log2(float(this_row[system_limit]))
+                this_actual = log2(float(this_row[system_actual]))
 
-                next_nodes = float(next_row['nodes'])
-                next_limit = float(next_row[system_limit])
-                next_actual = float(next_row[system_actual])
+                next_nodes = log2(float(next_row['nodes']))
+                next_limit = log2(float(next_row[system_limit]))
+                next_actual = log2(float(next_row[system_actual]))
 
                 if this_limit < this_actual and next_limit > next_actual:
                     intersection = get_intersect(
@@ -77,7 +85,7 @@ def driver(filename, csv_dialect):
                         [next_nodes, next_limit],
                         [this_nodes, this_actual],
                         [next_nodes, next_actual])
-                    limit_actual_intersection = intersection
+                    limit_actual_intersection = tuple(exp2(x) for x in intersection)
                     has_intersection = True
                     break
         if not has_intersection:
@@ -92,13 +100,13 @@ def driver(filename, csv_dialect):
                 if not this_row[system_limit] or not next_row[system_limit]:
                     break
 
-                this_nodes = float(this_row['nodes'])
-                this_limit = float(this_row[system_limit])
-                this_ideal = float(this_row['ideal'])
+                this_nodes = log2(float(this_row['nodes']))
+                this_limit = log2(float(this_row[system_limit]))
+                this_ideal = log2(float(this_row['ideal']))
 
-                next_nodes = float(next_row['nodes'])
-                next_limit = float(next_row[system_limit])
-                next_ideal = float(next_row['ideal'])
+                next_nodes = log2(float(next_row['nodes']))
+                next_limit = log2(float(next_row[system_limit]))
+                next_ideal = log2(float(next_row['ideal']))
 
                 if this_limit < this_ideal and next_limit > next_ideal:
                     intersection = get_intersect(
@@ -106,7 +114,7 @@ def driver(filename, csv_dialect):
                         [next_nodes, next_limit],
                         [this_nodes, this_ideal],
                         [next_nodes, next_ideal])
-                    limit_ideal_intersection = intersection
+                    limit_ideal_intersection = tuple(exp2(x) for x in intersection)
                     has_intersection = True
                     break
         if not has_intersection:
@@ -130,6 +138,7 @@ def driver(filename, csv_dialect):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--log-log', action='store_true')
     parser.add_argument('--csv-dialect', default='excel-tab')
     parser.add_argument('filename')
     args = parser.parse_args()
