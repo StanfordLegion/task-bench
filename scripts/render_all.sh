@@ -92,7 +92,7 @@ if [[ $(basename $PWD) = compute ]]; then
 
     "$root_dir"/render_metg.py efficiency_stencil_mpi.csv \
                --legend-position 'lower left' \
-               --height 3.25 \
+               --height 2.75 \
                --xlabel 'Task Granularity (ms)' \
                --xdata 'time_per_task' \
                --x-invert \
@@ -118,7 +118,7 @@ if [[ $(basename $PWD) = compute ]]; then
 
     "$root_dir"/render_metg.py flops_stencil_mpi.csv \
                --legend-position 'lower left' \
-               --height 3.25 \
+               --height 2.75 \
                --xlabel 'Problem Size' \
                --xdata 'iterations' \
                --x-invert \
@@ -136,6 +136,7 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/render_metg.py weak_mpi.csv \
                --legend-base 2 \
                --filter-legend-even-powers \
+               --height 4.0 \
                --width 12 \
                --ylabel 'Wall Time (s)' \
                --highlight-column 'metg' # \
@@ -148,6 +149,7 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/render_metg.py strong_mpi.csv \
                --legend-base 2 \
                --filter-legend-even-powers \
+               --height 4.0 \
                --width 12 \
                --ylabel 'Wall Time (s)' \
                --highlight-column 'metg' # \
@@ -184,6 +186,7 @@ if [[ $(basename $PWD) = compute ]]; then
     crop flops_stencil_mpi.pdf
     crop weak_mpi.pdf
     crop strong_mpi.pdf
+    crop strong_limit.pdf
 
     for system in mpi realm parsec dask; do
         crop efficiency_3d_stencil_${system}.pdf
@@ -254,6 +257,7 @@ elif [[ $(basename $PWD) = cuda_compute ]]; then
                --xlabel 'Normalized Problem Size' \
                --xscale $(bc <<< 'scale=20; 1/(2*64*1000*12)') \
                --xdata 'flops' \
+               --height 3.5 \
                --x-invert \
                --no-xticks \
                --ylabel 'TFLOP/s' \
