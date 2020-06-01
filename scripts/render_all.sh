@@ -31,6 +31,10 @@ if [[ $(basename $PWD) = compute ]]; then
 
     "$root_dir"/strong_limit.py -m cori -g 1 -d stencil_1d -p 1048576 -s 'mpi nonblock' -s 'charm' -s 'parsec ptg' --csv excel > strong_limit.csv
 
+    "$root_dir"/strong_limit.py -m cori -g 1 -d stencil_1d -p 1048576 --csv excel > strong_limit_all.csv
+
+    "$root_dir"/limit_intersect.py strong_limit_all.csv --csv excel > strong_limit_intersect.csv
+
     "$root_dir"/render_metg.py metg_stencil.csv # --title "METG vs Nodes (Cori, Compute, Stencil)"
     for pattern in nearest spread fft; do
         "$root_dir"/render_metg.py metg_${pattern}.csv # --title "METG vs Nodes (Cori, Compute, ${pattern})"

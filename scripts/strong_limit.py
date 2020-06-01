@@ -37,12 +37,14 @@ class Parser(util.Parser):
         self.ideal = float('inf')
 
     def filter(self, row):
-        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and row['name'] in self.systems
+        return row['ngraphs'] == self.ngraphs and row['type'] == self.dependence and (self.systems is None or row['name'] in self.systems)
 
     def process(self, row, data, metg=None):
         name = row['name']
 
-        assert metg is not None
+        if metg is None:
+            return
+
         self.metg[row['nodes']][name] = min(metg, self.metg[row['nodes']][name], key=float)
 
         for values in zip(*list(data.values())):
