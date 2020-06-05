@@ -197,9 +197,9 @@ if [[ $(basename $PWD) = compute ]]; then
     crop strong_mpi.pdf
     crop strong_limit_stencil.pdf
 
-    for system in mpi realm parsec dask; do
-        crop efficiency_3d_stencil_${system}.pdf
-    done
+    # for system in mpi realm parsec dask; do
+    #     crop efficiency_3d_stencil_${system}.pdf
+    # done
 
 elif [[ $(basename $PWD) = cuda_compute ]]; then
     "$root_dir"/metg.py -m daint -g 1 -d stencil_1d --csv excel > metg_stencil.csv
