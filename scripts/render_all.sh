@@ -170,7 +170,8 @@ if [[ $(basename $PWD) = compute ]]; then
                --limit-suffix '_limit' \
                --ideal 'ideal' \
                --limit-intersection-filename strong_limit_intersect_stencil_log_log.csv \
-               --limit-intersection-system 'charm'
+               --limit-intersection-system 'charm' \
+               --width 10
 
     for system in mpi realm parsec dask; do
         "$root_dir"/render_efficiency_3d.py \

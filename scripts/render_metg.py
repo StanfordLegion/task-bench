@@ -239,6 +239,7 @@ for column in columns:
         marker = None
         linetype = '--'
         linewidth = 1
+        label = '%s 50%%' % label
     else:
         color = colors[idx]
         marker = markers[idx]
