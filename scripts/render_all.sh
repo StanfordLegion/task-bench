@@ -29,14 +29,22 @@ if [[ $(basename $PWD) = compute ]]; then
     "$root_dir"/strong.py -m cori -g 1 -d stencil_1d --max-problem-size 1048576 --min-problem-size 1048576 --csv excel > strong.csv
     "$root_dir"/strong.py -m cori -g 1 -d stencil_1d --max-problem-size 4294967296 --min-problem-size 256 -s 'mpi nonblock' --csv excel > strong_mpi.csv
 
-    "$root_dir"/strong_limit.py -m cori -g 1 -d stencil_1d -p 1048576 -s 'mpi nonblock' -s 'charm' -s 'parsec ptg' --csv excel > strong_limit.csv
+    "$root_dir"/strong_limit.py -m cori -g 1 -d stencil_1d -p 1048576 -s 'mpi nonblock' -s 'charm' -s 'parsec ptg' --csv excel > strong_limit_stencil.csv
 
-    "$root_dir"/strong_limit.py -m cori -g 1 -d stencil_1d -p 1048576 --csv excel > strong_limit_all.csv
+    "$root_dir"/strong_limit.py -m cori -g 1 -d stencil_1d -p 1048576 --csv excel > strong_limit_all_stencil.csv
+    for pattern in nearest spread fft; do
+        "$root_dir"/strong_limit.py -m cori -g 1 -d $pattern -p 1048576 --csv excel > strong_limit_all_${pattern}.csv
+    done
+    "$root_dir"/strong_limit.py -m cori -g 4 -d nearest -p 1048576 --csv excel > strong_limit_all_ngraphs_4_nearest.csv
 
     # IMPORTANT: Use this only ONLY for rendering the graph so that the intersections appear in the right place for a log-log plot
-    "$root_dir"/limit_intersect.py strong_limit.csv --log-log --csv excel > strong_limit_intersect_log_log.csv
+    "$root_dir"/limit_intersect.py strong_limit_stencil.csv --log-log --csv excel > strong_limit_intersect_stencil_log_log.csv
 
-    "$root_dir"/limit_intersect.py strong_limit_all.csv --csv excel > strong_limit_intersect.csv
+    "$root_dir"/limit_intersect.py strong_limit_all_stencil.csv --csv excel > strong_limit_intersect_stencil.csv
+    for pattern in nearest spread fft; do
+        "$root_dir"/limit_intersect.py strong_limit_all_${pattern}.csv --csv excel > strong_limit_intersect_${pattern}.csv
+    done
+    "$root_dir"/limit_intersect.py strong_limit_all_ngraphs_4_nearest.csv --csv excel > strong_limit_intersect_ngraphs_4_nearest.csv
 
     "$root_dir"/render_metg.py metg_stencil.csv # --title "METG vs Nodes (Cori, Compute, Stencil)"
     for pattern in nearest spread fft; do
@@ -155,13 +163,13 @@ if [[ $(basename $PWD) = compute ]]; then
                --highlight-column 'metg' # \
                # --title 'Strong Scaling by Problem Size (Cori, Compute, Stencil)'
 
-    "$root_dir"/render_metg.py strong_limit.csv \
+    "$root_dir"/render_metg.py strong_limit_stencil.csv \
                --ylabel 'Wall Time (s)' \
                --legend-suffix '_actual' \
                --legend-suffix '_limit' \
                --limit-suffix '_limit' \
                --ideal 'ideal' \
-               --limit-intersection-filename strong_limit_intersect_log_log.csv \
+               --limit-intersection-filename strong_limit_intersect_stencil_log_log.csv \
                --limit-intersection-system 'charm'
 
     for system in mpi realm parsec dask; do
@@ -186,7 +194,7 @@ if [[ $(basename $PWD) = compute ]]; then
     crop flops_stencil_mpi.pdf
     crop weak_mpi.pdf
     crop strong_mpi.pdf
-    crop strong_limit.pdf
+    crop strong_limit_stencil.pdf
 
     for system in mpi realm parsec dask; do
         crop efficiency_3d_stencil_${system}.pdf
