@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1188,6 +1188,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   // will be effectively serialized on this processor.
   char *scratch_ptr = reinterpret_cast<char *>(malloc(max_scratch_bytes));
   assert(scratch_ptr);
+  TaskGraph::prepare_scratch(scratch_ptr, max_scratch_bytes);
 
   // Statically allocate buffer to use for task input
   size_t leaf_bufsize = 0;

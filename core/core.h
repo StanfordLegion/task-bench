@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,20 +48,33 @@ struct TaskGraph : public task_graph_t {
   // number of timesteps after which the pattern of dependence sets repeats itself
   long timestep_period() const;
   long dependence_set_at_timestep(long timestep) const;
+
   // std::pair(a, b) represents the INCLUSIVE interval from a to b
   std::vector<std::pair<long, long> > reverse_dependencies(long dset, long point) const;
   std::vector<std::pair<long, long> > dependencies(long dset, long point) const;
+
+  // Same as above, but using user-supplied buffer. Returns number of
+  // elements written. WARNING: If more elements are written than can
+  // fit in the buffer, results in buffer overflow. Use methods below
+  // to figure out how large of a buffer to alloate.
+  size_t reverse_dependencies(long dset, long point, std::pair<long, long> *deps) const;
+  size_t dependencies(long dset, long point, std::pair<long, long> *deps) const;
+
+  // Note: May over-approximate the number of dependencies.
+  size_t num_reverse_dependencies(long dset, long point) const;
+  size_t num_dependencies(long dset, long point) const;
 
   void execute_point(long timestep, long point,
                      char *output_ptr, size_t output_bytes,
                      const char **input_ptr, const size_t *input_bytes,
                      size_t n_inputs,
                      char *scratch_ptr, size_t scratch_bytes) const;
+  static void prepare_scratch(char *scratch_ptr, size_t scratch_bytes);
 };
 
 struct App {
   std::vector<TaskGraph> graphs;
-  bool verbose;
+  int verbose;
   bool enable_graph_validation;
 
   App(int argc, char **argv);

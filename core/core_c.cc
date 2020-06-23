@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,6 +117,7 @@ void task_graph_execute_point_scratch_auto(task_graph_t graph, long timestep, lo
                                            size_t scratch_bytes)
 {
   std::vector<char> scratch(scratch_bytes);
+  TaskGraph::prepare_scratch(scratch.data(), scratch.size());
   TaskGraph t(graph);
   t.execute_point(timestep, point, output_ptr, output_bytes,
                   input_ptr, input_bytes, n_inputs,
@@ -146,6 +147,11 @@ void task_graph_execute_point_scratch_nonconst(task_graph_t graph, long timestep
                   reinterpret_cast<const char **>(const_cast<const int64_t **>(input_ptr)),
                   input_bytes, n_inputs,
                   scratch_ptr, scratch_bytes);
+}
+
+void task_graph_prepare_scratch(char *scratch_ptr, size_t scratch_bytes)
+{
+  TaskGraph::prepare_scratch(scratch_ptr, scratch_bytes);
 }
 
 void interval_list_destroy(interval_list_t intervals)

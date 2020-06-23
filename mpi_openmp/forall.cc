@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,24 @@ int main(int argc, char *argv[])
   App app(argc, argv);
   if (rank == 0) app.display();
 
+  std::vector<std::vector<char> > scratch;
+  for (auto graph : app.graphs) {
+    long first_point = rank * graph.max_width / n_ranks;
+    long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
+    long n_points = last_point - first_point + 1;
+
+    size_t scratch_bytes = graph.scratch_bytes_per_task;
+    scratch.emplace_back(scratch_bytes * n_points);
+
+    char *scratch_ptr = scratch.back().data();
+
+    #pragma omp parallel for schedule(runtime)
+    for (long point = first_point; point <= last_point; ++point) {
+      long point_index = point - first_point;
+      TaskGraph::prepare_scratch(scratch_ptr + scratch_bytes * point_index, scratch_bytes);
+    }
+  }
+
   double elapsed_time = 0.0;
   for (int iter = 0; iter < 2; ++iter) {
     MPI_Barrier(MPI_COMM_WORLD);
@@ -45,8 +63,7 @@ int main(int argc, char *argv[])
       long n_points = last_point - first_point + 1;
 
       size_t scratch_bytes = graph.scratch_bytes_per_task;
-      char *scratch_ptr = (char *)malloc(scratch_bytes * n_points);
-      assert(scratch_ptr);
+      char *scratch_ptr = scratch[graph.graph_index].data();
 
       std::vector<int> rank_by_point(graph.max_width);
       std::vector<int> tag_bits_by_point(graph.max_width);
@@ -73,6 +90,7 @@ int main(int argc, char *argv[])
         }
       }
 
+      // Create input and output buffers.
       std::vector<std::vector<std::vector<char> > > inputs(n_points);
       std::vector<std::vector<const char *> > input_ptr(n_points);
       std::vector<std::vector<size_t> > input_bytes(n_points);
@@ -99,6 +117,21 @@ int main(int argc, char *argv[])
         point_outputs.resize(graph.output_bytes_per_task);
       }
 
+      // Cache dependencies.
+      std::vector<std::vector<std::vector<std::pair<long, long> > > > dependencies(graph.max_dependence_sets());
+      std::vector<std::vector<std::vector<std::pair<long, long> > > > reverse_dependencies(graph.max_dependence_sets());
+      for (long dset = 0; dset < graph.max_dependence_sets(); ++dset) {
+        dependencies[dset].resize(n_points);
+        reverse_dependencies[dset].resize(n_points);
+
+        for (long point = first_point; point <= last_point; ++point) {
+          long point_index = point - first_point;
+
+          dependencies[dset][point_index] = graph.dependencies(dset, point);
+          reverse_dependencies[dset][point_index] = graph.reverse_dependencies(dset, point);
+        }
+      }
+
       for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
         long offset = graph.offset_at_timestep(timestep);
         long width = graph.width_at_timestep(timestep);
@@ -107,6 +140,8 @@ int main(int argc, char *argv[])
         long last_width = graph.width_at_timestep(timestep-1);
 
         long dset = graph.dependence_set_at_timestep(timestep);
+        auto &deps = dependencies[dset];
+        auto &rev_deps = reverse_dependencies[dset];
 
         requests.clear();
 
@@ -117,10 +152,13 @@ int main(int argc, char *argv[])
           auto &point_n_inputs = n_inputs[point_index];
           auto &point_output = outputs[point_index];
 
+          auto &point_deps = deps[point_index];
+          auto &point_rev_deps = rev_deps[point_index];
+
           /* Receive */
           point_n_inputs = 0;
           if (point >= offset && point < offset + width) {
-            for (auto interval : graph.dependencies(dset, point)) {
+            for (auto interval : point_deps) {
               for (long dep = interval.first; dep <= interval.second; ++dep) {
                 if (dep < last_offset || dep >= last_offset + last_width) {
                   continue;
@@ -147,7 +185,7 @@ int main(int argc, char *argv[])
 
           /* Send */
           if (point >= last_offset && point < last_offset + last_width) {
-            for (auto interval : graph.reverse_dependencies(dset, point)) {
+            for (auto interval : point_rev_deps) {
               for (long dep = interval.first; dep <= interval.second; dep++) {
                 if (dep < offset || dep >= offset + width || (first_point <= dep && dep <= last_point)) {
                   continue;
@@ -182,7 +220,6 @@ int main(int argc, char *argv[])
                               scratch_ptr + scratch_bytes * point_index, scratch_bytes);
         }
       }
-      free(scratch_ptr);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);

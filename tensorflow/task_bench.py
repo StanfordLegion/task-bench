@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2019 Stanford University
+# Copyright 2020 Stanford University
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,8 @@ import subprocess
 import time
 
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 core_header = subprocess.check_output(
     ["gcc", "-D", "__attribute__(x)=", "-E", "-P",
@@ -102,7 +103,6 @@ def execute_task_graph(graph):
     for timestep in range(0, graph.timesteps):
         offset = c.task_graph_offset_at_timestep(graph, timestep)
         width = c.task_graph_width_at_timestep(graph, timestep)
-        dset = c.task_graph_dependence_set_at_timestep(graph, timestep)
         row = []
         for point in range(0, offset):
             row.append(None)

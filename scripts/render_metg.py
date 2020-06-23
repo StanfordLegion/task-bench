@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# Copyright 2019 Stanford University
-# Copyright 2019 Los Alamos National Laboratory
+# Copyright 2020 Stanford University
+# Copyright 2020 Los Alamos National Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,9 +19,12 @@
 import matplotlib
 matplotlib.use('PDF')
 import matplotlib.pyplot as plt
-import numpy as np
+
 import argparse
 import ast
+import csv
+import math
+import numpy as np
 import os
 
 def csv2rec(filename):
@@ -33,6 +36,15 @@ parser.add_argument('--title')
 parser.add_argument('--width', type=float, default=9)
 parser.add_argument('--height', type=float, default=5)
 parser.add_argument('--legend', default='../legend.csv')
+parser.add_argument('--legend-ncol', type=int, default=1)
+parser.add_argument('--legend-fontsize', type=int, default=12)
+parser.add_argument('--legend-position', default='center left')
+parser.add_argument('--legend-base', type=int, default=0)
+parser.add_argument('--legend-suffix', action='append', default=[])
+parser.add_argument('--limit-suffix')
+parser.add_argument('--limit-intersection-filename')
+parser.add_argument('--limit-intersection-system')
+parser.add_argument('--filter-legend-even-powers', action='store_true')
 parser.add_argument('--xlabel', default='Nodes')
 parser.add_argument('--ylabel', default='Minimum Effective Task Granularity (ms)')
 parser.add_argument('--xdata', default='nodes')
@@ -48,7 +60,9 @@ parser.add_argument('--xbase', type=int, default=2)
 parser.add_argument('--no-xlog', action='store_false', dest='xlog')
 parser.add_argument('--no-ylog', action='store_false', dest='ylog')
 parser.add_argument('--no-xticks', action='store_false', dest='xticks')
+parser.add_argument('--connect-missing', action='store_true')
 parser.add_argument('--highlight-column')
+parser.add_argument('--ideal-column')
 args = parser.parse_args()
 
 markers = [
@@ -77,21 +91,21 @@ colors = [
     # 'gold',
     'green',
     'red',
-    'fuchsia',
-    # 'yellow',
     'black',
-    'orange',
+    'darkorchid',
+    # 'yellow',
+    'fuchsia',
     'purple',
     'cyan',
     'darkslategrey',
-    'olive',
-    # 'pink',
-    'darkred',
-    'lawngreen',
-    'grey',
-    'deepskyblue',
-    'darkorchid',
     'navy',
+    'lawngreen',
+    'deeppink',
+    'darkred',
+    'olive',
+    'deepskyblue',
+    'orange',
+    'grey',
 
     # Tableau colors
     # (0.968,0.714,0.824),
@@ -175,14 +189,35 @@ else:
 
 for column in columns:
     visible = True
-    if args.legend and column in legend_label:
-        label = legend_label[column]
-        visible = legend_visible[column]
-        idx = legend_idx[column]
+    limit = False
+    if args.legend:
+        colname = column
+        colsuffix = ''
+        for suffix in args.legend_suffix:
+            if colname.endswith(suffix):
+                colname = colname[:-len(suffix)]
+                colsuffix = suffix.replace('_', ' ')
+                if args.limit_suffix == suffix:
+                    limit = True
+                break
+        if colname in legend_label:
+            label = legend_label[colname] + colsuffix
+            visible = legend_visible[colname]
+            idx = legend_idx[colname]
+        else:
+            label = column.replace('_', ' ')
+            idx = next_idx
+            next_idx += 1
     else:
         label = column.replace('_', ' ')
         idx = next_idx
         next_idx += 1
+
+    if args.legend_base > 0 and args.highlight_column != column:
+        exponent = int(math.log(int(label), args.legend_base))
+        if args.filter_legend_even_powers and exponent % 2 != 0:
+            continue
+        label = '$%s^{%.0f}$' % (args.legend_base, exponent)
 
     if not visible:
         continue
@@ -193,6 +228,18 @@ for column in columns:
         linetype = '--'
         linewidth = 3
         label = None
+    elif args.ideal_column == column:
+        color = 'black'
+        marker = None
+        linetype = ':'
+        linewidth = 1
+        label = None
+    elif limit:
+        color = colors[idx]
+        marker = None
+        linetype = '--'
+        linewidth = 1
+        label = '%s 50%%' % label
     else:
         color = colors[idx]
         marker = markers[idx]
@@ -203,7 +250,20 @@ for column in columns:
     if args.yscale:
         column_data = column_data * args.yscale
 
-    plt.plot(nodes, column_data, linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
+    mask = np.isfinite(column_data)
+    plt.plot(nodes[mask] if args.connect_missing else nodes, column_data[mask] if args.connect_missing else column_data, linestyle=linetype, color=color, marker=marker, markerfacecolor='none', linewidth=linewidth, label=label)
+
+if args.limit_intersection_system:
+    assert args.limit_intersection_filename is not None
+    with open(args.limit_intersection_filename, newline='') as f:
+        intersections = list(csv.DictReader(f, dialect='excel'))
+
+    row = next(x for x in intersections if x['system'] == args.limit_intersection_system)
+
+    assert not args.yscale, 'unimplemented'
+
+    plt.plot(float(row['limit_actual_nodes']), float(row['limit_actual_time']), color='black', marker='s', markerfacecolor='none', markersize=12, markeredgewidth=3)
+    plt.plot(float(row['limit_ideal_nodes']), float(row['limit_ideal_time']), color='black', marker='o', markerfacecolor='none', markersize=12, markeredgewidth=3)
 
 if args.xticks:
     plt.xticks(nodes, nodes) #, rotation=30)
@@ -222,12 +282,15 @@ box = ax.get_position()
 ax.set_position([box.x0, box.y0, box.width * 0.80, box.height])
 
 if args.legend:
-    plt.legend(
+    kwargs = {'loc': args.legend_position}
+    if args.legend_position == 'center left':
         # Put a legend to the right of the current axis
-        loc='center left', bbox_to_anchor=(1, 0.5),
-        ncol=1, fontsize=12,
+        kwargs['bbox_to_anchor'] = (1, 0.5)
+    plt.legend(
+        ncol=args.legend_ncol, fontsize=args.legend_fontsize,
         # Square corners, disable transparency, set color to black
-        fancybox=False, framealpha=1, edgecolor='black')
+        fancybox=False, framealpha=1, edgecolor='black',
+        **kwargs)
 
 plt.grid(True, color='black', linestyle='--', linewidth=0.5, dashes=(1, 5))
 output_filename = '%s.pdf' % os.path.splitext(args.filename)[0]

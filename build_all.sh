@@ -19,6 +19,11 @@ else
 fi
 THREADS=${THREADS:-$DEFAULT_THREADS}
 
+# On Cray machines, default to static build. (Cori switched this
+# default from static to dynamic in the January 2020 maintenance
+# cycle, but we want to stick with static builds.)
+export CRAYPE_LINK_TYPE=static
+
 make -C core clean
 make -C core -j$THREADS
 
@@ -64,19 +69,23 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
 fi
 
 (
-if [[ -n $TRAVIS ]]; then
-  if [[ "$(uname)" = "Linux" && "$CXX" = "g++"* ]]; then
-      export CXX="g++-4.9" CC="gcc-4.9"
-  fi
-fi
 if [[ -n $CRAYPE_VERSION ]]; then
     export HOST_CC=gcc HOST_CXX=g++
+fi
+if [[ $USE_PYGION -eq 1 ]]; then
+    source "$PYGION_DIR"/env.sh
 fi
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion clean
 fi
+if [[ $USE_PYGION -eq 1 ]]; then
+    make -C "$LEGION_DIR"/bindings/python clean
+    make -C pygion clean
+fi
 if [[ $USE_REGENT -eq 1 ]]; then
-    make -C regent clean
+    SHARD_SIZE=30 make -C regent clean
+    SHARD_SIZE=15 make -C regent clean
+    SHARD_SIZE=14 make -C regent clean
 fi
 if [[ $USE_REALM -eq 1 ]]; then
     make -C realm clean
@@ -97,9 +106,9 @@ if [[ $USE_REGENT -eq 1 ]]; then
         fi
         unset LG_RT_DIR
         if [[ -z $TRAVIS ]]; then
-            ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38
+            ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38 --terra-cmake -j$THREADS
         else
-            LLVM_CONFIG=llvm-config-3.5 ./install.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --rdir=auto
+            ./install.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --rdir=auto
         fi
     )
     popd
@@ -107,13 +116,20 @@ if [[ $USE_REGENT -eq 1 ]]; then
         if [[ -n $CRAYPE_VERSION ]]; then
             export CC=gcc CXX=g++
         fi
-        SHARD_SIZE=30 make -C regent -j$THREADS
-        SHARD_SIZE=15 make -C regent -j$THREADS
-        SHARD_SIZE=14 make -C regent -j$THREADS
+        SHARD_SIZE=30 make -C regent -j$THREADS &
+        sleep 1
+        SHARD_SIZE=15 make -C regent -j$THREADS &
+        sleep 1
+        SHARD_SIZE=14 make -C regent -j$THREADS &
+        wait
     )
 fi
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j$THREADS
+fi
+if [[ $USE_PYGION -eq 1 ]]; then
+    make -C "$LEGION_DIR"/bindings/python -j$THREADS
+    make -C pygion -j$THREADS
 fi
 if [[ $USE_REALM -eq 1 ]]; then
     make -C realm -j$THREADS

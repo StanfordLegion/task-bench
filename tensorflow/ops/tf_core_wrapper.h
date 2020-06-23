@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ inline void compute_generic(OpKernelContext* context)
 
   std::vector<char> output(graph.output_bytes_per_task);
   std::vector<char> scratch(graph.scratch_bytes_per_task);
+  task_graph_prepare_scratch(scratch.data(), scratch.size());
 
   task_graph_execute_point_scratch(graph, timestep, point,
                            const_cast<char *>(output.data()), output.size(),

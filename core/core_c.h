@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,6 +126,7 @@ void task_graph_execute_point_scratch_nonconst(task_graph_t graph, long timestep
                                                int64_t **input_ptr, const size_t *input_bytes,
                                                size_t n_inputs,
                                                char *scratch_ptr, size_t scratch_bytes);
+void task_graph_prepare_scratch(char *scratch_ptr, size_t scratch_bytes);
 
 typedef struct task_graph_list_t {
   void *impl;

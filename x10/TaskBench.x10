@@ -94,6 +94,18 @@ public class TaskBench {
     ") {}
   }
 
+  private def initScratch(task_graph:Rail[UByte], scratch:Rail[UByte]) {
+    @Native("c++", "
+      assert(task_graph->FMGL(size) == sizeof(TaskGraph));
+      TaskGraph tg = *(TaskGraph *)task_graph->raw;
+
+      assert(scratch->FMGL(size) == tg.scratch_bytes_per_task);
+      char *scratch_ptr = (char *)scratch->raw;
+
+      TaskGraph::prepare_scratch(scratch_ptr, tg.scratch_bytes_per_task);
+    ") {}
+  }
+
   private def executeGraph(graph_index:Long) {
     val local_plh = plh; // Make local so that it's not copied by at statements.
 
@@ -246,6 +258,8 @@ public class TaskBench {
         val output = pi.task_result(graph_index)(point_index);
 
         val scratch = new Rail[UByte](scratch_bytes);
+
+        initScratch(task_graph, scratch);
 
         for (timestep in 0..(timesteps-1)) {
           val offset = offset_at_timestep(timestep);

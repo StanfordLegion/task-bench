@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -457,6 +457,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   for (size_t i = 0; i < graphs.size(); i++) {
     size_t scratch_bytes = graphs[i].scratch_bytes_per_task;
     scratch_ptrs.emplace_back(scratch_bytes);
+    TaskGraph::prepare_scratch(scratch_ptrs[i].data(), scratch_bytes);
   }
 
   Barrier share_barrier = Barrier::NO_BARRIER;

@@ -7,7 +7,7 @@
 #SBATCH --mail-type=ALL
 
 total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
-cores=$(( $total_cores - 2 ))
+cores=$(( $total_cores - 1 ))
 
 module load craype-hugepages8M
 

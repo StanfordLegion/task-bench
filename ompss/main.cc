@@ -364,6 +364,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
   for (int k = 0; k < (nb_workers+1); k++) {
     if (max_scratch_bytes_per_task > 0) {
       extra_local_memory[k] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[k], sizeof(char)*max_scratch_bytes_per_task);
     } else {
       extra_local_memory[k] = NULL;
     }

@@ -75,10 +75,27 @@ if [[ $USE_LEGION -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
             ./legion/task_bench -steps $steps -type $t $k -ll:cpu 2
+            if [[ $USE_GASNET -eq 1 ]]; then
+                mpirun -np 2 ./legion/task_bench -steps $steps -type $t $k -ll:cpu 1
+                mpirun -np 4 ./legion/task_bench -steps $steps -type $t $k -ll:cpu 1
+            fi
             ./legion/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2
         done
     done
 fi
+
+(if [[ $USE_PYGION -eq 1 ]]; then
+    source "$PYGION_DIR"/env.sh
+    for t in "${extended_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            for native in 0 1; do
+                export TASK_BENCH_USE_NATIVE=$native
+                ./pygion/task_bench -steps $steps -type $t $k -ll:py 1
+                ./pygion/task_bench -steps $steps -type $t $k -ll:py 1 -and  -steps $steps -type $t $k -ll:py 1
+            done
+        done
+    done
+fi)
 
 if [[ $USE_REALM -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
@@ -114,8 +131,8 @@ fi
 if [[ $USE_REGENT -eq 1 ]]; then
     for t in trivial no_comm stencil_1d stencil_1d_periodic nearest "spread -period 2" random_nearest all_to_all; do # FIXME: dom tree fft
         for k in "${kernels[@]}"; do
-            ./regent/main.shard15 -steps $steps -type $t $k
-            ./regent/main.shard15 -steps $steps -type $t $k -ll:cpu 2
+            ./regent/main.shard15 -steps $steps -type $t $k -ll:io 1
+            ./regent/main.shard15 -steps $steps -type $t $k -ll:io 1 -ll:cpu 2
             # FIXME: Regent doesn't support multiple graphs
         done
     done

@@ -1,4 +1,4 @@
-/* Copyright 2019 Los Alamos National Laboratory
+/* Copyright 2020 Los Alamos National Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -417,7 +417,17 @@ OpenMPApp::OpenMPApp(int argc, char **argv)
   
  // omp_set_dynamic(1);
   omp_set_num_threads(nb_workers);
-  
+
+  if (max_scratch_bytes_per_task > 0) {
+    #pragma omp parallel
+    {
+      int tid = omp_get_thread_num();
+      //printf("im tid %d\n", tid);
+      for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
+        TaskGraph::prepare_scratch(extra_local_memory[tid] + k * max_scratch_bytes_per_task, sizeof(char)*max_scratch_bytes_per_task);
+      }
+    }
+  }  
 
 }
 

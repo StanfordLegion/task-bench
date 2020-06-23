@@ -1,4 +1,4 @@
-/* Copyright 2019 Stanford University
+/* Copyright 2020 Stanford University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,6 +131,7 @@ proc execute_task_graph2(graph, task_result, task_ready, task_used) {
 
     var scratch_bytes = graph.scratch_bytes_per_task;
     var scratch_ptr = c_malloc(int(8), scratch_bytes);
+    task_graph_prepare_scratch(scratch_ptr, scratch_bytes);
 
     // Initialize input_ptr and input_bytes... these don't need to
     // change because we can just set n_inputs dynamically.

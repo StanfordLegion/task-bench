@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2019 Stanford University
+# Copyright 2020 Stanford University
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ def get_machine_parameters(machine, processor_kind, resource):
         if resource == 'flops':
             return {'cores': 32, 'peak_flops': 1.263719e+12, 'peak_bytes': None}
         elif resource == 'bytes':
-            return {'cores': 32, 'peak_flops': None, 'peak_bytes': 1.074944e+11}
+            return {'cores': 32, 'peak_flops': None, 'peak_bytes': 7.902120e+10}
         else:
             assert False
     elif machine == 'daint':
@@ -68,15 +68,20 @@ def parse_filename(filename):
         comm_idx = fields.index('comm')
     except ValueError:
         comm_idx = None
+    try:
+        cores_per_rank_idx = fields.index('coresperrank')
+    except ValueError:
+        cores_per_rank_idx = None
     node_idx = fields.index('nodes')
     return {
         'name': ' '.join(fields[:graph_idx]),
         'processor_kind': 'gpu' if 'gpu' in fields[:graph_idx] else 'cpu',
         'ngraphs': int(' '.join(fields[graph_idx+1:type_idx])),
-        'type': ' '.join(fields[type_idx+1:radix_idx or imbalance_idx or comm_idx or node_idx]),
-        'radix': radix_idx and ' '.join(fields[radix_idx+1:imbalance_idx or comm_idx or node_idx]),
-        'imbalance': imbalance_idx and ' '.join(fields[imbalance_idx+1:comm_idx or node_idx]),
-        'comm': comm_idx and ' '.join(fields[comm_idx+1:node_idx]),
+        'type': ' '.join(fields[type_idx+1:radix_idx or imbalance_idx or comm_idx or cores_per_rank_idx or node_idx]),
+        'radix': radix_idx and ' '.join(fields[radix_idx+1:imbalance_idx or comm_idx or cores_per_rank_idx or node_idx]),
+        'imbalance': imbalance_idx and ' '.join(fields[imbalance_idx+1:comm_idx or cores_per_rank_idx or node_idx]),
+        'comm': comm_idx and ' '.join(fields[comm_idx+1:cores_per_rank_idx or node_idx]),
+        'cores_per_rank': cores_per_rank_idx and ' '.join(fields[cores_per_rank_idx+1:node_idx]),
         'nodes': int(fields[node_idx+1]),
     }
 

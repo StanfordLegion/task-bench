@@ -10,26 +10,17 @@ total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 cores=$(( $total_cores - 2 ))
 
 function launch_util_0 {
-    memoize=
-    if [[ $1 -le 1 ]]; then
-        memoize="-dm:memoize -lg:parallel_replay $cores"
-    fi
+    memoize="-dm:memoize -lg:parallel_replay $cores"
     srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 0 $memoize
 }
 
 function launch_util_1 {
-    memoize=
-    if [[ $1 -le 1 ]]; then
-        memoize="-dm:memoize"
-    fi
+    memoize="-dm:memoize"
     srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize
 }
 
 function launch_util_2 {
-    memoize=
-    if [[ $1 -le 1 ]]; then
-        memoize="-dm:memoize"
-    fi
+    memoize="-dm:memoize"
     srun -n $1 -N $1 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 2 $memoize
 }
 
