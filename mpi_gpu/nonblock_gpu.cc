@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
       //char *scratch_ptr = (char *)malloc(scratch_bytes);
       char *scratch_ptr = NULL;
       cudaMallocHost((void**)&(scratch_ptr), scratch_bytes);
+      TaskGraph::prepare_scratch(scratch_ptr, scratch_bytes);
 
       long first_point = rank * graph.max_width / n_ranks;
       long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
