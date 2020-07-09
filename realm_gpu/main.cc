@@ -628,7 +628,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     max_scratch_bytes = std::max(max_scratch_bytes, graph.scratch_bytes_per_task);
   }
   char *scratch_ptr = NULL;
-  cudaMallocHost((void**)&(scratch_ptr), max_scratch_bytes);
+  cudaHostAlloc((void**)&(scratch_ptr), max_scratch_bytes, 0);
   assert(scratch_ptr);
   TaskGraph::prepare_scratch(scratch_ptr, max_scratch_bytes);
 
@@ -1132,7 +1132,7 @@ int main(int argc, char **argv)
   Processor p = Processor::NO_PROC;
   {
     Machine::ProcessorQuery query(Machine::get_machine());
-    query.only_kind(Processor::LOC_PROC);
+    query.only_kind(Processor::TOC_PROC);
     p = query.first();
   }
   assert(p.exists());

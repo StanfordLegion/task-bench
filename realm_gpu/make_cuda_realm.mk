@@ -7,7 +7,7 @@ endif
 
 CFLAGS    += -DENABLE_CUDA
 CXXFLAGS  += -DENABLE_CUDA
-LDFLAGS 	+= -L../core -lcore_cuda_s -L$(CUDA_ROOT)/lib64 -lcudart
+LDFLAGS 	+= -L../core -lcore_cuda_s -L$(CUDA_ROOT)/lib64
 
 
 endif
