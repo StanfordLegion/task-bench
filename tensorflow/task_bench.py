@@ -84,7 +84,7 @@ def task_graph_dependencies(graph, timestep, point):
                 yield dep
 
 
-def execute_task_graph(sess, graph):
+def execute_task_graph(graph):
 
     graph_tensor = build_task_graph_tensor(graph)
 
@@ -126,16 +126,15 @@ def execute_task_bench():
     app = app_create(sys.argv)
     task_graphs = app_task_graphs(app)
 
-    sess = tf.Session()
-
     all_output = []
     all_feed = {}
 
     for task_graph in task_graphs:
-        output, feed = execute_task_graph(sess, task_graph)
+        output, feed = execute_task_graph(task_graph)
         all_output.extend(output)
         all_feed.update(feed)
 
+    sess = tf.Session()
     for i in range(2):
         start_time = time.perf_counter()
         sess.run(all_output, feed_dict=all_feed)
