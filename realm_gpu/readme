@@ -1,0 +1,5 @@
+export HAVE_CUDA=1
+export CUDA_ROOT=/path/to/cuda
+export DEBUG=1
+export USE_CUDA=1
+export LG_RT_DIR=/path/to/legion/runtime
