@@ -207,7 +207,8 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
                time : region(ispace(int1d), times),
                task_graph : core.task_graph_t,
                timestep : int,
-               point : int)
+               point : int,
+               save_ts : bool)
   where
     reads writes(output.[output_field]),
     [input_privileges],
@@ -220,7 +221,7 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
       return
     end
 
-    if timestep == 0 then
+    if timestep == 0 and save_ts then
       var current = c.legion_get_current_time_in_nanos()
       __forbid(__vectorize) -- FIXME: Breaks vectorizer
       for t in time do
@@ -237,7 +238,7 @@ local point_task = terralib.memoize(function(n_inputs, field_idx)
       __physical(scratch.x), __fields(scratch.x),
       task_graph, timestep, point)
 
-    if timestep == task_graph.timesteps - 1 then
+    if timestep == task_graph.timesteps - 1 and save_ts then
       var current = c.legion_get_current_time_in_nanos()
       __forbid(__vectorize) -- FIXME: Breaks vectorizer
       for t in time do
@@ -450,6 +451,7 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
       local max_timesteps = regentlib.newsymbol("max_timesteps")
       local max_width = regentlib.newsymbol("max_width")
       local timestep = regentlib.newsymbol("timestep")
+      local trial = regentlib.newsymbol("trial")
 
       local body_actions = terralib.newlist()
       for step = 0, period - 1 do
@@ -465,7 +467,7 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
               [inputs:map(function(input) return rexpr input[point] end end)],
               [pscratch[graph_idx]][point],
               [ptiming[graph_idx]][point],
-              graph, timestep + step, point)
+              graph, timestep + step, point, trial == 1)
           end
         end)
       end
@@ -480,7 +482,7 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
             init_scratch([pscratch[graph_idx]][point])
           end
 
-          for trial = 0, 2 do
+          for [trial] = 0, 3 do
             __demand(__trace)
             for [timestep] = 0, max_timesteps + period - 1, period do
               [body_actions]
