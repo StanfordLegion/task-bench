@@ -25,7 +25,7 @@ extern {
 }
 
 proc main(args: [] string) {
-  var argc = args.numElements;
+  var argc = args.size;
   var app = app_create(argc:int(32), convert_args_to_c_args(argc, args));
   var graph_list = app_task_graphs(app); // array of tasks grapsh 
   app_display(app);
@@ -270,14 +270,14 @@ proc convert_args_to_c_args(argc, args) {
  	  // not efficent but needed to convert args
   for i in 0..argc - 1 {
  		  // make c memeory for each word
-    var curr = c_malloc(int(8), args[i].length + 1);
+    var curr = c_malloc(int(8), args[i].size + 1);
  		  // loop over each character to add it to a string 
     var j = 0;
     for chr in args[i] {
-      curr[j] = ascii(chr):int(8);
+      curr[j] = chr.toByte():int(8);
       j += 1;
     }
-    assert(j == args[i].length);
+    assert(j == args[i].size);
     curr[j] = 0;
     result[i] = curr;
   }

@@ -191,7 +191,7 @@ if [[ $USE_CHAPEL -eq 1 ]]; then
 export CHPL_HOME=$CHPL_HOME
 export CHPL_HOST_PLATFORM=\$(\$CHPL_HOME/util/chplenv/chpl_platform.py)
 export CHPL_LLVM=llvm
-export CHPL_TARGET_ARCH=native
+export CHPL_TARGET_CPU=native
 # export CHPL_QTHREAD_SCHEDULER=distrib # or sherwood # Enables Chapel work stealing scheduler
 # Note: distrib scheduler needs QTHREAD_STEAL_RATIO=8 set at runtime
 EOF
@@ -220,10 +220,10 @@ export CHPL_LLVM=system
 EOF
     fi
 
-    wget https://github.com/chapel-lang/chapel/releases/download/1.18.0/chapel-1.18.0.tar.gz
+    wget https://github.com/chapel-lang/chapel/releases/download/1.22.1/chapel-1.22.1.tar.gz
     mkdir "$CHPL_HOME"
-    tar xfz chapel-1.18.0.tar.gz -C "$CHPL_HOME" --strip-components 1
-    rm chapel-1.18.0.tar.gz
+    tar xfz chapel-1.22.1.tar.gz -C "$CHPL_HOME" --strip-components 1
+    rm chapel-1.22.1.tar.gz
 fi
 
 if [[ $USE_X10 -eq 1 ]]; then
