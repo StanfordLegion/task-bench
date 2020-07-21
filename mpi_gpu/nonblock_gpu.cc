@@ -22,7 +22,9 @@
 #include "core.h"
 
 #include "mpi.h"
+#include "cuda_kernel.h"
 
+// Only support one gpu per MPI process
 int main(int argc, char *argv[])
 {
   MPI_Init(&argc, &argv);
@@ -31,6 +33,14 @@ int main(int argc, char *argv[])
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   App app(argc, argv);
+
+  int local_rank, local_size;
+  MPI_Comm MPI_COMM_LOCAL;
+  MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0 /* key */, MPI_INFO_NULL, &MPI_COMM_LOCAL);
+  MPI_Comm_rank(MPI_COMM_LOCAL, &local_rank);
+  std::vector<int> local_gpus(1, local_rank);
+  init_cuda_support(app.graphs, local_gpus);
+
   if (rank == 0) app.display();
 
   double elapsed_time = 0.0;
@@ -177,7 +187,7 @@ int main(int argc, char *argv[])
             graph.execute_point(timestep, point,
                                 point_output.data(), point_output.size(),
                                 point_input_ptr.data(), point_input_bytes.data(), point_n_inputs,
-                                scratch_ptr, scratch_bytes);
+                                scratch_ptr, scratch_bytes, 0);
           }
         }
       }
@@ -194,6 +204,8 @@ int main(int argc, char *argv[])
   if (rank == 0) {
     app.report_timing(elapsed_time);
   }
+
+  fini_cuda_support(local_gpus);
 
   MPI_Finalize();
 }

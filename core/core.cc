@@ -80,11 +80,23 @@ void Kernel::execute(long graph_index, long timestep, long point,
     assert(timestep >= 0 && point >= 0);
     execute_kernel_imbalance(*this, graph_index, timestep, point);
     break;
+  default:
+    assert(false && "unimplemented kernel type");
+  };
+}
+
+void Kernel::execute(long graph_index, long timestep, long point,
+                     char *scratch_ptr, size_t scratch_bytes, int gpu_id) const
+{
+  switch(type) {
+  case KernelType::EMPTY:
+    execute_kernel_empty(*this);
+    break;
 #ifdef ENABLE_CUDA
   case KernelType::CUDA_COMPUTE_BOUND:
     assert(scratch_ptr != NULL);
     assert(scratch_bytes > 0);
-    execute_kernel_compute_cuda(*this, scratch_ptr, scratch_bytes);
+    execute_kernel_compute_cuda(*this, scratch_ptr, scratch_bytes, gpu_id);
     break; 
 #endif
   default:
@@ -633,6 +645,81 @@ void TaskGraph::execute_point(long timestep, long point,
   k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes);
 }
 
+void TaskGraph::execute_point(long timestep, long point,
+                              char *output_ptr, size_t output_bytes,
+                              const char **input_ptr, const size_t *input_bytes,
+                              size_t n_inputs,
+                              char *scratch_ptr, size_t scratch_bytes,
+                              int gpu_id) const
+{
+#ifdef DEBUG_CORE
+  // Validate graph_index
+  assert(graph_index >= 0 && graph_index < sizeof(TaskGraphMask)*8);
+  has_executed_graph |= 1 << graph_index;
+#endif
+
+  // Validate timestep and point
+  assert(0 <= timestep && timestep < timesteps);
+
+  long offset = offset_at_timestep(timestep);
+  long width = width_at_timestep(timestep);
+  assert(offset <= point && point < offset+width);
+
+  long last_offset = offset_at_timestep(timestep-1);
+  long last_width = width_at_timestep(timestep-1);
+
+  // Validate input
+  {
+    size_t idx = 0;
+    long dset = dependence_set_at_timestep(timestep);
+    size_t max_deps = num_dependencies(dset, point);
+    std::pair<long, long> *deps = reinterpret_cast<std::pair<long, long> *>(alloca(sizeof(std::pair<long, long>) * max_deps));
+    size_t num_deps = dependencies(dset, point, deps);
+    for (size_t span = 0; span < num_deps; span++) {
+      for (long dep = deps[span].first; dep <= deps[span].second; dep++) {
+        if (last_offset <= dep && dep < last_offset + last_width) {
+          assert(idx < n_inputs);
+
+          assert(input_bytes[idx] == output_bytes_per_task);
+          assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
+
+          const std::pair<long, long> *input = reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
+          for (size_t i = 0; i < input_bytes[idx]/sizeof(std::pair<long, long>); ++i) {
+            assert(input[i].first == timestep - 1);
+            assert(input[i].second == dep);
+          }
+          idx++;
+        }
+      }
+    }
+    // FIXME (Elliott): Legion is currently passing in uninitialized
+    // memory for dependencies outside of the last offset/width.
+    // assert(idx == n_inputs);
+  }
+
+  // Validate output
+  assert(output_bytes == output_bytes_per_task);
+  assert(output_bytes >= sizeof(std::pair<long, long>));
+
+  // Generate output
+  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(output_ptr);
+  for (size_t i = 0; i < output_bytes/sizeof(std::pair<long, long>); ++i) {
+    output[i].first = timestep;
+    output[i].second = point;
+  }
+
+  // Validate scratch
+  assert(scratch_bytes == scratch_bytes_per_task);
+  if (scratch_bytes > 0) {
+    uint64_t *scratch = reinterpret_cast<uint64_t *>(scratch_ptr);
+    assert(*scratch == MAGIC_VALUE);
+  }
+
+  // Execute kernel
+  Kernel k(kernel);
+  k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, gpu_id);
+}
+
 void TaskGraph::prepare_scratch(char *scratch_ptr, size_t scratch_bytes)
 {
   assert(scratch_bytes % sizeof(uint64_t) == 0);
@@ -654,7 +741,7 @@ static TaskGraph default_graph(long graph_index)
   graph.period = -1;
   graph.fraction_connected = 0.25;
 #ifdef ENABLE_CUDA
-  graph.kernel = {KernelType::EMPTY, 0, 16, 0.0, 1, 32, 0, 0, 1};
+  graph.kernel = {KernelType::EMPTY, 0, 16, 0.0, 1, 32, 0, 1};
 #else
   graph.kernel = {KernelType::EMPTY, 0, 16, 0.0};
 #endif
@@ -962,9 +1049,6 @@ App::App(int argc, char **argv)
   
   check();
   
-#ifdef ENABLE_CUDA
-  init_cuda_support(graphs);
-#endif
 }
 
 void App::check() const
@@ -1253,8 +1337,5 @@ void App::report_timing(double elapsed_seconds) const
 #ifdef DEBUG_CORE
   printf("Task Graph Execution Mask %llx\n", has_executed_graph.load());
 #endif
-  
-#ifdef ENABLE_CUDA
-  fini_cuda_support();
-#endif
+
 }
