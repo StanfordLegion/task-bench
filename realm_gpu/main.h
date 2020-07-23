@@ -19,6 +19,7 @@
 #include "realm.h"
 
 #include "core.h"
+#include "cuda_kernel.h"
 
 typedef long long int coord_t;
 
@@ -58,6 +59,8 @@ public:
   char *scratch_ptr;
   size_t scratch_bytes;
   long n_inputs;
+  char *device_ptr;
+  size_t device_bytes;
   // std::vector<uintptr_t> input_ptr;
   // std::vector<size_t> input_bytes;
 };

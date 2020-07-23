@@ -36,6 +36,8 @@ private:
                char *scratch_ptr, size_t scratch_bytes) const;
   void execute(long graph_index, long timestep, long point,
                char *scratch_ptr, size_t scratch_bytes, int gpu_id) const;
+  void execute(long graph_index, long timestep, long point,
+               char *scratch_ptr, size_t scratch_bytes, char* device_ptr, size_t device_bytes) const;
   friend struct TaskGraph;
 };
 
@@ -77,6 +79,12 @@ struct TaskGraph : public task_graph_t {
                      size_t n_inputs,
                      char *scratch_ptr, size_t scratch_bytes,
                      int gpu_id) const;
+  void execute_point(long timestep, long point,
+                     char *output_ptr, size_t output_bytes,
+                     const char **input_ptr, const size_t *input_bytes,
+                     size_t n_inputs,
+                     char *scratch_ptr, size_t scratch_bytes,
+                     char *device_ptr, size_t device_bytes) const;
   static void prepare_scratch(char *scratch_ptr, size_t scratch_bytes);
 };
 

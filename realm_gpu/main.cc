@@ -172,10 +172,12 @@ void leaf_task(const void *args, size_t arglen, const void *userdata,
     ser >> input_bytes;
     assert(ser.bytes_left() == 0);
   }
+
+  // std::cout << "leaf_task: " << " point " << a.point << " timestep " << a.timestep << std::endl;
   a.graph.execute_point(a.timestep, a.point,
                         a.output_ptr, a.output_bytes,
                         (const char **)input_ptr.data(), (size_t *)input_bytes.data(), a.n_inputs,
-                        a.scratch_ptr, a.scratch_bytes);
+                        a.scratch_ptr, a.scratch_bytes, a.device_ptr, a.device_bytes);
 }
 
 void shard_task(const void *args, size_t arglen, const void *userdata,
@@ -195,6 +197,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
     ser >> task_inputs;
     ser >> raw_exchange;
     ser >> war_exchange;
+
     assert(ser.bytes_left() == 0);
   }
 
@@ -210,6 +213,22 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   Barrier first_stop = a.first_stop;
   Barrier last_stop = a.last_stop;
 
+  RegionInstance device_inst;
+  size_t device_bytes;
+  char *device_ptr;
+  {
+    std::map<FieldID, size_t> field_sizes;
+    field_sizes[FID_FIRST] = sizeof(char);
+
+    int nb_blocks = graphs[0].kernel.nb_blocks;
+    int threads_per_block = graphs[0].kernel.threads_per_block;
+    int cuda_unroll = graphs[0].kernel.cuda_unroll;
+    device_bytes = nb_blocks * threads_per_block * sizeof(double);
+    Rect1 bounds(Point1(0), Point1(device_bytes * cuda_unroll));
+    RegionInstance::create_instance(device_inst, a.gpumem, bounds, field_sizes,
+                                        0 /*SOA*/, ProfilingRequestSet()).wait();
+    device_ptr = get_base(device_inst, FID_FIRST);
+  }
   // Figure out who we're going to be communicating with.
 
   // graph -> point -> [remote point]
@@ -620,13 +639,13 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   std::vector<uintptr_t> input_ptr(all_max_deps, 0);
   std::vector<size_t> input_bytes(all_max_deps, 0);
   
-  // It's ok to use only a single scratch buffer because the tasks
-  // will be effectively serialized on this processor.
-
   size_t max_scratch_bytes = 0;
   for (auto graph : graphs) {
     max_scratch_bytes = std::max(max_scratch_bytes, graph.scratch_bytes_per_task);
   }
+
+  // It's ok to use only a single scratch buffer because the tasks
+  // will be effectively serialized on this processor.
   char *scratch_ptr = NULL;
   cudaHostAlloc((void**)&(scratch_ptr), max_scratch_bytes, 0);
   assert(scratch_ptr);
@@ -765,6 +784,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
             leaf_args.scratch_ptr = scratch_ptr;
             leaf_args.scratch_bytes = graph.scratch_bytes_per_task;
             leaf_args.n_inputs = n_inputs;
+            leaf_args.device_ptr = device_ptr;
+            leaf_args.device_bytes = device_bytes;
 
             FixedBufferSerializer ser(leaf_buffer, leaf_bufsize);
             ser << leaf_args;
@@ -897,8 +918,6 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
   }
   long num_procs = procs.size();
 
-
-  // reg -> zcopy, sys -> gpu
   std::map<Processor, Memory> proc_zcopymems;
   std::map<Processor, Memory> proc_gpumems;
   {
@@ -1132,7 +1151,7 @@ int main(int argc, char **argv)
   Processor p = Processor::NO_PROC;
   {
     Machine::ProcessorQuery query(Machine::get_machine());
-    query.only_kind(Processor::TOC_PROC);
+    query.only_kind(Processor::LOC_PROC);
     p = query.first();
   }
   assert(p.exists());
