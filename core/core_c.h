@@ -63,7 +63,6 @@ typedef struct kernel_t {
   int nb_blocks;
   int threads_per_block;
   int memcpy_required;
-  int gpu_id;
   int cuda_unroll;
 #endif
 } kernel_t;
