@@ -37,7 +37,7 @@ CFLAGS += $(INC)
 
 include ../core/make_blas.mk
 
-TARGET = main main_buffer_core
+TARGET = main main_buffer_core main_expl
 all: $(TARGET)
 
 .PRECIOUS: %.c %.o
@@ -56,6 +56,12 @@ main_buffer_core.o: main_buffer_core.cc
 
 main_buffer_core: main_buffer_core.o data.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
+
+main_expl.o: main_expl.cc
+	$(CC) -c $(CFLAGS) $<
+
+main_expl: main_expl.o data.o
+	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 
 clean:
 	rm -f *.o
