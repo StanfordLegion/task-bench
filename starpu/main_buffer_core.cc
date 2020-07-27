@@ -925,6 +925,21 @@ void StarPUApp::execute_main_loop()
 
   int x, y;
 
+  /* Initialize data structures before measurement */
+  for (int i = 0; i < graphs.size(); i++) {
+    const TaskGraph &g = graphs[i];
+
+    for (y = 0; y < g.timesteps; y++) {
+      long offset = g.offset_at_timestep(y);
+      long width = g.width_at_timestep(y);
+      matrix_t &mat = mat_array[i];
+      int nb_fields = g.nb_fields;
+
+      for (int x = offset; x <= offset+width-1; x++)
+        starpu_desc_getaddr( mat.ddescA, y%nb_fields, x );
+    }
+  }
+
   /* start timer */
   starpu_mpi_barrier(MPI_COMM_WORLD);
   if (rank == 0) {
