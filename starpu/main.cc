@@ -896,8 +896,11 @@ void StarPUApp::execute_timestep(size_t idx, long t)
         for (int i = dep.first; i <= dep.second; i++) {
           if(desc_islocal(mat.ddescA, (t-1)%nb_fields, i)) {
             has_task = 1;
+            break;
           }
         }
+        if (has_task)
+          break;
       }
     }
 
