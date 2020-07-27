@@ -513,8 +513,6 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         MPI_COMM_WORLD, &(cl_task1),
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
         STARPU_NAME, "task1",
         0);
     break;
@@ -524,8 +522,6 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
         STARPU_NAME, "task2",
         0);
     break;
@@ -536,8 +532,6 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_R, args[1],
         STARPU_R, args[2],
         STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
         STARPU_NAME, "task3",
         0);
     break;
@@ -549,8 +543,6 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_R, args[2],
         STARPU_R, args[3],
         STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
         STARPU_NAME, "task4",
         0);
     break;
@@ -563,8 +555,6 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_R, args[3],
         STARPU_R, args[4],
         STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
         STARPU_NAME, "task5",
         0);
     break;
@@ -578,8 +568,6 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_R, args[4],
         STARPU_R, args[5],
         STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
         STARPU_NAME, "task6",
         0);
     break;
@@ -594,8 +582,6 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_R, args[5],
         STARPU_R, args[6],
         STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
         STARPU_NAME, "task7",
         0);
     break;
@@ -611,8 +597,6 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_R, args[6],
         STARPU_R, args[7],
         STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
         STARPU_NAME, "task8",
         0);
     break;
@@ -629,8 +613,6 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_R, args[7],
         STARPU_R, args[8],
         STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
         STARPU_NAME, "task9",
         0);
     break;
@@ -648,8 +630,6 @@ void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_
         STARPU_R, args[8],
         STARPU_R, args[9],
         STARPU_RW, args[0],
-        STARPU_CALLBACK,  callback,
-        STARPU_PRIORITY,  0,
         STARPU_NAME, "task10",
         0);
     break;
