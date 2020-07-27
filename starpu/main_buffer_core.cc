@@ -59,10 +59,12 @@ static void task1(void *descr[], void *cl_arg)
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)out);
-  input_bytes.push_back(graph.output_bytes_per_task);
+  const char *input_data[] = {
+    (const char*) out,
+  };
+  size_t input_bytes[] = {
+    output_bytes,
+  };
  
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
@@ -72,7 +74,7 @@ static void task1(void *descr[], void *cl_arg)
   }
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+                      input_data, input_bytes, 1, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -98,11 +100,13 @@ static void task2(void *descr[], void *cl_arg)
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
- 
+  const char *input_data[] = {
+    (const char*) in1,
+  };
+  size_t input_bytes[] = {
+    output_bytes,
+  };
+
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
       TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
@@ -111,7 +115,7 @@ static void task2(void *descr[], void *cl_arg)
   }
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+                      input_data, input_bytes, 2, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else  
@@ -138,12 +142,14 @@ static void task3(void *descr[], void *cl_arg)
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
+  const char *input_data[] = {
+    (const char*) in1,
+    (const char*) in2,
+  };
+  size_t input_bytes[] = {
+    output_bytes,
+    output_bytes,
+  };
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
@@ -153,7 +159,7 @@ static void task3(void *descr[], void *cl_arg)
   }
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+                      input_data, input_bytes, 2, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -181,14 +187,16 @@ static void task4(void *descr[], void *cl_arg)
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in3);
-  input_bytes.push_back(graph.output_bytes_per_task);
+  const char *input_data[] = {
+    (const char*) in1,
+    (const char*) in2,
+    (const char*) in3,
+  };
+  size_t input_bytes[] = {
+    output_bytes,
+    output_bytes,
+    output_bytes,
+  };
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
@@ -198,7 +206,7 @@ static void task4(void *descr[], void *cl_arg)
   }
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+                      input_data, input_bytes, 3, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -227,17 +235,19 @@ static void task5(void *descr[], void *cl_arg)
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in3);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in4);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  
+  const char *input_data[] = {
+    (const char*) in1,
+    (const char*) in2,
+    (const char*) in3,
+    (const char*) in4,
+  };
+  size_t input_bytes[] = {
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+  };
+
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
       TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
@@ -246,7 +256,7 @@ static void task5(void *descr[], void *cl_arg)
   }
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+                      input_data, input_bytes, 4, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -276,19 +286,21 @@ static void task6(void *descr[], void *cl_arg)
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in3);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in4);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in5);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  
+  const char *input_data[] = {
+    (const char*) in1,
+    (const char*) in2,
+    (const char*) in3,
+    (const char*) in4,
+    (const char*) in5,
+  };
+  size_t input_bytes[] = {
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+  };
+
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
       TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
@@ -297,7 +309,7 @@ static void task6(void *descr[], void *cl_arg)
   }
  
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+                      input_data, input_bytes, 5, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -328,21 +340,23 @@ static void task7(void *descr[], void *cl_arg)
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in3);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in4);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in5);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in6);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  
+  const char *input_data[] = {
+    (const char*) in1,
+    (const char*) in2,
+    (const char*) in3,
+    (const char*) in4,
+    (const char*) in5,
+    (const char*) in6,
+  };
+  size_t input_bytes[] = {
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+  };
+
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
       TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
@@ -351,7 +365,7 @@ static void task7(void *descr[], void *cl_arg)
   }
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+                      input_data, input_bytes, 6, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -384,22 +398,24 @@ static void task8(void *descr[], void *cl_arg)
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in3);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in4);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in5);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in6);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in7);
-  input_bytes.push_back(graph.output_bytes_per_task);
+  const char *input_data[] = {
+    (const char*) in1,
+    (const char*) in2,
+    (const char*) in3,
+    (const char*) in4,
+    (const char*) in5,
+    (const char*) in6,
+    (const char*) in7,
+  };
+  size_t input_bytes[] = {
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+  };
   
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
@@ -409,7 +425,7 @@ static void task8(void *descr[], void *cl_arg)
   }
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+                      input_data, input_bytes, 7, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -443,25 +459,27 @@ static void task9(void *descr[], void *cl_arg)
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in3);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in4);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in5);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in6);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in7);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in8);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  
+  const char *input_data[] = {
+    (const char*) in1,
+    (const char*) in2,
+    (const char*) in3,
+    (const char*) in4,
+    (const char*) in5,
+    (const char*) in6,
+    (const char*) in7,
+    (const char*) in8,
+  };
+  size_t input_bytes[] = {
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+  };
+
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
       TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
@@ -470,7 +488,7 @@ static void task9(void *descr[], void *cl_arg)
   }
 
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+                      input_data, input_bytes, 8, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -505,27 +523,29 @@ static void task10(void *descr[], void *cl_arg)
   TaskGraph graph = payload.graph;
   char *output_ptr = (char*)out;
   size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in3);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in4);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in5);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in6);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in7);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in8);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in9);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  
+  const char *input_data[] = {
+    (const char*) in1,
+    (const char*) in2,
+    (const char*) in3,
+    (const char*) in4,
+    (const char*) in5,
+    (const char*) in6,
+    (const char*) in7,
+    (const char*) in8,
+    (const char*) in9,
+  };
+  size_t input_bytes[] = {
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+    output_bytes,
+  };
+
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
       TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
@@ -534,7 +554,7 @@ static void task10(void *descr[], void *cl_arg)
   }
   
   graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+                      input_data, input_bytes, 9, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
