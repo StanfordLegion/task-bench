@@ -43,7 +43,7 @@ typedef struct payload_s {
   int graph_id;
   int i;
   int j;
-  TaskGraph graph;
+  const TaskGraph *graph;
 }payload_t;
 
 static void task1(void *descr[], void *cl_arg)
@@ -56,9 +56,9 @@ static void task1(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION) 
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) out,
   };
@@ -68,13 +68,13 @@ static void task1(void *descr[], void *cl_arg)
  
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 1, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 1, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -97,9 +97,9 @@ static void task2(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
   
 #if defined (USE_CORE_VERIFICATION)   
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
   };
@@ -109,13 +109,13 @@ static void task2(void *descr[], void *cl_arg)
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 2, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 2, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else  
@@ -139,9 +139,9 @@ static void task3(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -153,13 +153,13 @@ static void task3(void *descr[], void *cl_arg)
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
   
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 2, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 2, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -184,9 +184,9 @@ static void task4(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -200,13 +200,13 @@ static void task4(void *descr[], void *cl_arg)
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 3, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 3, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -232,9 +232,9 @@ static void task5(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -250,13 +250,13 @@ static void task5(void *descr[], void *cl_arg)
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 4, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 4, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -283,9 +283,9 @@ static void task6(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -303,13 +303,13 @@ static void task6(void *descr[], void *cl_arg)
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
  
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 5, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 5, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -337,9 +337,9 @@ static void task7(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -359,13 +359,13 @@ static void task7(void *descr[], void *cl_arg)
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 6, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 6, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -395,9 +395,9 @@ static void task8(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -419,13 +419,13 @@ static void task8(void *descr[], void *cl_arg)
   
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 7, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 7, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -456,9 +456,9 @@ static void task9(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -482,13 +482,13 @@ static void task9(void *descr[], void *cl_arg)
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 8, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 8, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -520,9 +520,9 @@ static void task10(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -548,13 +548,13 @@ static void task10(void *descr[], void *cl_arg)
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph.scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
   
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 9, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 9, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -1054,7 +1054,7 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     
     payload.i = t;
     payload.j = x;
-    payload.graph = g;
+    payload.graph = &g;
     payload.graph_id = idx;
     insert_task(num_args, payload, args, args_loc); 
     args.clear();
