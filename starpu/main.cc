@@ -38,7 +38,7 @@ typedef struct payload_s {
   int graph_id;
   int i;
   int j;
-  TaskGraph graph;
+  const TaskGraph *graph;
 }payload_t;
 
 static void task1(void *descr[], void *cl_arg)
@@ -51,9 +51,9 @@ static void task1(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
   
 #if defined (USE_CORE_VERIFICATION) 
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) out,
   };
@@ -61,8 +61,8 @@ static void task1(void *descr[], void *cl_arg)
     output_bytes,
   };
   
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 1, extra_local_memory[tid], graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 1, extra_local_memory[tid], graph->scratch_bytes_per_task);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -83,9 +83,9 @@ static void task2(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
   
 #if defined (USE_CORE_VERIFICATION)   
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
   };
@@ -93,8 +93,8 @@ static void task2(void *descr[], void *cl_arg)
     output_bytes,
   };
   
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 2, extra_local_memory[tid], graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task);
 #else  
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -116,9 +116,9 @@ static void task3(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -128,8 +128,8 @@ static void task3(void *descr[], void *cl_arg)
     output_bytes,
   };
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 2, extra_local_memory[tid], graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -152,9 +152,9 @@ static void task4(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -166,8 +166,8 @@ static void task4(void *descr[], void *cl_arg)
     output_bytes,
   };
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 3, extra_local_memory[tid], graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 3, extra_local_memory[tid], graph->scratch_bytes_per_task);
 
 #else
   int rank;
@@ -192,9 +192,9 @@ static void task5(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -208,8 +208,8 @@ static void task5(void *descr[], void *cl_arg)
     output_bytes,
   };
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 4, extra_local_memory[tid], graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 4, extra_local_memory[tid], graph->scratch_bytes_per_task);
 
 #else
   int rank;
@@ -235,9 +235,9 @@ static void task6(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -253,8 +253,8 @@ static void task6(void *descr[], void *cl_arg)
     output_bytes,
   };
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 5, extra_local_memory[tid], graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 5, extra_local_memory[tid], graph->scratch_bytes_per_task);
 
 #else
   int rank;
@@ -281,9 +281,9 @@ static void task7(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -301,8 +301,8 @@ static void task7(void *descr[], void *cl_arg)
     output_bytes,
   };
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 6, extra_local_memory[tid], graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 6, extra_local_memory[tid], graph->scratch_bytes_per_task);
 
 #else
   int rank;
@@ -331,9 +331,9 @@ static void task8(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -354,8 +354,8 @@ static void task8(void *descr[], void *cl_arg)
   };
   
   
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 7, extra_local_memory[tid], graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 7, extra_local_memory[tid], graph->scratch_bytes_per_task);
 
 #else
   int rank;
@@ -385,9 +385,9 @@ static void task9(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -409,8 +409,8 @@ static void task9(void *descr[], void *cl_arg)
     output_bytes,
   };
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 8, extra_local_memory[tid], graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 8, extra_local_memory[tid], graph->scratch_bytes_per_task);
 
 #else
   int rank;
@@ -441,9 +441,9 @@ static void task10(void *descr[], void *cl_arg)
   int tid = starpu_worker_get_id();
 
 #if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
+  const TaskGraph *graph = payload.graph;
   char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
+  size_t output_bytes= graph->output_bytes_per_task;
   const char *input_data[] = {
     (const char*) in1,
     (const char*) in2,
@@ -467,8 +467,8 @@ static void task10(void *descr[], void *cl_arg)
     output_bytes,
   };
 
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_data, input_bytes, 9, extra_local_memory[tid], graph.scratch_bytes_per_task);
+  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 9, extra_local_memory[tid], graph->scratch_bytes_per_task);
 
 #else
   int rank;
@@ -954,7 +954,7 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     
     payload.i = t;
     payload.j = x;
-    payload.graph = g;
+    payload.graph = &g;
     payload.graph_id = idx;
     insert_task(num_args, payload, args, args_loc); 
     args.clear();
