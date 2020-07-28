@@ -571,7 +571,7 @@ public:
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
 private:
-  void insert_task(int num_args, payload_t payload, std::vector<starpu_data_handle_t> &args, std::vector<std::pair<long, long>> &args_loc);
+  void insert_task(int num_args, payload_t &payload, std::vector<starpu_data_handle_t> &args, std::vector<std::pair<long, long>> &args_loc);
   void parse_argument(int argc, char **argv);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
@@ -585,7 +585,7 @@ private:
   matrix_t mat_array[10];
 };
 
-void StarPUApp::insert_task(int num_args, payload_t payload, std::vector<starpu_data_handle_t> &args, std::vector<std::pair<long, long>> &args_loc)
+void StarPUApp::insert_task(int num_args, payload_t &payload, std::vector<starpu_data_handle_t> &args, std::vector<std::pair<long, long>> &args_loc)
 {
   void (*callback)(void*) = NULL;
   starpu_ddesc_t *descA = mat_array[payload.graph_id].ddescA;
