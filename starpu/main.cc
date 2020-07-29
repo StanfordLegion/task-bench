@@ -879,10 +879,14 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   for (int x = offset; x <= offset+width-1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args; 
+    starpu_data_handle_t output = starpu_desc_getaddr( mat.ddescA, t%nb_fields, x );
 #ifdef ENABLE_PRUNE_MPI_TASK_INSERT
     int has_task = 0;   
     
     if(desc_islocal(mat.ddescA, t%nb_fields, x)) {
+      has_task = 1;
+    } else if (starpu_mpi_cached_receive(output)) {
+      /* We need to invalidate our copy */
       has_task = 1;
     }
     
@@ -909,14 +913,14 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     
     num_args = 0;
     if (deps.size() == 0) {
-      args[num_args++] = starpu_desc_getaddr( mat.ddescA, t%nb_fields, x );
+      args[num_args++] = output;
       debug_printf(1, "%d[%d] ", x, num_args);
     } else {
       if (t == 0) {
-        args[num_args++] = starpu_desc_getaddr( mat.ddescA, t%nb_fields, x );
+        args[num_args++] = output;
         debug_printf(1, "%d[%d] ", x, num_args);
       } else {
-        args[num_args++] = starpu_desc_getaddr( mat.ddescA, t%nb_fields, x );
+        args[num_args++] = output;
         long last_offset = g.offset_at_timestep(t-1);
         long last_width = g.width_at_timestep(t-1);
         for (std::pair<long, long> dep : deps) {
