@@ -459,7 +459,7 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
     break;
   case 5:
 #if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(args[0]) == 1 || desc_islocal(args[1]) == 1 || desc_islocal(args[2]) == 1 || desc_islocal(args[3]) == 1)
+    if(desc_islocal(args[0]) == 1 || desc_islocal(args[1]) == 1 || desc_islocal(args[2]) == 1 || desc_islocal(args[3]) == 1 || desc_islocal(args[4]) == 1)
 #endif
     {
       parsec_dtd_taskpool_insert_task(dtd_tp, test_task5,    0,  "test_task5",
@@ -474,7 +474,7 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
     break;
   case 6:
 #if defined (ENABLE_PRUNE_MPI_TASK_INSERT)
-    if(desc_islocal(args[0]) == 1 || desc_islocal(args[1]) == 1 || desc_islocal(args[2]) == 1 || desc_islocal(args[3]) == 1)
+    if(desc_islocal(args[0]) == 1 || desc_islocal(args[1]) == 1 || desc_islocal(args[2]) == 1 || desc_islocal(args[3]) == 1 || desc_islocal(args[4]) == 1 || desc_islocal(args[5]) == 1)
 #endif
     {
       parsec_dtd_taskpool_insert_task(dtd_tp, test_task6,    0,  "test_task6",
