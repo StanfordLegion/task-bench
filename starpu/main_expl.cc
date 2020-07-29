@@ -860,6 +860,8 @@ void StarPUApp::execute_main_loop()
     for (t = 0; t < g.timesteps; t++) {
       auto &todo_y = todo[i][t % period];
 
+      char received[g.max_width] = { 0 };
+
       for (auto &doing : todo_y) {
         int x = doing.first.first;
         long offset = g.offset_at_timestep(t);
@@ -871,6 +873,7 @@ void StarPUApp::execute_main_loop()
         std::vector<std::pair<long,long>> &rdepslist = doing.second;
 
         std::array<starpu_data_handle_t, 10> data;
+        std::array<int, 9> xdeps;
         unsigned num_args = 0;
 
         if (t > 0) {
@@ -880,7 +883,9 @@ void StarPUApp::execute_main_loop()
           for(std::pair<long, long> &dep : depslist) {
             for (int xdep = dep.first; xdep <= dep.second; xdep++) {
               if (xdep >= last_offset && xdep < last_offset + last_width) {
-                data[num_args++] = starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, xdep);
+                data[num_args] = starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, xdep);
+                xdeps[num_args] = xdep;
+                num_args++;
               }
             }
           }
@@ -893,9 +898,10 @@ void StarPUApp::execute_main_loop()
         for (size_t n = 0; n < num_args-1; n++) {
           starpu_data_handle_t input = data[n];
           int inter = starpu_mpi_data_get_rank(input);
-          if (inter != rank) {
+          if (inter != rank && !received[xdeps[n]]) {
             int tag = starpu_mpi_data_get_tag(input);
             debug_printf(1, "%d submits receive %d from %d for t=%d\n", rank, tag, inter, t);
+            received[xdeps[n]] = 1;
             starpu_mpi_irecv_detached(input, inter, tag, MPI_COMM_WORLD, NULL, NULL);
           }
         }
@@ -910,18 +916,20 @@ void StarPUApp::execute_main_loop()
         /* Sends */
         /* Only send if our peer is in the next timestep of the graph */
         if (t < g.timesteps-1) {
+          char sent[world] = { 0 };
           long next_offset = g.offset_at_timestep(t + 1);
           long next_width = g.width_at_timestep(t + 1);
+          starpu_data_handle_t output = data[num_args-1];
           for (std::pair<long, long> &rdeps : rdepslist) {
             for (long xdep = rdeps.first; xdep <= rdeps.second; xdep++) {
               if (xdep < next_offset || xdep >= next_offset + next_width)
                 continue;
 
               int inter = mat.ddescA->get_rankof(mat.ddescA, (t+1)%nb_fields, xdep);
-              if (inter != rank) {
-                starpu_data_handle_t output = data[num_args-1];
+              if (inter != rank && !sent[inter]) {
                 int tag = starpu_mpi_data_get_tag(output);
                 debug_printf(1, "%d submits send %d to %d for t=%d\n", rank, tag, inter, t);
+                sent[inter] = 1;
                 starpu_mpi_isend_detached(output, (int)inter, tag, MPI_COMM_WORLD, NULL, NULL);
               }
             }
