@@ -810,12 +810,22 @@ void StarPUApp::execute_main_loop()
     std::vector<std::vector<int>> out_x_graph;
 
     /* Initialize data structures before measurement */
-    for (t = 0; t < g.timesteps; t++) {
-      long offset = g.offset_at_timestep(t);
-      long width = g.width_at_timestep(t);
+    for (y = 1; y <= lcm(nb_fields,period); y++) {
+      long dset = g.dependence_set_at_timestep(y);
 
-      for (int x = offset; x <= offset+width-1; x++)
-        starpu_desc_getaddr( mat.ddescA, t%nb_fields, x );
+      for (int x = 0; x < g.max_width; x++) {
+        if (desc_islocal(mat.ddescA, y%nb_fields, x)) {
+          std::vector<std::pair<long, long> > depslist = g.dependencies(dset, x);
+
+          debug_printf(1, "%d will write %d %d\n", rank, y, x);
+          starpu_desc_getaddr( mat.ddescA, y%nb_fields, x );
+          for(std::pair<long, long> &dep : depslist)
+            for (int xdep = dep.first; xdep <= dep.second; xdep++) {
+              debug_printf(1, "%d will read %d %d\n", rank, y-1, xdep);
+              starpu_desc_getaddr( mat.ddescA, (y-1)%nb_fields, xdep );
+            }
+        }
+      }
     }
 
     for (long y = 0L; y < period; y += 1) {
