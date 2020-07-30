@@ -860,7 +860,8 @@ void StarPUApp::execute_main_loop()
     for (t = 0; t < g.timesteps; t++) {
       auto &todo_y = todo[i][t % period];
 
-      char received[g.max_width] = { 0 };
+      char received[g.max_width];
+      memset(&received, 0, sizeof(received));
 
       for (auto &doing : todo_y) {
         int x = doing.first.first;
@@ -916,10 +917,12 @@ void StarPUApp::execute_main_loop()
         /* Sends */
         /* Only send if our peer is in the next timestep of the graph */
         if (t < g.timesteps-1) {
-          char sent[world] = { 0 };
+          char sent[world];
           long next_offset = g.offset_at_timestep(t + 1);
           long next_width = g.width_at_timestep(t + 1);
           starpu_data_handle_t output = data[num_args-1];
+
+          memset(&sent, 0, sizeof(sent));
           for (std::pair<long, long> &rdeps : rdepslist) {
             for (long xdep = rdeps.first; xdep <= rdeps.second; xdep++) {
               if (xdep < next_offset || xdep >= next_offset + next_width)
