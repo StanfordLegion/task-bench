@@ -63,6 +63,12 @@ main_expl.o: main_expl.cc
 main_expl: main_expl.o data.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 
+main_static.o: main_static.cc
+	$(CC) -c $(CFLAGS) $<
+
+main_static: main_static.o data.o
+	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
+
 clean:
 	rm -f *.o
 	rm -f $(TARGET)
