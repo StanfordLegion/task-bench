@@ -238,14 +238,26 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::TREE:
     return 0;
   case DependenceType::FFT:
-    return (timestep + max_dependence_sets() - 1) % max_dependence_sets();
+    {
+      long dset = (timestep - 1) % max_dependence_sets();
+      if (dset < 0) {
+        dset += max_dependence_sets();
+      }
+      return dset;
+    }
   case DependenceType::ALL_TO_ALL:
   case DependenceType::NEAREST:
     return 0;
   case DependenceType::SPREAD:
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
-    return timestep % max_dependence_sets();
+    {
+      long dset = timestep % max_dependence_sets();
+      if (dset < 0) {
+        dset += max_dependence_sets();
+      }
+      return dset;
+    }
   default:
     assert(false && "unexpected dependence type");
   };
@@ -1174,4 +1186,6 @@ void App::report_timing(double elapsed_seconds) const
 #ifdef DEBUG_CORE
   printf("Task Graph Execution Mask %llx\n", has_executed_graph.load());
 #endif
+
+  fflush(stdout);
 }

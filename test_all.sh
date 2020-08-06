@@ -71,6 +71,19 @@ if [[ $USE_MPI_OPENMP -eq 1 ]]; then
     done
 fi
 
+if [[ $TASKBENCH_USE_GASNET -eq 1 ]]; then
+    for t in "${extended_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            for binary in seq seq_long; do
+                mpirun -np 1 ./gasnet/$binary -steps $steps -type $t $k
+                mpirun -np 2 ./gasnet/$binary -steps $steps -type $t $k
+                mpirun -np 4 ./gasnet/$binary -steps $steps -type $t $k
+                mpirun -np 4 ./gasnet/$binary -steps $steps -type $t $k -and -steps $steps -type $t $k
+            done
+        done
+    done
+fi
+
 if [[ $USE_LEGION -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do

@@ -53,6 +53,7 @@ cat >>deps/env.sh <<EOF
 export TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 export USE_MPI_OPENMP=${USE_MPI_OPENMP:-$DEFAULT_FEATURES}
 export USE_GASNET=${USE_GASNET:-0}
+export TASKBENCH_USE_GASNET=${TASKBENCH_USE_GASNET:-0}
 export TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
 export USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
 export USE_PYGION=${USE_PYGION:-$DEFAULT_FEATURES}
@@ -74,7 +75,7 @@ EOF
 
 source deps/env.sh
 
-if [[ $USE_GASNET -eq 1 ]]; then
+if [[ $USE_GASNET -eq 1 || $TASKBENCH_USE_GASNET -eq 1 ]]; then
     if [ -z ${CONDUIT+x} ]; then
         echo "CONDUIT is required for GASNet build."
         echo "Please set CONDUIT and run again."
@@ -83,10 +84,15 @@ if [[ $USE_GASNET -eq 1 ]]; then
     export GASNET_DIR="$PWD"/deps/gasnet
     cat >>deps/env.sh <<EOF
 export GASNET_DIR="$GASNET_DIR"
-export GASNET="\$GASNET_DIR"/release
+export GASNET_DEBUG="${GASNET_DEBUG:-0}"
+if [[ \$GASNET_DEBUG -eq 0 ]]; then
+    export GASNET="\$GASNET_DIR"/release
+else
+    export GASNET="\$GASNET_DIR"/debug
+fi
 export CONDUIT=$CONDUIT
 EOF
-    git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
+    git clone -b task-bench https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
 fi
 
 if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
