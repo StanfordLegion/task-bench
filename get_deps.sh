@@ -390,10 +390,18 @@ EOF
 
     source "$TENSORFLOW_DIR"/env.sh
 
+    cat >>"$TENSORFLOW_DIR"/env.sh <<EOF
+source $CONDA_PREFIX/etc/profile.d/conda.sh
+conda activate myenv
+EOF
+
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
     rm Miniconda3-latest-Linux-x86_64.sh
     conda update -y conda
+    source $CONDA_PREFIX/etc/profile.d/conda.sh
+    conda create -y -n myenv python=3.7
+    conda activate myenv
     # Hack: Try to install via pip to avoid compiler version incompatibility
     # conda install -y tensorflow
     pip install -q tensorflow==2.1.0
