@@ -41,20 +41,12 @@ inline void compute_generic(OpKernelContext* context)
   long point = context->input(2).flat<int32>()(0);
 
   size_t n_inputs = context->num_inputs() - 3;
-  std::vector<std::vector<char> > input_data;
   std::vector<const char *> input_ptrs;
   std::vector<size_t> input_bytes;
   for (size_t i = 0; i < n_inputs; ++i) {
     auto input_tensor = context->input(i + 3);
-    auto input_flat = input_tensor.flat<uint8>();
-
-    input_data.emplace_back(input_tensor.shape().num_elements());
-    for (size_t j = 0; j < input_data[i].size(); ++j) {
-      input_data[i][j] = input_flat(j);
-    }
-
-    input_ptrs.push_back(input_data[i].data());
-    input_bytes.push_back(input_data[i].size());
+    input_ptrs.push_back(input_tensor.tensor_data().data());
+    input_bytes.push_back(input_tensor.tensor_data().size());
   }
 
   std::vector<char> output(graph.output_bytes_per_task);
