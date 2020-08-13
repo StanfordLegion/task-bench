@@ -24,14 +24,9 @@
 
 using namespace tensorflow;
 
-inline task_graph_t constructTaskGraph(const Tensor& task_graph_tensor) {
-  auto tg = task_graph_tensor.flat<uint8>();
-
-  task_graph_t result;
-  for (size_t i = 0; i < sizeof(result); ++i) {
-    reinterpret_cast<uint8_t *>(&result)[i] = tg(i);
-  }
-  return result;
+inline task_graph_t constructTaskGraph(const Tensor& tg) {
+  assert(tg.tensor_data().size() == sizeof(task_graph_t));
+  return *reinterpret_cast<const task_graph_t *>(tg.tensor_data().data());
 }
 
 inline void compute_generic(OpKernelContext* context)
