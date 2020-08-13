@@ -40,34 +40,27 @@ inline void compute_generic(OpKernelContext* context)
   long timestep = context->input(1).flat<int32>()(0);
   long point = context->input(2).flat<int32>()(0);
 
-  size_t n_inputs = context->num_inputs() - 3;
+  TensorShape output_shape = context->input(3).shape();
+  Tensor* output = NULL;
+  OP_REQUIRES_OK(context,
+                 context->forward_input_or_allocate_output({3}, 0, output_shape, &output));
+
+  size_t n_inputs = context->num_inputs() - 4;
   std::vector<const char *> input_ptrs;
   std::vector<size_t> input_bytes;
   for (size_t i = 0; i < n_inputs; ++i) {
-    auto input_tensor = context->input(i + 3);
+    auto input_tensor = context->input(i + 4);
     input_ptrs.push_back(input_tensor.tensor_data().data());
     input_bytes.push_back(input_tensor.tensor_data().size());
   }
 
-  std::vector<char> output(graph.output_bytes_per_task);
   std::vector<char> scratch(graph.scratch_bytes_per_task);
   task_graph_prepare_scratch(scratch.data(), scratch.size());
 
   task_graph_execute_point_scratch(graph, timestep, point,
-                           const_cast<char *>(output.data()), output.size(),
+                           const_cast<char *>(output->tensor_data().data()), output->tensor_data().size(),
                            input_ptrs.data(), input_bytes.data(), n_inputs,
                            const_cast<char *>(scratch.data()), scratch.size());
-
-  TensorShape output_shape;
-  output_shape.AddDim(output.size());
-
-  Tensor* output_tensor = NULL;
-  OP_REQUIRES_OK(context,
-                 context->allocate_output(0, output_shape, &output_tensor));
-  auto output_flat = output_tensor->flat<uint8>();
-  for (size_t i = 0; i < output.size(); ++i) {
-    output_flat(i) = output[i];
-  }
 }
 
 class TaskBenchOp : public OpKernel {

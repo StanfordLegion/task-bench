@@ -97,7 +97,7 @@ def execute_task_graph(graph):
         graph.output_bytes_per_task, dtype=np.uint8)
 
     outputs = []
-    last_row = None
+    last_row = [dummy for point in range(graph.max_width)]
     for timestep in range(0, graph.timesteps):
         offset = c.task_graph_offset_at_timestep(graph, timestep)
         width = c.task_graph_width_at_timestep(graph, timestep)
@@ -105,17 +105,18 @@ def execute_task_graph(graph):
         for point in range(0, offset):
             row.append(None)
         for point in range(offset, offset + width):
+            output = last_row[point]
             inputs = []
             for dep in task_graph_dependencies(graph, timestep, point):
                 inputs.append(last_row[dep])
             if len(inputs) == 0:
                 # Add a dummy to tasks with no input so that they can't be constant-folded.
                 inputs.append(dummy)
-            op = kernel_op(graph_tensor, timestep, point, inputs)
+            op = kernel_op(graph_tensor, timestep, point, output, inputs)
             row.append(op)
             outputs.append(op)
         for point in range(offset + width, graph.max_width):
-            row.append(None)
+            row.append(dummy)
         assert len(row) == graph.max_width
         last_row = row
 

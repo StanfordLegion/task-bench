@@ -28,6 +28,7 @@ REGISTER_OP("TaskBenchOp")
     .Input("task_graph: uint8")
     .Input("timestep: int32")
     .Input("point: int32")
+    .Input("output_in: uint8")
     .Input("inputs: n_inputs * uint8")
     .Output("output: uint8");
 
