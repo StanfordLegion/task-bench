@@ -34,7 +34,8 @@ ffi.cdef(core_header)
 c = ffi.dlopen("libcore.so")
 
 ops = tf.load_op_library("task_bench_ops.so")
-kernel_op = ops.task_bench_op
+kernel_op = ops.execute_point_op
+prepare_scratch_op = ops.prepare_scratch_op
 
 
 def app_create(args):
@@ -96,6 +97,15 @@ def execute_task_graph(graph):
     feed["%s:0" % dummy_name] = np.zeros(
         graph.output_bytes_per_task, dtype=np.uint8)
 
+    scratch_dummy_name = ["scratch_dummy_%s_%s" % (graph.graph_index, point) for point in range(graph.max_width)]
+    scratch_dummy = [tf.placeholder(
+        tf.uint8, shape=(0, ), name=scratch_dummy_name[point]) for point in range(graph.max_width)]
+    scratch_feed_value = np.zeros(0, dtype=np.uint8)
+    for point in range(graph.max_width):
+        feed["%s:0" % scratch_dummy_name[point]] = scratch_feed_value
+
+    scratch = [prepare_scratch_op(graph_tensor, scratch_dummy[point]) for point in range(graph.max_width)]
+
     outputs = []
     last_row = [dummy for point in range(graph.max_width)]
     for timestep in range(0, graph.timesteps):
@@ -112,7 +122,7 @@ def execute_task_graph(graph):
             if len(inputs) == 0:
                 # Add a dummy to tasks with no input so that they can't be constant-folded.
                 inputs.append(dummy)
-            op = kernel_op(graph_tensor, timestep, point, output, inputs)
+            op, scratch[point] = kernel_op(graph_tensor, timestep, point, output, scratch[point], inputs)
             row.append(op)
             outputs.append(op)
         for point in range(offset + width, graph.max_width):

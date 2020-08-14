@@ -29,7 +29,7 @@ inline task_graph_t constructTaskGraph(const Tensor& tg) {
   return *reinterpret_cast<const task_graph_t *>(tg.tensor_data().data());
 }
 
-inline void compute_generic(OpKernelContext* context)
+inline void execute_point(OpKernelContext* context)
 {
   task_graph_t graph = constructTaskGraph(context->input(0));
   long timestep = context->input(1).flat<int32>()(0);
@@ -40,31 +40,57 @@ inline void compute_generic(OpKernelContext* context)
   OP_REQUIRES_OK(context,
                  context->forward_input_or_allocate_output({3}, 0, output_shape, &output));
 
-  size_t n_inputs = context->num_inputs() - 4;
+  TensorShape scratch_shape = context->input(4).shape();
+  Tensor* scratch = NULL;
+  OP_REQUIRES_OK(context,
+                 context->forward_input_or_allocate_output({4}, 1, scratch_shape, &scratch));
+
+  size_t n_inputs = context->num_inputs() - 5;
   std::vector<const char *> input_ptrs;
   std::vector<size_t> input_bytes;
   for (size_t i = 0; i < n_inputs; ++i) {
-    auto input_tensor = context->input(i + 4);
+    auto input_tensor = context->input(i + 5);
     input_ptrs.push_back(input_tensor.tensor_data().data());
     input_bytes.push_back(input_tensor.tensor_data().size());
   }
 
-  std::vector<char> scratch(graph.scratch_bytes_per_task);
-  task_graph_prepare_scratch(scratch.data(), scratch.size());
-
   task_graph_execute_point_scratch(graph, timestep, point,
                            const_cast<char *>(output->tensor_data().data()), output->tensor_data().size(),
                            input_ptrs.data(), input_bytes.data(), n_inputs,
-                           const_cast<char *>(scratch.data()), scratch.size());
+                           const_cast<char *>(scratch->tensor_data().data()), scratch->tensor_data().size());
 }
 
-class TaskBenchOp : public OpKernel {
+inline void prepare_scratch(OpKernelContext* context)
+{
+  task_graph_t graph = constructTaskGraph(context->input(0));
+
+  TensorShape scratch_shape;
+  scratch_shape.AddDim(graph.scratch_bytes_per_task);
+
+  Tensor* scratch = NULL;
+  OP_REQUIRES_OK(context,
+                 context->allocate_output(0, scratch_shape, &scratch));
+
+  task_graph_prepare_scratch(const_cast<char *>(scratch->tensor_data().data()), scratch->tensor_data().size());
+}
+
+class ExecutePointOp : public OpKernel {
 public:
-  explicit TaskBenchOp(OpKernelConstruction* context) : OpKernel(context) {}
+  explicit ExecutePointOp(OpKernelConstruction* context) : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override
   {
-    compute_generic(context);
+    execute_point(context);
+  }
+};
+
+class PrepareScratchOp : public OpKernel {
+public:
+  explicit PrepareScratchOp(OpKernelConstruction* context) : OpKernel(context) {}
+
+  void Compute(OpKernelContext* context) override
+  {
+    prepare_scratch(context);
   }
 };
 
