@@ -52,7 +52,7 @@ if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     done
     for t in no_comm stencil_1d stencil_1d_periodic all_to_all; do # FIXME: trivial dom tree fft nearest spread random_nearest are broken
         for k in "${kernels[@]}"; do
-            for binary in bcast alltoall buffered_send; do
+            for binary in deprecated/bcast deprecated/alltoall deprecated/buffered_send; do
                 mpirun -np 4 ./mpi/$binary -steps $steps -type $t $k
                 mpirun -np 4 ./mpi/$binary -steps $steps -type $t $k -and -steps $steps -type $t $k
             done
