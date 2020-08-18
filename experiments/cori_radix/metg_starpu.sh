@@ -6,11 +6,10 @@
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
 
-module unload PrgEnv-intel
-module load PrgEnv-gnu
-module load openmpi
+export STARPU_RESERVE_NCPU=1
 
-cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
+cores=$(( $total_cores - 1 ))
 
 function launch {
     srun -n $1 -N $1 --cpus-per-task=$(( cores * 2 )) --cpu_bind none ../../starpu/main "${@:2}" -core $cores -p 1 -S
