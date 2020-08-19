@@ -265,7 +265,7 @@ if [[ $USE_OMPSS2 -eq 1 ]]; then
     autoreconf -fiv
     mkdir -p build
     cd build
-    ../configure --prefix=$OMPSS2_TARGET --with-boost=$OMPSS2_TARGET
+    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_TARGET --with-boost=$OMPSS2_TARGET
     make all -j$THREADS
     make install -j$THREADS
     popd
