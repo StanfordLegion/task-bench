@@ -257,7 +257,7 @@ fi
 
 if [[ $USE_OMPSS2 -eq 1 ]]; then
     pushd "$BOOST_SRC_DIR"
-    ./bootstrap.sh --prefix=$OMPSS2_TARGET --with-boost=$OMPSS2_TARGET
+    ./bootstrap.sh --prefix=$OMPSS2_TARGET
     ./b2 install
     popd
 
@@ -265,7 +265,7 @@ if [[ $USE_OMPSS2 -eq 1 ]]; then
     autoreconf -fiv
     mkdir -p build
     cd build
-    ../configure --prefix=$OMPSS2_TARGET
+    ../configure --prefix=$OMPSS2_TARGET --with-boost=$OMPSS2_TARGET
     make all -j$THREADS
     make install -j$THREADS
     popd
