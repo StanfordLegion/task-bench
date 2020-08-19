@@ -2,7 +2,7 @@ DEBUG ?= 0
 
 MCXX = $(OMPSS2_TARGET)/bin/mcxx
 
-CXXFLAGS = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
+CXXFLAGS = -DOMPSS2 --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 LDFLAGS  = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 
 ifeq ($(strip $(DEBUG)),1)
@@ -31,7 +31,7 @@ all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
 
-main.o: main.cc ../core/timer.h
+main.o: ../ompss/main.cc ../core/timer.h
 	$(MCXX) $(CXXFLAGS) -c $<
 
 main: main.o ../core/libcore.a
