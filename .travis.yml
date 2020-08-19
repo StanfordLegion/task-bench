@@ -47,6 +47,9 @@ before_install:
       if [[ $USE_CHAPEL -eq 1 || $USE_REGENT -eq 1 ]]; then
         sudo apt-get install -qq clang-6.0 libclang-6.0-dev llvm-6.0-dev libedit-dev
       fi
+      if [[ $USE_OMPSS2 -eq 1 ]]; then
+        sudo apt-get install -qq libboost-all-dev libnuma-dev
+      fi
     fi
 install:
   - export CCACHE_BASEDIR=$PWD

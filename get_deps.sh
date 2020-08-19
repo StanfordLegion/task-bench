@@ -282,7 +282,7 @@ export OMPSS2_DL_DIR=$OMPSS2_DL_DIR
 export OMPSS2_TARGET=$OMPSS2_DL_DIR
 export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/ompss2-release/nanos6
 export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/ompss2-release/mcxx
-export BOOST_SRC_DIR=$OMPSS2_DL_DIR/boost_1_68_0
+# export BOOST_SRC_DIR=$OMPSS2_DL_DIR/boost_1_68_0
 EOF
     mkdir -p "$OMPSS2_DL_DIR"
     git clone --recursive https://github.com/bsc-pm/ompss-2-releases.git "$OMPSS2_DL_DIR/ompss2-release"
@@ -290,9 +290,9 @@ EOF
     #patch -p1 -i $OMPSS2_BENCH_SRC/0001-Fixed-linking-errors-with-clang-5.patch
     #popd
     
-    wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
-    tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
-    rm -rf boost_1_68_0.tar.gz 
+    # wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
+    # tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
+    # rm -rf boost_1_68_0.tar.gz
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
