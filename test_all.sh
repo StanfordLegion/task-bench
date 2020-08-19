@@ -241,6 +241,15 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     done
 fi
 
+if [[ $USE_OMPSS2 -eq 1 ]]; then
+    for t in "${basic_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            ./ompss2/main -steps $steps -type $t $k
+            ./ompss2/main -steps $steps -type $t $k -and -steps $steps -type $t $k
+        done
+    done
+fi
+
 (if [[ $USE_SPARK -eq 1 ]]; then
     source "$SPARK_DIR"/env.sh
 
