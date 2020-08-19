@@ -2,7 +2,7 @@ DEBUG ?= 0
 
 MCXX = mcxx
 
-CXXFLAGS = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
+CXXFLAGS = -DOMPSS --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 LDFLAGS  = --ompss -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
 
 ifeq ($(strip $(DEBUG)),1)
