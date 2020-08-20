@@ -293,6 +293,7 @@ EOF
     # wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
     # tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
     # rm -rf boost_1_68_0.tar.gz
+    cat /usr/include/boost/version.hpp | grep "BOOST_LIB_VERSION"
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
