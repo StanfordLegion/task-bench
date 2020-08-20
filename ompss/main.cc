@@ -30,7 +30,7 @@ inline void ompss_set_num_threads(int nb_threads)
 #define OMPSS_TASK_DEPEND #pragma oss task depend
 inline int ompss_get_thread_num()
 {
-  return nanos6_get_num_cpus();
+  return nanos6_get_current_virtual_cpu();
 }
 
 inline void ompss_set_num_threads(int nb_threads)
@@ -383,7 +383,7 @@ OmpSsApp::OmpSsApp(int argc, char **argv)
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
     
-    printf("graph id %d, M = %d, N = %d\n, nb_fields %d", i, matrix[i].M, matrix[i].N, graph.nb_fields);
+    printf("graph id %d, M = %d, N = %d\n, nb_fields %d\n", i, matrix[i].M, matrix[i].N, graph.nb_fields);
   }
   
   extra_local_memory = (char**)malloc(sizeof(char*) * (nb_workers+1));

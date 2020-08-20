@@ -30,7 +30,7 @@ inline void ompss_set_num_threads(int nb_threads)
 #define OMPSS_TASK_DEPEND #pragma oss task depend
 inline int ompss_get_thread_num()
 {
-  return nanos6_get_num_cpus();
+  return nanos6_get_current_virtual_cpu();
 }
 
 inline void ompss_set_num_threads(int nb_threads)
