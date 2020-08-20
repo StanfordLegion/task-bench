@@ -38,7 +38,11 @@ env:
 matrix:
   exclude:
     - compiler: clang
+      env: USE_PARSEC=1 TASKBENCH_USE_HWLOC=1
+    - compiler: clang
       env: USE_OMPSS=1
+    - compiler: clang
+      env: USE_OMPSS2=1 TASKBENCH_USE_HWLOC=1
 before_install:
   - |
     if [[ "$(uname)" = "Linux" ]]; then
