@@ -1,6 +1,6 @@
 language: cpp
 sudo: required
-dist: xenial
+dist: bionic
 os:
   - linux
 compiler:
@@ -48,7 +48,7 @@ before_install:
         sudo apt-get install -qq clang-6.0 libclang-6.0-dev llvm-6.0-dev libedit-dev
       fi
       if [[ $USE_OMPSS2 -eq 1 ]]; then
-        sudo apt-get install -qq libnuma-dev gperf libboost1.62-dev
+        sudo apt-get install -qq libnuma-dev gperf libboost1.65-dev
       fi
     fi
 install:
