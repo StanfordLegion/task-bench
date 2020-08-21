@@ -6,10 +6,11 @@
 #SBATCH --time=02:00:00
 #SBATCH --mail-type=ALL
 
-export STARPU_RESERVE_NCPU=1
+cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
 
-total_cores=$(( $(echo $SLURM_JOB_CPUS_PER_NODE | cut -d'(' -f 1) / 2 ))
-cores=$(( $total_cores - 1 ))
+# Reserve one core for the MPI thread
+export STARPU_RESERVE_NCPU=1
+computation_cores=$(( $cores - 1 ))
 
 function launch {
     srun -n $1 -N $1 --cpus-per-task=$(( cores * 2 )) --cpu_bind none ../../starpu/main "${@:2}" -core $cores -p 1 -S
@@ -32,7 +33,7 @@ function sweep {
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
                 local args
-                repeat args $3 -kernel load_imbalance -iter $(( 1 << (26-s) )) -imbalance $5 -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores )) -field 2
+                repeat args $3 -kernel load_imbalance -iter $(( 1 << (26-s) )) -imbalance $5 -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * computation_cores )) -field 2
                 $1 $2 "${args[@]}"
             fi
         done
