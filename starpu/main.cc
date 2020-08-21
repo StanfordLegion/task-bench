@@ -42,6 +42,15 @@ typedef struct payload_s {
   const TaskGraph *graph;
 }payload_t;
 
+static void init_extra_local_memory(void *arg)
+{
+  size_t max_scratch_bytes_per_task = (uintptr_t) arg;
+  int tid = starpu_worker_get_id();
+
+  extra_local_memory[tid] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
+  TaskGraph::prepare_scratch(extra_local_memory[tid], sizeof(char)*max_scratch_bytes_per_task);
+}
+
 static void task1(void *descr[], void *cl_arg)
 {
   float *out;
@@ -780,11 +789,10 @@ StarPUApp::StarPUApp(int argc, char **argv)
    
   extra_local_memory = (char**)malloc(sizeof(char*) * nb_cores);
   assert(extra_local_memory != NULL);
-  for (i = 0; i < nb_cores; i++) {
-    if (max_scratch_bytes_per_task > 0) {
-      extra_local_memory[i] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
-      TaskGraph::prepare_scratch(extra_local_memory[i], sizeof(char)*max_scratch_bytes_per_task);
-    } else {
+  if (max_scratch_bytes_per_task > 0) {
+    starpu_execute_on_each_worker_ex(init_extra_local_memory, (void*) (uintptr_t) max_scratch_bytes_per_task, STARPU_CPU, "init_scratch");
+  } else {
+    for (i = 0; i < nb_cores; i++) {
       extra_local_memory[i] = NULL;
     }
   }
