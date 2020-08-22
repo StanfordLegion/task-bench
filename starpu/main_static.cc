@@ -921,12 +921,11 @@ StarPUApp::StarPUApp(int argc, char **argv)
    
   extra_local_memory = (char**)malloc(sizeof(char*) * nb_cores);
   assert(extra_local_memory != NULL);
+  for (i = 0; i < nb_cores; i++) {
+    extra_local_memory[i] = NULL;
+  }
   if (max_scratch_bytes_per_task > 0) {
     starpu_execute_on_each_worker_ex(init_extra_local_memory, (void*) (uintptr_t) max_scratch_bytes_per_task, STARPU_CPU, "init_scratch");
-  } else {
-    for (i = 0; i < nb_cores; i++) {
-      extra_local_memory[i] = NULL;
-    }
   }
   
   debug_printf(0, "max_scratch_bytes_per_task %ld\n", max_scratch_bytes_per_task);
