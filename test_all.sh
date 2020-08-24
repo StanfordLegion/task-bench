@@ -50,7 +50,7 @@ if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     done
     for t in no_comm stencil_1d stencil_1d_periodic all_to_all; do # FIXME: trivial dom tree fft nearest spread random_nearest are broken
         for k in "${kernels[@]}"; do
-            for binary in bcast alltoall buffered_send; do
+            for binary in deprecated/bcast deprecated/alltoall deprecated/buffered_send; do
                 mpirun -np 4 ./mpi/$binary -steps $steps -type $t $k
                 mpirun -np 4 ./mpi/$binary -steps $steps -type $t $k -and -steps $steps -type $t $k
             done
@@ -114,12 +114,38 @@ if [[ $USE_STARPU -eq 1 ]]; then
             mpirun -np 1 ./starpu/main -steps $steps -type $t $k -core 2
             mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 1 -core 2
             mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 2 -core 2
+            mpirun -np 4 ./starpu/main -field 4 -steps $steps -type $t $k -p 2 -core 2
             mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 4 -core 2
             mpirun -np 1 ./starpu/main -steps $steps -type $t $k -and -steps $steps -type $t $k -core 2
             mpirun -np 4 ./starpu/main -steps 16 -width 8 -type $t $k -p 1 -core 2 -S
             mpirun -np 4 ./starpu/main -steps 16 -width 8 -type $t $k -and -steps 16 -width 8 -type $t $k -core 2 -p 1 -S
         done
     done
+
+    for t in "${basic_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            mpirun -np 1 ./starpu/main_expl -steps $steps -type $t $k -core 2
+            mpirun -np 4 ./starpu/main_expl -steps $steps -type $t $k -p 1 -core 2
+            mpirun -np 4 ./starpu/main_expl -steps $steps -type $t $k -p 2 -core 2
+            mpirun -np 4 ./starpu/main_expl -field 4 -steps $steps -type $t $k -p 2 -core 2
+            mpirun -np 4 ./starpu/main_expl -steps $steps -type $t $k -p 4 -core 2
+            mpirun -np 1 ./starpu/main_expl -steps $steps -type $t $k -and -steps $steps -type $t $k -core 2
+            mpirun -np 4 ./starpu/main_expl -steps 16 -width 8 -type $t $k -p 1 -core 2 -S
+            mpirun -np 4 ./starpu/main_expl -steps 16 -width 8 -type $t $k -and -steps 16 -width 8 -type $t $k -core 2 -p 1 -S
+        done
+    done
+
+#    for t in "${basic_types[@]}"; do
+#        for k in "${kernels[@]}"; do
+#            mpirun -np 1 ./starpu/main_static -steps $steps -type $t $k -core 2
+#            mpirun -np 4 ./starpu/main_static -steps $steps -type $t $k -p 1 -core 2
+#            mpirun -np 4 ./starpu/main_static -steps $steps -type $t $k -p 2 -core 2
+#            mpirun -np 4 ./starpu/main_static -steps $steps -type $t $k -p 4 -core 2
+#            mpirun -np 1 ./starpu/main_static -steps $steps -type $t $k -and -steps $steps -type $t $k -core 2
+#            mpirun -np 4 ./starpu/main_static -steps 16 -width 8 -type $t $k -p 1 -core 2 -S
+#            mpirun -np 4 ./starpu/main_static -steps 16 -width 8 -type $t $k -and -steps 16 -width 8 -type $t $k -core 2 -p 1 -S
+#        done
+#    done
 fi
 
 if [[ $USE_PARSEC -eq 1 ]]; then
@@ -190,6 +216,15 @@ if [[ $USE_OMPSS -eq 1 ]]; then
         for k in "${kernels[@]}"; do
             ./ompss/main -steps $steps -type $t $k
             ./ompss/main -steps $steps -type $t $k -and -steps $steps -type $t $k
+        done
+    done
+fi
+
+if [[ $USE_OMPSS2 -eq 1 ]]; then
+    for t in "${basic_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            taskset -c 0-1 ./ompss2/main -steps $steps -type $t $k
+            taskset -c 0-1 ./ompss2/main -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
     done
 fi

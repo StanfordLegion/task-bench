@@ -24,67 +24,73 @@
 
 using namespace tensorflow;
 
-inline task_graph_t constructTaskGraph(const Tensor& task_graph_tensor) {
-  auto tg = task_graph_tensor.flat<uint8>();
-
-  task_graph_t result;
-  for (size_t i = 0; i < sizeof(result); ++i) {
-    reinterpret_cast<uint8_t *>(&result)[i] = tg(i);
-  }
-  return result;
+inline task_graph_t constructTaskGraph(const Tensor& tg) {
+  assert(tg.tensor_data().size() == sizeof(task_graph_t));
+  return *reinterpret_cast<const task_graph_t *>(tg.tensor_data().data());
 }
 
-inline void compute_generic(OpKernelContext* context)
+inline void execute_point(OpKernelContext* context)
 {
   task_graph_t graph = constructTaskGraph(context->input(0));
   long timestep = context->input(1).flat<int32>()(0);
   long point = context->input(2).flat<int32>()(0);
 
-  size_t n_inputs = context->num_inputs() - 3;
-  std::vector<std::vector<char> > input_data;
+  TensorShape output_shape = context->input(3).shape();
+  Tensor* output = NULL;
+  OP_REQUIRES_OK(context,
+                 context->forward_input_or_allocate_output({3}, 0, output_shape, &output));
+
+  TensorShape scratch_shape = context->input(4).shape();
+  Tensor* scratch = NULL;
+  OP_REQUIRES_OK(context,
+                 context->forward_input_or_allocate_output({4}, 1, scratch_shape, &scratch));
+
+  size_t n_inputs = context->num_inputs() - 5;
   std::vector<const char *> input_ptrs;
   std::vector<size_t> input_bytes;
   for (size_t i = 0; i < n_inputs; ++i) {
-    auto input_tensor = context->input(i + 3);
-    auto input_flat = input_tensor.flat<uint8>();
-
-    input_data.emplace_back(input_tensor.shape().num_elements());
-    for (size_t j = 0; j < input_data[i].size(); ++j) {
-      input_data[i][j] = input_flat(j);
-    }
-
-    input_ptrs.push_back(input_data[i].data());
-    input_bytes.push_back(input_data[i].size());
+    auto input_tensor = context->input(i + 5);
+    input_ptrs.push_back(input_tensor.tensor_data().data());
+    input_bytes.push_back(input_tensor.tensor_data().size());
   }
-
-  std::vector<char> output(graph.output_bytes_per_task);
-  std::vector<char> scratch(graph.scratch_bytes_per_task);
-  task_graph_prepare_scratch(scratch.data(), scratch.size());
 
   task_graph_execute_point_scratch(graph, timestep, point,
-                           const_cast<char *>(output.data()), output.size(),
+                           const_cast<char *>(output->tensor_data().data()), output->tensor_data().size(),
                            input_ptrs.data(), input_bytes.data(), n_inputs,
-                           const_cast<char *>(scratch.data()), scratch.size());
-
-  TensorShape output_shape;
-  output_shape.AddDim(output.size());
-
-  Tensor* output_tensor = NULL;
-  OP_REQUIRES_OK(context,
-                 context->allocate_output(0, output_shape, &output_tensor));
-  auto output_flat = output_tensor->flat<uint8>();
-  for (size_t i = 0; i < output.size(); ++i) {
-    output_flat(i) = output[i];
-  }
+                           const_cast<char *>(scratch->tensor_data().data()), scratch->tensor_data().size());
 }
 
-class TaskBenchOp : public OpKernel {
+inline void prepare_scratch(OpKernelContext* context)
+{
+  task_graph_t graph = constructTaskGraph(context->input(0));
+
+  TensorShape scratch_shape;
+  scratch_shape.AddDim(graph.scratch_bytes_per_task);
+
+  Tensor* scratch = NULL;
+  OP_REQUIRES_OK(context,
+                 context->allocate_output(0, scratch_shape, &scratch));
+
+  task_graph_prepare_scratch(const_cast<char *>(scratch->tensor_data().data()), scratch->tensor_data().size());
+}
+
+class ExecutePointOp : public OpKernel {
 public:
-  explicit TaskBenchOp(OpKernelConstruction* context) : OpKernel(context) {}
+  explicit ExecutePointOp(OpKernelConstruction* context) : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override
   {
-    compute_generic(context);
+    execute_point(context);
+  }
+};
+
+class PrepareScratchOp : public OpKernel {
+public:
+  explicit PrepareScratchOp(OpKernelConstruction* context) : OpKernel(context) {}
+
+  void Compute(OpKernelContext* context) override
+  {
+    prepare_scratch(context);
   }
 };
 

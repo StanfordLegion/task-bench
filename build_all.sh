@@ -139,7 +139,7 @@ fi
 )
 
 if [[ $USE_STARPU -eq 1 ]]; then
-    STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples "
+    STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples -disable-mlr --disable-hdf5"
     if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
       STARPU_CONFIGURE_FLAG+=""
     else
@@ -253,6 +253,34 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     export LD_LIBRARY_PATH=$NANOS_PREFIX/lib:$MERCURIUM_PREFIX/lib:$LD_LIBRARY_PATH
     make -C ompss clean
     make -C ompss -j$THREADS
+fi
+
+if [[ $USE_OMPSS2 -eq 1 ]]; then
+    # pushd "$BOOST_SRC_DIR"
+    # ./bootstrap.sh --prefix=$OMPSS2_TARGET
+    # ./b2 install
+    # popd
+
+    pushd "$OMPSS2_NANOS6_SRC_DIR"
+    autoreconf -fiv
+    mkdir -p build
+    cd build
+    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_TARGET --with-boost=/usr
+    make all -j$THREADS
+    make install -j$THREADS
+    popd
+    
+    pushd "$OMPSS2_MCXX_SRC_DIR"
+    autoreconf -fiv
+    mkdir -p build
+    cd build
+    ../configure --prefix=$OMPSS2_TARGET --enable-ompss-2 --with-nanos6=$OMPSS2_TARGET
+    make -j$THREADS
+    make install
+    popd
+
+    make -C ompss2 clean
+    make -C ompss2 -j$THREADS
 fi
 
 (if [[ $USE_SPARK -eq 1 ]]; then

@@ -34,7 +34,8 @@ ffi.cdef(core_header)
 c = ffi.dlopen("libcore.so")
 
 ops = tf.load_op_library("task_bench_ops.so")
-kernel_op = ops.task_bench_op
+kernel_op = ops.execute_point_op
+prepare_scratch_op = ops.prepare_scratch_op
 
 
 def app_create(args):
@@ -86,8 +87,6 @@ def task_graph_dependencies(graph, timestep, point):
 
 def execute_task_graph(graph):
 
-    sess = tf.Session()
-
     graph_tensor = build_task_graph_tensor(graph)
 
     feed = {}
@@ -98,8 +97,17 @@ def execute_task_graph(graph):
     feed["%s:0" % dummy_name] = np.zeros(
         graph.output_bytes_per_task, dtype=np.uint8)
 
+    scratch_dummy_name = ["scratch_dummy_%s_%s" % (graph.graph_index, point) for point in range(graph.max_width)]
+    scratch_dummy = [tf.placeholder(
+        tf.uint8, shape=(0, ), name=scratch_dummy_name[point]) for point in range(graph.max_width)]
+    scratch_feed_value = np.zeros(0, dtype=np.uint8)
+    for point in range(graph.max_width):
+        feed["%s:0" % scratch_dummy_name[point]] = scratch_feed_value
+
+    scratch = [prepare_scratch_op(graph_tensor, scratch_dummy[point]) for point in range(graph.max_width)]
+
     outputs = []
-    last_row = None
+    last_row = [dummy for point in range(graph.max_width)]
     for timestep in range(0, graph.timesteps):
         offset = c.task_graph_offset_at_timestep(graph, timestep)
         width = c.task_graph_width_at_timestep(graph, timestep)
@@ -107,30 +115,41 @@ def execute_task_graph(graph):
         for point in range(0, offset):
             row.append(None)
         for point in range(offset, offset + width):
+            output = last_row[point]
             inputs = []
             for dep in task_graph_dependencies(graph, timestep, point):
                 inputs.append(last_row[dep])
             if len(inputs) == 0:
                 # Add a dummy to tasks with no input so that they can't be constant-folded.
                 inputs.append(dummy)
-            op = kernel_op(graph_tensor, timestep, point, inputs)
+            op, scratch[point] = kernel_op(graph_tensor, timestep, point, output, scratch[point], inputs)
             row.append(op)
             outputs.append(op)
         for point in range(offset + width, graph.max_width):
-            row.append(None)
+            row.append(dummy)
         assert len(row) == graph.max_width
         last_row = row
 
-    sess.run(outputs, feed_dict=feed)
+    return outputs, feed
 
 
 def execute_task_bench():
     app = app_create(sys.argv)
     task_graphs = app_task_graphs(app)
-    start_time = time.perf_counter()
+
+    all_output = []
+    all_feed = {}
+
     for task_graph in task_graphs:
-        execute_task_graph(task_graph)
-    total_time = time.perf_counter() - start_time
+        output, feed = execute_task_graph(task_graph)
+        all_output.extend(output)
+        all_feed.update(feed)
+
+    sess = tf.Session()
+    for i in range(2):
+        start_time = time.perf_counter()
+        sess.run(all_output, feed_dict=all_feed)
+        total_time = time.perf_counter() - start_time
     c.app_report_timing(app, total_time)
 
 

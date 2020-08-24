@@ -65,6 +65,7 @@ export USE_CHAPEL=${USE_CHAPEL:-$DEFAULT_FEATURES}
 export USE_X10=${USE_X10:-$DEFAULT_FEATURES}
 export USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
 export USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
+export USE_OMPSS2=${USE_OMPSS2:-$DEFAULT_FEATURES}
 export USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 export USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 export USE_TENSORFLOW=${USE_TENSORFLOW:-$DEFAULT_FEATURES}
@@ -194,7 +195,7 @@ if [[ $USE_CHAPEL -eq 1 ]]; then
 export CHPL_HOME=$CHPL_HOME
 export CHPL_HOST_PLATFORM=\$(\$CHPL_HOME/util/chplenv/chpl_platform.py)
 export CHPL_LLVM=llvm
-export CHPL_TARGET_ARCH=native
+export CHPL_TARGET_CPU=native
 # export CHPL_QTHREAD_SCHEDULER=distrib # or sherwood # Enables Chapel work stealing scheduler
 # Note: distrib scheduler needs QTHREAD_STEAL_RATIO=8 set at runtime
 EOF
@@ -223,10 +224,10 @@ export CHPL_LLVM=system
 EOF
     fi
 
-    wget https://github.com/chapel-lang/chapel/releases/download/1.18.0/chapel-1.18.0.tar.gz
+    wget https://github.com/chapel-lang/chapel/releases/download/1.22.1/chapel-1.22.1.tar.gz
     mkdir "$CHPL_HOME"
-    tar xfz chapel-1.18.0.tar.gz -C "$CHPL_HOME" --strip-components 1
-    rm chapel-1.18.0.tar.gz
+    tar xfz chapel-1.22.1.tar.gz -C "$CHPL_HOME" --strip-components 1
+    rm chapel-1.22.1.tar.gz
 fi
 
 if [[ $USE_X10 -eq 1 ]]; then
@@ -273,6 +274,29 @@ EOF
     wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
     tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
     rm -rf ompss-17.12.1.tar.gz
+fi
+
+if [[ $USE_OMPSS2 -eq 1 ]]; then
+    export OMPSS2_DL_DIR="$PWD"/deps/ompss2
+    export OMPSS2_BENCH_SRC="$PWD"/ompss2
+    cat >>deps/env.sh <<EOF
+export USE_OMPSS2=$USE_OMPSS2
+export OMPSS2_DL_DIR=$OMPSS2_DL_DIR
+export OMPSS2_TARGET=$OMPSS2_DL_DIR
+export OMPSS2_NANOS6_SRC_DIR=$OMPSS2_DL_DIR/ompss2-release/nanos6
+export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/ompss2-release/mcxx
+export BOOST_SRC_DIR=$OMPSS2_DL_DIR/boost_1_68_0
+EOF
+    mkdir -p "$OMPSS2_DL_DIR"
+    git clone --recursive https://github.com/bsc-pm/ompss-2-releases.git "$OMPSS2_DL_DIR/ompss2-release"
+    #pushd "$OMPSS2_NANOS6_SRC_DIR"
+    #patch -p1 -i $OMPSS2_BENCH_SRC/0001-Fixed-linking-errors-with-clang-5.patch
+    #popd
+    
+    # wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
+    # tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
+    # rm -rf boost_1_68_0.tar.gz
+    cat /usr/include/boost/version.hpp | grep "BOOST_LIB_VERSION"
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
@@ -393,10 +417,18 @@ EOF
 
     source "$TENSORFLOW_DIR"/env.sh
 
+    cat >>"$TENSORFLOW_DIR"/env.sh <<EOF
+source $CONDA_PREFIX/etc/profile.d/conda.sh
+conda activate myenv
+EOF
+
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
     rm Miniconda3-latest-Linux-x86_64.sh
     conda update -y conda
+    source $CONDA_PREFIX/etc/profile.d/conda.sh
+    conda create -y -n myenv python=3.7 cffi
+    conda activate myenv
     # Hack: Try to install via pip to avoid compiler version incompatibility
     # conda install -y tensorflow
     pip install -q tensorflow==2.1.0

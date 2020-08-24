@@ -24,11 +24,12 @@ import sys
 import chart_util as util
 
 class Parser(util.Parser):
-    def __init__(self, ngraphs, dependence, system, problem_size, csv_dialect):
+    def __init__(self, ngraphs, dependence, system, max_problem_size, min_problem_size, csv_dialect):
         self.ngraphs = ngraphs
         self.dependence = dependence.replace('_', ' ')
         self.system = system
-        self.problem_size = int(problem_size) if problem_size is not None else None
+        self.max_problem_size = int(max_problem_size) if max_problem_size is not None else None
+        self.min_problem_size = int(min_problem_size) if min_problem_size is not None else None
         self.csv_dialect = csv_dialect
 
         self.header = []
@@ -48,7 +49,7 @@ class Parser(util.Parser):
 
             iterations = row['nodes'] * items['iterations']
 
-            if self.problem_size is None or self.problem_size == iterations:
+            if (self.max_problem_size is None or iterations <= self.max_problem_size) and  (self.min_problem_size is None or self.min_problem_size <= iterations):
                 name = iterations if self.system is not None else row['name']
 
                 if name not in self.header:
@@ -83,8 +84,8 @@ class Parser(util.Parser):
                 row['metg'] = self.metg[nodes]
             out.writerow(row)
 
-def driver(ngraphs, dependence, system, problem_size, machine, resource, threshold, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, system, problem_size, csv_dialect)
+def driver(ngraphs, dependence, system, max_problem_size, min_problem_size, machine, resource, threshold, csv_dialect, verbose):
+    parser = Parser(ngraphs, dependence, system, max_problem_size, min_problem_size, csv_dialect)
     parser.parse(machine, resource, threshold, False, verbose)
 
 if __name__ == '__main__':
@@ -92,7 +93,8 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--ngraphs', type=int, required=True)
     parser.add_argument('-d', '--dependence', required=True)
     parser.add_argument('-s', '--system')
-    parser.add_argument('-p', '--problem-size')
+    parser.add_argument('--max-problem-size')
+    parser.add_argument('--min-problem-size')
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-r', '--resource', default='flops')
     parser.add_argument('-t', '--threshold', type=float, default=0.5)

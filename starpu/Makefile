@@ -9,6 +9,8 @@ CC         = mpic++
 CFLAGS     = -DADD_ -fPIC -std=c++11
 LDFLAGS    = -Wall -std=c++11
 
+STARPU_VERSION ?= 1.2
+
 #STARPU_DIR = /home/wwu12/starpu/install
 #MPI_DIR    = /sw/openmpi/2.1.1
 
@@ -21,11 +23,11 @@ LDFLAGS		 += -g -O0
 endif
 
 # Include directories
-INC        = -I$(STARPU_DIR)/include/starpu/1.2 -I../core
+INC        = -I$(STARPU_DIR)/include/starpu/$(STARPU_VERSION) -I../core
 INC_EXT    = 
 
 # Location of the libraries.
-LIB        = -Wl,-rpath,$(STARPU_DIR)/lib: $(STARPU_DIR)/lib/libstarpu-1.2.so $(STARPU_DIR)/lib/libstarpumpi-1.2.so -L../core -lcore_s
+LIB        = -Wl,-rpath,$(STARPU_DIR)/lib: $(STARPU_DIR)/lib/libstarpu-$(STARPU_VERSION).so $(STARPU_DIR)/lib/libstarpumpi-$(STARPU_VERSION).so -L../core -lcore_s
 LIB_EXT    = 
 
 INC := $(INC) $(INC_EXT)
@@ -35,7 +37,7 @@ CFLAGS += $(INC)
 
 include ../core/make_blas.mk
 
-TARGET = main main_buffer_core
+TARGET = main main_buffer_core main_expl
 all: $(TARGET)
 
 .PRECIOUS: %.c %.o
@@ -54,6 +56,18 @@ main_buffer_core.o: main_buffer_core.cc
 
 main_buffer_core: main_buffer_core.o data.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
+
+main_expl.o: main_expl.cc
+	$(CC) -c $(CFLAGS) $<
+
+main_expl: main_expl.o data.o
+	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
+
+main_static.o: main_static.cc
+	$(CC) -c $(CFLAGS) $<
+
+main_static: main_static.o data.o
+	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 
 clean:
 	rm -f *.o

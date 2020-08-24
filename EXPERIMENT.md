@@ -16,7 +16,7 @@ Corresponding authors:
 git clone https://github.com/StanfordLegion/task-bench.git
 cd task-bench
 USE_GASNET=1 CONDUIT=aries CHPL_COMM=ugni CHARM_VERSION=gni-crayxc ./get_deps.sh
-./build_all.sh
+THREADS=16 ./build_all.sh
 cd experiment/cori_metg_compute
 sbatch --nodes 1 metg_legion.sh
 ```

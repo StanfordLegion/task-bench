@@ -16,7 +16,7 @@ endif
 
 include ../core/make_blas.mk
 
-BIN := alltoall basic bcast buffered_send bulk_synchronous nonblock
+BIN := bulk_synchronous nonblock deprecated/alltoall deprecated/basic deprecated/bcast deprecated/buffered_send
 
 .PHONY: all
 all:  $(BIN)
