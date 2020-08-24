@@ -9,7 +9,7 @@ CC         = mpic++
 CFLAGS     = -DADD_ -fPIC -std=c++11
 LDFLAGS    = -Wall -std=c++11
 
-STARPU_VERSION ?= 1.2
+STARPU_VERSION ?= 1.3
 
 #STARPU_DIR = /home/wwu12/starpu/install
 #MPI_DIR    = /sw/openmpi/2.1.1
