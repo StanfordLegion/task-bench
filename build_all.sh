@@ -139,7 +139,7 @@ fi
 )
 
 if [[ $USE_STARPU -eq 1 ]]; then
-    STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples -disable-mlr --disable-hdf5"
+    STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples --disable-mlr --disable-hdf5"
     if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
       STARPU_CONFIGURE_FLAG+=""
     else
