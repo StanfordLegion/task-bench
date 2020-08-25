@@ -14,7 +14,7 @@ DEBUG ?= 0
 
 CC         = mpic++
 cc         = mpicc
-PP = ${PARSEC_DIR}/bin/parsec_ptgpp
+PP = ${PARSEC_DIR}/bin/parsec-ptgpp
 
 CFLAGS     = -std=c++11 -D_GNU_SOURCE
 LDFLAGS    = -m64 -std=c++11 -Wall -D_GNU_SOURCE
@@ -40,7 +40,7 @@ INC        = -I$(PARSEC_DIR)/include -I$(PARSEC_DIR)/include/parsec -I$(PARSEC_D
 INC_EXT    = -I$(HWLOC_DIR)/include 
 
 # Location of the libraries.
-LIB        = -Wl,-rpath,$(PARSEC_DIR)/lib $(PARSEC_DIR)/lib/libparsec.so -L../core -lcore_s
+LIB        = -Wl,-rpath,$(PARSEC_DIR)/lib64 $(PARSEC_DIR)/lib64/libparsec.so -L../core -lcore_s
 LIB_EXT    = -lpthread -lm -latomic
 
 INC := $(INC) $(INC_EXT)

@@ -8,7 +8,7 @@ if [[ ! -d deps ]]; then
     false
 fi
 
-source deps/env.sh
+#source deps/env.sh
 
 basic_types=(
     trivial
@@ -159,14 +159,19 @@ if [[ $USE_PARSEC -eq 1 ]]; then
             mpirun -np 4 ./parsec/main_buffer -steps $steps -type $t $k -p 2 -c 2
             mpirun -np 4 ./parsec/main_buffer -steps $steps -type $t $k -p 4 -c 2
             mpirun -np 1 ./parsec/main_buffer -steps $steps -type $t $k -and -steps $steps -type $t $k -c 2
+            mpirun -np 1 ./parsec/main -steps $steps -type $t $k -c 2
+            mpirun -np 4 ./parsec/main -steps $steps -type $t $k -p 1 -c 2
+            mpirun -np 4 ./parsec/main -steps $steps -type $t $k -p 2 -c 2
+            mpirun -np 4 ./parsec/main -steps $steps -type $t $k -p 4 -c 2
+            mpirun -np 1 ./parsec/main -steps $steps -type $t $k -and -steps $steps -type $t $k -c 2
         done
     done
-    for k in "${kernels[@]}"; do
-      mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type stencil_1d $k -width 8 -field 2
-      mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type stencil_1d $k -width 8 -and -steps $steps -type stencil_1d $k -width 8
-      mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type nearest -radix 5 $k -width 8 -field 2
-      mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type nearest -radix 5 $k -width 8 -and -steps $steps -type nearest -radix 5 $k -width 8
-    done
+    # for k in "${kernels[@]}"; do
+    #   mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type stencil_1d $k -width 8 -field 2
+    #   mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type stencil_1d $k -width 8 -and -steps $steps -type stencil_1d $k -width 8
+    #   mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type nearest -radix 5 $k -width 8 -field 2
+    #   mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type nearest -radix 5 $k -width 8 -and -steps $steps -type nearest -radix 5 $k -width 8
+    # done
 fi
 
 if [[ $USE_CHARM -eq 1 ]]; then

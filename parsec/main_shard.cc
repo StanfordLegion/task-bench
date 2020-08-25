@@ -60,7 +60,7 @@ typedef struct payload_s {
 }payload_t;
 
 static inline int
-dplasma_add2arena_tile( parsec_arena_t *arena, size_t elem_size, size_t alignment,
+dplasma_add2arena_tile( parsec_arena_datatype_t *arena, size_t elem_size, size_t alignment,
                         parsec_datatype_t oldtype, unsigned int tile_mb )
 {
   (void)elem_size;
@@ -718,7 +718,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
 
 
     /* Default type */
-    dplasma_add2arena_tile( parsec_dtd_arenas[i],
+    dplasma_add2arena_tile( &(parsec_dtd_arenas_datatypes[i]),
                             mat.dcC.super.mb * mat.dcC.super.nb*sizeof(float),
                             PARSEC_ARENA_ALIGNMENT_SSE,
                             parsec_datatype_float_t, mat.dcC.super.mb );
@@ -774,7 +774,7 @@ ParsecApp::~ParsecApp()
     matrix_t &mat = mat_array[i];
     
     /* Cleaning data arrays we allocated for communication */
-    parsec_matrix_del2arena( parsec_dtd_arenas[i] );
+    parsec_matrix_del2arena( &(parsec_dtd_arenas_datatypes[i]) );
 
 
     /* Cleaning data arrays we allocated for communication */
@@ -820,10 +820,10 @@ void ParsecApp::execute_main_loop()
   }
 
   /* finishing all the tasks inserted, but not finishing the handle */
-  parsec_dtd_taskpool_wait( parsec, dtd_tp );
+  parsec_dtd_taskpool_wait(dtd_tp);
 
   /* Waiting on all handle and turning everything off for this context */
-  parsec_context_wait( parsec );
+  parsec_context_wait(parsec);
   
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
