@@ -139,29 +139,30 @@ if [[ $USE_REGENT -eq 1 ]]; then
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
+    export STARPU_RESERVE_NCPU=1
     for t in "${basic_types[@]}"; do
         for k in "${kernels[@]}"; do
-            mpirun -np 1 ./starpu/main -steps $steps -type $t $k -core 2
-            mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 1 -core 2
-            mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 2 -core 2
-            mpirun -np 4 ./starpu/main -field 4 -steps $steps -type $t $k -p 2 -core 2
-            mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 4 -core 2
-            mpirun -np 1 ./starpu/main -steps $steps -type $t $k -and -steps $steps -type $t $k -core 2
-            mpirun -np 4 ./starpu/main -steps 16 -width 8 -type $t $k -p 1 -core 2 -S
-            mpirun -np 4 ./starpu/main -steps 16 -width 8 -type $t $k -and -steps 16 -width 8 -type $t $k -core 2 -p 1 -S
+            mpirun -np 1 ./starpu/main -steps $steps -type $t $k -core 3
+            mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 1 -core 3
+            mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 2 -core 3
+            mpirun -np 4 ./starpu/main -field 4 -steps $steps -type $t $k -p 2 -core 3
+            mpirun -np 4 ./starpu/main -steps $steps -type $t $k -p 4 -core 3
+            mpirun -np 1 ./starpu/main -steps $steps -type $t $k -and -steps $steps -type $t $k -core 3
+            mpirun -np 4 ./starpu/main -steps 16 -width 8 -type $t $k -p 1 -core 3 -S
+            mpirun -np 4 ./starpu/main -steps 16 -width 8 -type $t $k -and -steps 16 -width 8 -type $t $k -core 3 -p 1 -S
         done
     done
 
     for t in "${basic_types[@]}"; do
         for k in "${kernels[@]}"; do
-            mpirun -np 1 ./starpu/main_expl -steps $steps -type $t $k -core 2
-            mpirun -np 4 ./starpu/main_expl -steps $steps -type $t $k -p 1 -core 2
-            mpirun -np 4 ./starpu/main_expl -steps $steps -type $t $k -p 2 -core 2
-            mpirun -np 4 ./starpu/main_expl -field 4 -steps $steps -type $t $k -p 2 -core 2
-            mpirun -np 4 ./starpu/main_expl -steps $steps -type $t $k -p 4 -core 2
-            mpirun -np 1 ./starpu/main_expl -steps $steps -type $t $k -and -steps $steps -type $t $k -core 2
-            mpirun -np 4 ./starpu/main_expl -steps 16 -width 8 -type $t $k -p 1 -core 2 -S
-            mpirun -np 4 ./starpu/main_expl -steps 16 -width 8 -type $t $k -and -steps 16 -width 8 -type $t $k -core 2 -p 1 -S
+            mpirun -np 1 ./starpu/main_expl -steps $steps -type $t $k -core 3
+            mpirun -np 4 ./starpu/main_expl -steps $steps -type $t $k -p 1 -core 3
+            mpirun -np 4 ./starpu/main_expl -steps $steps -type $t $k -p 2 -core 3
+            mpirun -np 4 ./starpu/main_expl -field 4 -steps $steps -type $t $k -p 2 -core 3
+            mpirun -np 4 ./starpu/main_expl -steps $steps -type $t $k -p 4 -core 3
+            mpirun -np 1 ./starpu/main_expl -steps $steps -type $t $k -and -steps $steps -type $t $k -core 3
+            mpirun -np 4 ./starpu/main_expl -steps 16 -width 8 -type $t $k -p 1 -core 3 -S
+            mpirun -np 4 ./starpu/main_expl -steps 16 -width 8 -type $t $k -and -steps 16 -width 8 -type $t $k -core 3 -p 1 -S
         done
     done
 
