@@ -75,6 +75,10 @@ EOF
 
 source deps/env.sh
 
+# Older Apache releases get cut from the mirrors too aggressively, so
+# in order to have a stable build we need to use the original servers.
+APACHE_MIRROR="https://archive.apache.org/dist"
+
 if [[ $USE_GASNET -eq 1 ]]; then
     if [ -z ${CONDUIT+x} ]; then
         echo "CONDUIT is required for GASNet build."
@@ -251,7 +255,7 @@ EOF
     tar -zxf jdk-8u131-linux-x64.tar.gz -C "$X10_DIR"
     rm jdk-8u131-linux-x64.tar.gz
 
-    wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.7-bin.tar.gz
+    wget "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
     tar xfz apache-ant-1.10.7-bin.tar.gz -C "$X10_DIR"
     rm apache-ant-1.10.7-bin.tar.gz
 
@@ -332,7 +336,7 @@ EOF
     rm jdk-8u131-linux-x64.tar.gz
 
     # Spark 2.3.0
-    wget https://archive.apache.org/dist/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
+    wget "$APACHE_MIRROR"/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
     tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn't add to path-put full paths in emtg script
     rm spark-2.3.0-bin-hadoop2.7.tgz
 
@@ -384,7 +388,7 @@ EOF
     tar xfz openjdk-10.0.2_linux-x64_bin.tar.gz -C "$SWIFT_DIR"/java --strip-components=1
     rm openjdk-10.0.2_linux-x64_bin.tar.gz
 
-    wget http://mirrors.sonic.net/apache//ant/binaries/apache-ant-1.10.7-bin.tar.gz
+    wget "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
     mkdir "$SWIFT_DIR"/ant
     tar xfz apache-ant-1.10.7-bin.tar.gz -C "$SWIFT_DIR"/ant --strip-components=1
     rm apache-ant-1.10.7-bin.tar.gz
