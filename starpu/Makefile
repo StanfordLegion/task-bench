@@ -28,7 +28,11 @@ INC_EXT    =
 
 # Location of the libraries.
 LIB        = -Wl,-rpath,$(STARPU_DIR)/lib: $(STARPU_DIR)/lib/libstarpu-$(STARPU_VERSION).so $(STARPU_DIR)/lib/libstarpumpi-$(STARPU_VERSION).so -L../core -lcore_s
-LIB_EXT    = 
+LIB_EXT    =
+
+ifeq ($(strip $(TASKBENCH_USE_HWLOC)),1)
+  INC_EXT += -I$(HWLOC_DIR)/include
+endif
 
 INC := $(INC) $(INC_EXT)
 LIB := $(LIB) $(LIB_EXT)
