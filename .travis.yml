@@ -55,7 +55,8 @@ before_install:
         sudo apt-get install -qq libnuma-dev gperf libboost1.65-dev
       fi
       if [[ $USE_PARSEC -eq 1 ]]; then
-        sudo apt-get install -qq cmake
+        sudo snap install cmake --classic
+        cmake --version
       fi
     fi
 install:
