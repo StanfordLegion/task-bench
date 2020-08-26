@@ -8,7 +8,7 @@ if [[ ! -d deps ]]; then
     false
 fi
 
-#source deps/env.sh
+source deps/env.sh
 
 basic_types=(
     trivial
@@ -33,7 +33,7 @@ imbalanced="-kernel load_imbalance -iter 1024 -imbalance 0.1"
 communication_bound="-output 1024"
 
 kernels=("" "$compute_bound" "$memory_bound" "$imbalanced" "$communication_bound")
-compute_kernels=("" "$compute_bound" "$imbalanced")
+noncomm_kernels=("" "$compute_bound" "$memory_bound" "$imbalanced")
 
 steps=23 # chosen to be relatively prime with 2, 3, 5
 
@@ -42,10 +42,12 @@ set -x
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            mpirun -np 1 ./mpi/nonblock -steps $steps -type $t $k
-            mpirun -np 2 ./mpi/nonblock -steps $steps -type $t $k
-            mpirun -np 4 ./mpi/nonblock -steps $steps -type $t $k
-            mpirun -np 4 ./mpi/nonblock -steps $steps -type $t $k -and -steps $steps -type $t $k
+            for binary in nonblock bulk_synchronous; do
+                mpirun -np 1 ./mpi/$binary -steps $steps -type $t $k
+                mpirun -np 2 ./mpi/$binary -steps $steps -type $t $k
+                mpirun -np 4 ./mpi/$binary -steps $steps -type $t $k
+                mpirun -np 4 ./mpi/$binary -steps $steps -type $t $k -and -steps $steps -type $t $k
+            done
         done
     done
     for t in no_comm stencil_1d stencil_1d_periodic all_to_all; do # FIXME: trivial dom tree fft nearest spread random_nearest are broken
@@ -58,14 +60,42 @@ if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
     done
 fi
 
+if [[ $USE_MPI_OPENMP -eq 1 ]]; then
+    for t in "${extended_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            mpirun -np 1 ./mpi_openmp/forall -steps $steps -type $t $k
+            mpirun -np 2 ./mpi_openmp/forall -steps $steps -type $t $k
+            mpirun -np 4 ./mpi_openmp/forall -steps $steps -type $t $k
+            mpirun -np 4 ./mpi_openmp/forall -steps $steps -type $t $k -and -steps $steps -type $t $k
+        done
+    done
+fi
+
 if [[ $USE_LEGION -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
             ./legion/task_bench -steps $steps -type $t $k -ll:cpu 2
+            if [[ $USE_GASNET -eq 1 ]]; then
+                mpirun -np 2 ./legion/task_bench -steps $steps -type $t $k -ll:cpu 1
+                mpirun -np 4 ./legion/task_bench -steps $steps -type $t $k -ll:cpu 1
+            fi
             ./legion/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2
         done
     done
 fi
+
+(if [[ $USE_PYGION -eq 1 ]]; then
+    source "$PYGION_DIR"/env.sh
+    for t in "${extended_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            for native in 0 1; do
+                export TASK_BENCH_USE_NATIVE=$native
+                ./pygion/task_bench -steps $steps -type $t $k -ll:py 1
+                ./pygion/task_bench -steps $steps -type $t $k -ll:py 1 -and  -steps $steps -type $t $k -ll:py 1
+            done
+        done
+    done
+fi)
 
 if [[ $USE_REALM -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
@@ -101,14 +131,15 @@ fi
 if [[ $USE_REGENT -eq 1 ]]; then
     for t in trivial no_comm stencil_1d stencil_1d_periodic nearest "spread -period 2" random_nearest all_to_all; do # FIXME: dom tree fft
         for k in "${kernels[@]}"; do
-            ./regent/main.shard15 -steps $steps -type $t $k
-            ./regent/main.shard15 -steps $steps -type $t $k -ll:cpu 2
+            ./regent/main.shard15 -steps $steps -type $t $k -ll:io 1
+            ./regent/main.shard15 -steps $steps -type $t $k -ll:io 1 -ll:cpu 2
             # FIXME: Regent doesn't support multiple graphs
         done
     done
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
+    export STARPU_RESERVE_NCPU=1
     for t in "${basic_types[@]}"; do
         for k in "${kernels[@]}"; do
             mpirun -np 1 ./starpu/main -steps $steps -type $t $k -core 2
@@ -167,10 +198,10 @@ if [[ $USE_PARSEC -eq 1 ]]; then
         done
     done
     # for k in "${kernels[@]}"; do
-    #   mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type stencil_1d $k -width 8 -field 2
-    #   mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type stencil_1d $k -width 8 -and -steps $steps -type stencil_1d $k -width 8
-    #   mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type nearest -radix 5 $k -width 8 -field 2
-    #   mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type nearest -radix 5 $k -width 8 -and -steps $steps -type nearest -radix 5 $k -width 8
+    #     mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type stencil_1d $k -width 8 -field 2
+    #     mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type stencil_1d $k -width 8 -and -steps $steps -type stencil_1d $k -width 8
+    #     mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type nearest -radix 5 $k -width 8 -field 2
+    #     mpirun -np 2 ./parsec/main_jdf -p 1 -S 4 -c 2 -steps $steps -type nearest -radix 5 $k -width 8 -and -steps $steps -type nearest -radix 5 $k -width 8
     # done
 fi
 
@@ -294,7 +325,7 @@ fi)
 
     pushd swift
     for t in "${extended_types[@]}"; do
-        for k in "${compute_kernels[@]}"; do
+        for k in "${noncomm_kernels[@]}"; do
             turbine -n 4 benchmark.tic -type $t $k -steps $steps
             # FIXME: Swift breaks with multiple task graphs
             # turbine -n 4 benchmark.tic -type $t $k -steps $steps -and -type $t $k -steps $steps
@@ -310,12 +341,39 @@ fi)
 
     pushd tensorflow
     for t in "${extended_types[@]}"; do
-        for k in "${compute_kernels[@]}"; do
+        for k in "${kernels[@]}"; do
             python task_bench.py -steps $steps -type $t $k
             python task_bench.py -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
     done
     popd
+fi)
+
+(if [[ $USE_DASK -eq 1 ]]; then
+    source "$DASK_DIR"/env.sh
+
+    export LD_LIBRARY_PATH="$PWD"/core:"$LD_LIBRARY_PATH"
+    export PYTHONPATH="$PWD"/dask:"$PYTHONPATH"
+
+    SCHEDULER_HOST=localhost
+    SCHEDULER_PORT=8786
+    SCHEDULER_URL=$SCHEDULER_HOST:$SCHEDULER_PORT
+    dask-scheduler --port $SCHEDULER_PORT &
+    dask-worker $SCHEDULER_URL &
+    dask-worker $SCHEDULER_URL &
+
+    for t in "${extended_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            for variant in "" _direct; do
+                python ./dask/task_bench$variant.py -steps $steps -type $t $k -scheduler $SCHEDULER_URL -expect-workers 2 -skip-graph-validation
+                python ./dask/task_bench$variant.py -steps $steps -type $t $k -and -steps $steps -type $t $k -scheduler $SCHEDULER_URL -expect-workers 2 -skip-graph-validation
+            done
+        done
+    done
+
+    kill %3
+    kill %2
+    kill %1
 fi)
 
 set +x
