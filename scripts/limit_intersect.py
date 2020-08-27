@@ -79,7 +79,7 @@ def driver(filename, log_log, csv_dialect):
                 next_limit = log2(float(next_row[system_limit]))
                 next_actual = log2(float(next_row[system_actual]))
 
-                if this_limit < this_actual and next_limit > next_actual:
+                if this_limit < this_actual and next_limit >= next_actual:
                     intersection = get_intersect(
                         [this_nodes, this_limit],
                         [next_nodes, next_limit],
@@ -108,7 +108,7 @@ def driver(filename, log_log, csv_dialect):
                 next_limit = log2(float(next_row[system_limit]))
                 next_ideal = log2(float(next_row['ideal']))
 
-                if this_limit < this_ideal and next_limit > next_ideal:
+                if this_limit < this_ideal and next_limit >= next_ideal:
                     intersection = get_intersect(
                         [this_nodes, this_limit],
                         [next_nodes, next_limit],
