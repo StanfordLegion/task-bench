@@ -40,7 +40,11 @@ INC        = -I$(PARSEC_DIR)/include -I$(PARSEC_DIR)/include/parsec -I$(PARSEC_D
 INC_EXT    = -I$(HWLOC_DIR)/include 
 
 # Location of the libraries.
-LIB        = -Wl,-rpath,$(PARSEC_DIR)/lib64 $(PARSEC_DIR)/lib64/libparsec.so -L../core -lcore_s
+ifneq ("$(wildcard $(PARSEC_DIR)/lib64/libparsec.so)","")
+  LIB      = -Wl,-rpath,$(PARSEC_DIR)/lib64 $(PARSEC_DIR)/lib64/libparsec.so -L../core -lcore_s
+else
+  LIB      = -Wl,-rpath,$(PARSEC_DIR)/lib $(PARSEC_DIR)/lib/libparsec.so -L../core -lcore_s
+endif
 LIB_EXT    = -lpthread -lm -latomic
 
 INC := $(INC) $(INC_EXT)
