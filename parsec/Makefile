@@ -54,7 +54,7 @@ CFLAGS += $(INC)
 
 include ../core/make_blas.mk
 
-TARGET = main main_shard main_buffer main_jdf
+TARGET = main_dtd main_shard main_buffer main_ptg
 all: $(TARGET)
 
 .PRECIOUS: %.cc %.o
@@ -101,13 +101,13 @@ main_jdf.o: main_jdf.cc ../core/timer.h ../core/core_c.h
 main_buffer.o: main_buffer.cc ../core/timer.h
 	$(CC) -c $(CFLAGS) $<
 
-main: main.o common.o 
+main_dtd: main.o common.o 
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 	
 main_shard: main_shard.o common.o 
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@ 
 
-main_jdf: main_jdf.o common.o stencil_1d.o nearest_radix_5.o benchmark_internal.o benchmark.o spread_radix5_period3.o
+main_ptg: main_jdf.o common.o stencil_1d.o nearest_radix_5.o benchmark_internal.o benchmark.o spread_radix5_period3.o
 	$(CC) $^ $(LIB) $(LDFLAGS) -o $@
 
 main_buffer: main_buffer.o common.o 
