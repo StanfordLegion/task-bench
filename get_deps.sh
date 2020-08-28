@@ -85,6 +85,8 @@ source deps/env.sh
 # in order to have a stable build we need to use the original servers.
 APACHE_MIRROR="https://archive.apache.org/dist"
 
+SOURCEFORGE_MIRROR="https://prdownloads.sourceforge.net"
+
 if [[ $USE_GASNET -eq 1 ]]; then
     if [ -z ${CONDUIT+x} ]; then
         echo "CONDUIT is required for GASNet build."
@@ -360,7 +362,7 @@ EOF
     rm spark-2.3.0-bin-hadoop2.7.tgz
 
     # SWIG 3.0.12
-    wget https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
+    wget $SOURCEFORGE_MIRROR/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
     tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
     rm swig-3.0.12.tar.gz
 
@@ -394,11 +396,11 @@ export ANT_HOME="\$SWIFT_DIR"/ant
 export PATH="\$ANT_HOME"/bin:"\$PATH"
 EOF
 
-    wget https://prdownloads.sourceforge.net/tcl/tcl8.6.8-src.tar.gz
+    wget $SOURCEFORGE_MIRROR/tcl/tcl8.6.8-src.tar.gz
     tar xfz tcl8.6.8-src.tar.gz -C "$SWIFT_DIR"
     rm tcl8.6.8-src.tar.gz
 
-    wget https://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz
+    wget $SOURCEFORGE_MIRROR/swig/swig-3.0.12.tar.gz
     tar xfz swig-3.0.12.tar.gz -C "$SWIFT_DIR"
     rm swig-3.0.12.tar.gz
 
@@ -416,7 +418,7 @@ EOF
     tar xfz ncurses-6.1.tar.gz -C "$SWIFT_DIR"
     rm ncurses-6.1.tar.gz
 
-    wget https://sourceforge.net/projects/zsh/files/zsh/5.5.1/zsh-5.5.1.tar.gz
+    wget $SOURCEFORGE_MIRROR/zsh/files/zsh/5.5.1/zsh-5.5.1.tar.gz
     tar xfz zsh-5.5.1.tar.gz -C "$SWIFT_DIR"
     rm zsh-5.5.1.tar.gz
 
