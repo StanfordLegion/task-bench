@@ -294,12 +294,7 @@ export OMPSS2_MCXX_SRC_DIR=$OMPSS2_DL_DIR/ompss2-release/mcxx
 export BOOST_SRC_DIR=$OMPSS2_DL_DIR/boost_1_68_0
 EOF
     mkdir -p "$OMPSS2_DL_DIR"
-    git clone --recursive https://github.com/bsc-pm/ompss-2-releases.git "$OMPSS2_DL_DIR/ompss2-release"
-    pushd "$OMPSS2_DL_DIR/ompss2-release"
-    # 2020.06 version
-    git checkout 1c829b42eb81dc281f0644f876160a13b1d90861 
-    git submodule update --recursive
-    popd
+    git clone -b 2020.06 --recursive --depth 1 https://github.com/bsc-pm/ompss-2-releases.git "$OMPSS2_DL_DIR/ompss2-release"
     #pushd "$OMPSS2_NANOS6_SRC_DIR"
     #patch -p1 -i $OMPSS2_BENCH_SRC/0001-Fixed-linking-errors-with-clang-5.patch
     #popd
