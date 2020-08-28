@@ -187,8 +187,8 @@ EOF
     mkdir -p "$PARSEC_DL_DIR"
     git clone https://bitbucket.org/icldistcomp/parsec.git "$PARSEC_DL_DIR" 
     pushd "$PARSEC_DL_DIR"
+    git reset --hard 242498dd7ce3974c01db888d7e4d759a69e5bcdb
     git apply ../../parsec/patch.diff
-    git checkout -b 242498dd7ce3974c01db888d7e4d759a69e5bcdb
     popd
 fi
 
