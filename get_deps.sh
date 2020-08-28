@@ -295,7 +295,10 @@ export BOOST_SRC_DIR=$OMPSS2_DL_DIR/boost_1_68_0
 EOF
     mkdir -p "$OMPSS2_DL_DIR"
     git clone -b 2020.06 --depth 1 https://github.com/bsc-pm/ompss-2-releases.git "$OMPSS2_DL_DIR/ompss2-release"
-    git -C "$OMPSS2_DL_DIR/ompss2-release" submodule update --init --recursive --depth 1
+    # Note: don't initialize llvm submodule, it's large and not needed
+    for m in nanos6 mcxx; do
+        git -C "$OMPSS2_DL_DIR/ompss2-release" submodule update --init --recursive --depth 1 $m
+    done
     #pushd "$OMPSS2_NANOS6_SRC_DIR"
     #patch -p1 -i $OMPSS2_BENCH_SRC/0001-Fixed-linking-errors-with-clang-5.patch
     #popd
