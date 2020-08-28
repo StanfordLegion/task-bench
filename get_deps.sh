@@ -169,7 +169,11 @@ if [[ $USE_PARSEC -eq 1 ]]; then
 export PARSEC_DIR=$PARSEC_DL_DIR/build
 EOF
     mkdir -p "$PARSEC_DL_DIR"
-    git clone https://wwu12@bitbucket.org/wwu12/parsec.git "$PARSEC_DL_DIR" 
+    git clone https://bitbucket.org/icldistcomp/parsec.git "$PARSEC_DL_DIR" 
+    pushd "$PARSEC_DL_DIR"
+    git apply ../../parsec/patch.diff
+    git checkout -b 242498dd7ce3974c01db888d7e4d759a69e5bcdb
+    popd
 fi
 
 if [[ $USE_CHARM -eq 1 ]]; then

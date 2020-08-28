@@ -1,0 +1,133 @@
+extern "C" %{
+/*
+ * Copyright (c) 2017-2019 The Universiy of Tennessee and The Universiy
+ *                         of Tennessee Research Foundation. All rights
+ *                         reserved.
+ */
+#include <parsec/data_dist/matrix/matrix.h>
+#include "benchmark_internal.h"
+#include "core_c.h"
+
+%}
+
+descA       [ type = "parsec_tiled_matrix_dc_t*" ]
+graph       [ type = "task_graph_t" ]
+nb_fields   [ type = "int" ]
+time_steps  [ type = "int" ]
+graph_idx   [ type = "int" ]
+extra_local_memory   [ type = "char**" ]
+
+update(t, x, k)
+
+t = 1 .. time_steps-1
+
+offset = %{ return task_graph_offset_at_timestep(graph, t); %}
+width = %{ return task_graph_width_at_timestep(graph, t); %}
+
+x = offset .. offset+width-1
+m = t % nb_fields
+
+in_first = %{ return get_in_first(graph, t, x); %}
+in_last = %{ return get_in_last(graph, t, x); %}
+num_args = %{ return get_num_args(graph, t, x, in_first, in_last); %} 
+
+k =  in_first .. in_last
+
+: descA(m, x)
+
+RW I <- (num_args >= 2)? A benchmark(t-1, k): NULL
+     -> (num_args >= 2 && k == in_first)? A1 benchmark(t, x)
+     -> (num_args >= 3 && k == in_first + 1)? A2 benchmark(t, x)
+     -> (num_args >= 4 && k == in_first + 2)? A3 benchmark(t, x)
+     -> (num_args >= 5 && k == in_first + 3)? A4 benchmark(t, x)
+     -> (num_args >= 6 && k == in_first + 4)? A5 benchmark(t, x)
+
+BODY
+{
+  //printf("update (%d, %d, %d): in (%d, %d)\n", t, x, k, in_first, in_last);
+}
+END
+
+benchmark(t, x)
+
+t = 0 .. time_steps-1 
+
+offset = %{ return task_graph_offset_at_timestep(graph, t); %}
+width = %{ return task_graph_width_at_timestep(graph, t); %}
+
+x = offset .. offset+width-1 
+m = t % nb_fields
+
+in_first = %{ return get_in_first(graph, t, x); %}
+in_last = %{ return get_in_last(graph, t, x); %}
+num_args = %{ return get_num_args(graph, t, x, in_first, in_last); %}
+
+out_first = %{ return get_out_first(graph, t, x); %}
+out_last = %{ return get_out_last(graph, t, x); %}
+num_args_out = %{ return get_num_args_out(graph, t, x, out_first, out_last); %}
+
+: descA(m, x)
+
+READ A1 <- (t > 0 && num_args >= 2)? I update(t, x, in_first): NULL 
+READ A2 <- (t > 0 && num_args >= 3)? I update(t, x, in_first+1): NULL 
+READ A3 <- (t > 0 && num_args >= 4)? I update(t, x, in_first+2): NULL 
+READ A4 <- (t > 0 && num_args >= 5)? I update(t, x, in_first+3): NULL 
+READ A5 <- (t > 0 && num_args >= 6)? I update(t, x, in_first+4): NULL 
+
+RW A <- descA(m, x)
+     -> (t < time_steps-1 && num_args_out >= 2)? I update(t+1, out_first .. out_last, x) 
+     -> descA(m, x)
+
+BODY
+{
+    //printf("benchmark (%d, %d): in (%d, %d); out (%d, %d)\n", t, x, in_first, in_last, out_first, out_last);
+    CORE_kernel(es, graph, A, A1, A2, A3, A4, A5, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
+}
+END
+
+extern "C" %{
+
+parsec_taskpool_t*
+parsec_benchmark_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                     int time_steps, int graph_idx, char **extra_local_memory)
+{
+    parsec_taskpool_t* benchmark_taskpool;
+    parsec_benchmark_taskpool_t* taskpool = NULL;
+
+    taskpool = parsec_benchmark_new(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory);
+    benchmark_taskpool = (parsec_taskpool_t*)taskpool;
+
+    parsec_matrix_add2arena(&(taskpool->arenas_datatypes[PARSEC_benchmark_DEFAULT_ARENA]),
+                            parsec_datatype_float_t, matrix_UpperLower,
+                            1, A->mb, A->nb, A->mb,
+                            PARSEC_ARENA_ALIGNMENT_SSE, -1 );
+
+    return benchmark_taskpool;
+}
+
+void parsec_benchmark_Destruct(parsec_taskpool_t *taskpool)
+{
+    parsec_benchmark_taskpool_t *benchmark_taskpool = (parsec_benchmark_taskpool_t *)taskpool;
+    parsec_matrix_del2arena(&(benchmark_taskpool->arenas_datatypes[PARSEC_benchmark_DEFAULT_ARENA]));
+    parsec_taskpool_free(taskpool);
+}
+
+int parsec_benchmark(parsec_context_t *parsec,
+                      parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                      int time_steps, int graph_idx, char **extra_local_memory)
+{
+    parsec_taskpool_t *parsec_benchmark = NULL;
+
+    parsec_benchmark = parsec_benchmark_New(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory); 
+
+    if( parsec_benchmark != NULL ){
+        parsec_enqueue(parsec, parsec_benchmark);
+        parsec_context_start(parsec);
+        parsec_context_wait(parsec);
+        parsec_benchmark_Destruct(parsec_benchmark);
+    }
+
+    return 0;
+}
+
+%}

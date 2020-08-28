@@ -1,0 +1,126 @@
+extern "C" %{
+/*
+ * Copyright (c) 2019 The Universiy of Tennessee and The Universiy
+ *                    of Tennessee Research Foundation. All rights
+ *                    reserved.
+ */
+#include "parsec/data_dist/matrix/matrix.h"
+#include "benchmark_internal.h"
+#include "core_c.h"
+
+static inline int get_num_args_internal(void *L2, void *L1, void *B, void *R1, void *R2){
+  int num_args = 1;
+
+  if( NULL != L1 )
+    num_args++;
+  if (NULL != L2)
+    num_args++;  
+  if( NULL != B )
+    num_args++;
+  if( NULL != R1 )
+    num_args++;
+  if( NULL != R2 )
+    num_args++;
+
+  return num_args;
+}
+
+%}
+
+descA       [ type = "parsec_tiled_matrix_dc_t*" ]
+graph       [ type = "task_graph_t" ]
+nb_fields   [ type = "int" ]
+time_steps  [ type = "int" ]
+graph_idx   [ type = "int" ]
+extra_local_memory   [ type = "char**" ]
+
+task(t, x)
+
+t = 0 .. time_steps-1
+x = 0 .. descA->lnt-1
+m = t%nb_fields
+
+: descA(m, x)
+
+READ L2 <- (t > 0 && x > 1)? A task(t-1, x-2): NULL
+READ L1 <- (t > 0 && x > 0)? A task(t-1, x-1): NULL
+READ B  <- (t > 0)? A task(t-1, x): NULL
+READ R1 <- (t > 0 && x < descA->lnt-1)? A task(t-1, x+1): NULL
+READ R2 <- (t > 0 && x < descA->lnt-2)? A task(t-1, x+2): NULL
+
+RW A <- descA(m, x)
+     -> (t < time_steps-1 && x > 1)? R2 task(t+1, x-2)
+     -> (t < time_steps-1 && x > 0)? R1 task(t+1, x-1)
+     -> (t < time_steps-1)? B task(t+1, x)
+     -> (t < time_steps-1 && x < descA->lnt-1)? L1 task(t+1, x+1)
+     -> (t < time_steps-1 && x < descA->lnt-2)? L2 task(t+1, x+2)
+
+BODY
+{
+  int num_args; 
+  num_args = get_num_args_internal(L2, L1, B, R1, R2); 
+  //printf("t: %d, x: %d, num_args: %d, L2 %p L1 %p, R1 %p, R2 %p\n", t, x, num_args, L2, L1, R1, R2);
+  if( x == 0) {
+    CORE_kernel(es, graph, A, B, R1, R2, NULL, NULL, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
+  } else if (x == 1) {
+    CORE_kernel(es, graph, A, L1, B, R1, R2, NULL, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
+  } else {
+    CORE_kernel(es, graph, A, L2, L1, B, R1, R2, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
+  }
+}
+END
+
+extern "C" %{
+
+parsec_taskpool_t*
+parsec_nearest_radix_5_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                           int time_steps, int graph_idx, char **extra_local_memory)
+{
+  parsec_taskpool_t* nearest_radix_5_taskpool;
+  parsec_nearest_radix_5_taskpool_t* taskpool = NULL;
+
+  taskpool = parsec_nearest_radix_5_new(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory);
+  nearest_radix_5_taskpool = (parsec_taskpool_t*)taskpool;
+
+  parsec_matrix_add2arena(&(taskpool->arenas_datatypes[PARSEC_nearest_radix_5_DEFAULT_ARENA]),
+                          parsec_datatype_float_t, matrix_UpperLower,
+                          1, A->mb, A->nb, A->mb,
+                          PARSEC_ARENA_ALIGNMENT_SSE, -1 );
+
+  return nearest_radix_5_taskpool;
+}
+
+/**
+ * @param [inout] the parsec object to destroy
+*/
+void parsec_nearest_radix_5_Destruct(parsec_taskpool_t *taskpool)
+{
+  parsec_nearest_radix_5_taskpool_t *nearest_radix_5_taskpool = (parsec_nearest_radix_5_taskpool_t *)taskpool;
+  parsec_matrix_del2arena(&(nearest_radix_5_taskpool->arenas_datatypes[PARSEC_nearest_radix_5_DEFAULT_ARENA]));
+  parsec_taskpool_free(taskpool);
+}
+
+/**
+ * @brief Init dcY
+ * 
+ * @param [inout] dcY: the data, already distributed and allocated
+ */
+int parsec_nearest_radix_5(parsec_context_t *parsec,
+                           parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                           int time_steps, int graph_idx, char **extra_local_memory)
+{
+  parsec_taskpool_t *parsec_nearest_radix_5 = NULL;
+
+  parsec_nearest_radix_5 = parsec_nearest_radix_5_New(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory); 
+
+  if( parsec_nearest_radix_5 != NULL ){
+      parsec_enqueue(parsec, parsec_nearest_radix_5);
+      parsec_context_start(parsec);
+      parsec_context_wait(parsec);
+      parsec_nearest_radix_5_Destruct(parsec_nearest_radix_5);
+  }
+  
+  return 0;
+}
+
+%}

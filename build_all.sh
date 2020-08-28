@@ -158,9 +158,9 @@ if [[ $USE_PARSEC -eq 1 ]]; then
     mkdir -p "$PARSEC_DIR"
     pushd "$PARSEC_DIR"
     if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
-      ../contrib/platforms/config.linux -DPARSEC_GPU_WITH_CUDA=OFF -DCMAKE_INSTALL_PREFIX=$PWD -DHWLOC_DIR=$HWLOC_DIR
+      ../configure --prefix=$PWD --with-mpi --with-hwloc=$HWLOC_DIR --disable-debug
     else
-      ../contrib/platforms/config.linux -DPARSEC_GPU_WITH_CUDA=OFF -DCMAKE_INSTALL_PREFIX=$PWD
+      ../configure --prefix=$PWD --with-mpi --disable-debug --with-cuda=no
     fi
     make -j$THREADS
     make install

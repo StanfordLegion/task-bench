@@ -1,0 +1,160 @@
+extern "C" %{
+/*
+ * Copyright (c) 2019 The Universiy of Tennessee and The Universiy
+ *                    of Tennessee Research Foundation. All rights
+ *                    reserved.
+ */
+#include "parsec/data_dist/matrix/matrix.h"
+#include "benchmark_internal.h"
+#include "core_c.h"
+
+%}
+
+descA       [ type = "parsec_tiled_matrix_dc_t*" ]
+graph       [ type = "task_graph_t" ]
+nb_fields   [ type = "int" ]
+time_steps  [ type = "int" ]
+graph_idx   [ type = "int" ]
+extra_local_memory   [ type = "char**" ]
+period   [ type = "int" hidden = on default = 3 ]
+radix    [ type = "int" hidden = on default = 5 ]
+
+task(t, x)
+
+t = 0 .. time_steps-1
+x = 0 .. descA->lnt-1
+m = t % nb_fields
+
+in2_0 = (x + descA->lnt / radix + descA->lnt) % descA->lnt
+in2_1 = (x + descA->lnt / radix + descA->lnt + 1) % descA->lnt
+in2_2 = (x + descA->lnt / radix + descA->lnt + 2) % descA->lnt
+
+in3_0 = (x + 2 * descA->lnt / radix + descA->lnt) % descA->lnt
+in3_1 = (x + 2 * descA->lnt / radix + descA->lnt + 1) % descA->lnt
+in3_2 = (x + 2 * descA->lnt / radix + descA->lnt + 2) % descA->lnt
+
+in4_0 = (x + 3 * descA->lnt / radix + descA->lnt) % descA->lnt
+in4_1 = (x + 3 * descA->lnt / radix + descA->lnt + 1) % descA->lnt
+in4_2 = (x + 3 * descA->lnt / radix + descA->lnt + 2) % descA->lnt
+
+in5_0 = (x + 4 * descA->lnt / radix + descA->lnt) % descA->lnt
+in5_1 = (x + 4 * descA->lnt / radix + descA->lnt + 1) % descA->lnt
+in5_2 = (x + 4 * descA->lnt / radix + descA->lnt + 2) % descA->lnt
+
+out2_0 = (x - descA->lnt / radix + descA->lnt - 1) % descA->lnt 
+out2_1 = (x - descA->lnt / radix + descA->lnt - 2) % descA->lnt 
+out2_2 = (x - descA->lnt / radix + descA->lnt) % descA->lnt 
+
+out3_0 = (x - 2 * descA->lnt / radix + descA->lnt - 1) % descA->lnt 
+out3_1 = (x - 2 * descA->lnt / radix + descA->lnt - 2) % descA->lnt 
+out3_2 = (x - 2 * descA->lnt / radix + descA->lnt) % descA->lnt 
+
+out4_0 = (x - 3 * descA->lnt / radix + descA->lnt - 1) % descA->lnt 
+out4_1 = (x - 3 * descA->lnt / radix + descA->lnt - 2) % descA->lnt 
+out4_2 = (x - 3 * descA->lnt / radix + descA->lnt) % descA->lnt 
+
+out5_0 = (x - 4 * descA->lnt / radix + descA->lnt - 1) % descA->lnt 
+out5_1 = (x - 4 * descA->lnt / radix + descA->lnt - 2) % descA->lnt 
+out5_2 = (x - 4 * descA->lnt / radix + descA->lnt) % descA->lnt 
+
+: descA(m, x)
+
+READ A1 <- (t > 0)? A task(t-1, x): NULL
+
+READ A2 <- (t > 0 && t % period == 0)? A task(t-1, in2_0)
+        <- (t > 0 && t % period == 1)? A task(t-1, in2_1) 
+        <- (t > 0 && t % period == 2)? A task(t-1, in2_2): NULL
+
+READ A3 <- (t > 0 && t % period == 0)? A task(t-1, in3_0)
+        <- (t > 0 && t % period == 1)? A task(t-1, in3_1) 
+        <- (t > 0 && t % period == 2)? A task(t-1, in3_2): NULL
+
+READ A4 <- (t > 0 && t % period == 0)? A task(t-1, in4_0)
+        <- (t > 0 && t % period == 1)? A task(t-1, in4_1) 
+        <- (t > 0 && t % period == 2)? A task(t-1, in4_2): NULL
+
+READ A5 <- (t > 0 && t % period == 0)? A task(t-1, in5_0)
+        <- (t > 0 && t % period == 1)? A task(t-1, in5_1) 
+        <- (t > 0 && t % period == 2)? A task(t-1, in5_2): NULL
+
+RW A <- descA(m, x)
+     -> (t < time_steps-1)? A1 task(t+1, x)
+     -> (t < time_steps-1 && t % period == 0)? A2 task(t+1, out2_0)
+     -> (t < time_steps-1 && t % period == 1)? A2 task(t+1, out2_1)
+     -> (t < time_steps-1 && t % period == 2)? A2 task(t+1, out2_2)
+     -> (t < time_steps-1 && t % period == 0)? A3 task(t+1, out3_0)
+     -> (t < time_steps-1 && t % period == 1)? A3 task(t+1, out3_1) 
+     -> (t < time_steps-1 && t % period == 2)? A3 task(t+1, out3_2) 
+     -> (t < time_steps-1 && t % period == 0)? A4 task(t+1, out4_0) 
+     -> (t < time_steps-1 && t % period == 1)? A4 task(t+1, out4_1) 
+     -> (t < time_steps-1 && t % period == 2)? A4 task(t+1, out4_2) 
+     -> (t < time_steps-1 && t % period == 0)? A5 task(t+1, out5_0) 
+     -> (t < time_steps-1 && t % period == 1)? A5 task(t+1, out5_1) 
+     -> (t < time_steps-1 && t % period == 2)? A5 task(t+1, out5_2) 
+
+BODY
+{
+    int num_args;
+    if( 0 == t)
+        num_args = 1;
+    else
+        num_args = 6;
+
+    CORE_kernel(es, graph, A, A1, A2, A3, A4, A5, num_args, x, t, graph_idx, descA->super.myrank, extra_local_memory);
+}
+END
+
+extern "C" %{
+
+parsec_taskpool_t*
+parsec_spread_radix5_period3_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                      int time_steps, int graph_idx, char **extra_local_memory)
+{
+  parsec_taskpool_t* spread_radix5_period3_taskpool;
+  parsec_spread_radix5_period3_taskpool_t* taskpool = NULL;
+
+  taskpool = parsec_spread_radix5_period3_new(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory);
+  spread_radix5_period3_taskpool = (parsec_taskpool_t*)taskpool;
+
+  parsec_matrix_add2arena(&(taskpool->arenas_datatypes[PARSEC_spread_radix5_period3_DEFAULT_ARENA]),
+                          parsec_datatype_float_t, matrix_UpperLower,
+                          1, A->mb, A->nb, A->mb,
+                          PARSEC_ARENA_ALIGNMENT_SSE, -1 );
+
+  return spread_radix5_period3_taskpool;
+}
+
+/**
+ * @param [inout] the parsec object to destroy
+*/
+void parsec_spread_radix5_period3_Destruct(parsec_taskpool_t *taskpool)
+{
+  parsec_spread_radix5_period3_taskpool_t *spread_radix5_period3_taskpool = (parsec_spread_radix5_period3_taskpool_t *)taskpool;
+  parsec_matrix_del2arena(&(spread_radix5_period3_taskpool->arenas_datatypes[PARSEC_spread_radix5_period3_DEFAULT_ARENA]));
+  parsec_taskpool_free(taskpool);
+}
+
+/**
+ * @brief Init dcY
+ * 
+ * @param [inout] dcY: the data, already distributed and allocated
+ */
+int parsec_spread_radix5_period3(parsec_context_t *parsec,
+                      parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+                      int time_steps, int graph_idx, char **extra_local_memory)
+{
+  parsec_taskpool_t *parsec_spread_radix5_period3 = NULL;
+
+  parsec_spread_radix5_period3 = parsec_spread_radix5_period3_New(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory); 
+
+  if( parsec_spread_radix5_period3 != NULL ){
+      parsec_enqueue(parsec, parsec_spread_radix5_period3);
+      parsec_context_start(parsec);
+      parsec_context_wait(parsec);
+      parsec_spread_radix5_period3_Destruct(parsec_spread_radix5_period3);
+  }
+
+  return 0;
+}
+
+%}

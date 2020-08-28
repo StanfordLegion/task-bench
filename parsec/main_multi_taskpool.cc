@@ -1,5 +1,5 @@
-/* Copyright 2020 Los Alamos National Laboratory
- * Copyright 2020 The University of Tennessee and The University 
+/* Copyright 2019 Los Alamos National Laboratory
+ * Copyright 2019 The University of Tennessee and The University 
  *                of Tennessee Research Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -489,10 +489,10 @@ struct ParsecApp : public App {
   void execute_timestep(size_t idx, long t);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
-  void insert_task(int num_args, payload_t payload, std::vector<parsec_dtd_tile_t*> &args);
+  void insert_task(int graph_idx, int num_args, payload_t payload, std::vector<parsec_dtd_tile_t*> &args);
 private:
   parsec_context_t* parsec;
-  parsec_taskpool_t *dtd_tp;
+  parsec_taskpool_t* dtd_tp[10];
   int rank;
   int nodes;
   int cores;
@@ -508,25 +508,25 @@ private:
   int nb_fields;
 };
 
-void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_dtd_tile_t*> &args)
+void ParsecApp::insert_task(int graph_idx, int num_args, payload_t payload, std::vector<parsec_dtd_tile_t*> &args)
 { 
   nb_tasks ++;
   switch(num_args) {
   case 1:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task1,    0,  "test_task1",
+    parsec_dtd_taskpool_insert_task(dtd_tp[graph_idx], test_task1,    0,  "test_task1",
                                     sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                     PARSEC_DTD_ARG_END);
     break;
   case 2:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task2,    0,  "test_task2",
+    parsec_dtd_taskpool_insert_task(dtd_tp[graph_idx], test_task2,    0,  "test_task2",
                                     sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                     PARSEC_DTD_ARG_END);
     break;
   case 3:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task3,    0,  "test_task3",
+    parsec_dtd_taskpool_insert_task(dtd_tp[graph_idx], test_task3,    0,  "test_task3",
                                     sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
@@ -534,7 +534,7 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                     PARSEC_DTD_ARG_END);
     break;
   case 4:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task4,    0,  "test_task4",
+    parsec_dtd_taskpool_insert_task(dtd_tp[graph_idx], test_task4,    0,  "test_task4",
                                     sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
@@ -543,7 +543,7 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                     PARSEC_DTD_ARG_END);
     break;
   case 5:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task5,    0,  "test_task5",
+    parsec_dtd_taskpool_insert_task(dtd_tp[graph_idx], test_task5,    0,  "test_task5",
                                     sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
@@ -553,7 +553,7 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                     PARSEC_DTD_ARG_END);
     break;
   case 6:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task6,    0,  "test_task6",
+    parsec_dtd_taskpool_insert_task(dtd_tp[graph_idx], test_task6,    0,  "test_task6",
                                     sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
@@ -564,7 +564,7 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                     PARSEC_DTD_ARG_END);
     break;
   case 7:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task7,    0,  "test_task7",
+    parsec_dtd_taskpool_insert_task(dtd_tp[graph_idx], test_task7,    0,  "test_task7",
                                     sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
@@ -576,7 +576,7 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                     PARSEC_DTD_ARG_END);
     break;
   case 8:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task8,    0,  "test_task8",
+    parsec_dtd_taskpool_insert_task(dtd_tp[graph_idx], test_task8,    0,  "test_task8",
                                     sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
@@ -589,7 +589,7 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                     PARSEC_DTD_ARG_END);
     break;
   case 9:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task9,    0,  "test_task9",
+    parsec_dtd_taskpool_insert_task(dtd_tp[graph_idx], test_task9,    0,  "test_task9",
                                     sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
@@ -603,7 +603,7 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                     PARSEC_DTD_ARG_END);
     break;
   case 10:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task10,    0,  "test_task10",
+    parsec_dtd_taskpool_insert_task(dtd_tp[graph_idx], test_task10,    0,  "test_task10",
                                     sizeof(payload_t), &payload, VALUE,
                                     PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
@@ -664,14 +664,14 @@ ParsecApp::ParsecApp(int argc, char **argv)
   
   debug_printf(0, "init parsec, pid %d\n", getpid());
   
-  /* Getting new parsec handle of dtd type */
-  dtd_tp = parsec_dtd_taskpool_new();
-  
   size_t max_scratch_bytes_per_task = 0;
   
   int MB_cal = 0;
   
   for (i = 0; i < graphs.size(); i++) {
+    /* Getting new parsec handle of dtd type */
+    dtd_tp[i] = parsec_dtd_taskpool_new();
+    
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
     
@@ -729,6 +729,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
     
+    parsec_context_add_taskpool( parsec, dtd_tp[i] );
   }
   
   nb_tasks = 0;
@@ -746,7 +747,6 @@ ParsecApp::ParsecApp(int argc, char **argv)
   
   debug_printf(0, "max_scratch_bytes_per_task %lld\n", max_scratch_bytes_per_task);
 
-  parsec_context_add_taskpool( parsec, dtd_tp );
 }
 
 ParsecApp::~ParsecApp()
@@ -766,10 +766,10 @@ ParsecApp::~ParsecApp()
   
   /* #### PaRSEC context is done #### */
   
-  /* Cleaning up the parsec handle */
-  parsec_taskpool_free( dtd_tp );
-  
   for (i = 0; i < graphs.size(); i++) {
+    /* Cleaning up the parsec handle */
+    parsec_taskpool_free( dtd_tp[i] );
+    
     matrix_t &mat = mat_array[i];
     
     /* Cleaning data arrays we allocated for communication */
@@ -815,11 +815,13 @@ void ParsecApp::execute_main_loop()
       execute_timestep(i, y);
     }
 
-    parsec_dtd_data_flush_all( dtd_tp, (parsec_data_collection_t *)&(mat.dcC) );
+    parsec_dtd_data_flush_all( dtd_tp[i], (parsec_data_collection_t *)&(mat.dcC) );
   }
 
   /* finishing all the tasks inserted, but not finishing the handle */
-  parsec_dtd_taskpool_wait(dtd_tp);
+  for (int i = 0; i < graphs.size(); i++) {
+    parsec_dtd_taskpool_wait(dtd_tp[i]);
+  }
 
   /* Waiting on all handle and turning everything off for this context */
   parsec_context_wait(parsec);
@@ -886,7 +888,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     }
 
     // FIXME: each graph's wdith and timesteps need to be the same
-    ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1 + idx * g.max_width * g.timesteps;
+    ((parsec_dtd_taskpool_t *)dtd_tp[idx])->task_id = mat.NT * t + x + 1 + idx * g.max_width * g.timesteps;
     debug_printf(1, "rank: %d, has_task: %d, x: %d, t: %d, task_id: %d\n", rank , has_task, x, t, mat.NT * t + x + 1);
     
     if (has_task == 0) {
@@ -926,7 +928,7 @@ void ParsecApp::execute_timestep(size_t idx, long t)
     payload.j = x;
     payload.graph = g;
     payload.graph_id = idx;
-    insert_task(num_args, payload, args); 
+    insert_task(idx, num_args, payload, args); 
     args.clear();
   }
   debug_printf(1, "\n");

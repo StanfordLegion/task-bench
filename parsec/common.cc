@@ -35,7 +35,7 @@
 #include <mpi.h>
 #endif
 #if defined(PARSEC_HAVE_CUDA)
-#include "parsec/devices/cuda/dev_cuda.h"
+#include "parsec/mca/device/cuda/device_cuda.h"
 #endif
 
 const char *PARSEC_SCHED_NAME[] = {
@@ -199,6 +199,7 @@ void parse_arguments(int *_argc, char*** _argv, int* iparam)
 
     do {
 #if defined(PARSEC_HAVE_GETOPT_LONG)
+      opterr = 0;
         c = getopt_long_only(argc, argv, "",
                         long_options, &opt);
 #else

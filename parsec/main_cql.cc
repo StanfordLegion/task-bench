@@ -1,5 +1,5 @@
-/* Copyright 2020 Los Alamos National Laboratory
- * Copyright 2020 The University of Tennessee and The University 
+/* Copyright 2019 Los Alamos National Laboratory
+ * Copyright 2019 The University of Tennessee and The University 
  *                of Tennessee Research Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,7 +59,7 @@ typedef struct payload_s {
 }payload_t;
 
 static inline int
-dplasma_add2arena_tile( parsec_arena_datatype_t *arena, size_t elem_size, size_t alignment,
+dplasma_add2arena_tile( parsec_arena_t *arena, size_t elem_size, size_t alignment,
                         parsec_datatype_t oldtype, unsigned int tile_mb )
 {
   (void)elem_size;
@@ -283,186 +283,6 @@ static int test_task6(parsec_execution_stream_t *es, parsec_task_t *this_task)
   return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int test_task7(parsec_execution_stream_t *es, parsec_task_t *this_task)
-{
-  (void)es;
-  payload_t payload;
-  float *in1, *in2, *in3, *in4, *in5, *in6, *out;
-
-  parsec_dtd_unpack_args(this_task, &payload, &in1, &in2, &in3, &in4, &in5, &in6, &out);
-
-#if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in3);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in4);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in5);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in6);
-  input_bytes.push_back(graph.output_bytes_per_task);
-
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
-#else
-  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + 1.0;
-  printf("Graph %d, Task7, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, out %.2f, local_mem %p\n", 
-        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *in4, *in5, *in6, *out, extra_local_memory[es->core_id]);                   
-#endif
-
-#if defined (TRACK_NB_TASKS)          
-  nb_tasks_per_node[es->core_id] ++;
-#endif  
-  
-  return PARSEC_HOOK_RETURN_DONE;
-}
-
-static int test_task8(parsec_execution_stream_t *es, parsec_task_t *this_task)
-{
-  (void)es;
-  payload_t payload;
-  float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *out;
-
-  parsec_dtd_unpack_args(this_task, &payload, &in1, &in2, &in3, &in4, &in5, &in6, &in7, &out);
-
-#if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in3);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in4);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in5);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in6);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in7);
-  input_bytes.push_back(graph.output_bytes_per_task);
-
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
-#else
-  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + 1.0;
-  printf("Graph %d, Task8, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, out %.2f, local_mem %p\n", 
-        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *out, extra_local_memory[es->core_id]);                   
-#endif
-
-#if defined (TRACK_NB_TASKS)          
-  nb_tasks_per_node[es->core_id] ++;
-#endif  
-  
-  return PARSEC_HOOK_RETURN_DONE;
-}
-
-static int test_task9(parsec_execution_stream_t *es, parsec_task_t *this_task)
-{
-  (void)es;
-  payload_t payload;
-  float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *out;
-
-  parsec_dtd_unpack_args(this_task, &payload, &in1, &in2, &in3, &in4, &in5, &in6, &in7, &in8, &out);
-
-#if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in3);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in4);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in5);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in6);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in7);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in8);
-  input_bytes.push_back(graph.output_bytes_per_task);
-
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
-#else
-  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + *in8 + 1.0;
-  printf("Graph %d, Task9, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, out %.2f, local_mem %p\n", 
-        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *out, extra_local_memory[es->core_id]);                   
-#endif
-
-#if defined (TRACK_NB_TASKS)          
-  nb_tasks_per_node[es->core_id] ++;
-#endif  
-  
-  return PARSEC_HOOK_RETURN_DONE;
-}
-
-static int test_task10(parsec_execution_stream_t *es, parsec_task_t *this_task)
-{
-  (void)es;
-  payload_t payload;
-  float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *in9, *out;
-
-  parsec_dtd_unpack_args(this_task, &payload, &in1, &in2, &in3, &in4, &in5, &in6, &in7, &in8, &in9, &out);
-
-#if defined (USE_CORE_VERIFICATION)  
-  TaskGraph graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph.output_bytes_per_task;
-  std::vector<const char *> input_ptrs;
-  std::vector<size_t> input_bytes;
-  input_ptrs.push_back((char*)in1);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in2);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in3);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in4);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in5);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in6);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in7);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in8);
-  input_bytes.push_back(graph.output_bytes_per_task);
-  input_ptrs.push_back((char*)in9);
-  input_bytes.push_back(graph.output_bytes_per_task);
-
-  graph.execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                      input_ptrs.data(), input_bytes.data(), input_ptrs.size(), extra_local_memory[es->core_id], graph.scratch_bytes_per_task);
-#else
-  *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + *in8 + 1.0;
-  printf("Graph %d, Task10, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, in9 %.2f, out %.2f, local_mem %p\n", 
-        payload.graph_id, payload.i, payload.j, this_task->taskpool->context->my_rank, es->core_id, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *in9, *out, extra_local_memory[es->core_id]);                   
-#endif
-
-#if defined (TRACK_NB_TASKS)          
-  nb_tasks_per_node[es->core_id] ++;
-#endif  
-  
-  return PARSEC_HOOK_RETURN_DONE;
-}
-
 typedef struct matrix_s{
   two_dim_block_cyclic_t *__dcC;
   two_dim_block_cyclic_t dcC;
@@ -486,7 +306,7 @@ struct ParsecApp : public App {
   ParsecApp(int argc, char **argv);
   ~ParsecApp();
   void execute_main_loop();
-  void execute_timestep(size_t idx, long t);
+  void execute_timestep(size_t idx, long t, int8_t *is_inserted);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
   void insert_task(int num_args, payload_t payload, std::vector<parsec_dtd_tile_t*> &args);
@@ -560,60 +380,6 @@ void ParsecApp::insert_task(int num_args, payload_t payload, std::vector<parsec_
                                     PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
-                                    PARSEC_DTD_ARG_END);
-    break;
-  case 7:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task7,    0,  "test_task7",
-                                    sizeof(payload_t), &payload, VALUE,
-                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[6], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
-                                    PARSEC_DTD_ARG_END);
-    break;
-  case 8:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task8,    0,  "test_task8",
-                                    sizeof(payload_t), &payload, VALUE,
-                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[6], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[7], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
-                                    PARSEC_DTD_ARG_END);
-    break;
-  case 9:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task9,    0,  "test_task9",
-                                    sizeof(payload_t), &payload, VALUE,
-                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[6], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[7], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[8], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
-                                    PARSEC_DTD_ARG_END);
-    break;
-  case 10:
-    parsec_dtd_taskpool_insert_task(dtd_tp, test_task10,    0,  "test_task10",
-                                    sizeof(payload_t), &payload, VALUE,
-                                    PASSED_BY_REF,  args[1], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[2], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[3], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[4], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[5], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[6], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[7], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[8], INPUT | TILE_FULL,
-                                    PASSED_BY_REF,  args[9], INPUT | TILE_FULL,
                                     PASSED_BY_REF,  args[0], INOUT | TILE_FULL | AFFINITY,
                                     PARSEC_DTD_ARG_END);
     break;
@@ -717,7 +483,7 @@ ParsecApp::ParsecApp(int argc, char **argv)
 
 
     /* Default type */
-    dplasma_add2arena_tile( &(parsec_dtd_arenas_datatypes[i]),
+    dplasma_add2arena_tile( parsec_dtd_arenas[i],
                             mat.dcC.super.mb * mat.dcC.super.nb*sizeof(float),
                             PARSEC_ARENA_ALIGNMENT_SSE,
                             parsec_datatype_float_t, mat.dcC.super.mb );
@@ -738,7 +504,6 @@ ParsecApp::ParsecApp(int argc, char **argv)
   for (i = 0; i < cores; i++) {
     if (max_scratch_bytes_per_task > 0) {
       extra_local_memory[i] = (char*)malloc(sizeof(char)*max_scratch_bytes_per_task);
-      TaskGraph::prepare_scratch(extra_local_memory[i], sizeof(char)*max_scratch_bytes_per_task);
     } else {
       extra_local_memory[i] = NULL;
     }
@@ -773,7 +538,7 @@ ParsecApp::~ParsecApp()
     matrix_t &mat = mat_array[i];
     
     /* Cleaning data arrays we allocated for communication */
-    parsec_matrix_del2arena( &(parsec_dtd_arenas_datatypes[i]) );
+    parsec_matrix_del2arena( parsec_dtd_arenas[i] );
 
 
     /* Cleaning data arrays we allocated for communication */
@@ -810,19 +575,21 @@ void ParsecApp::execute_main_loop()
     matrix_t &mat = mat_array[i];
 
     debug_printf(0, "rank %d, pid %d, M %d, N %d, MT %d, NT %d, nb_fields %d, timesteps %d\n", rank, getpid(), mat.M, mat.N, mat.MT, mat.NT, nb_fields, g.timesteps);
+ 
+    int8_t *is_inserted = (int8_t *)calloc(g.timesteps * g.max_width, sizeof(int8_t));
 
     for (y = 0; y < g.timesteps; y++) {
-      execute_timestep(i, y);
+      execute_timestep(i, y, is_inserted);
     }
 
     parsec_dtd_data_flush_all( dtd_tp, (parsec_data_collection_t *)&(mat.dcC) );
   }
 
   /* finishing all the tasks inserted, but not finishing the handle */
-  parsec_dtd_taskpool_wait(dtd_tp);
+  parsec_dtd_taskpool_wait( parsec, dtd_tp );
 
   /* Waiting on all handle and turning everything off for this context */
-  parsec_context_wait(parsec);
+  parsec_context_wait( parsec );
   
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
@@ -839,7 +606,7 @@ void ParsecApp::execute_main_loop()
 #endif
 }
 
-void ParsecApp::execute_timestep(size_t idx, long t)
+void ParsecApp::execute_timestep(size_t idx, long t, int8_t *is_inserted)
 {
   const TaskGraph &g = graphs[idx];
   long offset = g.offset_at_timestep(t);
@@ -850,86 +617,156 @@ void ParsecApp::execute_timestep(size_t idx, long t)
   std::vector<parsec_dtd_tile_t*> args;
   std::vector<std::pair<long, long>> args_loc;
   payload_t payload;
-  
-  debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
-  for (int x = offset; x <= offset+width-1; x++) {
+
+  int first_point = rank * g.max_width / nodes;
+  int last_point = (rank + 1) * g.max_width / nodes - 1;
+
+  if(last_point < offset || first_point > offset+width-1) {
+    goto finished;
+  } 
+
+  if (first_point < offset) {
+    first_point = offset;
+  }
+  if (last_point > offset+width-1) {
+    last_point = offset+width-1;
+  }
+
+  debug_printf(1, "rank %d, timestep %d, first %d, last %d\n", rank, t, first_point, last_point);
+
+ for (int x = first_point; x <= last_point; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
     int num_args;    
-#ifdef ENABLE_PRUNE_MPI_TASK_INSERT
-    int has_task = 0;
-    if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, t%nb_fields, x)) {
-      has_task = 1;
-    }
-
-    if( t < g.timesteps-1 && has_task != 1 ){
-      long dset_r = g.dependence_set_at_timestep(t+1);
-      std::vector<std::pair<long, long> > rdeps = g.reverse_dependencies(dset_r, x);
-      for (std::pair<long, long> rdep : rdeps) {
-        debug_printf(1, "R: (%d, %d): [%d, %d] \n", x, t, rdep.first, rdep.second); 
-        for (int i = rdep.first; i <= rdep.second; i++) {
-          if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t+1)%nb_fields, i))
-          {
-            has_task = 1;
-          }
-        }
-      }
-    }
-    
-    if (deps.size() != 0 && t != 0 && has_task != 1) {
-      for (std::pair<long, long> dep : deps) {
-        for (int i = dep.first; i <= dep.second; i++) {
-          if(rank == mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t-1)%nb_fields, i)) {
-            has_task = 1;
-          }
-        }
-      }
-    }
-
-    // FIXME: each graph's wdith and timesteps need to be the same
-    ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1 + idx * g.max_width * g.timesteps;
-    debug_printf(1, "rank: %d, has_task: %d, x: %d, t: %d, task_id: %d\n", rank , has_task, x, t, mat.NT * t + x + 1);
-    
-    if (has_task == 0) {
-      continue;
-    }
-#endif
     
     if (deps.size() == 0) {
       num_args = 1;
-      debug_printf(1, "%d[%d] ", x, num_args);
+      debug_printf(1, "Self: %d[%d] \n ", x, num_args);
       args.push_back(TILE_OF_MAT(C, t%nb_fields, x)); 
     } else {
       if (t == 0) {
         num_args = 1;
-        debug_printf(1, "%d[%d]\n ", x, num_args);
+        debug_printf(1, "Self: %d[%d]\n ", x, num_args);
         args.push_back(TILE_OF_MAT(C, t%nb_fields, x)); 
       } else {
         num_args = 1;
         args.push_back(TILE_OF_MAT(C, t%nb_fields, x));
-        long last_offset = g.offset_at_timestep(t-1);
-        long last_width = g.width_at_timestep(t-1);
         for (std::pair<long, long> dep : deps) {
           num_args += dep.second - dep.first + 1;
-          debug_printf(1, "(%d, %d): [%d, %d, %d] \n", x, t, num_args, dep.first, dep.second); 
+          debug_printf(1, "Self: (%d, %d): [%d, %d, %d] \n", x, t, num_args, dep.first, dep.second); 
           for (int i = dep.first; i <= dep.second; i++) {
-            if (i >= last_offset && i < last_offset + last_width) {
-              args.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));  
-            } else {
-              num_args --;
-            }
+            args.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));  
+
+            /* Insert predecessor */
+            if(is_inserted[(t-1)*g.max_width+i] == 0){
+                std::vector<parsec_dtd_tile_t*> args_pre;
+                payload_t payload_pre;
+                long dset_pre = g.dependence_set_at_timestep(t-1);
+                std::vector<std::pair<long, long> > deps_pre = g.dependencies(dset_pre, i);
+                int num_args_pre;
+
+                if (deps_pre.size() == 0) {
+                    num_args_pre = 1;
+                    debug_printf(1, "Predecessor: %d[%d] \n", i, num_args_pre);
+                    args_pre.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));
+                } else {
+                    if (t-1 == 0) {
+                        num_args_pre = 1;
+                        debug_printf(1, "Predecessor: %d[%d]\n ", i, num_args_pre);
+                        args_pre.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));
+                    } else {
+                        num_args_pre = 1;
+                        args_pre.push_back(TILE_OF_MAT(C, (t-1)%nb_fields, i));
+                        for (std::pair<long, long> dep_pre : deps_pre) {
+                            num_args_pre += dep_pre.second - dep_pre.first + 1;
+                            debug_printf(1, "Predecessor: (%d, %d): [%d, %d, %d] \n", i, t-1, num_args_pre, dep_pre.first, dep_pre.second);
+                            for (int ii = dep_pre.first; ii <= dep_pre.second; ii++) {
+                                args_pre.push_back(TILE_OF_MAT(C, (t-2)%nb_fields, ii));
+                            }
+                        }
+                    }
+                }
+
+                payload_pre.i = t-1;
+                payload_pre.j = i;
+                payload_pre.graph = g;
+                payload_pre.graph_id = idx;
+                ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * (t-1) + i + 1;
+                insert_task(num_args_pre, payload_pre, args_pre);
+                is_inserted[(t-1)*g.max_width+i] = 1;
+                debug_printf(1, "Predecessor: rank %d insert (%d, %d) \n", rank, t-1, i);
+                args_pre.clear();
+            } /* End insert predecessor */
+             
           }
         }
       }
     }
 
+    /* Insert local task */
     payload.i = t;
     payload.j = x;
     payload.graph = g;
     payload.graph_id = idx;
-    insert_task(num_args, payload, args); 
+    ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * t + x + 1;
+    debug_printf(1, "Self: rank: %d, x: %d, t: %d, task_id: %d\n", rank , x, t, mat.NT * t + x + 1);
+
+    if( 0 == is_inserted[t*g.max_width+x] ){
+        insert_task(num_args, payload, args);
+        is_inserted[t*g.max_width+x] = 1;
+        debug_printf(1, "Self: rank %d insert (%d, %d) \n", rank, t, x);
+    }
     args.clear();
-  }
-  debug_printf(1, "\n");
+
+    /* Check every successors */
+    if( t < g.timesteps-1 ){
+        long dset_r = g.dependence_set_at_timestep(t+1);
+        std::vector<std::pair<long, long> > rdeps = g.reverse_dependencies(dset_r, x);
+        for (std::pair<long, long> rdep : rdeps) {
+            debug_printf(1, "Successor: (%d, %d): [%d, %d] \n", x, t, rdep.first, rdep.second);
+            for (int i = rdep.first; i <= rdep.second; i++) {
+                /* Got input data of one successor and insert */
+                if( rank != mat.__dcC->super.super.rank_of(&mat.__dcC->super.super, (t+1)%nb_fields, i)
+                    && is_inserted[(t+1)*g.max_width+i] == 0 ) {
+
+                    std::vector<parsec_dtd_tile_t*> args_next;
+                    payload_t payload_next;
+                    long dset_next = g.dependence_set_at_timestep(t+1);
+                    std::vector<std::pair<long, long> > deps_next = g.dependencies(dset_next, i);
+                    int num_args_next = 1;
+
+                    if (deps_next.size() == 0) {
+                        debug_printf(1, "Successor: %d[%d] \n", i, num_args_next);
+                        args_next.push_back(TILE_OF_MAT(C, (t+1)%nb_fields, i));
+                    } else {
+                        /* Do not need to check t+1 == 0 */
+                        args_next.push_back(TILE_OF_MAT(C, (t+1)%nb_fields, i));
+                        for (std::pair<long, long> dep_next : deps_next) {
+                            num_args_next += dep_next.second - dep_next.first + 1;
+                            debug_printf(1, "Successor: (%d, %d): [%d, %d, %d] \n", i, t, num_args_next, dep_next.first, dep_next.second);
+                            for (int ii = dep_next.first; ii <= dep_next.second; ii++) {
+                                args_next.push_back(TILE_OF_MAT(C, t%nb_fields, ii));
+                            }
+                        }
+                    }
+
+                    payload_next.i = t+1;
+                    payload_next.j = i;
+                    payload_next.graph = g;
+                    payload_next.graph_id = idx;
+                    ((parsec_dtd_taskpool_t *)dtd_tp)->task_id = mat.NT * (t+1) + i + 1;
+                    insert_task(num_args_next, payload_next, args_next);
+                    is_inserted[(t+1)*g.max_width+i] = 1;
+                    debug_printf(1, "Successor: rank %d insert (%d, %d) \n", rank, t+1, i);
+                    args_next.clear();
+                } /* End insert one successor */
+            }
+        }
+    } /* Finish checking all successors */
+
+  } /* End of x for loop */
+
+  finished:
+      debug_printf(1, "\n");
 }
 
 void ParsecApp::debug_printf(int verbose_level, const char *format, ...)
