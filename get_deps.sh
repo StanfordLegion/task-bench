@@ -418,7 +418,7 @@ EOF
     tar xfz ncurses-6.1.tar.gz -C "$SWIFT_DIR"
     rm ncurses-6.1.tar.gz
 
-    wget $SOURCEFORGE_MIRROR/zsh/files/zsh/5.5.1/zsh-5.5.1.tar.gz
+    wget $SOURCEFORGE_MIRROR/zsh/5.5.1/zsh-5.5.1.tar.gz
     tar xfz zsh-5.5.1.tar.gz -C "$SWIFT_DIR"
     rm zsh-5.5.1.tar.gz
 
