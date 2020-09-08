@@ -149,9 +149,9 @@ ax.tick_params(axis='x', width=0.5)
 ax.tick_params(axis='y', width=0.5)
 
 if args.x_percent:
-    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
+    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: r'{:.0f}\%'.format(100*x)))
 if args.y_percent:
-    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda y, _: r'{:.0f}\%'.format(100*y)))
 
 if args.x_invert:
     ax.invert_xaxis()
