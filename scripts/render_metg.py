@@ -130,14 +130,9 @@ colors = [
     (0.137,0.122,0.125),
 ] * 10
 
-# matplotlib.rcParams["font.family"] = "STIXGeneral"
-# matplotlib.rcParams["mathtext.fontset"] = "stix"
-matplotlib.rcParams["mathtext.fontset"] = "stixsans"
-
-# force use of TrueType fonts
-# from: http://phyletica.org/matplotlib-fonts/
-matplotlib.rcParams['pdf.fonttype'] = 42
-matplotlib.rcParams['ps.fonttype'] = 42
+matplotlib.rcParams['font.family'] = 'serif'
+matplotlib.rcParams['font.serif'] = 'Times'
+matplotlib.rcParams['text.usetex'] = True
 
 matplotlib.rc('xtick', labelsize=12)
 matplotlib.rc('ytick', labelsize=12)
