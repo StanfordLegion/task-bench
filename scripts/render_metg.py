@@ -134,6 +134,11 @@ colors = [
 # matplotlib.rcParams["mathtext.fontset"] = "stix"
 matplotlib.rcParams["mathtext.fontset"] = "stixsans"
 
+# force use of TrueType fonts
+# from: http://phyletica.org/matplotlib-fonts/
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 matplotlib.rc('xtick', labelsize=12)
 matplotlib.rc('ytick', labelsize=12)
 
