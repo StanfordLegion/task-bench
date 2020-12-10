@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBATCH --account=d108
 #SBATCH --constraint=gpu
 #SBATCH --exclusive
 #SBATCH --time=02:00:00
