@@ -47,10 +47,11 @@ elif [[ $(hostname) = "daint"* ]]; then
 module load daint-gpu
 module unload PrgEnv-cray
 module load PrgEnv-gnu
-module load cudatoolkit
+# module load cudatoolkit # FIXME (Elliott 2020-12-10): this must have broken in a recent Piz Daint upgrade, C compiler cannot build executables
 export CC=cc
 export CXX=CC
 export MPICXX=CC
+export CRAYPE_LINK_TYPE=static
 
 EOF
 fi
