@@ -201,6 +201,38 @@ if [[ $(basename $PWD) = compute ]]; then
     #     crop efficiency_3d_stencil_${system}.pdf
     # done
 
+elif [[ $(basename $PWD) = daint_compute ]]; then
+    "$root_dir"/metg.py -m daint -g 4 -d nearest --csv excel > metg_ngraphs_4_nearest.csv
+
+    for nodes in 1 128; do
+        "$root_dir"/efficiency.py -m daint -g 4 -d nearest -n $nodes --csv excel > efficiency_ngraphs_4_nearest_nodes_$nodes.csv
+    done
+
+    "$root_dir"/render_metg.py metg_ngraphs_4_nearest.csv \
+               --legend ../daint_legend.csv # \
+               # --title 'METG vs Nodes (Cori, Compute, 4x Nearest)'
+
+    for nodes in 1 128; do
+        "$root_dir"/render_metg.py efficiency_ngraphs_4_nearest_nodes_$nodes.csv \
+                   --legend ../daint_legend.csv \
+                   --xlabel 'Task Granularity (ms)' \
+                   --xdata 'time_per_task' \
+                   --x-invert \
+                   --xbase 10 \
+                   --no-xticks \
+                   --ylabel 'Efficiency' \
+                   --ylim '(-0.05,1.05)' \
+                   --no-ylog \
+                   --y-percent \
+                   --highlight-column 'metg' # \
+                   # --title 'Efficiency vs Task Granularity (Cori, Compute, 4x Nearest)'
+    done
+
+    crop metg_ngraphs_4_nearest.pdf
+    for nodes in 1 128; do
+        crop efficiency_ngraphs_4_nearest_nodes_$nodes.pdf
+    done
+
 elif [[ $(basename $PWD) = cuda_compute ]]; then
     "$root_dir"/metg.py -m daint -g 1 -d stencil_1d --csv excel > metg_stencil.csv
     for pattern in nearest spread fft; do
