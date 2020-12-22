@@ -210,6 +210,21 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 
   // Figure out who we're going to be communicating with.
 
+
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    long first_point = proc_index * graph.max_width / num_procs;
+    long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+
+    for (long point = first_point; point <= last_point; ++point) {
+      task_results.at(graph_index).at(point).fetch_metadata(p).wait();
+      task_inputs.at(graph_index).at(point).fetch_metadata(p).wait();
+      raw_exchange.at(graph_index).at(point).fetch_metadata(p).wait();
+      war_exchange.at(graph_index).at(point).fetch_metadata(p).wait();
+    }
+  }
+
   // graph -> point -> [remote point]
   std::vector<std::vector<std::set<long> > > raw_exchange_points(graphs.size());
   std::vector<std::vector<std::set<long> > > war_exchange_points(graphs.size());
