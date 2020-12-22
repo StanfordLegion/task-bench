@@ -333,7 +333,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       inputs.at(graph_index).at(point - first_point).resize(deps);
       input_base.at(graph_index).at(point - first_point).resize(deps);
 
-      task_inputs.at(graph_index).at(point).fetch_metadata(p).wait();
       AffineAccessor<RegionInstance, 1, coord_t> task_input =
         AffineAccessor<RegionInstance, 1, coord_t>(task_inputs.at(graph_index).at(point), FID_FIRST);
 
@@ -379,8 +378,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       war_in.at(graph_index).at(point - first_point).resize(num_fields);
 
       for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
-        raw_exchange.at(graph_index).at(point).fetch_metadata(p).wait();
-        war_exchange.at(graph_index).at(point).fetch_metadata(p).wait();
         const Barrier no_barrier = Barrier::NO_BARRIER;
         fill(raw_exchange.at(graph_index).at(point), fid,
              &no_barrier, sizeof(no_barrier), Event::NO_EVENT)
@@ -609,7 +606,6 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
       result_base.at(graph_index).at(point).resize(num_fields, NULL);
 
       auto &inst = task_results.at(graph_index).at(point);
-      inst.fetch_metadata(p).wait();
       if (inst.get_location() == sysmem || inst.get_location() == regmem) {
         for (long fid = FID_FIRST; fid < FID_FIRST + num_fields; ++fid) {
           result_base.at(graph_index).at(point).at(fid - FID_FIRST) =
