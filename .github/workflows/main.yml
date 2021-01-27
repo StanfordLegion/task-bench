@@ -1,0 +1,65 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        include:
+          - mpi: 1
+          - mpi_openmp: 1
+          - legion: 1
+          - pygion: 1
+          - regent: 1
+          - realm: 1
+          - starpu: 1
+            hwloc: 1
+          - parsec: 1
+            hwloc: 1
+          - charm: 1
+          - chapel: 1
+          - x10: 1
+          - openmp: 1
+          - spark: 1
+          - ompss: 1
+          - ompss2: 1
+            hwloc: 1
+          - swift: 1
+          - tensorflow: 1
+          - dask: 1
+   steps:
+      - uses: actions/checkout@v1
+      - run: ./travis.sh
+        env:
+          TASKBENCH_USE_MPI: ${{ matrix.mpi }}
+          USE_MPI_OPENMP: ${{ matrix.mpi_openmp }}
+          USE_LEGION: ${{ matrix.legion }}
+          USE_PYGION: ${{ matrix.pygion }}
+          USE_REGENT: ${{ matrix.regent }}
+          USE_REALM: ${{ matrix.realm }}
+          USE_STARPU: ${{ matrix.starpu }}
+          USE_PARSEC: ${{ matrix.parsec }}
+          USE_CHARM: ${{ matrix.charm }}
+          USE_CHAPEL: ${{ matrix.chapel }}
+          USE_X10: ${{ matrix.x10 }}
+          USE_OPENMP: ${{ matrix.openmp }}
+          USE_SPARK: ${{ matrix.spark }}
+          USE_OMPSS: ${{ matrix.ompss }}
+          USE_OMPSS2: ${{ matrix.ompss2 }}
+          USE_SWIFT: ${{ matrix.swift }}
+          USE_TENSORFLOW: ${{ matrix.tensorflow }}
+          USE_DASK: ${{ matrix.dask }}
+
+          TASKBENCH_USE_HWLOC: ${{ matrix.hwloc }}
+
+          # Global settings:
+          DEBUG: 1
+          # Legion flags
+          # WARN_AS_ERROR: 1
+          REALM_SYNTHETIC_CORE_MAP: ""
+          REALM_BACKTRACE: 1
+          CC_FLAGS: "-Wno-unused-command-line-argument"
+          # Disable features by default, specify explicit what to use in each build
+          DEFAULT_FEATURES: 0
