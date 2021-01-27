@@ -4,10 +4,11 @@ set -e
 set -x
 
 if [[ "$SYSTEM" = "MPI" ]]; then
-    export TASKBENCH_USE_${!SYSTEM}=1
+    declare -x TASKBENCH_USE_${!SYSTEM}=1
 else
-    export USE_${!SYSTEM}=1
+    declare -x USE_${!SYSTEM}=1
 fi
+env | grep USE
 
 if [[ "$(uname)" = "Linux" ]]; then
   sudo apt-get update -qq
