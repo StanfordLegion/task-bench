@@ -3,55 +3,37 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: Build
+    name: Build (${{matrix.system}})
     runs-on: ubuntu-18.04
     strategy:
       matrix:
         include:
-          - mpi: 1
-          - mpi_openmp: 1
-          - legion: 1
-          - pygion: 1
-          - regent: 1
-          - realm: 1
-          - starpu: 1
+          - system: MPI
+          - system: MPI_OPENMP
+          - system: LEGION
+          - system: PYGION
+          - system: REGENT
+          - system: REALM
+          - system: STARPU
             hwloc: 1
-          - parsec: 1
+          - system: PARSEC
             hwloc: 1
-          - charm: 1
-          - chapel: 1
-          - x10: 1
-          - openmp: 1
-          - spark: 1
-          - ompss: 1
-          - ompss2: 1
+          - system: CHARM
+          - system: CHAPEL
+          - system: X10
+          - system: OPENMP
+          - system: SPARK
+          - system: OMPSS
+          - system: OMPSS2
             hwloc: 1
-          - swift: 1
-          - tensorflow: 1
-          - dask: 1
+          - system: SWIFT
+          - system: TENSORFLOW
+          - system: DASK
     steps:
       - uses: actions/checkout@v1
       - run: ./ci.sh
         env:
-          TASKBENCH_USE_MPI: ${{ matrix.mpi }}
-          USE_MPI_OPENMP: ${{ matrix.mpi_openmp }}
-          USE_LEGION: ${{ matrix.legion }}
-          USE_PYGION: ${{ matrix.pygion }}
-          USE_REGENT: ${{ matrix.regent }}
-          USE_REALM: ${{ matrix.realm }}
-          USE_STARPU: ${{ matrix.starpu }}
-          USE_PARSEC: ${{ matrix.parsec }}
-          USE_CHARM: ${{ matrix.charm }}
-          USE_CHAPEL: ${{ matrix.chapel }}
-          USE_X10: ${{ matrix.x10 }}
-          USE_OPENMP: ${{ matrix.openmp }}
-          USE_SPARK: ${{ matrix.spark }}
-          USE_OMPSS: ${{ matrix.ompss }}
-          USE_OMPSS2: ${{ matrix.ompss2 }}
-          USE_SWIFT: ${{ matrix.swift }}
-          USE_TENSORFLOW: ${{ matrix.tensorflow }}
-          USE_DASK: ${{ matrix.dask }}
-
+          SYSTEM: ${{ matrix.system }}
           TASKBENCH_USE_HWLOC: ${{ matrix.hwloc }}
 
           # Global settings:

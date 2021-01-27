@@ -3,6 +3,12 @@
 set -e
 set -x
 
+if [[ "$SYSTEM" = "MPI" ]]; then
+    export TASKBENCH_USE_${!SYSTEM}=1
+else
+    export USE_${!SYSTEM}=1
+fi
+
 if [[ "$(uname)" = "Linux" ]]; then
   sudo apt-get update -qq
   sudo apt-get install -qq mpich libmpich-dev libpcre3-dev binutils-dev
