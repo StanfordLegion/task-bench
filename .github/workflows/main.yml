@@ -45,3 +45,4 @@ jobs:
           # CC_FLAGS: "-Wno-unused-command-line-argument"
           # Disable features by default, specify explicit what to use in each build
           DEFAULT_FEATURES: 0
+        timeout-minutes: 60
