@@ -8,7 +8,6 @@ if [[ "$SYSTEM" = "MPI" ]]; then
 else
     export USE_${SYSTEM}=1
 fi
-env | grep USE
 
 if [[ "$(uname)" = "Linux" ]]; then
   sudo apt-get update -qq
