@@ -4,9 +4,9 @@ set -e
 set -x
 
 if [[ "$SYSTEM" = "MPI" ]]; then
-    declare -x TASKBENCH_USE_${!SYSTEM}=1
+    export TASKBENCH_USE_${SYSTEM}=1
 else
-    declare -x USE_${!SYSTEM}=1
+    export USE_${SYSTEM}=1
 fi
 env | grep USE
 
