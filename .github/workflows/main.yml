@@ -42,6 +42,6 @@ jobs:
           # WARN_AS_ERROR: 1
           REALM_SYNTHETIC_CORE_MAP: ""
           REALM_BACKTRACE: 1
-          CC_FLAGS: "-Wno-unused-command-line-argument"
+          # CC_FLAGS: "-Wno-unused-command-line-argument"
           # Disable features by default, specify explicit what to use in each build
           DEFAULT_FEATURES: 0
