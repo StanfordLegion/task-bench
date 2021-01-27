@@ -31,7 +31,7 @@ jobs:
           - dask: 1
     steps:
       - uses: actions/checkout@v1
-      - run: ./travis.sh
+      - run: ./ci.sh
         env:
           TASKBENCH_USE_MPI: ${{ matrix.mpi }}
           USE_MPI_OPENMP: ${{ matrix.mpi_openmp }}
