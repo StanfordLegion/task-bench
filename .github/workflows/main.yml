@@ -22,7 +22,7 @@ jobs:
           - system: CHAPEL
           # - system: X10
           - system: OPENMP
-          # - system: SPARK
+          - system: SPARK
           - system: OMPSS
           - system: OMPSS2
             hwloc: 1
