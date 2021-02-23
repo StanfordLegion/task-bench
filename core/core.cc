@@ -514,8 +514,6 @@ size_t TaskGraph::dependencies(long dset, long point, std::pair<long, long> *dep
 
 size_t TaskGraph::num_dependencies(long dset, long point) const
 {
-  size_t count = 0;
-
   switch (dependence) {
   case DependenceType::TRIVIAL:
     return 0;
@@ -1002,8 +1000,7 @@ void App::display() const
         }
         printf("\n");
 
-        printf("        Dependencies:\n",
-               t, offset, width);
+        printf("        Dependencies:\n");
         for (long p = offset; p < offset + width; ++p) {
           printf("          Point %ld:", p);
           auto deps = g.dependencies(dset, p);
@@ -1017,8 +1014,7 @@ void App::display() const
           printf("\n");
         }
         if (verbose > 1) {
-          printf("        Reverse Dependencies:\n",
-                 t, last_offset, last_width);
+          printf("        Reverse Dependencies:\n");
           for (long p = last_offset; p < last_offset + last_width; ++p) {
             printf("          Point %ld:", p);
             auto deps = g.reverse_dependencies(dset, p);
