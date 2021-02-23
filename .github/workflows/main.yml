@@ -1,0 +1,48 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build (${{matrix.system}})
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        include:
+          - system: MPI
+          - system: MPI_OPENMP
+          - system: LEGION
+          - system: PYGION
+          - system: REGENT
+          # - system: REALM
+          - system: STARPU
+            hwloc: 1
+          - system: PARSEC
+            hwloc: 1
+          - system: CHARM
+          - system: CHAPEL
+          # - system: X10
+          - system: OPENMP
+          # - system: SPARK
+          - system: OMPSS
+          - system: OMPSS2
+            hwloc: 1
+          - system: SWIFT
+          - system: TENSORFLOW
+          - system: DASK
+    steps:
+      - uses: actions/checkout@v1
+      - run: ./ci.sh
+        env:
+          SYSTEM: ${{ matrix.system }}
+          TASKBENCH_USE_HWLOC: ${{ matrix.hwloc }}
+
+          # Global settings:
+          DEBUG: 1
+          # Legion flags
+          # WARN_AS_ERROR: 1
+          REALM_SYNTHETIC_CORE_MAP: ""
+          REALM_BACKTRACE: 1
+          # CC_FLAGS: "-Wno-unused-command-line-argument"
+          # Disable features by default, specify explicit what to use in each build
+          DEFAULT_FEATURES: 0
+        timeout-minutes: 90

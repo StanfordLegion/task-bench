@@ -386,7 +386,7 @@ fi)
         if [[ ! -d build ]]; then
             mkdir build
             cd build
-            ../configure --prefix="$SWIFT_PREFIX"
+            ../configure --prefix="$SWIFT_PREFIX" --without-tcsetpgrp
             make -j$THREADS
             make install
         fi
