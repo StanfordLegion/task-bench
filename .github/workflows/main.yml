@@ -13,7 +13,7 @@ jobs:
           - system: LEGION
           - system: PYGION
           - system: REGENT
-          # - system: REALM
+          - system: REALM
           - system: STARPU
             hwloc: 1
           - system: PARSEC
