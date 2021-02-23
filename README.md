@@ -1,4 +1,4 @@
-# A Task Benchmark [![Build Status](https://travis-ci.org/StanfordLegion/task-bench.svg?branch=master)](https://travis-ci.org/StanfordLegion/task-bench)
+# A Task Benchmark [![CI](https://github.com/StanfordLegion/task-bench/actions/workflows/main.yml/badge.svg)](https://github.com/StanfordLegion/task-bench/actions/workflows/main.yml)
 
 **Please contact the authors before publishing any results obtained
 with Task Bench.**
