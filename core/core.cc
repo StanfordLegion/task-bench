@@ -1152,15 +1152,22 @@ void App::report_timing(double elapsed_seconds, long nodes) const
       num_tasks += width;
 
       for (long p = offset; p < offset + width; ++p) {
-        long point_node = p*nodes/g.max_width;
-        long first_point = point_node * g.max_width / nodes;
-        long last_point = (point_node + 1) * g.max_width / nodes - 1;
+        long point_node = 0;
+        long first_point = 0;
+        long last_point = 0;
+        if (nodes > 0) {
+          long point_node = p*nodes/g.max_width;
+          long first_point = point_node * g.max_width / nodes;
+          long last_point = (point_node + 1) * g.max_width / nodes - 1;
+        }
 
         auto deps = g.dependencies(dset, p);
         for (auto dep : deps) {
           num_deps += dep.second - dep.first + 1;
-          long long local_points = std::max(dep.second, first_point) - std::min(dep.first, last_point - 1) + 1;
-          local_deps += std::max(local_points, 0ll);
+          if (nodes > 0) {
+            long long local_points = std::max(dep.second, first_point) - std::min(dep.first, last_point - 1) + 1;
+            local_deps += std::max(local_points, 0ll);
+          }
         }
       }
     }
@@ -1177,18 +1184,27 @@ void App::report_timing(double elapsed_seconds, long nodes) const
 
   printf("Total Tasks %lld\n", total_num_tasks);
   printf("Total Dependencies %lld\n", total_num_deps);
-  printf("  Local Dependencies %lld (estimated)\n", total_local_deps);
-  printf("  Nonlocal Dependencies %lld (estimated)\n", total_nonlocal_deps);
+  if (nodes > 0) {
+    printf("  Local Dependencies %lld (estimated)\n", total_local_deps);
+    printf("  Nonlocal Dependencies %lld (estimated)\n", total_nonlocal_deps);
+    printf("  Number of Nodes %ld (used to create estimate)\n", nodes);
+  } else {
+    printf("  Unable to estimate local/nonlocal dependencies\n");
+  }
   printf("Total FLOPs %lld\n", flops);
   printf("Total Bytes %lld\n", bytes);
   printf("Elapsed Time %e seconds\n", elapsed_seconds);
   printf("FLOP/s %e\n", flops/elapsed_seconds);
   printf("B/s %e\n", bytes/elapsed_seconds);
   printf("Transfer (estimated):\n");
-  printf("  Local Bytes %lld\n", local_transfer);
-  printf("  Nonlocal Bytes %lld\n", nonlocal_transfer);
-  printf("  Local Bandwidth %e B/s\n", local_transfer/elapsed_seconds);
-  printf("  Nonlocal Bandwidth %e B/s\n", nonlocal_transfer/elapsed_seconds);
+  if (nodes > 0) {
+    printf("  Local Bytes %lld\n", local_transfer);
+    printf("  Nonlocal Bytes %lld\n", nonlocal_transfer);
+    printf("  Local Bandwidth %e B/s\n", local_transfer/elapsed_seconds);
+    printf("  Nonlocal Bandwidth %e B/s\n", nonlocal_transfer/elapsed_seconds);
+  } else {
+    printf("  Unable to estimate local/nonlocal transfer\n");
+  }
 
 #ifdef DEBUG_CORE
   printf("Task Graph Execution Mask %llx\n", has_executed_graph.load());
