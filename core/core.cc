@@ -1124,15 +1124,21 @@ static long long count_bytes(const TaskGraph &g)
   return bytes;
 }
 
-void App::report_timing(double elapsed_seconds) const
+void App::report_timing(double elapsed_seconds, long nodes) const
 {
   long long total_num_tasks = 0;
   long long total_num_deps = 0;
+  long long total_local_deps = 0;
+  long long total_nonlocal_deps = 0;
   long long flops = 0;
   long long bytes = 0;
+  long long local_transfer = 0;
+  long long nonlocal_transfer = 0;
   for (auto g : graphs) {
     long long num_tasks = 0;
     long long num_deps = 0;
+    long long local_deps = 0;
+    long long nonlocal_deps = 0;
 #ifdef DEBUG_CORE
     if (enable_graph_validation) {
       assert(has_executed_graph.load() & (1 << g.graph_index) != 0);
@@ -1146,26 +1152,41 @@ void App::report_timing(double elapsed_seconds) const
       num_tasks += width;
 
       for (long p = offset; p < offset + width; ++p) {
+        long point_node = p*nodes/g.max_width;
+        long first_point = point_node * g.max_width / nodes;
+        long last_point = (point_node + 1) * g.max_width / nodes - 1;
+
         auto deps = g.dependencies(dset, p);
         for (auto dep : deps) {
           num_deps += dep.second - dep.first + 1;
+          long long local_points = std::max(dep.second, first_point) - std::min(dep.first, last_point - 1) + 1;
+          local_deps += std::max(local_points, 0ll);
         }
       }
     }
 
     total_num_tasks += num_tasks;
     total_num_deps += num_deps;
+    total_local_deps += local_deps;
+    total_nonlocal_deps += nonlocal_deps;
     flops += count_flops(g);
     bytes += count_bytes(g);
+    local_transfer += local_deps * g.output_bytes_per_task;
+    nonlocal_transfer += nonlocal_deps * g.output_bytes_per_task;
   }
 
   printf("Total Tasks %lld\n", total_num_tasks);
   printf("Total Dependencies %lld\n", total_num_deps);
+  printf("  Local Dependencies %lld (estimated)\n", total_local_deps);
+  printf("  Nonlocal Dependencies %lld (estimated)\n", total_nonlocal_deps);
   printf("Total FLOPs %lld\n", flops);
   printf("Total Bytes %lld\n", bytes);
   printf("Elapsed Time %e seconds\n", elapsed_seconds);
   printf("FLOP/s %e\n", flops/elapsed_seconds);
   printf("B/s %e\n", bytes/elapsed_seconds);
+  printf("Bandwidth Used:\n");
+  printf("  Local Bandwidth %e B/s\n", local_transfer/elapsed_seconds);
+  printf("  Nonlocal Bandwidth %e B/s\n", nonlocal_transfer/elapsed_seconds);
 
 #ifdef DEBUG_CORE
   printf("Task Graph Execution Mask %llx\n", has_executed_graph.load());

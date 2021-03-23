@@ -80,7 +80,7 @@ struct App {
   App(int argc, char **argv);
   void check() const;
   void display() const;
-  void report_timing(double elapsed_seconds) const;
+  void report_timing(double elapsed_seconds, long nodes) const;
 };
 
 // Make sure core types are POD
