@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
     double time_elapsed = Timer::time_end();
     if (iter != 0) total_time_elapsed += time_elapsed;
   }
-  if (taskid == MASTER) new_app.report_timing(total_time_elapsed / NUM_ITER);
+  if (taskid == MASTER) new_app.report_timing(total_time_elapsed / NUM_ITER, 0);
 
   /* Free all memory */
   free_output(output_ptrs);

@@ -220,8 +220,15 @@ int main(int argc, char *argv[])
     elapsed_time = stop_time - start_time;
   }
 
+  MPI_Info info;
+  MPI_Info_create(&info);
+  MPI_Comm node_comm;
+  MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, info, &node_comm);
+  int nodes;
+  MPI_Comm_size(MPI_COMM_WORLD, &nodes);
+
   if (rank == 0) {
-    app.report_timing(elapsed_time);
+    app.report_timing(elapsed_time, nodes);
   }
 
   MPI_Finalize();
