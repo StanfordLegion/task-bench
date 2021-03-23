@@ -1184,7 +1184,9 @@ void App::report_timing(double elapsed_seconds, long nodes) const
   printf("Elapsed Time %e seconds\n", elapsed_seconds);
   printf("FLOP/s %e\n", flops/elapsed_seconds);
   printf("B/s %e\n", bytes/elapsed_seconds);
-  printf("Bandwidth Used:\n");
+  printf("Transfer (estimated):\n");
+  printf("  Local Bytes %lld\n", local_transfer);
+  printf("  Nonlocal Bytes %lld\n", nonlocal_transfer);
   printf("  Local Bandwidth %e B/s\n", local_transfer/elapsed_seconds);
   printf("  Nonlocal Bandwidth %e B/s\n", nonlocal_transfer/elapsed_seconds);
 
