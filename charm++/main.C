@@ -77,7 +77,7 @@ void Main::finishedGraph() {
   CkPrintf("Time for last run: %e\n", end - start);
   if (numRunsDone > 1) totalTimeElapsed += (end - start);
   if (numRunsDone == numRuns + 1) {
-    app.report_timing(totalTimeElapsed / numRuns);
+    app.report_timing(totalTimeElapsed / numRuns, 0);
     CkExit();
   } else {
     sectionProxy.reset(new MulticastMsg());
