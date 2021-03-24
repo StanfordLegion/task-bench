@@ -450,7 +450,7 @@ void OmpSsApp::execute_main_loop()
 OMPSS_TASKWAIT
   
   double elapsed = Timer::time_end();
-  report_timing(elapsed, 0);
+  report_timing(elapsed, 1);
 }
 
 void OmpSsApp::execute_timestep(size_t idx, long t)

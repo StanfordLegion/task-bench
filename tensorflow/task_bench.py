@@ -150,7 +150,7 @@ def execute_task_bench():
         start_time = time.perf_counter()
         sess.run(all_output, feed_dict=all_feed)
         total_time = time.perf_counter() - start_time
-    c.app_report_timing(app, total_time, 0)
+    c.app_report_timing(app, total_time, 1)
 
 
 if __name__ == "__main__":
