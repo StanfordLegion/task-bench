@@ -223,7 +223,7 @@ void KernelBenchApp::execute_main_loop()
   double max_time_end = *std::max_element(time_end,time_end+nb_workers);
   double time_elapsed = max_time_end - min_time_start;
   
-  report_timing(time_elapsed);
+  report_timing(time_elapsed, 0);
   debug_printf(0, "total time (%f, %f) %f ms\n", min_time_start*1e3, max_time_end*1e3, time_elapsed * 1e3);
 }
 

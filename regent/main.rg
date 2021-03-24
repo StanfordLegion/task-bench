@@ -510,7 +510,7 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
       end)
     end
     actions:insert(rquote
-      core.app_report_timing(app, double(stop_time - start_time)/1e9)
+      core.app_report_timing(app, double(stop_time - start_time)/1e9, 0)
     end)
     return actions
   end

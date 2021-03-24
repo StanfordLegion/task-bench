@@ -1571,7 +1571,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     assert(ok);
   }
 
-  app.report_timing((last_stop - first_start)/1e9);
+  app.report_timing((last_stop - first_start)/1e9, 0);
 }
 
 int main(int argc, char **argv)

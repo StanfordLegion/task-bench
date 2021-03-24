@@ -498,7 +498,7 @@ public class TaskBench {
       }
       delete [] argv;
 
-      app.report_timing(time);
+      app.report_timing(time, 0);
     ") {}
   }
 

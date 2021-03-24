@@ -474,4 +474,4 @@ def main():
     total_time = (stop_time - start_time)/1e9
 
     if once_only():
-        c.app_report_timing(app, total_time)
+        c.app_report_timing(app, total_time, 0)

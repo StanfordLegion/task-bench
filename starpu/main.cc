@@ -865,7 +865,7 @@ void StarPUApp::execute_main_loop()
   starpu_mpi_barrier(MPI_COMM_WORLD);
   if (rank == 0) {
     double elapsed = Timer::time_end();
-    report_timing(elapsed);
+    report_timing(elapsed, 0);
   }
 }
 
