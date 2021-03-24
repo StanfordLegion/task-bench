@@ -93,7 +93,7 @@ def execute_task_bench(client):
     else:
         dask.get(computations, results)
     total_time = time.perf_counter() - start_time
-    core.c.app_report_timing(app, total_time)
+    core.c.app_report_timing(app, total_time, 0)
 
 
 if __name__ == "__main__":

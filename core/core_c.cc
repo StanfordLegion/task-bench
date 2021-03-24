@@ -226,8 +226,8 @@ void app_display(app_t app)
   a->display();
 }
 
-void app_report_timing(app_t app, double elapsed_seconds)
+void app_report_timing(app_t app, double elapsed_seconds, long nodes)
 {
   App *a = unwrap(app);
-  a->report_timing(elapsed_seconds);
+  a->report_timing(elapsed_seconds, nodes);
 }

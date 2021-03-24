@@ -64,7 +64,7 @@ proc main(args: [] string) {
   t.start();
   execute_task_graphs(graphs, task_result, task_ready, task_used);
   t.stop();
-  app_report_timing(app, t.elapsed());
+  app_report_timing(app, t.elapsed(), 0);
 }
 
 proc make_task_result(n_graphs, max_width, max_output_bytes) {

@@ -1124,15 +1124,31 @@ static long long count_bytes(const TaskGraph &g)
   return bytes;
 }
 
-void App::report_timing(double elapsed_seconds) const
+static std::tuple<long, long> clamp(long start, long end, long min_value, long max_value) {
+  if (end < min_value) {
+    return std::tuple<long, long>(min_value, min_value - 1);
+  } else if (start > max_value) {
+    return std::tuple<long, long>(max_value, max_value - 1);
+  } else {
+    return std::tuple<long, long>(std::max(start, min_value), std::min(end, max_value));
+  }
+}
+
+void App::report_timing(double elapsed_seconds, long nodes) const
 {
   long long total_num_tasks = 0;
   long long total_num_deps = 0;
+  long long total_local_deps = 0;
+  long long total_nonlocal_deps = 0;
   long long flops = 0;
   long long bytes = 0;
+  long long local_transfer = 0;
+  long long nonlocal_transfer = 0;
   for (auto g : graphs) {
     long long num_tasks = 0;
     long long num_deps = 0;
+    long long local_deps = 0;
+    long long nonlocal_deps = 0;
 #ifdef DEBUG_CORE
     if (enable_graph_validation) {
       assert(has_executed_graph.load() & (1 << g.graph_index) != 0);
@@ -1141,31 +1157,73 @@ void App::report_timing(double elapsed_seconds) const
     for (long t = 0; t < g.timesteps; ++t) {
       long offset = g.offset_at_timestep(t);
       long width = g.width_at_timestep(t);
+      long last_offset = g.offset_at_timestep(t-1);
+      long last_width = g.width_at_timestep(t-1);
       long dset = g.dependence_set_at_timestep(t);
 
       num_tasks += width;
 
       for (long p = offset; p < offset + width; ++p) {
+        long point_node = 0;
+        long node_first = 0;
+        long node_last = -1;
+        if (nodes > 0) {
+          point_node = p*nodes/g.max_width;
+          node_first = point_node * g.max_width / nodes;
+          node_last = (point_node + 1) * g.max_width / nodes - 1;
+        }
+
         auto deps = g.dependencies(dset, p);
         for (auto dep : deps) {
-          num_deps += dep.second - dep.first + 1;
+          long dep_first, dep_last;
+          std::tie(dep_first, dep_last) = clamp(dep.first, dep.second, last_offset, last_offset + last_width - 1);
+          num_deps += dep_last - dep_first + 1;
+          if (nodes > 0) {
+            long initial_first, initial_last, local_first, local_last, final_first, final_last;
+            std::tie(initial_first, initial_last) = clamp(dep_first, dep_last, 0, node_first - 1);
+            std::tie(local_first, local_last) = clamp(dep_first, dep_last, node_first, node_last);
+            std::tie(final_first, final_last) = clamp(dep_first, dep_last, node_last + 1, g.max_width - 1);
+            nonlocal_deps += initial_last - initial_first + 1;
+            local_deps += local_last - local_first + 1;
+            nonlocal_deps += final_last - final_first + 1;
+          }
         }
       }
     }
 
     total_num_tasks += num_tasks;
     total_num_deps += num_deps;
+    total_local_deps += local_deps;
+    total_nonlocal_deps += nonlocal_deps;
     flops += count_flops(g);
     bytes += count_bytes(g);
+    local_transfer += local_deps * g.output_bytes_per_task;
+    nonlocal_transfer += nonlocal_deps * g.output_bytes_per_task;
   }
 
   printf("Total Tasks %lld\n", total_num_tasks);
   printf("Total Dependencies %lld\n", total_num_deps);
+  if (nodes > 0) {
+    printf("  Local Dependencies %lld (estimated)\n", total_local_deps);
+    printf("  Nonlocal Dependencies %lld (estimated)\n", total_nonlocal_deps);
+    printf("  Number of Nodes (used for estimate) %ld\n", nodes);
+  } else {
+    printf("  Unable to estimate local/nonlocal dependencies\n");
+  }
   printf("Total FLOPs %lld\n", flops);
   printf("Total Bytes %lld\n", bytes);
   printf("Elapsed Time %e seconds\n", elapsed_seconds);
   printf("FLOP/s %e\n", flops/elapsed_seconds);
   printf("B/s %e\n", bytes/elapsed_seconds);
+  printf("Transfer (estimated):\n");
+  if (nodes > 0) {
+    printf("  Local Bytes %lld\n", local_transfer);
+    printf("  Nonlocal Bytes %lld\n", nonlocal_transfer);
+    printf("  Local Bandwidth %e B/s\n", local_transfer/elapsed_seconds);
+    printf("  Nonlocal Bandwidth %e B/s\n", nonlocal_transfer/elapsed_seconds);
+  } else {
+    printf("  Unable to estimate local/nonlocal transfer\n");
+  }
 
 #ifdef DEBUG_CORE
   printf("Task Graph Execution Mask %llx\n", has_executed_graph.load());
