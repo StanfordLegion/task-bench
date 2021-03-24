@@ -285,8 +285,10 @@ EOF
     tar xfz apache-ant-1.10.7-bin.tar.gz -C "$X10_DIR"
     rm apache-ant-1.10.7-bin.tar.gz
 
-    git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
-    git -C "$X10_DIR"/x10 reset --hard 9212dc271c8bcba805c82114617d47506747ee3a
+    # FIXME: hitting https://github.com/x10-lang/x10/issues/32
+    # git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
+    # git -C "$X10_DIR"/x10 reset --hard 9212dc271c8bcba805c82114617d47506747ee3a
+    git clone -b task-bench https://github.com/elliottslaughter/x10.git "$X10_DIR"/x10
 fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then
