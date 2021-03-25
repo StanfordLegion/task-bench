@@ -1151,7 +1151,7 @@ void App::report_timing(double elapsed_seconds, long nodes) const
     long long nonlocal_deps = 0;
 #ifdef DEBUG_CORE
     if (enable_graph_validation) {
-      assert(has_executed_graph.load() & (1 << g.graph_index) != 0);
+      assert((has_executed_graph.load() & (1 << g.graph_index)) != 0);
     }
 #endif
     for (long t = 0; t < g.timesteps; ++t) {
