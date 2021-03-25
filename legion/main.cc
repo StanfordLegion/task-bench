@@ -624,8 +624,7 @@ void LegionApp::run()
 
   double elapsed = (stop - start) / 1e9;
   if (runtime->get_executing_processor(ctx).address_space() == 0) {
-    size_t nodes = Realm::Machine::get_machine().get_address_space_count();
-    report_timing(elapsed, nodes);
+    report_timing(elapsed);
   }
 }
 

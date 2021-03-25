@@ -480,7 +480,7 @@ void OpenMPApp::execute_main_loop()
   }
   
   double elapsed = Timer::time_end();
-  report_timing(elapsed, 1);
+  report_timing(elapsed);
 }
 
 void OpenMPApp::execute_timestep(size_t idx, long t)

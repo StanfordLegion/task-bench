@@ -67,7 +67,7 @@ def execute_task_bench():
         results.extend(execute_task_graph(task_graph))
     core.join(*results).compute()
     total_time = time.perf_counter() - start_time
-    core.c.app_report_timing(app, total_time, 0)
+    core.c.app_report_timing(app, total_time)
 
 
 if __name__ == "__main__":
