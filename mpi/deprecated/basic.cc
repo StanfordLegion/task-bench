@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
     /* Average times, but do not include the first run */
     if (iter != 0) total_time_elapsed += time_elapsed;
   }
-  if (taskid == MASTER) new_app.report_timing(total_time_elapsed / NUM_ITER, 0);
+  if (taskid == MASTER) new_app.report_timing(total_time_elapsed / NUM_ITER);
   free_output(output_ptrs);
   free_data(graph_all_data);
   MPI_Finalize();

@@ -675,6 +675,7 @@ static void needs_argument(int i, int argc, const char *flag) {
 #define SAMPLE_FLAG "-sample"
 #define IMBALANCE_FLAG "-imbalance"
 
+#define NODES_FLAG "-nodes"
 #define SKIP_GRAPH_VALIDATION_FLAG "-skip-graph-validation"
 #define FIELD_FLAG "-field"
 
@@ -683,6 +684,7 @@ static void show_help_message(int argc, char **argv) {
 
   printf("\nGeneral options:\n");
   printf("  %-18s show this help message and exit\n", "-h");
+  printf("  %-18s number of nodes to use for estimating transfer statistics\n", NODES_FLAG);
   printf("  %-18s enable verbose output\n", "-v");
   printf("  %-18s enable extra verbose output\n", "-vv");
 
@@ -719,7 +721,8 @@ static void show_help_message(int argc, char **argv) {
 }
 
 App::App(int argc, char **argv)
-  : verbose(0)
+  : nodes(0)
+  , verbose(0)
   , enable_graph_validation(true)
 {
   TaskGraph graph = default_graph(graphs.size());
@@ -729,6 +732,16 @@ App::App(int argc, char **argv)
     if (!strcmp(argv[i], "-h")) {
       show_help_message(argc, argv);
       exit(0);
+    }
+
+    if (!strcmp(argv[i], NODES_FLAG)) {
+      needs_argument(i, argc, NODES_FLAG);
+      long value = atol(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"" NODES_FLAG " %ld\" must be > 0\n", value);
+        abort();
+      }
+      nodes = value;
     }
 
     if (!strcmp(argv[i], "-v")) {
@@ -1142,7 +1155,7 @@ static std::tuple<long, long> clamp(long start, long end, long min_value, long m
   }
 }
 
-void App::report_timing(double elapsed_seconds, long nodes) const
+void App::report_timing(double elapsed_seconds) const
 {
   long long total_num_tasks = 0;
   long long total_num_deps = 0;

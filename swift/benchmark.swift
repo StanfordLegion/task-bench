@@ -33,8 +33,8 @@ type pair {
 ];
 
 @dispatch=WORKER
-() reportTiming(string appStr, float elapsedTime, int nodes) "turbine" "0.0" [
-  "app_report_timing <<appStr>> <<elapsedTime>> <<nodes>>"
+() reportTiming(string appStr, float elapsedTime) "turbine" "0.0" [
+  "app_report_timing <<appStr>> <<elapsedTime>>"
 ];
 
 @dispatch=WORKER
@@ -312,7 +312,7 @@ type pair {
         float end = clock() =>
         if (i == 1) {
           location L = locationFromRank(0);
-          @location=L reportTiming(apps[0], end - start, 0);
+          @location=L reportTiming(apps[0], end - start);
         }
         finishedIter[i] = true;
       }

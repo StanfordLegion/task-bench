@@ -74,13 +74,14 @@ struct TaskGraph : public task_graph_t {
 
 struct App {
   std::vector<TaskGraph> graphs;
+  long nodes;
   int verbose;
   bool enable_graph_validation;
 
   App(int argc, char **argv);
   void check() const;
   void display() const;
-  void report_timing(double elapsed_seconds, long nodes) const;
+  void report_timing(double elapsed_seconds) const;
 };
 
 // Make sure core types are POD

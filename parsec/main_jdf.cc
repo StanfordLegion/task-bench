@@ -301,7 +301,7 @@ void ParsecApp::execute_main_loop()
   double elapsed;
   if (rank == 0) {
     elapsed = Timer::time_end();
-    report_timing(elapsed, 0);
+    report_timing(elapsed);
     debug_printf(0, "[****] TIME(s) %12.5f : \tnb_tasks %d", elapsed, nb_tasks);
   }
 

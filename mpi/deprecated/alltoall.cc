@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
     double time_elapsed = Timer::time_end();
     if (iter != 0) total_time_elapsed += time_elapsed;
   }
-  if (taskid == MASTER) new_app.report_timing(total_time_elapsed / NUM_ITER, 0);
+  if (taskid == MASTER) new_app.report_timing(total_time_elapsed / NUM_ITER);
 
   free_output(output_ptrs);
   free_all(graph_send_counts);

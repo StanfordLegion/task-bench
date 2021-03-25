@@ -594,7 +594,7 @@ void ParsecApp::execute_main_loop()
   MPI_Barrier(MPI_COMM_WORLD);
   if (rank == 0) {
     double elapsed = Timer::time_end();
-    report_timing(elapsed, 0);
+    report_timing(elapsed);
     debug_printf(0, "[****] TIME(s) %12.5f : \tnb_tasks %d\n", elapsed, nb_tasks);
   }
 

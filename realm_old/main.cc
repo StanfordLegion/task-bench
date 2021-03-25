@@ -1051,7 +1051,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     assert(ok);
   }
 
-  app.report_timing(last_stop - first_start, 0);
+  app.report_timing(last_stop - first_start);
 }
 
 void *create_byte_array_main(App &config, size_t size_of_byte_array,
