@@ -11,9 +11,8 @@ function sweep {
     for s in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18; do
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
-                local args
 		memoize="-dm:memoize -lg:parallel_replay $cores"
-		srun -n $2 -N $2 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../legion/task_bench -kernel compute_bound -iter $(( 1 << (26-s) )) -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores )) -fields 2 -ll:cpu $cores -ll:util 0 $memoize
+		srun -n $2 -N $2 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../../legion/task_bench -kernel compute_bound -iter $(( 1 << (26-s) )) -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores )) -fields 2 -ll:cpu $cores -ll:util 0 $memoize
                 #$1 $2 "${args[@]}"
             fi
         done
@@ -23,7 +22,7 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            sweep launch_util_0 $n $g $t > legion_util_0_ngraphs_${g}_type_${t}_nodes_${n}_test.log
+            sweep launch_util_0 $n $g $t > legion_util_0_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done
