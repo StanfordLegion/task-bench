@@ -76,6 +76,11 @@ void Kernel::execute(long graph_index, long timestep, long point,
     assert(timestep >= 0 && point >= 0);
     execute_kernel_imbalance(*this, graph_index, timestep, point);
     break;
+  case KernelType::COMPUTE_MEMORY:
+    assert(scratch_ptr != NULL);
+    assert(scratch_bytes > 0);
+    execute_kernel_compute_and_mem(*this, scratch_ptr, scratch_bytes, timestep);
+    break;
   default:
     assert(false && "unimplemented kernel type");
   };
@@ -91,6 +96,7 @@ static const std::map<std::string, KernelType> ktype_by_name = {
   {"compute_bound2", KernelType::COMPUTE_BOUND2},
   {"io_bound", KernelType::IO_BOUND},
   {"load_imbalance", KernelType::LOAD_IMBALANCE},
+  {"compute_and_mem", KernelType::COMPUTE_MEMORY},
 };
 
 static std::map<KernelType, std::string> make_name_by_ktype()
@@ -674,6 +680,7 @@ static void needs_argument(int i, int argc, const char *flag) {
 #define SCRATCH_FLAG "-scratch"
 #define SAMPLE_FLAG "-sample"
 #define IMBALANCE_FLAG "-imbalance"
+#define MEM_FRAC_FLAG "-mem-fraction"
 
 #define NODES_FLAG "-nodes"
 #define SKIP_GRAPH_VALIDATION_FLAG "-skip-graph-validation"
@@ -704,6 +711,7 @@ static void show_help_message(int argc, char **argv) {
   printf("  %-18s scratch bytes per task (only for memory-bound kernel)\n", SCRATCH_FLAG " [INT]");
   printf("  %-18s number of samples (only for memory-bound kernel)\n", SAMPLE_FLAG " [INT]");
   printf("  %-18s amount of load imbalance\n", IMBALANCE_FLAG " [FLOAT]");
+  printf("  %-18s fraction of memory iterations (only for memory-and-compute\n", MEM_FRAC_FLAG " [FLOAT]");
 
   printf("\nSupported dependency patterns:\n");
   for (auto dtype : dtype_by_name) {
@@ -878,7 +886,18 @@ App::App(int argc, char **argv)
       }
       graph.kernel.imbalance = value;
     }
-    
+
+    if (!strcmp(argv[i], MEM_FRAC_FLAG)) {
+      needs_argument(i, argc, MEM_FRAC_FLAG);
+      double value = atof(argv[++i]);
+      if (value < 0 || value > 1) {
+        fprintf(stderr, "error: Invalid flag \"" MEM_FRAC_FLAG " %f\" must be >= 0 and <= 1\n", value);
+        abort();
+      }
+      graph.kernel.fraction_mem = value;
+    }
+
+
     if (!strcmp(argv[i], FIELD_FLAG)) {
       needs_argument(i, argc, FIELD_FLAG);
       int value  = atoi(argv[++i]);
@@ -1087,6 +1106,11 @@ long long count_flops_per_task(const TaskGraph &g, long timestep, long point)
     return 2 * 64 * iterations + 64;
   }
 
+  case KernelType::COMPUTE_MEMORY:
+  {
+    return 2 * 64 * g.kernel.iterations * (1-g.kernel.fraction_mem) + 64;
+  }
+
   default:
     assert(false && "unimplemented kernel type");
   };
@@ -1112,6 +1136,8 @@ long long count_bytes_per_task(const TaskGraph &g, long timestep, long point)
   case KernelType::IO_BOUND:
   case KernelType::LOAD_IMBALANCE:
     return 0;
+  case KernelType::COMPUTE_MEMORY:
+    return g.scratch_bytes_per_task * g.kernel.iterations * g.kernel.fraction_mem / g.kernel.samples;
   default:
     assert(false && "unimplemented kernel type");
   };

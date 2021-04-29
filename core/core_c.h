@@ -49,6 +49,7 @@ typedef enum kernel_type_t {
   COMPUTE_BOUND2,
   IO_BOUND,
   LOAD_IMBALANCE,
+  COMPUTE_MEMORY,
 } kernel_type_t;
 
 typedef struct kernel_t {
@@ -56,6 +57,7 @@ typedef struct kernel_t {
   long iterations;
   int samples;
   double imbalance; // amount of imbalance as a fraction of the number of iterations
+  double fraction_mem; // fraction of iterations that are memory accesses
 } kernel_t;
 
 typedef struct interval_t {

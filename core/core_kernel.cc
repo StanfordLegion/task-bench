@@ -318,3 +318,107 @@ double execute_kernel_imbalance(const Kernel &kernel,
   // printf("iteration %ld\n", iterations);
   return execute_kernel_compute(k);
 }
+
+double execute_kernel_compute_and_mem(const Kernel &kernel,
+                           char *scratch_ptr, size_t scratch_bytes,
+                           long timestep) {
+
+assert(kernel.fraction_mem <= 1 && kernel.fraction_mem >= 0);
+int mem_iter = kernel.iterations*kernel.fraction_mem;
+int compute_iter = kernel.iterations - mem_iter;  
+
+// Compute portion
+#if __AVX2__ == 1
+  __m256d A[16];
+  
+  for (int i = 0; i < 16; i++) {
+    A[i] = _mm256_set_pd(1.0f, 2.0f, 3.0f, 4.0f);
+  }
+  
+  for (long iter = 0; iter < compute_iter; iter++) {
+    for (int i = 0; i < 16; i++) {
+      A[i] = _mm256_fmadd_pd(A[i], A[i], A[i]);
+    }
+  }
+#elif __AVX__ == 1
+  __m256d A[16];
+  
+  for (int i = 0; i < 16; i++) {
+    A[i] = _mm256_set_pd(1.0f, 2.0f, 3.0f, 4.0f);
+  }
+  
+  for (long iter = 0; iter < compute_iter; iter++) {
+    for (int i = 0; i < 16; i++) {
+      A[i] = _mm256_mul_pd(A[i], A[i]);
+      A[i] = _mm256_add_pd(A[i], A[i]);
+    }
+  }
+#else
+  double A[64];
+  
+  for (int i = 0; i < 64; i++) {
+    A[i] = 1.2345;
+  }
+  
+  for (long iter = 0; iter < compute_iter; iter++) {
+    for (int i = 0; i < 64; i++) {
+        A[i] = A[i] * A[i] + A[i];
+    }
+  } 
+#endif
+
+  // Memory portion
+  long iter = 0;
+
+  size_t sample_bytes = scratch_bytes / kernel.samples;
+
+  // Prologue
+  {
+    long start_idx = (timestep * mem_iter + iter) % kernel.samples;
+    long stop_idx = std::min((long)kernel.samples, start_idx + mem_iter);
+    long num_iter = stop_idx - start_idx;
+
+    if (num_iter > 0) {
+      char *sample_ptr = scratch_ptr + start_idx * sample_bytes;
+
+      copy(sample_ptr, num_iter * sample_bytes);
+
+      iter += num_iter;
+    }
+  }
+
+  // Body
+  for ( ; iter + kernel.samples <= mem_iter; iter += kernel.samples) {
+    long start_idx = (timestep * mem_iter + iter) % kernel.samples;
+    long num_iter = kernel.samples;
+
+    char *sample_ptr = scratch_ptr + start_idx * sample_bytes;
+
+    copy(sample_ptr, num_iter * sample_bytes);
+  }
+
+  // Epilogue
+  {
+    long start_idx = (timestep * mem_iter + iter) % kernel.samples;
+    long stop_idx = start_idx + (mem_iter - iter);
+    long num_iter = stop_idx - start_idx;
+
+    if (num_iter > 0) {
+      char *sample_ptr = scratch_ptr + start_idx * sample_bytes;
+
+      copy(sample_ptr, num_iter * sample_bytes);
+
+      iter += num_iter;
+    }
+  }
+
+  assert(iter == mem_iter);
+
+  double *C = (double *)A;
+  double dot = 1.0;
+  for (int i = 0; i < 64; i++) {
+    dot *= C[i];
+  }
+  return dot; 
+
+}
