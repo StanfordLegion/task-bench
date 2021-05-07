@@ -112,10 +112,10 @@ static const std::map<std::string, DistType> disttype_by_name = {
 };
 
 static const std::map<std::string, DistParam> distparam_by_name = {
-  {"max", DistParam::MAX},
-  {"std", DistParam::STD},
-  {"beta", DistParam::BETA},
-  {"alpha", DistParam::ALPHA},
+  {"dist-max", DistParam::MAX},
+  {"dist-std", DistParam::STD},
+  {"dist-beta", DistParam::BETA},
+  {"dist-alpha", DistParam::ALPHA},
   // TODO: add explanations of which go with what
 };
 
@@ -702,7 +702,6 @@ static void needs_argument(int i, int argc, const char *flag) {
 #define IMBALANCE_FLAG "-imbalance"
 #define MEM_FRAC_FLAG "-mem-fraction"
 #define DIST_FLAG "-dist"
-// TODO: add DIST_FLAG and related flags as real flags
 
 // distribution flags. All accept same datatype as result, which is a long
 #define DIST_MAX_FLAG "-dist-max" // for uniform
@@ -1010,6 +1009,25 @@ App::App(int argc, char **argv)
 
   }
 
+  if(graph.kernel.type == KernelType::DIST_IMBALANCE) {
+    if (graph.kernel.dist.type == DistType::UNIFORM && graph.kernel.dist.max < graph.kernel.iterations) {
+      fprintf(stderr, "error: Uniform distribution requires a maximum that is greater than the minimum given to -iter.\n");
+      abort();
+    }
+    if (graph.kernel.dist.type == DistType::GAMMA && graph.kernel.dist.a <= 0) {
+      fprintf(stderr, "error: Gamma distribution requires a value of a that is greater than 0.\n");
+      abort();
+    }
+    if (graph.kernel.dist.type == DistType::NORMAL && graph.kernel.dist.std <= 0) {
+      fprintf(stderr, "error: Normal distribution requires a standard deviation that is greater than 0.\n");
+      abort();
+    }
+    if (graph.kernel.dist.type == DistType::CAUCHY && graph.kernel.dist.b <= 0) {
+      fprintf(stderr, "error: Cauchy distribution requires a value of b that is greater than 0.\n");
+      abort();
+    }
+  }
+
   if (graph.period < 0) {
     graph.period = needs_period(graph.dependence) ? 3 : 0;
   }
@@ -1233,6 +1251,7 @@ long long count_bytes_per_task(const TaskGraph &g, long timestep, long point)
   case KernelType::COMPUTE_BOUND2:
   case KernelType::IO_BOUND:
   case KernelType::LOAD_IMBALANCE:
+  case KernelType::DIST_IMBALANCE:
     return 0;
   case KernelType::COMPUTE_MEMORY:
     return g.scratch_bytes_per_task * g.kernel.iterations * g.kernel.fraction_mem / g.kernel.samples;
