@@ -50,7 +50,33 @@ typedef enum kernel_type_t {
   IO_BOUND,
   LOAD_IMBALANCE,
   COMPUTE_MEMORY,
+  DIST_IMBALANCE,
 } kernel_type_t;
+
+typedef enum dist_type_t {
+  UNIFORM,
+  NORMAL,
+  GAMMA,
+  CAUCHY,
+  // TODO: add more
+} dist_type_t;
+
+typedef enum dist_param_type_t {
+  MAX,
+  STD,
+  BETA,
+  ALPHA,
+  LAMBDA,
+} dist_param_type_t;
+
+typedef struct dist_t {
+  dist_type_t type;
+  long max; // for the uniform distribution
+  long std; // standard deviation for normal
+  long a; // for gamma
+  double b; // for cauchy
+  // TODO: make sure these datayptes are good and add other necessary ones
+} dist_t;
 
 typedef struct kernel_t {
   kernel_type_t type;
@@ -58,6 +84,7 @@ typedef struct kernel_t {
   int samples;
   double imbalance; // amount of imbalance as a fraction of the number of iterations
   double fraction_mem; // fraction of iterations that are memory accesses
+  dist_t dist;
 } kernel_t;
 
 typedef struct interval_t {
