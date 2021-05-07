@@ -76,6 +76,15 @@ void Kernel::execute(long graph_index, long timestep, long point,
     assert(timestep >= 0 && point >= 0);
     execute_kernel_imbalance(*this, graph_index, timestep, point);
     break;
+  case KernelType::DIST_IMBALANCE:
+    assert(timestep >= 0 && point >= 0);
+    execute_kernel_distribution(*this, graph_index, timestep, point);
+    break;
+  case KernelType::COMPUTE_MEMORY:
+    assert(scratch_ptr != NULL);
+    assert(scratch_bytes > 0);
+    execute_kernel_compute_and_mem(*this, scratch_ptr, scratch_bytes, timestep);
+    break;
   default:
     assert(false && "unimplemented kernel type");
   };
@@ -91,6 +100,23 @@ static const std::map<std::string, KernelType> ktype_by_name = {
   {"compute_bound2", KernelType::COMPUTE_BOUND2},
   {"io_bound", KernelType::IO_BOUND},
   {"load_imbalance", KernelType::LOAD_IMBALANCE},
+  {"dist_imbalance", KernelType::DIST_IMBALANCE},
+  {"compute_and_mem", KernelType::COMPUTE_MEMORY},
+};
+
+static const std::map<std::string, DistType> disttype_by_name = {
+  {"uniform", DistType::UNIFORM},
+  {"normal", DistType::NORMAL},
+  {"gamma", DistType::GAMMA},
+  {"cauchy", DistType::CAUCHY},
+};
+
+static const std::map<std::string, DistParam> distparam_by_name = {
+  {"max", DistParam::MAX},
+  {"std", DistParam::STD},
+  {"beta", DistParam::BETA},
+  {"alpha", DistParam::ALPHA},
+  // TODO: add explanations of which go with what
 };
 
 static std::map<KernelType, std::string> make_name_by_ktype()
@@ -674,6 +700,15 @@ static void needs_argument(int i, int argc, const char *flag) {
 #define SCRATCH_FLAG "-scratch"
 #define SAMPLE_FLAG "-sample"
 #define IMBALANCE_FLAG "-imbalance"
+#define MEM_FRAC_FLAG "-mem-fraction"
+#define DIST_FLAG "-dist"
+// TODO: add DIST_FLAG and related flags as real flags
+
+// distribution flags. All accept same datatype as result, which is a long
+#define DIST_MAX_FLAG "-dist-max" // for uniform
+#define DIST_STD_FLAG "-dist-std" // for normal
+#define DIST_BETA_FLAG "-dist-beta" // for gamma
+#define DIST_ALPHA_FLAG "-dist-alpha" // for gamma
 
 #define NODES_FLAG "-nodes"
 #define SKIP_GRAPH_VALIDATION_FLAG "-skip-graph-validation"
@@ -704,6 +739,8 @@ static void show_help_message(int argc, char **argv) {
   printf("  %-18s scratch bytes per task (only for memory-bound kernel)\n", SCRATCH_FLAG " [INT]");
   printf("  %-18s number of samples (only for memory-bound kernel)\n", SAMPLE_FLAG " [INT]");
   printf("  %-18s amount of load imbalance\n", IMBALANCE_FLAG " [FLOAT]");
+  printf("  %-18s fraction of memory iterations (only for memory-and-compute\n", MEM_FRAC_FLAG " [FLOAT]");
+  printf("  %-18s distribution type (see available list below)\n", DIST_FLAG " [DIST]");
 
   printf("\nSupported dependency patterns:\n");
   for (auto dtype : dtype_by_name) {
@@ -713,6 +750,17 @@ static void show_help_message(int argc, char **argv) {
   printf("\nSupported kernel types:\n");
   for (auto ktype : ktype_by_name) {
     printf("  %s\n", ktype.first.c_str());
+  }
+
+  printf("\nSupported distribution types:\n");
+  for (auto disttype : disttype_by_name) {
+    printf(" %s\n", disttype.first.c_str());
+  }
+
+  printf("\nSupported distribution parameters:\n");
+  for (auto distparam : distparam_by_name) {
+    printf(" %s\n", distparam.first.c_str());
+    // TODO: add explanation of how to use the distribution parameters
   }
 
   printf("\nLess frequently used options:\n");
@@ -785,6 +833,17 @@ App::App(int argc, char **argv)
         abort();
       }
       graph.dependence = type->second;
+    }
+
+    if (!strcmp(argv[i], DIST_FLAG)) {
+      needs_argument(i, argc, DIST_FLAG);
+      auto name = argv[++i];
+      auto type = disttype_by_name.find(name);
+      if (type == disttype_by_name.end()) {
+        fprintf(stderr, "error: Invalid flag \"-dist %s\"\n", name);
+        abort();
+      }
+      graph.kernel.dist.type = type->second;
     }
 
     if (!strcmp(argv[i], RADIX_FLAG)) {
@@ -878,7 +937,18 @@ App::App(int argc, char **argv)
       }
       graph.kernel.imbalance = value;
     }
-    
+
+    if (!strcmp(argv[i], MEM_FRAC_FLAG)) {
+      needs_argument(i, argc, MEM_FRAC_FLAG);
+      double value = atof(argv[++i]);
+      if (value < 0 || value > 1) {
+        fprintf(stderr, "error: Invalid flag \"" MEM_FRAC_FLAG " %f\" must be >= 0 and <= 1\n", value);
+        abort();
+      }
+      graph.kernel.fraction_mem = value;
+    }
+
+
     if (!strcmp(argv[i], FIELD_FLAG)) {
       needs_argument(i, argc, FIELD_FLAG);
       int value  = atoi(argv[++i]);
@@ -897,6 +967,47 @@ App::App(int argc, char **argv)
       graphs.push_back(graph);
       graph = default_graph(graphs.size());
     }
+
+    if (!strcmp(argv[i], DIST_MAX_FLAG)) {
+      needs_argument(i, argc, DIST_MAX_FLAG);
+      long value = atol(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"" DIST_MAX_FLAG " %ld\" must be > 0\n", value);
+        abort();
+      }
+      graph.kernel.dist.max = value;
+    }
+
+    if (!strcmp(argv[i], DIST_STD_FLAG)) {
+      needs_argument(i, argc, DIST_STD_FLAG);
+      long value = atol(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"" DIST_STD_FLAG " %ld\" must be > 0\n", value);
+        abort();
+      }
+      graph.kernel.dist.std = value;
+    }
+
+    if (!strcmp(argv[i], DIST_BETA_FLAG)) {
+      needs_argument(i, argc, DIST_BETA_FLAG);
+      double value = atof(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"" DIST_BETA_FLAG " %f\" must be > 0\n", value);
+        abort();
+      }
+      graph.kernel.dist.b = value;
+    }
+
+    if (!strcmp(argv[i], DIST_ALPHA_FLAG)) {
+      needs_argument(i, argc, DIST_ALPHA_FLAG);
+      long value = atol(argv[++i]);
+      if (value <= 0) {
+        fprintf(stderr, "error: Invalid flag \"" DIST_ALPHA_FLAG " %ld\" must be > 0\n", value);
+        abort();
+      }
+      graph.kernel.dist.a = value;
+    }
+
   }
 
   if (graph.period < 0) {
@@ -1087,6 +1198,17 @@ long long count_flops_per_task(const TaskGraph &g, long timestep, long point)
     return 2 * 64 * iterations + 64;
   }
 
+  case KernelType::DIST_IMBALANCE:
+  {
+    long iterations = select_dist_iterations(g.kernel, g.graph_index, timestep, point);
+    return 2 * 64 * iterations + 64;
+  }
+
+  case KernelType::COMPUTE_MEMORY:
+  {
+    return 2 * 64 * g.kernel.iterations * (1-g.kernel.fraction_mem) + 64;
+  }
+
   default:
     assert(false && "unimplemented kernel type");
   };
@@ -1112,6 +1234,8 @@ long long count_bytes_per_task(const TaskGraph &g, long timestep, long point)
   case KernelType::IO_BOUND:
   case KernelType::LOAD_IMBALANCE:
     return 0;
+  case KernelType::COMPUTE_MEMORY:
+    return g.scratch_bytes_per_task * g.kernel.iterations * g.kernel.fraction_mem / g.kernel.samples;
   default:
     assert(false && "unimplemented kernel type");
   };

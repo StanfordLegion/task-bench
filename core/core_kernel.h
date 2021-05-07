@@ -47,4 +47,14 @@ long select_imbalance_iterations(const Kernel &kernel,
 double execute_kernel_imbalance(const Kernel &kernel,
                                 long graph_index, long timestep, long point);
 
+long select_dist_iterations(const Kernel &kernel,
+                            long graph_index, long timestep, long point);
+
+double execute_kernel_distribution(const Kernel &kernel,
+                                   long graph_index, long timestep, long point);
+
+double execute_kernel_compute_and_mem(const Kernel &kernel,
+                           char *scratch_large_ptr, size_t scratch_large_bytes, 
+                           long timestep);
+
 #endif

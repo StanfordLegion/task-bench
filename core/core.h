@@ -25,6 +25,10 @@ typedef dependence_type_t DependenceType;
 
 typedef kernel_type_t KernelType;
 
+typedef dist_type_t DistType;
+
+typedef dist_param_type_t DistParam;
+
 struct TaskGraph;
 
 struct Kernel : public kernel_t {
