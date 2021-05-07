@@ -15,6 +15,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <random>
 
 #if (__AVX2__ == 1) || (__AVX__ == 1)
 #include <immintrin.h>
@@ -29,6 +30,8 @@
 #ifdef USE_BLAS_KERNEL
 #include <mkl.h>
 #endif
+
+#define DEBUG(...) { fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); }
 
 void execute_kernel_empty(const Kernel &kernel)
 {
@@ -316,6 +319,70 @@ double execute_kernel_imbalance(const Kernel &kernel,
   Kernel k(kernel);
   k.iterations = iterations;
   // printf("iteration %ld\n", iterations);
+  return execute_kernel_compute(k);
+}
+
+long select_dist_iterations(const Kernel &kernel,
+                                 long graph_index, long timestep, long point)
+{
+  long seed[3] = {graph_index, timestep, point};
+  double value = random_uniform(&seed[0], sizeof(seed));
+  uint64_t bits;
+  gen_bits(&seed[0], sizeof(seed), &bits);
+  int ratio = sizeof(uint64_t)/sizeof(unsigned);
+  unsigned seed_u = bits/ratio; // TODO: make this a valid conversion
+  std::default_random_engine generator(seed_u);
+
+  long iterations;
+
+  switch(kernel.dist.type) {
+    case DistType::UNIFORM:
+      {
+      std::uniform_int_distribution<long> distribution(kernel.iterations, kernel.dist.max);
+      iterations = distribution(generator);
+      break;
+      }
+    case DistType::NORMAL:
+      {
+      // std::normal_distribution<long> distribution(kernel.iterations, kernel.dist.std);
+      std::normal_distribution<double> distribution(0.0, 1.0);
+      double val = distribution(generator);
+      iterations = val*kernel.dist.std + kernel.iterations;
+      break;
+      }
+    case DistType::GAMMA:
+      {
+        // Treat iterations as beta
+      std::gamma_distribution<double> distribution(kernel.dist.a, 1);
+      // std::gamma_distribution<long> distribution(kernel.dist.a, kernel.dist.b);
+      double val = distribution(generator);
+      iterations = kernel.iterations*val;
+      break;
+      }
+    case DistType::CAUCHY:
+      {
+      // std::cauchy_distribution<long> distribution(kernel.dist.a, kernel.dist.b);
+      std::cauchy_distribution<double> distribution(0.0, kernel.dist.b);
+      // TODO: make b a double
+      iterations = distribution(generator)+kernel.iterations;
+      iterations = distribution(generator);
+      break;
+      }
+    default:
+      assert(false && "unimplemented kernel type");
+  };
+
+  if(iterations < 0) iterations = 0; // protects from bad values from user or long tails
+  assert(iterations >= 0);
+  return iterations;
+}
+
+double execute_kernel_distribution(const Kernel &kernel,
+                                long graph_index, long timestep, long point)
+{
+  long iterations = select_dist_iterations(kernel, graph_index, timestep, point);
+  Kernel k(kernel);
+  k.iterations = iterations;
   return execute_kernel_compute(k);
 }
 

@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+// Generate a uniform distribution of bits.
+void gen_bits(const void *input, size_t input_bytes, void *output);
+
 // Compute a deterministic, uniformly distributed pseudo-random value
 // between [0, 1) using input as a seed.
 double random_uniform(const void *input, size_t input_bytes);
