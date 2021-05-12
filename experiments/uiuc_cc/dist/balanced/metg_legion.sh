@@ -12,8 +12,7 @@ function sweep {
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
 		memoize="-dm:memoize -lg:parallel_replay $cores"
-		# TODO: try with alpha of 1, 2, 3, 4, need another loop for that
-		srun -n $2 -N $2 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../../../legion/task_bench -kernel dist_imbalance -dist gamma -dist-alpha 2 -iter $(( 1 << (24-s) )) -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores )) -fields 2 -ll:cpu $cores -ll:util 0 $memoize -nodes $SLURM_JOB_NUM_NODES -output 16
+		srun -n $2 -N $2 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../../legion/task_bench -kernel compute_bound -iter $(( 1 << (26-s) )) -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores )) -fields 2 -ll:cpu $cores -ll:util 0 $memoize -nodes $SLURM_JOB_NUM_NODES -output 16
                 #$1 $2 "${args[@]}"
             fi
         done

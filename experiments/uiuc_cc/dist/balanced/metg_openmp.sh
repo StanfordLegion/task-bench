@@ -14,7 +14,7 @@ function sweep {
         for rep in 0 1 2 3 4; do
             if [[ $rep -le $s ]]; then
                 local args
-		srun -n $2 -N $2 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../../../openmp/main -kernel dist_imbalance -dist gamma -dist-alpha 2 -iter $(( 1 << (24-s) )) -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores )) -field 2 -worker $total_cores -output 16 -nodes $SLURM_JOB_NUM_NODES
+		srun -n $2 -N $2 --cpus-per-task=$(( total_cores * 2 )) --cpu_bind none ../../../openmp/main -kernel compute_bound -iter $(( 1 << (26-s) )) -type $4 -radix ${RADIX:-5} -steps ${STEPS:-1000} -width $(( $2 * cores )) -field 2 -worker $total_cores -output 16 -nodes $SLURM_JOB_NUM_NODES
             fi
         done
     done
