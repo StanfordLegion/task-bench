@@ -1,5 +1,9 @@
 # A Task Benchmark [![CI](https://github.com/StanfordLegion/task-bench/actions/workflows/main.yml/badge.svg)](https://github.com/StanfordLegion/task-bench/actions/workflows/main.yml)
 
+This version of Task Bench is modified with a feature which uses randomizaiton for the number of iterations per task. Each time a task is run, it selects a number of iterations to run based on a distribution defined by the user options.
+
+See `experiments/uiuc_cc/dist/` for the scripts used to find results with the distributions.
+
 **Please contact the authors before publishing any results obtained
 with Task Bench.**
 

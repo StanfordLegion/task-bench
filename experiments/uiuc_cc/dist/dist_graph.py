@@ -6,7 +6,7 @@ import numpy as np
 
 extension='png'
 SUFFIX = "_ngraphs_1_type_stencil_1d_nodes_1.csv"
-dists = ["balanced", "uniform", "gamma", "normal"]
+dists = ["uniform", "gamma", "normal", "cauchy", "balanced"]
 impls = ["OpenMP", "PaRSEC", "Legion"]
 impls_prefix = dict(zip(impls, ["openmp", "parsec", "legion_util_0"]))
 dists_prefix = dict(zip(dists, dists))
@@ -24,7 +24,7 @@ fields = ["elapsed","iterations","output","steps","tasks","flops","bytes","width
 field_idx = dict(zip(fields, range(len(fields))))
 
 x_field = 'iterations'
-x_log = False
+x_log = True
 y_field = 'flops'
 y_log = False
 
@@ -32,6 +32,8 @@ y_log = False
 #fig = plt.figure()
 fig, ax = plt.subplots(2, 2)
 for dist_idx in range(len(dists)):
+    if(dist_idx >= 4):
+        break
     x = dist_idx/2
     y = dist_idx%2
     plt.subplot(2, 2, dist_idx+1)
