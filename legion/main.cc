@@ -783,7 +783,7 @@ int main(int argc, char **argv)
 
   {
     TaskVariantRegistrar registrar(TID_TOP, "top");
-    registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
+    registrar.add_constraint(ProcessorConstraint(Processor::IO_PROC));
     registrar.set_replicable();
     Runtime::preregister_task_variant<top>(registrar, "top");
   }
