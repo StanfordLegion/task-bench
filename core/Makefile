@@ -62,7 +62,7 @@ endif
 include make_blas.mk
 
 .PHONY: all
-all: $(SLIB) $(DLIB) $(SLIB_SYMLINK)
+all: $(SLIB) $(SLIB_SYMLINK) # $(DLIB)
 
 $(SLIB): $(OBJS) $(COBJS)
 	rm -f $@
