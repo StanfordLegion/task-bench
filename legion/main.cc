@@ -460,7 +460,7 @@ struct LegionApp : public App {
 
   void run();
 private:
-  void execute_main_loop();
+  void execute_main_loop(int iteration);
 
   void execute_timestep(size_t i, long t);
 
@@ -612,12 +612,12 @@ void LegionApp::run()
     init(idx);
   }
 
-  execute_main_loop(); // warm-up
+  execute_main_loop(0); // warm-up
 
   issue_execution_fence_and_block();
   unsigned long long start = Realm::Clock::current_time_in_nanoseconds();
 
-  execute_main_loop(); // timed
+  execute_main_loop(1); // timed
 
   issue_execution_fence_and_block();
   unsigned long long stop = Realm::Clock::current_time_in_nanoseconds();
@@ -644,7 +644,7 @@ static long lcm(long a, long b) {
   return a * b / gcd(a, b);
 }
 
-void LegionApp::execute_main_loop()
+void LegionApp::execute_main_loop(int iteration)
 {
   long period = num_fields;
   for (auto g : graphs) {
@@ -668,6 +668,11 @@ void LegionApp::execute_main_loop()
     }
     if ((t+1) % period == 0 && t < max_timesteps) {
       runtime->end_trace(ctx, 0);
+    }
+    if (iteration == 0 && t == period - 1) {
+      issue_execution_fence_and_block();
+      double init_ts = Realm::Clock::current_time_in_nanoseconds()/1e9;
+      LEGION_PRINT_ONCE(runtime, ctx, stdout, "Init Time %e seconds\n", init_ts)
     }
   }
 }
