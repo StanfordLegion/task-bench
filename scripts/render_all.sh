@@ -509,7 +509,22 @@ elif [[ $(basename $PWD) = imbalance ]]; then
     for imbalance in 0.0 0.5 1.0 1.5 2.0; do
         crop efficiency_imbalance_${imbalance}.pdf
     done
+
+elif [[ $(basename $PWD) = daint_radix ]]; then
+
+    "$root_dir"/metg.py -m daint -g 1 -d spread -n 64 -x radix --csv excel > radix.csv
+
+    "$root_dir"/render_metg.py radix.csv \
+               --xlabel 'Dependencies per Task' \
+               --xdata 'radix' \
+               --no-xlog \
+               --legend ../daint_legend.csv # \
+               # --title 'METG vs Dependencies per Task (Cori, Compute, Nearest)'
+
+    crop radix.pdf
+
 elif [[ $(basename $PWD) = daint_init ]]; then
+
     "$root_dir"/init.py -m daint -g 1 -d spread -s "$system" --csv excel > init.csv
     for system in 'legion neweqcr' 'legion oldeqcr' 'legion paint'; do
         "$root_dir"/init.py -m daint -g 1 -d spread -s "$system" --csv excel > init_"$system".csv
@@ -526,6 +541,12 @@ elif [[ $(basename $PWD) = daint_init ]]; then
                    --ylim '(0.02,10)' \
                    --legend ../daint_legend.csv
     done
+
+    crop init.pdf
+    for system in 'legion neweqcr' 'legion oldeqcr' 'legion paint'; do
+        crop init_"$system".pdf
+    done
+
 else
     echo "Not in a data directory, change to 'compute' or 'imbalance' and then rerun."
 fi
