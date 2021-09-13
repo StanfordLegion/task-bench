@@ -98,7 +98,7 @@ class Parser:
     def complete(self):
         raise Exception('complete() must be customized by the subclass')
 
-    def parse(self, machine, resource, threshold, summary, verbose):
+    def parse(self, machine, resource, threshold, summary, verbose, group_key='iterations'):
         has_exception = False
         log_filenames = glob.glob('**/*.log', recursive=False)
         for filename in log_filenames:
@@ -107,7 +107,7 @@ class Parser:
                 continue
             params = get_machine_parameters(machine, row['processor_kind'], resource)
             try:
-                data = chart_metg.analyze(filename, row['ngraphs'], row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=summary)
+                data = chart_metg.analyze(filename, row['ngraphs'], row['nodes'], params['cores'], threshold, params['peak_flops'], params['peak_bytes'], summary=summary, group_key=group_key)
             except Exception as e:
                 if verbose:
                     print('%s:' % filename, file=sys.stderr)

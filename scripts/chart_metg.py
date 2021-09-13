@@ -24,8 +24,10 @@ import re
 import sys
 
 _columns = collections.OrderedDict([
+    ('init', (re.compile(r'^\s*Init Time ([0-9.e+-]+) seconds$', re.MULTILINE), float)),
     ('elapsed', (re.compile(r'^\s*Elapsed Time ([0-9.e+-]+) seconds$', re.MULTILINE), float)),
     ('iterations', (re.compile(r'^\s*Iterations: ([0-9]+)$', re.MULTILINE), int)),
+    ('radix', (re.compile(r'^\s*Radix: ([0-9]+)$', re.MULTILINE), int)),
     ('output', (re.compile(r'^\s*Output Bytes: ([0-9]+)$', re.MULTILINE), int)),
     ('steps', (re.compile(r'^\s*Time Steps: ([0-9]+)$', re.MULTILINE), int)),
     ('tasks', (re.compile(r'^\s*Total Tasks ([0-9]+)$', re.MULTILINE), int)),
@@ -51,7 +53,7 @@ def group_by(keys, values):
     if last_group is not None:
         yield (last_key, last_group)
 
-def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, summary=True):
+def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, summary=True, group_key='iterations'):
     compute = collections.OrderedDict([
         ('scale_factor', lambda t: t['iterations'][0] / t['iterations']),
         ('time_per_task', lambda t: t['elapsed'] / t['tasks'] * nodes * cores * 1000),
@@ -75,7 +77,7 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
 
     assert table['tasks'].size > 0, "logs are empty"
 
-    for column in ('iterations', 'output', 'steps', 'width'):
+    for column in ('iterations', 'radix', 'output', 'steps', 'width'):
         assert table[column].size % ngraphs == 0, "number of graphs is not divisible by ngraphs"
         elts = numpy.split(table[column], table[column].size / ngraphs)
         assert all(same(elt) for elt in elts), "graphs are not identical"
@@ -84,7 +86,7 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
     assert same([len(column) for column in table.values()]), "columns are uneven"
 
     # Sort data by iteration count.
-    permutation = table['iterations'].argsort()[::-1]
+    permutation = table[group_key].argsort()[::-1]
     for column in table.keys():
         table[column] = table[column][permutation]
 
@@ -95,17 +97,19 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
     assert all(table['tasks'] == ngraphs * table['steps'] * table['width']), "mismatch in tasks vs steps * width"
 
     # Group by iteration count and compute statistics:
-    table['iterations'], table['elapsed'], table['std'], table['reps'], table['flops'], table['bytes'], same_flops, same_bytes = list(map(
+    table['iterations'], table['radix'], table['init'], table['elapsed'], table['std'], table['reps'], table['flops'], table['bytes'], same_iterations, same_radix, same_flops, same_bytes = list(map(
         numpy.asarray,
-        zip(*[(k, numpy.mean(elapsed), numpy.std(elapsed), len(elapsed), flops[0], bytes[0], same(flops), same(bytes))
-              for k, vs in group_by(table['iterations'], zip(table['elapsed'], table['flops'], table['bytes']))
-              for elapsed, flops, bytes in [zip(*vs)]])))
+        zip(*[(iterations[0], radix[0], numpy.mean(init), numpy.mean(elapsed), numpy.std(elapsed), len(elapsed), flops[0], bytes[0], same(iterations), same(radix), same(flops), same(bytes))
+              for k, vs in group_by(table[group_key], zip(table['iterations'], table['radix'], table['init'], table['elapsed'], table['flops'], table['bytes']))
+              for iterations, radix, init, elapsed, flops, bytes in [zip(*vs)]])))
 
+    assert all(same_iterations), "iterations are not identical"
+    assert all(same_radix), "radix are not identical"
     assert all(same_flops), "flops are not identical"
     assert all(same_bytes), "bytes are not identical"
 
     for column in ('steps', 'width', 'tasks'):
-        table[column] = numpy.resize(table[column], table['iterations'].shape)
+        table[column] = numpy.resize(table[column], table[group_key].shape)
 
     # Compute derived columns:
     for k, f in compute.items():
@@ -124,6 +128,9 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
         out = csv.writer(f)
         out.writerow(result.keys())
         out.writerows(zip(*list(result.values())))
+
+    if not summary:
+        return (result, None)
 
     # Compute minimum efficient task granularity:
     assert any(table['efficiency'] >= threshold), "no data above threshold, was run properly configured?"
@@ -147,9 +154,6 @@ def analyze(filename, ngraphs, nodes, cores, threshold, peak_flops, peak_bytes, 
             threshold,
             numpy.flip(table['efficiency'][min_i:min_i+2], 0),
             numpy.flip(table['time_per_task'][min_i:min_i+2], 0))
-
-    if not summary:
-        return (result, min_time)
 
     return (min_time,)
 

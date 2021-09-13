@@ -509,6 +509,16 @@ elif [[ $(basename $PWD) = imbalance ]]; then
     for imbalance in 0.0 0.5 1.0 1.5 2.0; do
         crop efficiency_imbalance_${imbalance}.pdf
     done
+elif [[ $(basename $PWD) = daint_init ]]; then
+    for system in 'legion neweqcr' 'legion oldeqcr' 'legion paint'; do
+        "$root_dir"/init.py -m daint -g 1 -d spread -s "$system" --csv excel > init_"$system".csv
+    done
+
+    for system in 'legion neweqcr' 'legion oldeqcr' 'legion paint'; do
+        "$root_dir"/render_metg.py init_"$system".csv \
+                   --ylabel 'Startup Time (s)' \
+                   --ylim '(0.02,10)'
+    done
 else
     echo "Not in a data directory, change to 'compute' or 'imbalance' and then rerun."
 fi
