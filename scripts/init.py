@@ -38,13 +38,18 @@ class Parser(util.Parser):
         return (
             row['ngraphs'] == self.ngraphs and
             row['type'] == self.dependence and
-            row['name'] == self.system)
+            (not self.system or row['name'] == self.system))
 
     def process(self, row, data, metg=None):
         for values in zip(*list(data.values())):
             items = dict(zip(data.keys(), values))
-            self.header.add(items['radix'])
-            self.table[row['nodes']][items['radix']] = items['init']
+            if int(items['radix']) not in set([1, 5, 13, 29]):
+                continue
+            label = items['radix']
+            if not self.system:
+                label = '%s radix %s' % (row['name'], label)
+            self.header.add(label)
+            self.table[row['nodes']][label] = items['init']
 
     def error_value(self):
         return {}
@@ -53,7 +58,13 @@ class Parser(util.Parser):
         # FIXME: This isn't actually the criteria we'd like to sort on,
         # we'd prefer to sort so that the list of names roughly parallels
         # the order of the bars in the graph.
-        self.header = sorted(self.header)
+        if self.system:
+            self.header = sorted(self.header)
+        else:
+            def k(x):
+                xs = x.split()
+                return (x[:-1], int(x[-1]))
+            self.header = sorted(self.header, key=k)
         self.header.insert(0, 'nodes')
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
@@ -72,7 +83,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', '--ngraphs', type=int, required=True)
     parser.add_argument('-d', '--dependence', required=True)
-    parser.add_argument('-s', '--system', required=True)
+    parser.add_argument('-s', '--system')
     parser.add_argument('-m', '--machine', required=True)
     parser.add_argument('-r', '--resource', default='flops')
     parser.add_argument('-t', '--threshold', type=float, default=0.5)

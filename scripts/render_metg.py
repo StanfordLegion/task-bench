@@ -41,6 +41,7 @@ parser.add_argument('--legend-fontsize', type=int, default=13)
 parser.add_argument('--legend-position', default='center left')
 parser.add_argument('--legend-base', type=int, default=0)
 parser.add_argument('--legend-suffix', action='append', default=[])
+parser.add_argument('--legend-suffix-takes-arg', action='store_true')
 parser.add_argument('--limit-suffix')
 parser.add_argument('--limit-intersection-filename')
 parser.add_argument('--limit-intersection-system')
@@ -130,6 +131,8 @@ colors = [
     (0.137,0.122,0.125),
 ] * 10
 
+linetypes = ['-', '--', ':']
+
 matplotlib.rcParams['font.family'] = 'serif'
 matplotlib.rcParams['font.serif'] = 'Times'
 matplotlib.rcParams['text.usetex'] = True
@@ -187,18 +190,31 @@ if args.legend:
 else:
     next_idx = 0
 
+colargs = []
 for column in columns:
     visible = True
     limit = False
+    colargidx = None
     if args.legend:
         colname = column
         colsuffix = ''
+        colarg = None
         for suffix in args.legend_suffix:
+            colname = column
+            if args.legend_suffix_takes_arg:
+                colsplit = colname.replace('_', ' ').split()
+                colarg = colsplit[-1]
+                colname = '_'.join(colsplit[:-1])
             if colname.endswith(suffix):
                 colname = colname[:-len(suffix)]
                 colsuffix = suffix.replace('_', ' ')
                 if args.limit_suffix == suffix:
                     limit = True
+                if args.legend_suffix_takes_arg:
+                    colsuffix = '%s %s' % (colsuffix, colarg)
+                    if colarg not in colargs:
+                        colargs.append(colarg)
+                    colargidx = colargs.index(colarg)
                 break
         if colname in legend_label:
             label = legend_label[colname] + colsuffix
@@ -240,6 +256,11 @@ for column in columns:
         linetype = '--'
         linewidth = 1
         label = '%s 50%%' % label
+    elif colargidx is not None:
+        color = colors[idx]
+        marker = markers[colargidx]
+        linetype = linetypes[colargidx % len(linetypes)]
+        linewidth = 1
     else:
         color = colors[idx]
         marker = markers[idx]
