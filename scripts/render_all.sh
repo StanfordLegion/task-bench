@@ -538,7 +538,7 @@ elif [[ $(basename $PWD) = daint_init ]]; then
     for system in 'legion neweqcr' 'legion oldeqcr' 'legion paint'; do
         "$root_dir"/render_metg.py init_"$system".csv \
                    --ylabel 'Startup Time (s)' \
-                   --ylim '(0.02,10)' \
+                   --ylim '(0.02,50)' \
                    --legend ../daint_legend.csv
     done
 
