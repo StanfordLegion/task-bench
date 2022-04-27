@@ -7,12 +7,13 @@ import subprocess
 root_dir = os.path.dirname(os.path.dirname(__file__))
 core_header = subprocess.check_output(
     [
-        "gcc", "-P", "-E", # "-D", "__attribute__(x)=", "-E", "-P",
+        "gcc", "-D", "__attribute__(x)=",
+               "-D", "TASK_BENCH_PYTHON_CFFI",
+               "-E", "-P",
         os.path.join(root_dir, "core/core_c.h")
     ]).decode("utf-8")
 ffi = cffi.FFI()
 ffi.cdef(core_header)
-print(core_header)
 c = ffi.dlopen(os.path.join(root_dir, "core", "libcore.so"))
 
 def app_create(args):
@@ -22,18 +23,6 @@ def app_create(args):
         c_args.append(ffi.new("char []", arg.encode('utf-8')))
         c_argv[i] = c_args[-1]
     c_argv[len(args)] = ffi.NULL
-    app = c.app_create(len(args), c_argv)
-    c.app_display(app)
-    return app
-
-def app_create(args):
-    c_args = []
-    c_argv = ffi.new("char *[]", len(args) + 1)
-    for i, arg in enumerate(args):
-        c_args.append(ffi.new("char []", arg.encode('utf-8')))
-        c_argv[i] = c_args[-1]
-    c_argv[len(args)] = ffi.NULL
-
     app = c.app_create(len(args), c_argv)
     c.app_display(app)
     return app
@@ -87,7 +76,6 @@ def execute_point_impl(graph_array, timestep, point, scratch, *inputs):
     c.task_graph_execute_point_scratch(
         graph, timestep, point, output_ptr, output.shape[0], input_ptrs,
         input_sizes, len(inputs), scratch_ptr, scratch_size)
-
     return output
 
 @ray.remote
@@ -101,8 +89,8 @@ def execute_point_no_scratch(graph_array, timestep, point, *inputs):
 
 def execute_point_delayed(graph_array, timestep, point, scratch, *inputs):
     if scratch is not None:
-        return execute_point_scratch(
-            graph_array, timestep, point, scratch, *inputs).remote()
+        return execute_point_scratch.remote(
+            graph_array, timestep, point, scratch, *inputs)
     else:
-        return execute_point_no_scratch(
-            graph_array, timestep, point, *inputs).remote(), None
+        return execute_point_no_scratch.remote(
+            graph_array, timestep, point, *inputs), None

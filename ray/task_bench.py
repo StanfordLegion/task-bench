@@ -44,24 +44,11 @@ def execute_task_bench():
     results = []
     for task_graph in task_graphs:
         results.extend(execute_task_graph(task_graph))
-    core.join(*results).compute()
+    ray.get(results)
     total_time = time.perf_counter() - start_time
     core.c.app_report_timing(app, total_time)
-
-
-@ray.remote
-def task1():
-    print("task1")
-
-@ray.remote
-def task2(id):
-    print("task2")
 
 if __name__ == "__main__":
     # TODO (rohany): Not sure what to do here for multi-node.
     ray.init()
-
-    # id1s = [task1.remote() for _ in range(10)]
-    # id2s = [task2.remote(id) for id in id1s]
-    # done = ray.get(id2s)
     execute_task_bench()

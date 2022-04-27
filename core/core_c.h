@@ -16,9 +16,11 @@
 #ifndef CORE_C_H
 #define CORE_C_H
 
+#ifndef TASK_BENCH_PYTHON_CFFI
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
