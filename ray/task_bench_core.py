@@ -4,6 +4,9 @@ import numpy as np
 import os
 import subprocess
 
+# Similiarly to the FFI loading in dask/task_bench_core.py, we load
+# the CFFI handles in its own module to avoid introspection from
+# cloudpickle.
 root_dir = os.path.dirname(os.path.dirname(__file__))
 core_header = subprocess.check_output(
     [
@@ -14,7 +17,7 @@ core_header = subprocess.check_output(
     ]).decode("utf-8")
 ffi = cffi.FFI()
 ffi.cdef(core_header)
-c = ffi.dlopen(os.path.join(root_dir, "core", "libcore.so"))
+c = ffi.dlopen("libcore.so")
 
 def app_create(args):
     c_args = []

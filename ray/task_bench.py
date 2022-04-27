@@ -1,7 +1,6 @@
-import task_bench_core as core
-
 import ray
 import sys
+import task_bench_core as core
 import time
 
 def execute_task_graph(graph):
@@ -49,6 +48,5 @@ def execute_task_bench():
     core.c.app_report_timing(app, total_time)
 
 if __name__ == "__main__":
-    # TODO (rohany): Not sure what to do here for multi-node.
-    ray.init()
+    ray.init(address="auto")
     execute_task_bench()
