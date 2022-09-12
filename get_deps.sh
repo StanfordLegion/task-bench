@@ -462,6 +462,7 @@ EOF
     conda create -y -n myenv python=3.7 cffi tensorflow=2.1.0
     conda activate myenv
     # Hack: Try to install via pip to avoid compiler version incompatibility
+    # Elliott: I turned this off to fix CI, but it may be required to make deployment to supercomputers work (i.e., it may need to be conditional on CI)
     # pip install -q tensorflow==2.1.0
 fi)
 
