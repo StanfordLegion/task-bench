@@ -128,13 +128,7 @@ export USE_PYTHON=\$USE_PYGION
 export USE_LIBDL=\$USE_PYGION
 
 EOF
-    if [[ $USE_REALM -eq 1 ]]; then
-        git clone -b subgraph https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
-    elif [[ $USE_PYGION -eq 1 ]]; then
-        git clone -b regent-python-ctl https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
-    else
-        git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
-    fi
+    git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
 
 (if [[ $USE_PYGION -eq 1 ]]; then
