@@ -105,10 +105,10 @@ if [[ $USE_REGENT -eq 1 ]]; then
             export CXX=c++
         fi
         unset LG_RT_DIR
-        if [[ -z $TRAVIS ]]; then
-            ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38 --terra-cmake -j$THREADS
+        if [[ -z $GITHUB_ACTIONS ]]; then
+            ./scripts/setup_env.py -j$THREADS
         else
-            ./install.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --rdir=auto
+            ./install.py --rdir=auto
         fi
     )
     popd

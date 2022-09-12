@@ -218,7 +218,7 @@ if [[ $USE_CHAPEL -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export CHPL_HOME="\$TASKBENCH_DEPS_DIR"/chapel
 export CHPL_HOST_PLATFORM=\$(\$CHPL_HOME/util/chplenv/chpl_platform.py)
-export CHPL_LLVM=llvm
+export CHPL_LLVM=bundled
 export CHPL_TARGET_CPU=native
 # export CHPL_QTHREAD_SCHEDULER=distrib # or sherwood # Enables Chapel work stealing scheduler
 # Note: distrib scheduler needs QTHREAD_STEAL_RATIO=8 set at runtime
@@ -237,9 +237,9 @@ export CHPL_GASNET_MORE_CFG_OPTIONS=$CHPL_GASNET_MORE_CFG_OPTIONS
 EOF
     fi
 
-    if [[ -n $TRAVIS ]]; then
+    if [[ -n $GITHUB_ACTIONS ]]; then
         cat >>deps/env.sh <<EOF
-# overrides to make Travis fast
+# overrides to make CI fast
 export CHPL_TASKS=fifo
 # export CHPL_MEM=cstdlib # FIXME: Breaks input size array
 export CHPL_GMP=none

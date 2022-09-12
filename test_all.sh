@@ -254,10 +254,10 @@ fi
     export LD_LIBRARY_PATH="$CORE_DIR:$SPARK_PROJ_DIR:$LD_LIBRARY_PATH"
 
     # These tests require a running ssh server that allows
-    # passwordless connections to localhost. On Travis we do this by
+    # passwordless connections to localhost. On CI we do this by
     # setting up a passwordless SSH key. However, these are not
     # changes I'm comfortable making to an arbitrary user's machine.
-    if [[ -n $TRAVIS ]]; then
+    if [[ -n $GITHUB_ACTIONS ]]; then
         ssh-keygen -N "" -f "$HOME/.ssh/id_rsa"
         cat "$HOME/.ssh/id_rsa.pub" >> "$HOME/.ssh/authorized_keys"
         echo "id_rsa.pub:"
