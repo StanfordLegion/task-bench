@@ -252,10 +252,10 @@ EOF
 
 EOF
 
-    wget https://github.com/chapel-lang/chapel/releases/download/1.22.1/chapel-1.22.1.tar.gz
+    wget https://github.com/chapel-lang/chapel/releases/download/1.27.0/chapel-1.27.0.tar.gz
     mkdir "$CHPL_HOME"
-    tar xfz chapel-1.22.1.tar.gz -C "$CHPL_HOME" --strip-components 1
-    rm chapel-1.22.1.tar.gz
+    tar xfz chapel-1.27.0.tar.gz -C "$CHPL_HOME" --strip-components 1
+    rm chapel-1.27.0.tar.gz
 fi
 
 if [[ $USE_X10 -eq 1 ]]; then
