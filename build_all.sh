@@ -105,10 +105,10 @@ if [[ $USE_REGENT -eq 1 ]]; then
             export CXX=c++
         fi
         unset LG_RT_DIR
-        if [[ -z $TRAVIS ]]; then
-            ./scripts/setup_env.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --llvm-version=38 --terra-cmake -j$THREADS
+        if [[ -z $GITHUB_ACTIONS ]]; then
+            ./scripts/setup_env.py -j$THREADS
         else
-            ./install.py --terra-url https://github.com/StanfordLegion/terra.git --terra-branch luajit2.1 --rdir=auto
+            ./install.py --rdir=auto
         fi
     )
     popd
@@ -229,7 +229,7 @@ fi)
         module load craype-hugepages16M
     fi
 
-    export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM:$PATH"
+    export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM-$CHPL_HOST_ARCH:$PATH"
     pushd "$CHPL_HOME"
     make -j$THREADS
     popd
@@ -444,7 +444,7 @@ EOF
         export PATH="$PWD"/cc-wrapper:"$PATH"
     fi
 
-    pushd swift-t-1.4
+    pushd swift-t-1.5.0
     if [[ ! -f ./dev/build/swift-t-settings.sh ]]; then
         ./dev/build/init-settings.sh
         sed -i 's@SWIFT_T_PREFIX=/tmp/swift-t-install@SWIFT_T_PREFIX='"$SWIFT_PREFIX"'@g' ./dev/build/swift-t-settings.sh
@@ -475,7 +475,7 @@ EOF
         export CRAY_ARGS="--with-launcher=/usr/bin/srun"
     fi
 
-    ./dev/build/build-all.sh
+    ./dev/build/build-swift-t.sh
     find "$SWIFT_PREFIX"/stc -type f -exec sed -i 's@#!/bin/zsh@'"#!$SWIFT_PREFIX"'/bin/zsh@g' {} +
     find "$SWIFT_PREFIX"/turbine -type f -exec sed -i 's@#!/bin/zsh@'"#!$SWIFT_PREFIX"'/bin/zsh@g' {} +
     popd

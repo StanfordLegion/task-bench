@@ -113,7 +113,7 @@ export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
 export HWLOC_DIR=$HWLOC_DL_DIR/install
 
 EOF
-    wget https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
+    wget -nv https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
     mkdir -p "$HWLOC_DL_DIR"
     tar -zxf hwloc-1.11.10.tar.gz -C "$HWLOC_DL_DIR"
     rm -rf hwloc-1.11.10.tar.gz
@@ -129,13 +129,7 @@ export USE_PYTHON=\$USE_PYGION
 export USE_LIBDL=\$USE_PYGION
 
 EOF
-    if [[ $USE_REALM -eq 1 ]]; then
-        git clone -b subgraph https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
-    elif [[ $USE_PYGION -eq 1 ]]; then
-        git clone -b regent-python-ctl https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
-    else
-        git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
-    fi
+    git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
 
 (if [[ $USE_PYGION -eq 1 ]]; then
@@ -157,7 +151,7 @@ EOF
 
     source "$PYGION_DIR"/env.sh
 
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
     rm Miniconda3-latest-Linux-x86_64.sh
     conda update -y conda
@@ -172,8 +166,8 @@ export STARPU_SRC_DIR="\$STARPU_DL_DIR"/starpu-1.3.4
 export STARPU_DIR="\$STARPU_DL_DIR"
 
 EOF
-    #wget http://starpu.gforge.inria.fr/files/starpu-1.2.4/starpu-1.2.4.tar.gz
-    wget https://files.inria.fr/starpu/starpu-1.3.4/starpu-1.3.4.tar.gz
+    #wget -nv http://starpu.gforge.inria.fr/files/starpu-1.2.4/starpu-1.2.4.tar.gz
+    wget -nv https://files.inria.fr/starpu/starpu-1.3.4/starpu-1.3.4.tar.gz
     mkdir -p "$STARPU_DL_DIR"
     tar -zxf starpu-1.3.4.tar.gz -C "$STARPU_DL_DIR"
     rm starpu-1.3.4.tar.gz
@@ -205,7 +199,7 @@ export CHARM_SMP_DIR="\$TASKBENCH_DEPS_DIR"/charm++_smp
 EOF
     mkdir "$CHARM_DIR"
     mkdir "$CHARM_SMP_DIR"
-    wget https://charm.cs.illinois.edu/distrib/charm-6.9.0.tar.gz
+    wget -nv https://charm.cs.illinois.edu/distrib/charm-6.9.0.tar.gz
     tar xfz charm-6.9.0.tar.gz -C "$CHARM_DIR" --strip-components 1
     tar xfz charm-6.9.0.tar.gz -C "$CHARM_SMP_DIR" --strip-components 1
     rm charm-6.9.0.tar.gz
@@ -219,7 +213,8 @@ if [[ $USE_CHAPEL -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export CHPL_HOME="\$TASKBENCH_DEPS_DIR"/chapel
 export CHPL_HOST_PLATFORM=\$(\$CHPL_HOME/util/chplenv/chpl_platform.py)
-export CHPL_LLVM=llvm
+export CHPL_HOST_ARCH=\$(\$CHPL_HOME/util/chplenv/chpl_arch.py)
+export CHPL_LLVM=bundled
 export CHPL_TARGET_CPU=native
 # export CHPL_QTHREAD_SCHEDULER=distrib # or sherwood # Enables Chapel work stealing scheduler
 # Note: distrib scheduler needs QTHREAD_STEAL_RATIO=8 set at runtime
@@ -238,9 +233,9 @@ export CHPL_GASNET_MORE_CFG_OPTIONS=$CHPL_GASNET_MORE_CFG_OPTIONS
 EOF
     fi
 
-    if [[ -n $TRAVIS ]]; then
+    if [[ -n $GITHUB_ACTIONS ]]; then
         cat >>deps/env.sh <<EOF
-# overrides to make Travis fast
+# overrides to make CI fast
 export CHPL_TASKS=fifo
 # export CHPL_MEM=cstdlib # FIXME: Breaks input size array
 export CHPL_GMP=none
@@ -253,10 +248,10 @@ EOF
 
 EOF
 
-    wget https://github.com/chapel-lang/chapel/releases/download/1.22.1/chapel-1.22.1.tar.gz
+    wget -nv https://github.com/chapel-lang/chapel/releases/download/1.27.0/chapel-1.27.0.tar.gz
     mkdir "$CHPL_HOME"
-    tar xfz chapel-1.22.1.tar.gz -C "$CHPL_HOME" --strip-components 1
-    rm chapel-1.22.1.tar.gz
+    tar xfz chapel-1.27.0.tar.gz -C "$CHPL_HOME" --strip-components 1
+    rm chapel-1.27.0.tar.gz
 fi
 
 if [[ $USE_X10 -eq 1 ]]; then
@@ -282,7 +277,7 @@ EOF
     tar -zxf jdk-8u131-linux-x64.tar.gz -C "$X10_DIR"
     rm jdk-8u131-linux-x64.tar.gz
 
-    wget "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
+    wget -nv "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
     tar xfz apache-ant-1.10.7-bin.tar.gz -C "$X10_DIR"
     rm apache-ant-1.10.7-bin.tar.gz
 
@@ -385,16 +380,16 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     export OMPSS_DL_DIR="$TASKBENCH_DEPS_DIR"/ompss
     cat >>deps/env.sh <<EOF
 export OMPSS_DL_DIR="\$TASKBENCH_DEPS_DIR"/ompss
-export NANOS_SRC_DIR="\$OMPSS_DL_DIR"/nanox-0.14.1
-export NANOS_PREFIX="\$OMPSS_DL_DIR"/nanox-0.14.1/install
-export MERCURIUM_SRC_DIR="\$OMPSS_DL_DIR"/mcxx-2.1.0
-export MERCURIUM_PREFIX="\$OMPSS_DL_DIR"/mcxx-2.1.0/install
+export NANOS_SRC_DIR="\$OMPSS_DL_DIR"/nanox-0.15
+export NANOS_PREFIX="\$OMPSS_DL_DIR"/nanox-0.15/install
+export MERCURIUM_SRC_DIR="\$OMPSS_DL_DIR"/mcxx-2.3.0
+export MERCURIUM_PREFIX="\$OMPSS_DL_DIR"/mcxx-2.3.0/install
 
 EOF
     mkdir -p "$OMPSS_DL_DIR"
-    wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
-    tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
-    rm -rf ompss-17.12.1.tar.gz
+    wget -nv https://pm.bsc.es/ftp/ompss/releases/ompss-19.06.tar.gz
+    tar -zxf ompss-19.06.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
+    rm -rf ompss-19.06.tar.gz
 fi
 
 if [[ $USE_OMPSS2 -eq 1 ]]; then
@@ -408,13 +403,13 @@ export BOOST_SRC_DIR="\$OMPSS2_DL_DIR"/boost_1_68_0
 
 EOF
     mkdir -p "$OMPSS2_DL_DIR"
-    git clone -b 2020.06 --depth 1 https://github.com/bsc-pm/ompss-2-releases.git "$OMPSS2_DL_DIR/ompss2-release"
+    git clone -b 2021.11.1 --depth 1 https://github.com/bsc-pm/ompss-2-releases.git "$OMPSS2_DL_DIR/ompss2-release"
     # Note: don't initialize llvm submodule, it's large and not needed
     for m in nanos6 mcxx; do
         git -C "$OMPSS2_DL_DIR/ompss2-release" submodule update --init --recursive --depth 1 $m
     done
     
-    # wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
+    # wget -nv https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
     # tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
     # rm -rf boost_1_68_0.tar.gz
     cat /usr/include/boost/version.hpp | grep "BOOST_LIB_VERSION"
@@ -450,12 +445,12 @@ EOF
     rm jdk-8u131-linux-x64.tar.gz
 
     # Spark 2.3.0
-    wget "$APACHE_MIRROR"/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
+    wget -nv "$APACHE_MIRROR"/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
     tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn't add to path-put full paths in emtg script
     rm spark-2.3.0-bin-hadoop2.7.tgz
 
     # SWIG 3.0.12
-    wget $SOURCEFORGE_MIRROR/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
+    wget -nv $SOURCEFORGE_MIRROR/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
     tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
     rm swig-3.0.12.tar.gz
 
@@ -489,35 +484,35 @@ export ANT_HOME="\$SWIFT_DIR"/ant
 export PATH="\$ANT_HOME"/bin:"\$PATH"
 EOF
 
-    wget $SOURCEFORGE_MIRROR/tcl/tcl8.6.8-src.tar.gz
+    wget -nv $SOURCEFORGE_MIRROR/tcl/tcl8.6.8-src.tar.gz
     tar xfz tcl8.6.8-src.tar.gz -C "$SWIFT_DIR"
     rm tcl8.6.8-src.tar.gz
 
-    wget $SOURCEFORGE_MIRROR/swig/swig-3.0.12.tar.gz
+    wget -nv $SOURCEFORGE_MIRROR/swig/swig-3.0.12.tar.gz
     tar xfz swig-3.0.12.tar.gz -C "$SWIFT_DIR"
     rm swig-3.0.12.tar.gz
 
-    wget https://download.java.net/java/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_linux-x64_bin.tar.gz
+    wget -nv https://download.java.net/java/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_linux-x64_bin.tar.gz
     mkdir "$SWIFT_DIR"/java
     tar xfz openjdk-10.0.2_linux-x64_bin.tar.gz -C "$SWIFT_DIR"/java --strip-components=1
     rm openjdk-10.0.2_linux-x64_bin.tar.gz
 
-    wget "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
+    wget -nv "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
     mkdir "$SWIFT_DIR"/ant
     tar xfz apache-ant-1.10.7-bin.tar.gz -C "$SWIFT_DIR"/ant --strip-components=1
     rm apache-ant-1.10.7-bin.tar.gz
 
-    wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz
+    wget -nv https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz
     tar xfz ncurses-6.1.tar.gz -C "$SWIFT_DIR"
     rm ncurses-6.1.tar.gz
 
-    wget $SOURCEFORGE_MIRROR/zsh/5.5.1/zsh-5.5.1.tar.gz
+    wget -nv $SOURCEFORGE_MIRROR/zsh/5.5.1/zsh-5.5.1.tar.gz
     tar xfz zsh-5.5.1.tar.gz -C "$SWIFT_DIR"
     rm zsh-5.5.1.tar.gz
 
-    wget http://swift-lang.github.io/swift-t-downloads/1.4/swift-t-1.4.tar.gz
-    tar xfz swift-t-1.4.tar.gz -C "$SWIFT_DIR"
-    rm swift-t-1.4.tar.gz
+    wget -nv http://swift-lang.github.io/swift-t-downloads/1.5/swift-t-1.5.0.tar.gz
+    tar xfz swift-t-1.5.0.tar.gz -C "$SWIFT_DIR"
+    rm swift-t-1.5.0.tar.gz
 fi
 
 (if [[ $USE_TENSORFLOW -eq 1 ]]; then
@@ -543,16 +538,16 @@ source "\$CONDA_PREFIX"/etc/profile.d/conda.sh
 conda activate myenv
 EOF
 
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
     rm Miniconda3-latest-Linux-x86_64.sh
     conda update -y conda
     source $CONDA_PREFIX/etc/profile.d/conda.sh
-    conda create -y -n myenv python=3.7 cffi
+    conda create -y -n myenv python=3.7 cffi tensorflow=2.1.0
     conda activate myenv
     # Hack: Try to install via pip to avoid compiler version incompatibility
-    # conda install -y tensorflow
-    pip install -q tensorflow==2.1.0
+    # Elliott: I turned this off to fix CI, but it may be required to make deployment to supercomputers work (i.e., it may need to be conditional on CI)
+    # pip install -q tensorflow==2.1.0
 fi)
 
 (if [[ $USE_DASK -eq 1 ]]; then
@@ -572,7 +567,7 @@ EOF
 
     source "$DASK_DIR"/env.sh
 
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
     rm Miniconda3-latest-Linux-x86_64.sh
     conda update -y conda

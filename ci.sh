@@ -13,10 +13,11 @@ if [[ "$(uname)" = "Linux" ]]; then
   sudo apt-get update -qq
   sudo apt-get install -qq mpich libmpich-dev libpcre3-dev binutils-dev
   if [[ $USE_CHAPEL -eq 1 || $USE_REGENT -eq 1 ]]; then
-    sudo apt-get install -qq clang-6.0 libclang-6.0-dev llvm-6.0-dev libedit-dev
+    sudo apt-get install -qq clang-12 libclang-12-dev libclang-cpp12-dev llvm-12-dev libedit-dev libncurses5-dev zlib1g-dev
+    export CMAKE_PREFIX_PATH=/usr/lib/llvm-12:/usr/share/llvm-12
   fi
   if [[ $USE_OMPSS2 -eq 1 ]]; then
-    sudo apt-get install -qq libnuma-dev gperf libboost1.65-dev
+    sudo apt-get install -qq libnuma-dev gperf libboost1.71-dev
   fi
   if [[ $USE_PARSEC -eq 1 ]]; then
     sudo snap install cmake --classic

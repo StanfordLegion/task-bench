@@ -322,7 +322,7 @@ terra make_secondary_partition(graph : core.task_graph_t, dset : int, input : in
         nil, 0)
     end
   end
-  return c.legion_logical_partition_create(runtime, context, r, ip)
+  return c.legion_logical_partition_create(runtime, r, ip)
 end
 
 function gcd(a, b)

@@ -4,7 +4,7 @@ on: [push, pull_request]
 jobs:
   build:
     name: Build (${{matrix.system}})
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         include:
@@ -23,12 +23,13 @@ jobs:
           - system: X10
           - system: OPENMP
           # - system: SPARK
-          - system: OMPSS
-          - system: OMPSS2
-            hwloc: 1
-          - system: SWIFT
+          # - system: OMPSS
+          # - system: OMPSS2
+          #   hwloc: 1
+          # - system: SWIFT
           - system: TENSORFLOW
           - system: DASK
+      fail-fast: false
     steps:
       - uses: actions/checkout@v1
       - run: ./ci.sh
