@@ -459,11 +459,10 @@ EOF
     rm Miniconda3-latest-Linux-x86_64.sh
     conda update -y conda
     source $CONDA_PREFIX/etc/profile.d/conda.sh
-    conda create -y -n myenv python=3.7 cffi
+    conda create -y -n myenv python=3.7 cffi tensorflow=2.1.0
     conda activate myenv
     # Hack: Try to install via pip to avoid compiler version incompatibility
-    # conda install -y tensorflow
-    pip install -q tensorflow==2.1.0
+    # pip install -q tensorflow==2.1.0
 fi)
 
 (if [[ $USE_DASK -eq 1 ]]; then
