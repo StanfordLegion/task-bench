@@ -25,8 +25,8 @@ import subprocess
 import sys
 import time
 
-import legion
-from legion import index_launch, task, Domain, Fspace, Ispace, ID, Partition, R, Region, RW, Trace, WD
+import pygion
+from pygion import index_launch, task, Domain, Fspace, Ispace, ID, Partition, R, Region, RW, Trace, WD
 
 
 root_dir = os.path.dirname(os.path.dirname(__file__))
@@ -35,12 +35,12 @@ core_header = subprocess.check_output(
         "gcc", "-D", "__attribute__(x)=", "-E", "-P",
         os.path.join(root_dir, "core/core_c.h")
     ]).decode("utf-8")
-ffi = legion.ffi
+ffi = pygion.ffi
 ffi.cdef(core_header)
-c = legion.c
+c = pygion.c
 
 
-task_graph = legion.Type(
+task_graph = pygion.Type(
     np.dtype([('bytes', np.void, ffi.sizeof('task_graph_t'))]),
     'task_graph_t')
 
@@ -51,7 +51,7 @@ use_native = os.environ.get('TASK_BENCH_USE_NATIVE') == '1'
 
 
 def once_only():
-    return c.legion_context_get_shard_id(legion._my.ctx.runtime, legion._my.ctx.context, True) == 0
+    return c.legion_context_get_shard_id(pygion._my.ctx.runtime, pygion._my.ctx.context, True) == 0
 
 
 def app_create(args):
@@ -126,7 +126,7 @@ def init_partitions(graphs, num_fields):
     dset_max_args = []
 
     fspace = Fspace(
-        dict((str(x), legion.uint8) for x in range(num_fields)))
+        dict((str(x), pygion.uint8) for x in range(num_fields)))
 
     for graph in graphs:
         colors = Ispace([graph.max_width])
@@ -136,7 +136,7 @@ def init_partitions(graphs, num_fields):
             Partition.equal(result[-1], colors))
 
         for field in fspace.keys():
-            legion.fill(result[-1], field, 0)
+            pygion.fill(result[-1], field, 0)
 
         num_dsets = c.task_graph_max_dependence_sets(graph)
         secondary.append([])
@@ -195,107 +195,107 @@ def execute_point_impl(graph, num_fields, timestep, point, output, scratch, *inp
 # until Legion supports variadic tasks this is what we have to do.
 
 if use_native:
-    execute_point_task_0_0 = legion.extern_task(
+    execute_point_task_0_0 = pygion.extern_task(
         task_id=2,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 0,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region] + [Region] * 0,
         privileges=[None, None, None, None, RW('1')] + [R('0')] * 0,
         calling_convention='regent')
-    execute_point_task_0_1 = legion.extern_task(
+    execute_point_task_0_1 = pygion.extern_task(
         task_id=3,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 1,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region] + [Region] * 1,
         privileges=[None, None, None, None, RW('1')] + [R('0')] * 1,
         calling_convention='regent')
-    execute_point_task_0_2 = legion.extern_task(
+    execute_point_task_0_2 = pygion.extern_task(
         task_id=4,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 2,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region] + [Region] * 2,
         privileges=[None, None, None, None, RW('1')] + [R('0')] * 2,
         calling_convention='regent')
-    execute_point_task_0_3 = legion.extern_task(
+    execute_point_task_0_3 = pygion.extern_task(
         task_id=5,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 3,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region] + [Region] * 3,
         privileges=[None, None, None, None, RW('1')] + [R('0')] * 3,
         calling_convention='regent')
-    execute_point_task_0_4 = legion.extern_task(
+    execute_point_task_0_4 = pygion.extern_task(
         task_id=6,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 4,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region] + [Region] * 4,
         privileges=[None, None, None, None, RW('1')] + [R('0')] * 4,
         calling_convention='regent')
 
-    execute_point_task_1_0 = legion.extern_task(
+    execute_point_task_1_0 = pygion.extern_task(
         task_id=7,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 0,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region] + [Region] * 0,
         privileges=[None, None, None, None, RW('0')] + [R('1')] * 0,
         calling_convention='regent')
-    execute_point_task_1_1 = legion.extern_task(
+    execute_point_task_1_1 = pygion.extern_task(
         task_id=8,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 1,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region] + [Region] * 1,
         privileges=[None, None, None, None, RW('0')] + [R('1')] * 1,
         calling_convention='regent')
-    execute_point_task_1_2 = legion.extern_task(
+    execute_point_task_1_2 = pygion.extern_task(
         task_id=9,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 2,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region] + [Region] * 2,
         privileges=[None, None, None, None, RW('0')] + [R('1')] * 2,
         calling_convention='regent')
-    execute_point_task_1_3 = legion.extern_task(
+    execute_point_task_1_3 = pygion.extern_task(
         task_id=10,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 3,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region] + [Region] * 3,
         privileges=[None, None, None, None, RW('0')] + [R('1')] * 3,
         calling_convention='regent')
-    execute_point_task_1_4 = legion.extern_task(
+    execute_point_task_1_4 = pygion.extern_task(
         task_id=11,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region] + [Region] * 4,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region] + [Region] * 4,
         privileges=[None, None, None, None, RW('0')] + [R('1')] * 4,
         calling_convention='regent')
 
-    execute_point_task_scratch_0_0 = legion.extern_task(
+    execute_point_task_scratch_0_0 = pygion.extern_task(
         task_id=12,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 0,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region, Region] + [Region] * 0,
         privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 0,
         calling_convention='regent')
-    execute_point_task_scratch_0_1 = legion.extern_task(
+    execute_point_task_scratch_0_1 = pygion.extern_task(
         task_id=13,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 1,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region, Region] + [Region] * 1,
         privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 1,
         calling_convention='regent')
-    execute_point_task_scratch_0_2 = legion.extern_task(
+    execute_point_task_scratch_0_2 = pygion.extern_task(
         task_id=14,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 2,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region, Region] + [Region] * 2,
         privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 2,
         calling_convention='regent')
-    execute_point_task_scratch_0_3 = legion.extern_task(
+    execute_point_task_scratch_0_3 = pygion.extern_task(
         task_id=15,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 3,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region, Region] + [Region] * 3,
         privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 3,
         calling_convention='regent')
-    execute_point_task_scratch_0_4 = legion.extern_task(
+    execute_point_task_scratch_0_4 = pygion.extern_task(
         task_id=16,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 4,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region, Region] + [Region] * 4,
         privileges=[None, None, None, None, RW('1'), RW('0')] + [R('0')] * 4,
         calling_convention='regent')
 
-    execute_point_task_scratch_1_0 = legion.extern_task(
+    execute_point_task_scratch_1_0 = pygion.extern_task(
         task_id=17,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 0,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region, Region] + [Region] * 0,
         privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 0,
         calling_convention='regent')
-    execute_point_task_scratch_1_1 = legion.extern_task(
+    execute_point_task_scratch_1_1 = pygion.extern_task(
         task_id=18,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 1,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region, Region] + [Region] * 1,
         privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 1,
         calling_convention='regent')
-    execute_point_task_scratch_1_2 = legion.extern_task(
+    execute_point_task_scratch_1_2 = pygion.extern_task(
         task_id=19,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 2,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region, Region] + [Region] * 2,
         privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 2,
         calling_convention='regent')
-    execute_point_task_scratch_1_3 = legion.extern_task(
+    execute_point_task_scratch_1_3 = pygion.extern_task(
         task_id=20,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 3,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region, Region] + [Region] * 3,
         privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 3,
         calling_convention='regent')
-    execute_point_task_scratch_1_4 = legion.extern_task(
+    execute_point_task_scratch_1_4 = pygion.extern_task(
         task_id=21,
-        argument_types=[task_graph, legion.uint32, legion.int32, legion.int32, Region, Region] + [Region] * 4,
+        argument_types=[task_graph, pygion.uint32, pygion.int32, pygion.int32, Region, Region] + [Region] * 4,
         privileges=[None, None, None, None, RW('0'), RW('0')] + [R('1')] * 4,
         calling_convention='regent')
 else:
@@ -454,7 +454,7 @@ def execute_main_loop(graphs, num_fields,
 
 @task(top_level=True, inner=True, replicable=True)
 def main():
-    app = app_create(legion.input_args())
+    app = app_create(pygion.input_args())
     graphs = app_task_graphs(app)
 
     if once_only():
@@ -463,13 +463,13 @@ def main():
     num_fields = max_fields
     result, primary, secondary, scratch, p_scratch, dset_max_args = init_partitions(graphs, num_fields)
 
-    legion.execution_fence(block=True)
-    start_time = legion.c.legion_get_current_time_in_nanos()
+    pygion.execution_fence(block=True)
+    start_time = pygion.c.legion_get_current_time_in_nanos()
 
     execute_main_loop(graphs, num_fields, result, primary, secondary, scratch, p_scratch, dset_max_args)
 
-    legion.execution_fence(block=True)
-    stop_time = legion.c.legion_get_current_time_in_nanos()
+    pygion.execution_fence(block=True)
+    stop_time = pygion.c.legion_get_current_time_in_nanos()
 
     total_time = (stop_time - start_time)/1e9
 
