@@ -296,16 +296,16 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     export OMPSS_DL_DIR="$TASKBENCH_DEPS_DIR"/ompss
     cat >>deps/env.sh <<EOF
 export OMPSS_DL_DIR="\$TASKBENCH_DEPS_DIR"/ompss
-export NANOS_SRC_DIR="\$OMPSS_DL_DIR"/nanox-0.14.1
-export NANOS_PREFIX="\$OMPSS_DL_DIR"/nanox-0.14.1/install
-export MERCURIUM_SRC_DIR="\$OMPSS_DL_DIR"/mcxx-2.1.0
-export MERCURIUM_PREFIX="\$OMPSS_DL_DIR"/mcxx-2.1.0/install
+export NANOS_SRC_DIR="\$OMPSS_DL_DIR"/nanox-0.15
+export NANOS_PREFIX="\$OMPSS_DL_DIR"/nanox-0.15/install
+export MERCURIUM_SRC_DIR="\$OMPSS_DL_DIR"/mcxx-2.3.0
+export MERCURIUM_PREFIX="\$OMPSS_DL_DIR"/mcxx-2.3.0/install
 
 EOF
     mkdir -p "$OMPSS_DL_DIR"
-    wget -nv https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
-    tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
-    rm -rf ompss-17.12.1.tar.gz
+    wget -nv https://pm.bsc.es/ftp/ompss/releases/ompss-19.06.tar.gz
+    tar -zxf ompss-19.06.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
+    rm -rf ompss-19.06.tar.gz
 fi
 
 if [[ $USE_OMPSS2 -eq 1 ]]; then
