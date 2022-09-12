@@ -195,11 +195,12 @@ fi)
         module load craype-hugepages16M
     fi
 
-    ls -lR "$CHPL_HOME/bin" # FIXME: Elliott: debug
     export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM:$PATH"
     pushd "$CHPL_HOME"
     make -j$THREADS
     popd
+
+    ls -lR "$CHPL_HOME/bin" # FIXME: Elliott: debug
 
     make -C chapel clean
     make -C chapel
