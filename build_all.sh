@@ -190,6 +190,40 @@ fi
      )
 fi)
 
+(if [[ $USE_HPX -eq 1 ]]; then
+    DIR_HPX_SRC=${SOURCE_ROOT}/hpx
+    DIR_HPX_BUILD=${INSTALL_ROOT}/hpx/build
+    DIR_HPX_INSTALL=${INSTALL_ROOT}/hpx
+
+    if [[ ! -d ${DIR_HPX_SRC} ]]; then
+    (
+        mkdir -p ${DIR_HPX_SRC}
+        cd ${DIR_HPX_SRC}
+	    cd ..
+        git clone https://github.com/STEllAR-GROUP/hpx.git
+	    cd hpx
+	    cd ..
+    )
+    fi
+    
+    cmake \
+        -H${DIR_HPX_SRC} \
+        -B${DIR_HPX_BUILD} \
+        -DCMAKE_INSTALL_PREFIX=${DIR_HPX_INSTALL} \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DHPX_WITH_FETCH_ASIO=ON \
+        -DHPX_WITH_PARCELPORT_MPI=ON \
+        -DHPX_WITH_PARCELPORT_TCP=OFF \
+        -DHPX_WITH_EXAMPLES=OFF \
+        -DHPX_WITH_MALLOC=jemalloc \
+        -DHWLOC_ROOT=${INSTALL_ROOT}/hwloc/ \
+        -DJEMALLOC_ROOT=${INSTALL_ROOT}/jemalloc \
+        -DBOOST_ROOT=${INSTALL_ROOT}/boost \
+
+    make -j$THREADS
+    make install
+fi)
+
 (if [[ $USE_CHAPEL -eq 1 ]]; then
     if [[ -n $CRAYPE_VERSION ]]; then
         module load craype-hugepages16M
