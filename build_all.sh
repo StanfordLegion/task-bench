@@ -410,7 +410,7 @@ EOF
         export PATH="$PWD"/cc-wrapper:"$PATH"
     fi
 
-    pushd swift-t-1.4.3
+    pushd swift-t-1.5.0
     if [[ ! -f ./dev/build/swift-t-settings.sh ]]; then
         ./dev/build/init-settings.sh
         sed -i 's@SWIFT_T_PREFIX=/tmp/swift-t-install@SWIFT_T_PREFIX='"$SWIFT_PREFIX"'@g' ./dev/build/swift-t-settings.sh

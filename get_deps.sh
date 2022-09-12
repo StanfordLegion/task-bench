@@ -426,9 +426,9 @@ EOF
     tar xfz zsh-5.5.1.tar.gz -C "$SWIFT_DIR"
     rm zsh-5.5.1.tar.gz
 
-    wget -nv http://swift-lang.github.io/swift-t-downloads/1.4/swift-t-1.4.3.tar.gz
-    tar xfz swift-t-1.4.3.tar.gz -C "$SWIFT_DIR"
-    rm swift-t-1.4.3.tar.gz
+    wget -nv http://swift-lang.github.io/swift-t-downloads/1.5/swift-t-1.5.0.tar.gz
+    tar xfz swift-t-1.5.0.tar.gz -C "$SWIFT_DIR"
+    rm swift-t-1.5.0.tar.gz
 fi
 
 (if [[ $USE_TENSORFLOW -eq 1 ]]; then
