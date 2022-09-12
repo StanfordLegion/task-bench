@@ -201,6 +201,7 @@ fi)
     popd
 
     ls -lR "$CHPL_HOME/bin" # FIXME: Elliott: debug
+    env | grep CHPL
 
     make -C chapel clean
     make -C chapel
