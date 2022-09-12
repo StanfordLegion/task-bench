@@ -195,13 +195,10 @@ fi)
         module load craype-hugepages16M
     fi
 
-    export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM:$PATH"
+    export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM-$CHPL_HOST_ARCH:$PATH"
     pushd "$CHPL_HOME"
     make -j$THREADS
     popd
-
-    ls -lR "$CHPL_HOME/bin" # FIXME: Elliott: debug
-    env | grep CHPL
 
     make -C chapel clean
     make -C chapel

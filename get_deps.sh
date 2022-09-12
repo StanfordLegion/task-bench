@@ -218,6 +218,7 @@ if [[ $USE_CHAPEL -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export CHPL_HOME="\$TASKBENCH_DEPS_DIR"/chapel
 export CHPL_HOST_PLATFORM=\$(\$CHPL_HOME/util/chplenv/chpl_platform.py)
+export CHPL_HOST_ARCH=\$(\$CHPL_HOME/util/chplenv/chpl_arch.py)
 export CHPL_LLVM=bundled
 export CHPL_TARGET_CPU=native
 # export CHPL_QTHREAD_SCHEDULER=distrib # or sherwood # Enables Chapel work stealing scheduler
