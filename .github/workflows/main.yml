@@ -29,6 +29,7 @@ jobs:
           - system: SWIFT
           - system: TENSORFLOW
           - system: DASK
+      fail-fast: false
     steps:
       - uses: actions/checkout@v1
       - run: ./ci.sh

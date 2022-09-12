@@ -112,7 +112,7 @@ export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
 export HWLOC_DIR=$HWLOC_DL_DIR/install
 
 EOF
-    wget https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
+    wget -nv https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
     mkdir -p "$HWLOC_DL_DIR"
     tar -zxf hwloc-1.11.10.tar.gz -C "$HWLOC_DL_DIR"
     rm -rf hwloc-1.11.10.tar.gz
@@ -156,7 +156,7 @@ EOF
 
     source "$PYGION_DIR"/env.sh
 
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
     rm Miniconda3-latest-Linux-x86_64.sh
     conda update -y conda
@@ -171,8 +171,8 @@ export STARPU_SRC_DIR="\$STARPU_DL_DIR"/starpu-1.3.4
 export STARPU_DIR="\$STARPU_DL_DIR"
 
 EOF
-    #wget http://starpu.gforge.inria.fr/files/starpu-1.2.4/starpu-1.2.4.tar.gz
-    wget https://files.inria.fr/starpu/starpu-1.3.4/starpu-1.3.4.tar.gz
+    #wget -nv http://starpu.gforge.inria.fr/files/starpu-1.2.4/starpu-1.2.4.tar.gz
+    wget -nv https://files.inria.fr/starpu/starpu-1.3.4/starpu-1.3.4.tar.gz
     mkdir -p "$STARPU_DL_DIR"
     tar -zxf starpu-1.3.4.tar.gz -C "$STARPU_DL_DIR"
     rm starpu-1.3.4.tar.gz
@@ -204,7 +204,7 @@ export CHARM_SMP_DIR="\$TASKBENCH_DEPS_DIR"/charm++_smp
 EOF
     mkdir "$CHARM_DIR"
     mkdir "$CHARM_SMP_DIR"
-    wget https://charm.cs.illinois.edu/distrib/charm-6.9.0.tar.gz
+    wget -nv https://charm.cs.illinois.edu/distrib/charm-6.9.0.tar.gz
     tar xfz charm-6.9.0.tar.gz -C "$CHARM_DIR" --strip-components 1
     tar xfz charm-6.9.0.tar.gz -C "$CHARM_SMP_DIR" --strip-components 1
     rm charm-6.9.0.tar.gz
@@ -252,7 +252,7 @@ EOF
 
 EOF
 
-    wget https://github.com/chapel-lang/chapel/releases/download/1.27.0/chapel-1.27.0.tar.gz
+    wget -nv https://github.com/chapel-lang/chapel/releases/download/1.27.0/chapel-1.27.0.tar.gz
     mkdir "$CHPL_HOME"
     tar xfz chapel-1.27.0.tar.gz -C "$CHPL_HOME" --strip-components 1
     rm chapel-1.27.0.tar.gz
@@ -281,7 +281,7 @@ EOF
     tar -zxf jdk-8u131-linux-x64.tar.gz -C "$X10_DIR"
     rm jdk-8u131-linux-x64.tar.gz
 
-    wget "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
+    wget -nv "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
     tar xfz apache-ant-1.10.7-bin.tar.gz -C "$X10_DIR"
     rm apache-ant-1.10.7-bin.tar.gz
 
@@ -302,7 +302,7 @@ export MERCURIUM_PREFIX="\$OMPSS_DL_DIR"/mcxx-2.1.0/install
 
 EOF
     mkdir -p "$OMPSS_DL_DIR"
-    wget https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
+    wget -nv https://pm.bsc.es/sites/default/files/ftp/ompss/releases/ompss-17.12.1.tar.gz
     tar -zxf ompss-17.12.1.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
     rm -rf ompss-17.12.1.tar.gz
 fi
@@ -324,7 +324,7 @@ EOF
         git -C "$OMPSS2_DL_DIR/ompss2-release" submodule update --init --recursive --depth 1 $m
     done
     
-    # wget https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
+    # wget -nv https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
     # tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
     # rm -rf boost_1_68_0.tar.gz
     cat /usr/include/boost/version.hpp | grep "BOOST_LIB_VERSION"
@@ -360,12 +360,12 @@ EOF
     rm jdk-8u131-linux-x64.tar.gz
 
     # Spark 2.3.0
-    wget "$APACHE_MIRROR"/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
+    wget -nv "$APACHE_MIRROR"/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
     tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn't add to path-put full paths in emtg script
     rm spark-2.3.0-bin-hadoop2.7.tgz
 
     # SWIG 3.0.12
-    wget $SOURCEFORGE_MIRROR/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
+    wget -nv $SOURCEFORGE_MIRROR/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
     tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
     rm swig-3.0.12.tar.gz
 
@@ -399,33 +399,33 @@ export ANT_HOME="\$SWIFT_DIR"/ant
 export PATH="\$ANT_HOME"/bin:"\$PATH"
 EOF
 
-    wget $SOURCEFORGE_MIRROR/tcl/tcl8.6.8-src.tar.gz
+    wget -nv $SOURCEFORGE_MIRROR/tcl/tcl8.6.8-src.tar.gz
     tar xfz tcl8.6.8-src.tar.gz -C "$SWIFT_DIR"
     rm tcl8.6.8-src.tar.gz
 
-    wget $SOURCEFORGE_MIRROR/swig/swig-3.0.12.tar.gz
+    wget -nv $SOURCEFORGE_MIRROR/swig/swig-3.0.12.tar.gz
     tar xfz swig-3.0.12.tar.gz -C "$SWIFT_DIR"
     rm swig-3.0.12.tar.gz
 
-    wget https://download.java.net/java/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_linux-x64_bin.tar.gz
+    wget -nv https://download.java.net/java/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_linux-x64_bin.tar.gz
     mkdir "$SWIFT_DIR"/java
     tar xfz openjdk-10.0.2_linux-x64_bin.tar.gz -C "$SWIFT_DIR"/java --strip-components=1
     rm openjdk-10.0.2_linux-x64_bin.tar.gz
 
-    wget "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
+    wget -nv "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
     mkdir "$SWIFT_DIR"/ant
     tar xfz apache-ant-1.10.7-bin.tar.gz -C "$SWIFT_DIR"/ant --strip-components=1
     rm apache-ant-1.10.7-bin.tar.gz
 
-    wget https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz
+    wget -nv https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz
     tar xfz ncurses-6.1.tar.gz -C "$SWIFT_DIR"
     rm ncurses-6.1.tar.gz
 
-    wget $SOURCEFORGE_MIRROR/zsh/5.5.1/zsh-5.5.1.tar.gz
+    wget -nv $SOURCEFORGE_MIRROR/zsh/5.5.1/zsh-5.5.1.tar.gz
     tar xfz zsh-5.5.1.tar.gz -C "$SWIFT_DIR"
     rm zsh-5.5.1.tar.gz
 
-    wget http://swift-lang.github.io/swift-t-downloads/1.4/swift-t-1.4.tar.gz
+    wget -nv http://swift-lang.github.io/swift-t-downloads/1.4/swift-t-1.4.tar.gz
     tar xfz swift-t-1.4.tar.gz -C "$SWIFT_DIR"
     rm swift-t-1.4.tar.gz
 fi
@@ -453,7 +453,7 @@ source "\$CONDA_PREFIX"/etc/profile.d/conda.sh
 conda activate myenv
 EOF
 
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
     rm Miniconda3-latest-Linux-x86_64.sh
     conda update -y conda
@@ -482,7 +482,7 @@ EOF
 
     source "$DASK_DIR"/env.sh
 
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    wget -nv https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh -b -p "$CONDA_PREFIX"
     rm Miniconda3-latest-Linux-x86_64.sh
     conda update -y conda
