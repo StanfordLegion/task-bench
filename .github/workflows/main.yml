@@ -26,7 +26,7 @@ jobs:
           # - system: OMPSS
           # - system: OMPSS2
           #   hwloc: 1
-          - system: SWIFT
+          # - system: SWIFT
           - system: TENSORFLOW
           - system: DASK
       fail-fast: false
