@@ -218,21 +218,35 @@ fi)
     HPX_BUILD=$HPX_SOURCE_ROOT/hpx/build
     HPX_INSTALL=$HPX_INSTALL_ROOT/hpx
 
-    cmake \
-        -H$HPX_SRC \
-        -B$HPX_BUILD \
-        -DCMAKE_INSTALL_PREFIX=$HPX_INSTALL \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DHPX_WITH_FETCH_ASIO=ON \
-        -DHPX_WITH_PARCELPORT_MPI=ON \
-        -DHPX_WITH_PARCELPORT_TCP=OFF \
-        -DHPX_WITH_EXAMPLES=OFF \
-        -DHPX_WITH_MALLOC=jemalloc \
-        -DHWLOC_ROOT=$HWLOC_SRC_DIR/install \
-        -DJEMALLOC_ROOT=$JEMALLOC_SRC_DIR/install
-        # -DBOOST_ROOT=${INSTALL_ROOT}/boost \
+    pushd $HPX_SRC
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
 
-    pushd $HPX_BUILD
+        cmake .. \
+            -DCMAKE_INSTALL_PREFIX=$HPX_INSTALL \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DHPX_WITH_FETCH_ASIO=ON \
+            -DHPX_WITH_PARCELPORT_MPI=ON \
+            -DHPX_WITH_PARCELPORT_TCP=OFF \
+            -DHPX_WITH_EXAMPLES=OFF \
+            -DHPX_WITH_MALLOC=jemalloc \
+            -DHWLOC_ROOT=$HWLOC_SRC_DIR/install \
+            -DJEMALLOC_ROOT=$JEMALLOC_SRC_DIR/install
+            # -DBOOST_ROOT=${INSTALL_ROOT}/boost \
+
+        make -j$THREADS
+        make install
+    fi
+    popd
+
+    pushd hpx
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+
+        cmake .. -DCMAKE_PREFIX_PATH=$HPX_INSTALL -DCMAKE_INSTALL_PREFIX=$PWD/..
+    fi
     make -j$THREADS
     make install
     popd
