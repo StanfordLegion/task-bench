@@ -27,7 +27,7 @@ static inline int get_num_args_internal(void *L2, void *L1, void *B, void *R1, v
 
 %}
 
-descA       [ type = "parsec_tiled_matrix_dc_t*" ]
+descA       [ type = "parsec_tiled_matrix_t*" ]
 graph       [ type = "task_graph_t" ]
 nb_fields   [ type = "int" ]
 time_steps  [ type = "int" ]
@@ -73,7 +73,7 @@ END
 extern "C" %{
 
 parsec_taskpool_t*
-parsec_nearest_radix_5_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
+parsec_nearest_radix_5_New(parsec_tiled_matrix_t *A, task_graph_t graph, int nb_fields,
                            int time_steps, int graph_idx, char **extra_local_memory)
 {
   parsec_taskpool_t* nearest_radix_5_taskpool;
@@ -82,10 +82,10 @@ parsec_nearest_radix_5_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int 
   taskpool = parsec_nearest_radix_5_new(A, graph, nb_fields, time_steps, graph_idx, extra_local_memory);
   nearest_radix_5_taskpool = (parsec_taskpool_t*)taskpool;
 
-  parsec_matrix_add2arena(&(taskpool->arenas_datatypes[PARSEC_nearest_radix_5_DEFAULT_ARENA]),
-                          parsec_datatype_float_t, matrix_UpperLower,
-                          1, A->mb, A->nb, A->mb,
-                          PARSEC_ARENA_ALIGNMENT_SSE, -1 );
+  parsec_add2arena(&(taskpool->arenas_datatypes[PARSEC_nearest_radix_5_DEFAULT_ADT_IDX]),
+                   parsec_datatype_float_t, PARSEC_MATRIX_FULL,
+                   1, A->mb, A->nb, A->mb,
+                   PARSEC_ARENA_ALIGNMENT_SSE, -1 );
 
   return nearest_radix_5_taskpool;
 }
@@ -96,7 +96,7 @@ parsec_nearest_radix_5_New(parsec_tiled_matrix_dc_t *A, task_graph_t graph, int 
 void parsec_nearest_radix_5_Destruct(parsec_taskpool_t *taskpool)
 {
   parsec_nearest_radix_5_taskpool_t *nearest_radix_5_taskpool = (parsec_nearest_radix_5_taskpool_t *)taskpool;
-  parsec_matrix_del2arena(&(nearest_radix_5_taskpool->arenas_datatypes[PARSEC_nearest_radix_5_DEFAULT_ARENA]));
+  parsec_del2arena(&(nearest_radix_5_taskpool->arenas_datatypes[PARSEC_nearest_radix_5_DEFAULT_ADT_IDX]));
   parsec_taskpool_free(taskpool);
 }
 

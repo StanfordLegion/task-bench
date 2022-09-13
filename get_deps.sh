@@ -181,9 +181,9 @@ export PARSEC_DIR="\$PARSEC_DL_DIR"/build
 
 EOF
     mkdir -p "$PARSEC_DL_DIR"
-    git clone https://bitbucket.org/icldistcomp/parsec.git "$PARSEC_DL_DIR" 
+    git clone https://github.com/ICLDisco/parsec.git "$PARSEC_DL_DIR" 
     pushd "$PARSEC_DL_DIR"
-    git reset --hard 242498dd7ce3974c01db888d7e4d759a69e5bcdb
+    git reset --hard b4e71d696b9f64ad82bf0516c61bd3076b7f53c0
     git apply ../../parsec/patch.diff
     popd
 fi

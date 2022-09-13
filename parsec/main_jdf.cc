@@ -47,7 +47,7 @@ double *timecount;
 double *timecount_all;
 
 typedef struct matrix_s{
-  two_dim_block_cyclic_t dcC;
+  parsec_matrix_block_cyclic_t dcC;
   int M;
   int N;
   int K;
@@ -181,9 +181,15 @@ ParsecApp::ParsecApp(int argc, char **argv)
            printf("Warnning: set distribution to two dim block; SNB = %d\n", mat.SNB);
     }
   
-    two_dim_block_cyclic_init(&mat.dcC, matrix_RealFloat, matrix_Tile,
-                               nodes, rank, mat.MB, mat.NB, mat.M, mat.N, 0, 0,
-                               mat.M, mat.N, mat.SMB, mat.SNB, P);
+    parsec_matrix_block_cyclic_init(&mat.dcC, PARSEC_MATRIX_FLOAT, PARSEC_MATRIX_TILE,
+                                    rank, 
+                                    mat.MB, mat.NB, 
+                                    mat.M, mat.N, 
+                                    0, 0,
+                                    mat.M, mat.N,
+                                    P, Q,
+                                    mat.SMB, mat.SNB, 
+                                    0, 0);
 
     mat.dcC.mat = parsec_data_allocate((size_t)mat.dcC.super.nb_local_tiles * \
                                    (size_t)mat.dcC.super.bsiz *      \
