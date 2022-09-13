@@ -197,7 +197,7 @@ fi)
     if [[ ! -d build ]]; then
         mkdir build
         cd build
-        ../configure --prefix=$PWD/../install --disable-opencl
+        ../configure --prefix=$HPX_INSTALL_ROOT/hwloc --disable-opencl
         make -j$THREADS
         make install
     fi
@@ -208,32 +208,28 @@ fi)
         ./autogen.sh
         mkdir build
         cd build
-        ../configure --prefix=$PWD/../install
+        ../configure --prefix=$HPX_INSTALL_ROOT/jemalloc
         make -j$THREADS
         make install
     fi
     popd
 
-    HPX_SRC=$HPX_SOURCE_ROOT/hpx
-    HPX_BUILD=$HPX_SOURCE_ROOT/hpx/build
-    HPX_INSTALL=$HPX_INSTALL_ROOT/hpx
-
-    pushd $HPX_SRC
+    pushd $HPX_SOURCE_ROOT/hpx
     if [[ ! -d build ]]; then
         mkdir build
         cd build
 
         cmake .. \
-            -DCMAKE_INSTALL_PREFIX=$HPX_INSTALL \
+            -DCMAKE_INSTALL_PREFIX=$HPX_INSTALL_ROOT/hpx \
             -DCMAKE_BUILD_TYPE=Release \
             -DHPX_WITH_FETCH_ASIO=ON \
             -DHPX_WITH_PARCELPORT_MPI=ON \
             -DHPX_WITH_PARCELPORT_TCP=OFF \
             -DHPX_WITH_EXAMPLES=OFF \
             -DHPX_WITH_MALLOC=jemalloc \
-            -DHWLOC_ROOT=$HWLOC_SRC_DIR/install \
-            -DJEMALLOC_ROOT=$JEMALLOC_SRC_DIR/install
-            # -DBOOST_ROOT=${INSTALL_ROOT}/boost \
+            -DHWLOC_ROOT=$HPX_INSTALL_ROOT/hwloc \
+            -DJEMALLOC_ROOT=$HPX_INSTALL_ROOT/jemalloc
+            # -DBOOST_ROOT=$HPX_INSTALL_ROOT/boost \
 
         make -j$THREADS
         make install
