@@ -18,6 +18,7 @@ jobs:
             hwloc: 1
           - system: PARSEC
             hwloc: 1
+          - system: HPX
           - system: CHARM
           - system: CHAPEL
           - system: X10

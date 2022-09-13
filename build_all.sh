@@ -191,37 +191,63 @@ fi
 fi)
 
 (if [[ $USE_HPX -eq 1 ]]; then
-    DIR_HPX_SRC=${SOURCE_ROOT}/hpx
-    DIR_HPX_BUILD=${INSTALL_ROOT}/hpx/build
-    DIR_HPX_INSTALL=${INSTALL_ROOT}/hpx
+    source "$HPX_DIR"/env.sh
 
-    if [[ ! -d ${DIR_HPX_SRC} ]]; then
-    (
-        mkdir -p ${DIR_HPX_SRC}
-        cd ${DIR_HPX_SRC}
-	    cd ..
-        git clone https://github.com/STEllAR-GROUP/hpx.git
-	    cd hpx
-	    cd ..
-    )
+    pushd $HWLOC_SRC_DIR
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../configure --prefix=$HPX_INSTALL_ROOT/hwloc --disable-opencl
+        make -j$THREADS
+        make install
     fi
-    
-    cmake \
-        -H${DIR_HPX_SRC} \
-        -B${DIR_HPX_BUILD} \
-        -DCMAKE_INSTALL_PREFIX=${DIR_HPX_INSTALL} \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DHPX_WITH_FETCH_ASIO=ON \
-        -DHPX_WITH_PARCELPORT_MPI=ON \
-        -DHPX_WITH_PARCELPORT_TCP=OFF \
-        -DHPX_WITH_EXAMPLES=OFF \
-        -DHPX_WITH_MALLOC=jemalloc \
-        -DHWLOC_ROOT=${INSTALL_ROOT}/hwloc/ \
-        -DJEMALLOC_ROOT=${INSTALL_ROOT}/jemalloc \
-        -DBOOST_ROOT=${INSTALL_ROOT}/boost \
+    popd
 
+    pushd $JEMALLOC_SRC_DIR
+    if [[ ! -d build ]]; then
+        ./autogen.sh
+        mkdir build
+        cd build
+        ../configure --prefix=$HPX_INSTALL_ROOT/jemalloc
+        make -j$THREADS
+        make install
+    fi
+    popd
+
+    pushd $HPX_SOURCE_ROOT/hpx
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+
+        cmake .. \
+            -DCMAKE_INSTALL_PREFIX=$HPX_INSTALL_ROOT/hpx \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DHPX_WITH_FETCH_ASIO=ON \
+            -DHPX_WITH_PARCELPORT_MPI=ON \
+            -DHPX_WITH_PARCELPORT_TCP=OFF \
+            -DHPX_WITH_EXAMPLES=OFF \
+            -DHPX_WITH_MALLOC=jemalloc \
+            -DHWLOC_ROOT=$HPX_INSTALL_ROOT/hwloc \
+            -DJEMALLOC_ROOT=$HPX_INSTALL_ROOT/jemalloc
+            # -DBOOST_ROOT=$HPX_INSTALL_ROOT/boost \
+
+        make -j$THREADS
+        make install
+    fi
+    popd
+
+    pushd hpx
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+
+        cmake .. -DCMAKE_PREFIX_PATH=$HPX_INSTALL_ROOT/hpx -DCMAKE_INSTALL_PREFIX=$PWD/..
+    else
+        cd build
+    fi
     make -j$THREADS
     make install
+    popd
 fi)
 
 (if [[ $USE_CHAPEL -eq 1 ]]; then

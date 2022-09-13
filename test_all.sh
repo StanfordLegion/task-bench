@@ -192,16 +192,18 @@ if [[ $USE_CHARM -eq 1 ]]; then
     rm charmrun.*
 fi
 
-if [[ $USE_HPX -eq 1 ]]; then
+(if [[ $USE_HPX -eq 1 ]]; then
+    source "$HPX_DIR"/env.sh
+
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            mpirun -np 1 ./hpx/hpx_distributed -steps $steps -type $t $k 
-            mpirun -np 2 ./hpx/hpx_distributed -steps $steps -type $t $k
-            mpirun -np 4 ./hpx/hpx_distributed -steps $steps -type $t $k
-            mpirun -np 4 ./hpx/hpx_distributed -steps $steps -type $t $k  -and -steps $steps -type $t $k 
+            mpirun -np 1 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
+            mpirun -np 2 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
+            mpirun -np 4 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
+            mpirun -np 4 ./hpx/bin/hpx_distributed -steps $steps -type $t $k  -and -steps $steps -type $t $k
         done
     done
-fi
+fi)
 
 if [[ $USE_CHAPEL -eq 1 ]]; then
     for t in "${extended_types[@]}"; do
