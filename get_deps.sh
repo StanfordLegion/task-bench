@@ -299,13 +299,13 @@ EOF
     cat >>"$HPX_DIR"/env.sh <<EOF
 export HPX_SOURCE_ROOT="\$HPX_DIR"/src
 export HPX_INSTALL_ROOT="\$HPX_DIR"/install
-export HWLOC_SRC_DIR="\$HPX_SOURCE_ROOT"/hwloc-2.7.0
+export HWLOC_SRC_DIR="\$HPX_SOURCE_ROOT"/hwloc-2.7.1
 export JEMALLOC_SRC_DIR="\$HPX_SOURCE_ROOT"/jemalloc-5.2.1
 EOF
 
-    wget -nv https://download.open-mpi.org/release/hwloc/v2.7.0/hwloc-2.7.0.tar.gz
-    tar xfz hwloc-2.7.0.tar.gz -C "$HWLOC_SRC_DIR" --strip-components 1
-    rm hwloc-2.7.0.tar.gz
+    wget -nv https://download.open-mpi.org/release/hwloc/v2.7/hwloc-2.7.1.tar.gz
+    tar xfz hwloc-2.7.1.tar.gz -C "$HWLOC_SRC_DIR" --strip-components 1
+    rm hwloc-2.7.1.tar.gz
 
     cat /usr/include/boost/version.hpp | grep "BOOST_LIB_VERSION"
 
