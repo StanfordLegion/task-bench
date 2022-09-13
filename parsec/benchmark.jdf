@@ -113,8 +113,8 @@ void parsec_benchmark_Destruct(parsec_taskpool_t *taskpool)
 }
 
 int parsec_benchmark(parsec_context_t *parsec,
-                      parsec_tiled_matrix_dc_t *A, task_graph_t graph, int nb_fields,
-                      int time_steps, int graph_idx, char **extra_local_memory)
+                     parsec_tiled_matrix_t *A, task_graph_t graph, int nb_fields,
+                     int time_steps, int graph_idx, char **extra_local_memory)
 {
     parsec_taskpool_t *parsec_benchmark = NULL;
 
