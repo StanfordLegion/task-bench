@@ -288,6 +288,7 @@ EOF
 fi
 
 if [[ $USE_HPX -eq 1 ]]; then
+    set -x # FIXME: Elliott: debug
     export HPX_DIR="$TASKBENCH_DEPS_DIR"/hpx
     cat >>deps/env.sh <<EOF
 export HPX_DIR="\$TASKBENCH_DEPS_DIR"/hpx
