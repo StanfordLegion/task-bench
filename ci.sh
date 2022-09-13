@@ -23,7 +23,9 @@ if [[ "$(uname)" = "Linux" ]]; then
     sudo apt-get install -qq libboost1.71-dev
   fi
   if [[ $USE_PARSEC -eq 1 || $USE_HPX -eq 1 ]]; then
-    sudo apt-get install -qq cmake
+    sudo snap install cmake --classic
+    export PATH=/snap/bin:$PATH
+    cmake --version
   fi
 fi
 
