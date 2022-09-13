@@ -301,6 +301,8 @@ export HPX_SOURCE_ROOT="\$HPX_DIR"/src
 export HPX_INSTALL_ROOT="\$HPX_DIR"/install
 export HWLOC_SRC_DIR="\$HPX_SOURCE_ROOT"/hwloc-2.7.1
 export JEMALLOC_SRC_DIR="\$HPX_SOURCE_ROOT"/jemalloc-5.2.1
+
+export LD_LIBRARY_PATH="\$LD_LIBRARY_PATH:\$HPX_INSTALL_ROOT/lib"
 EOF
 
     source "$HPX_DIR"/env.sh
