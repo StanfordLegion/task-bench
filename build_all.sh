@@ -241,7 +241,7 @@ fi)
         mkdir build
         cd build
 
-        cmake .. -DCMAKE_PREFIX_PATH=$HPX_INSTALL -DCMAKE_INSTALL_PREFIX=$PWD/..
+        cmake .. -DCMAKE_PREFIX_PATH=$HPX_INSTALL_ROOT/hpx -DCMAKE_INSTALL_PREFIX=$PWD/..
     else
         cd build
     fi

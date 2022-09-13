@@ -25,6 +25,7 @@ Implementations:
 [Charm++](charm++),
 [Chapel](chapel),
 [Dask](dask),
+[HPX](hpx),
 [Legion](legion),
 [MPI](mpi),
 [MPI+OpenMP](mpi_openmp),
