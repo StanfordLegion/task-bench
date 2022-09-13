@@ -246,6 +246,8 @@ fi)
         cd build
 
         cmake .. -DCMAKE_PREFIX_PATH=$HPX_INSTALL -DCMAKE_INSTALL_PREFIX=$PWD/..
+    else
+        cd build
     fi
     make -j$THREADS
     make install

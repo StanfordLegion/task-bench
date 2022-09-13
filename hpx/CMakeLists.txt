@@ -19,10 +19,10 @@ project(TaskBench CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Setting up dependencies
 find_package(HPX REQUIRED)
+find_package(MPI REQUIRED)
 
 link_directories(${CMAKE_SOURCE_DIR}/../core)
 
 add_executable(hpx_distributed hpx_distributed.cc)
-target_link_libraries(hpx_distributed PUBLIC HPX::hpx HPX::wrap_main core_s)
+target_link_libraries(hpx_distributed PUBLIC HPX::hpx HPX::wrap_main MPI::MPI_C core_s)
