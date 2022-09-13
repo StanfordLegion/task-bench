@@ -205,9 +205,9 @@ fi)
 
     pushd $JEMALLOC_SRC_DIR
     if [[ ! -d build ]]; then
+        ./autogen.sh
         mkdir build
         cd build
-        ../autogen.sh
         ../configure --prefix=$PWD/../install
         make -j$THREADS
         make install
