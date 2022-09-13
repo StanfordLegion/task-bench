@@ -191,34 +191,44 @@ fi
 fi)
 
 (if [[ $USE_HPX -eq 1 ]]; then
-    DIR_HPX_SRC=${SOURCE_ROOT}/hpx
-    DIR_HPX_BUILD=${INSTALL_ROOT}/hpx/build
-    DIR_HPX_INSTALL=${INSTALL_ROOT}/hpx
-
-    if [[ ! -d ${DIR_HPX_SRC} ]]; then
-    (
-        mkdir -p ${DIR_HPX_SRC}
-        cd ${DIR_HPX_SRC}
-	    cd ..
-        git clone https://github.com/STEllAR-GROUP/hpx.git
-	    cd hpx
-	    cd ..
-    )
+    pushd $HWLOC_SRC_DIR
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../configure --prefix=$PWD/../install --disable-opencl
+        make -j$THREADS
+        make install
     fi
-    
+    popd
+
+    pushd $JEMALLOC_SRC_DIR
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../autogen.sh
+        ../configure --prefix=$PWD/../install
+        make -j$THREADS
+        make install
+    fi
+    popd
+
+    HPX_SRC=$HPX_SOURCE_ROOT/hpx
+    HPX_BUILD=$HPX_SOURCE_ROOT/hpx/build
+    HPX_INSTALL=$HPX_INSTALL_ROOT/hpx
+
     cmake \
-        -H${DIR_HPX_SRC} \
-        -B${DIR_HPX_BUILD} \
-        -DCMAKE_INSTALL_PREFIX=${DIR_HPX_INSTALL} \
+        -H$HPX_SRC \
+        -B$HPX_BUILD \
+        -DCMAKE_INSTALL_PREFIX=$HPX_INSTALL \
         -DCMAKE_BUILD_TYPE=Release \
         -DHPX_WITH_FETCH_ASIO=ON \
         -DHPX_WITH_PARCELPORT_MPI=ON \
         -DHPX_WITH_PARCELPORT_TCP=OFF \
         -DHPX_WITH_EXAMPLES=OFF \
         -DHPX_WITH_MALLOC=jemalloc \
-        -DHWLOC_ROOT=${INSTALL_ROOT}/hwloc/ \
-        -DJEMALLOC_ROOT=${INSTALL_ROOT}/jemalloc \
-        -DBOOST_ROOT=${INSTALL_ROOT}/boost \
+        -DHWLOC_ROOT=$HWLOC_SRC_DIR/install \
+        -DJEMALLOC_ROOT=$JEMALLOC_SRC_DIR/install
+        # -DBOOST_ROOT=${INSTALL_ROOT}/boost \
 
     make -j$THREADS
     make install

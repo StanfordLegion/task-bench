@@ -19,10 +19,8 @@ if [[ "$(uname)" = "Linux" ]]; then
   if [[ $USE_OMPSS2 -eq 1 ]]; then
     sudo apt-get install -qq libnuma-dev gperf libboost1.71-dev
   fi
-  if [[ $USE_PARSEC -eq 1 ]]; then
-    sudo snap install cmake --classic
-    export PATH=/snap/bin:$PATH
-    cmake --version
+  if [[ $USE_PARSEC -eq 1 || $USE_HPX -eq 1 ]]; then
+    sudo apt-get install -qq cmake
   fi
 fi
 

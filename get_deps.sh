@@ -287,8 +287,7 @@ EOF
     git clone -b task-bench https://github.com/elliottslaughter/x10.git "$X10_DIR"/x10
 fi
 
-if [[ $USE_HPX -eq 1 ]]; then
-    set -x # FIXME: Elliott: debug
+(if [[ $USE_HPX -eq 1 ]]; then
     export HPX_DIR="$TASKBENCH_DEPS_DIR"/hpx
     cat >>deps/env.sh <<EOF
 export HPX_DIR="\$TASKBENCH_DEPS_DIR"/hpx
@@ -298,84 +297,24 @@ EOF
     mkdir -p "$HPX_DIR"
 
     cat >>"$HPX_DIR"/env.sh <<EOF
-
 export HPX_SOURCE_ROOT="\$HPX_DIR"/src
 export HPX_INSTALL_ROOT="\$HPX_DIR"/install
+export HWLOC_SRC_DIR="\$HPX_SOURCE_ROOT"/hwloc-2.7.0
+export JEMALLOC_SRC_DIR="\$HPX_SOURCE_ROOT"/jemalloc-5.2.1
+EOF
 
-export CMAKE_SRC_DIR=${HPX_SOURCE_ROOT}/cmake
-export CMAKE_BUILD_DIR=${HPX_INSTALL_ROOT}/cmake/build
-export CMAKE_INSTALL_DIR=${HPX_INSTALL_ROOT}/cmake
+    wget -nv https://download.open-mpi.org/release/hwloc/v2.7.0/hwloc-2.7.0.tar.gz
+    tar xfz hwloc-2.7.0.tar.gz -C "$HWLOC_SRC_DIR" --strip-components 1
+    rm hwloc-2.7.0.tar.gz
 
-export HWLOC_SRC_DIR=${HPX_SOURCE_ROOT}/hwloc
-export HWLOC_BUILD_DIR=${HPX_INSTALL_ROOT}/hwloc/build
-export HWLOC_INSTALL_DIR=${HPX_INSTALL_ROOT}/hwloc
+    cat /usr/include/boost/version.hpp | grep "BOOST_LIB_VERSION"
 
-export BOOST_SRC_DIR=${HPX_SOURCE_ROOT}/boost
-export BOOST_INSTALL_DIR=${HPX_INSTALL_ROOT}/boost
+    wget -nv https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2
+    tar xfz jemalloc-5.2.1.tar.gz -C "$JEMALLOC_SRC_DIR" --strip-components 1
+    rm jemalloc-5.2.1.tar.gz
 
-export JEMALLOC_SRC_DIR=${HPX_SOURCE_ROOT}/jemalloc
-export JEMALLOC_INSTALL_DIR=${HPX_INSTALL_ROOT}/jemalloc
-
-    DOWNLOAD_URL="https://github.com/Kitware/CMake/releases/download/v3.22/cmake-3.22.0.tar.gz"
-    if [[ ! -d ${CMAKE_SRC_DIR} ]]; then
-    (
-        mkdir -p ${CMAKE_SRC_DIR}
-        cd ${CMAKE_SRC_DIR}
-        wget -O- ${DOWNLOAD_URL} | tar xz --strip-components=1
-    )
-    fi
-    mkdir -p ${CMAKE_BUILD_DIR}
-    (
-        cd ${CMAKE_BUILD_DIR}
-        ${CMAKE_SRC_DIR}/bootstrap --parallel=10 --prefix=${CMAKE_INSTALL_DIR} -- -DCMAKE_BUILD_TYPE=Release
-        make -j10 install
-    )
-
-    DOWNLOAD_URL="https://download.open-mpi.org/release/hwloc/v2.7.0/hwloc-2.7.0.tar.gz"
-    if [[ ! -d ${HWLOC_SRC_DIR} ]]; then
-    (
-        mkdir -p ${HWLOC_SRC_DIR}
-        cd ${HWLOC_SRC_DIR}
-        wget -O- ${DOWNLOAD_URL} | tar xz --strip-components=1
-    )
-    fi
-    (
-        mkdir -p ${HWLOC_BUILD_DIR}
-        cd ${HWLOC_BUILD_DIR}
-        ${HWLOC_SRC_DIR}/configure --prefix=${HWLOC_INSTALL_DIR} --disable-opencl 
-        make -j 10
-        make install
-    )
-
-    if [[ ! -d ${BOOST_SRC_DIR} ]]; then
-    (
-       cd ${HPX_SOURCE_ROOT}
-	   git clone --depth 1 --branch boost-${BOOST_VERSION} https://github.com/boostorg/boost boost
-	   cd boost
-	   git submodule update --init --recursive --depth=1 -j 8
-       echo "using gcc : : $CXX ; " >tools/build/src/user-config.jam
-    )
-    fi
-
-    (
-        cd ${BOOST_SRC_DIR}
-        ./bootstrap.sh --prefix=${DIR_INSTALL} --with-toolset=gcc
-        ./b2 -j10  --cxxflags="-fPIC -march=native -ffast-math -std=c++17" --with-atomic --with-filesystem --with-program_options --with-regex --with-system --with-chrono --with-date_time --with-thread --with-iostreams Release install
-    )
-
-    DOWNLOAD_URL="https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2"
-    if [[ ! -d ${JEMALLOC_INSTALL_DIR} ]]; then
-    (
-        mkdir -p ${JEMALLOC_INSTALL_DIR}
-        cd ${JEMALLOC_INSTALL_DIR}
-        wget -O- ${DOWNLOAD_URL} | tar xj --strip-components=1
-        ./autogen.sh
-        ./configure --prefix=${JEMALLOC_INSTALL_DIR}
-        make -j 10
-        make install
-    )
-    fi
-
+    git clone https://github.com/STEllAR-GROUP/hpx.git "$HPX_SOURCE_ROOT"/hpx
+fi)
 
 if [[ $USE_OMPSS -eq 1 ]]; then
     export OMPSS_DL_DIR="$TASKBENCH_DEPS_DIR"/ompss
