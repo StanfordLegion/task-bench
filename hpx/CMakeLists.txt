@@ -22,7 +22,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(HPX REQUIRED)
 find_package(MPI REQUIRED)
 
+include(GNUInstallDirs)
+
 link_directories(${CMAKE_SOURCE_DIR}/../core)
 
 add_executable(hpx_distributed hpx_distributed.cc)
 target_link_libraries(hpx_distributed PUBLIC HPX::hpx HPX::wrap_main MPI::MPI_C core_s)
+
+install(
+  TARGETS hpx_distributed
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
