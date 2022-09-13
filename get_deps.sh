@@ -401,10 +401,10 @@ EOF
     tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
     rm swig-3.0.12.tar.gz
 
-    # SBT 1.1.6
-    wget -nv https://github.com/sbt/sbt/releases/download/v1.1.6/sbt-1.1.6.tgz
-    tar -zxf sbt-1.1.6.tgz -C "$SPARK_DIR"
-    rm sbt-1.1.6.tgz
+    # SBT 1.7.1
+    wget -nv https://github.com/sbt/sbt/releases/download/v1.7.1/sbt-1.7.1.tgz
+    tar -zxf sbt-1.7.1.tgz -C "$SPARK_DIR"
+    rm sbt-1.7.1.tgz
 
     popd
 fi
