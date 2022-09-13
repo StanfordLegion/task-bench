@@ -303,6 +303,8 @@ export HWLOC_SRC_DIR="\$HPX_SOURCE_ROOT"/hwloc-2.7.1
 export JEMALLOC_SRC_DIR="\$HPX_SOURCE_ROOT"/jemalloc-5.2.1
 EOF
 
+    source "$HPX_DIR"/env.sh
+
     wget -nv https://download.open-mpi.org/release/hwloc/v2.7/hwloc-2.7.1.tar.gz
     tar xfz hwloc-2.7.1.tar.gz -C "$HPX_SOURCE_ROOT"
     rm hwloc-2.7.1.tar.gz
