@@ -304,13 +304,13 @@ export JEMALLOC_SRC_DIR="\$HPX_SOURCE_ROOT"/jemalloc-5.2.1
 EOF
 
     wget -nv https://download.open-mpi.org/release/hwloc/v2.7/hwloc-2.7.1.tar.gz
-    tar xfz hwloc-2.7.1.tar.gz -C "$HWLOC_SRC_DIR" --strip-components 1
+    tar xfz hwloc-2.7.1.tar.gz -C "$HPX_SOURCE_ROOT"
     rm hwloc-2.7.1.tar.gz
 
     cat /usr/include/boost/version.hpp | grep "BOOST_LIB_VERSION"
 
     wget -nv https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2
-    tar xfz jemalloc-5.2.1.tar.gz -C "$JEMALLOC_SRC_DIR" --strip-components 1
+    tar xfz jemalloc-5.2.1.tar.gz -C "$HPX_SOURCE_ROOT"
     rm jemalloc-5.2.1.tar.gz
 
     git clone https://github.com/STEllAR-GROUP/hpx.git "$HPX_SOURCE_ROOT"/hpx
