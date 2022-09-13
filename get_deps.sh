@@ -374,7 +374,7 @@ EOF
 
     cat >>"$SPARK_DIR"/env.sh <<EOF
 export SPARK_PREFIX="\$SPARK_DIR"/install
-export SPARK_SRC_DIR="\$SPARK_DIR"/spark-2.3.0-bin-hadoop2.7
+export SPARK_SRC_DIR="\$SPARK_DIR"/spark-2.4.8-bin-hadoop2.7
 export SPARK_SBT_DIR="\$SPARK_DIR"/sbt/bin
 export SPARK_SWIG_DIR="\$SPARK_DIR"/swig-3.0.12
 export PATH="\$SPARK_PREFIX/bin:\$PATH"
@@ -384,27 +384,27 @@ export PATH="\$JAVA_HOME/bin:\$PATH"
 EOF
 
     pushd "$SPARK_DIR"
-    # don't install Scala--use 2.11.8 that comes with Spark 2.3.0
+    # don't install Scala--use 2.11.8 that comes with Spark 2.4.8
 
     # Java
     wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
     tar -zxf jdk-8u131-linux-x64.tar.gz -C "$SPARK_DIR"
     rm jdk-8u131-linux-x64.tar.gz
 
-    # Spark 2.3.0
-    wget -nv "$APACHE_MIRROR"/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
-    tar -zxf spark-2.3.0-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn't add to path-put full paths in emtg script
-    rm spark-2.3.0-bin-hadoop2.7.tgz
+    # Spark 2.4.8
+    wget -nv "$APACHE_MIRROR"/spark/spark-2.4.8/spark-2.4.8-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
+    tar -zxf spark-2.4.8-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn't add to path-put full paths in emtg script
+    rm spark-2.4.8-bin-hadoop2.7.tgz
 
     # SWIG 3.0.12
     wget -nv $SOURCEFORGE_MIRROR/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
     tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
     rm swig-3.0.12.tar.gz
 
-    # SBT 1.1.6
-    wget https://sbt-downloads.cdnedge.bluemix.net/releases/v1.1.6/sbt-1.1.6.tgz
-    tar -zxf sbt-1.1.6.tgz -C "$SPARK_DIR"
-    rm sbt-1.1.6.tgz
+    # SBT 1.7.1
+    wget -nv https://github.com/sbt/sbt/releases/download/v1.7.1/sbt-1.7.1.tgz
+    tar -zxf sbt-1.7.1.tgz -C "$SPARK_DIR"
+    rm sbt-1.7.1.tgz
 
     popd
 fi
