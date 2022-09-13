@@ -315,8 +315,8 @@ EOF
     cat /usr/include/boost/version.hpp | grep "BOOST_LIB_VERSION"
 
     wget -nv https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2
-    tar xfz jemalloc-5.2.1.tar.gz -C "$HPX_SOURCE_ROOT"
-    rm jemalloc-5.2.1.tar.gz
+    tar xfj jemalloc-5.2.1.tar.bz2 -C "$HPX_SOURCE_ROOT"
+    rm jemalloc-5.2.1.tar.bz2
 
     git clone https://github.com/STEllAR-GROUP/hpx.git "$HPX_SOURCE_ROOT"/hpx
 fi)
