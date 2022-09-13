@@ -305,6 +305,9 @@ EOF
 
     source "$HPX_DIR"/env.sh
 
+    mkdir -p $HPX_SOURCE_ROOT
+    mkdir -p $HPX_INSTALL_ROOT
+
     wget -nv https://download.open-mpi.org/release/hwloc/v2.7/hwloc-2.7.1.tar.gz
     tar xfz hwloc-2.7.1.tar.gz -C "$HPX_SOURCE_ROOT"
     rm hwloc-2.7.1.tar.gz
