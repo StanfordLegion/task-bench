@@ -232,8 +232,10 @@ fi)
         -DJEMALLOC_ROOT=$JEMALLOC_SRC_DIR/install
         # -DBOOST_ROOT=${INSTALL_ROOT}/boost \
 
+    pushd $HPX_BUILD
     make -j$THREADS
     make install
+    popd
 fi)
 
 (if [[ $USE_CHAPEL -eq 1 ]]; then
