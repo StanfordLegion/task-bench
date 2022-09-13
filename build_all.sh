@@ -191,6 +191,8 @@ fi
 fi)
 
 (if [[ $USE_HPX -eq 1 ]]; then
+    source "$HPX_DIR"/env.sh
+
     pushd $HWLOC_SRC_DIR
     if [[ ! -d build ]]; then
         mkdir build
