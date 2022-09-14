@@ -475,10 +475,6 @@ EOF
         ./dev/build/init-settings.sh
         sed -i 's@SWIFT_T_PREFIX=/tmp/swift-t-install@SWIFT_T_PREFIX='"$SWIFT_PREFIX"'@g' ./dev/build/swift-t-settings.sh
         sed -i 's@# TCLSH_INSTALL=/usr/bin/tclsh@TCLSH_INSTALL='"$SWIFT_PREFIX"'@g' ./dev/build/swift-t-settings.sh
-        # sed -i 's@# TCLSH_LOCAL=/usr/bin/tclsh@TCLSH_LOCAL='"$SWIFT_PREFIX"'/bin/tclsh8.6@g' ./dev/build/swift-t-settings.sh
-        # sed -i 's@# TCL_LIB_DIR=/path/to/tcl/lib@TCL_LIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
-        # sed -i 's@# TCL_INCLUDE_DIR=/path/to/tcl/include@TCL_INCLUDE_DIR='"$SWIFT_PREFIX"'/include@g' ./dev/build/swift-t-settings.sh
-        # sed -i 's@# TCL_SYSLIB_DIR=/path/to/tcl/lib@TCL_SYSLIB_DIR='"$SWIFT_PREFIX"'/lib@g' ./dev/build/swift-t-settings.sh
         sed -i 's@# export JAVA_HOME=@export JAVA_HOME='"$JAVA_HOME"'@g' ./dev/build/swift-t-settings.sh
         sed -i 's@# export ANT_HOME=@export ANT_HOME='"$ANT_HOME"'@g' ./dev/build/swift-t-settings.sh
         sed -i 's@MAKE_PARALLELISM=1@MAKE_PARALLELISM='"$THREADS"'@g' ./dev/build/swift-t-settings.sh
@@ -504,8 +500,6 @@ EOF
 
     find ./dev/build -type f -exec sed -i 's@#!/bin/zsh@'"#!$SWIFT_PREFIX"'/bin/zsh@g' {} +
     ./dev/build/build-swift-t.sh
-    # find "$SWIFT_PREFIX"/stc -type f -exec sed -i 's@#!/bin/zsh@'"#!$SWIFT_PREFIX"'/bin/zsh@g' {} +
-    # find "$SWIFT_PREFIX"/turbine -type f -exec sed -i 's@#!/bin/zsh@'"#!$SWIFT_PREFIX"'/bin/zsh@g' {} +
     popd
 
     popd
