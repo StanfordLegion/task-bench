@@ -917,7 +917,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     for (size_t i = 0; i < proc_mem_affinities.size(); ++i) {
       Machine::ProcessorMemoryAffinity &affinity = proc_mem_affinities[i];
       if (affinity.p.kind() == Processor::LOC_PROC) {
-        if (affinity.m.kind() == Memory::SYSTEM_MEM) {
+        if (affinity.m.kind() == Memory::SYSTEM_MEM && affinity.m.capacity() > 0) {
           proc_sysmems[affinity.p] = affinity.m;
           if (proc_regmems.find(affinity.p) == proc_regmems.end())
             proc_regmems[affinity.p] = affinity.m;
