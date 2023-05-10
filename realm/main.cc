@@ -112,6 +112,18 @@ DECLARE_REDUCTION(RedopMax, unsigned long long, unsigned long long,
 Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
            size_t value_size, Event wait_for)
 {
+  Processor current_proc = ThreadLocal::current_processor;
+  Event event_fetch_dst = Event::NO_EVENT;
+  if (dst_inst.address_space() != current_proc.address_space()) {
+    event_fetch_dst = dst_inst.fetch_metadata(current_proc);
+    event_fetch_dst.wait();
+  }
+  Event event_fetch_src = Event::NO_EVENT;
+  if (src_inst.address_space() != current_proc.address_space()) {
+    event_fetch_src = src_inst.fetch_metadata(current_proc);
+    event_fetch_src.wait();
+  }
+
   CopySrcDstField src_field;
   src_field.inst = src_inst;
   src_field.field_id = fid;
@@ -810,7 +822,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                       .at(point - first_point)
                       .at(dep)
                       .at(slot),
-                    fid, graph.output_bytes_per_task,
+                    fid, sizeof(char),
                     task_postcondition);
                   copy_postconditions.at(point - first_point).at(fid - FID_FIRST).push_back(postcondition);
                 }
