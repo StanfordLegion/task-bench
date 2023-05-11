@@ -36,7 +36,7 @@ jobs:
           - system: DASK
       fail-fast: false
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - run: ./ci.sh
         env:
           SYSTEM: ${{ matrix.system }}
