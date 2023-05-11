@@ -113,15 +113,11 @@ Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
            size_t value_size, Event wait_for)
 {
   Processor current_proc = ThreadLocal::current_processor;
-  Event event_fetch_dst = Event::NO_EVENT;
   if (dst_inst.address_space() != current_proc.address_space()) {
-    event_fetch_dst = dst_inst.fetch_metadata(current_proc);
-    event_fetch_dst.wait();
+    dst_inst.fetch_metadata(current_proc).wait();
   }
-  Event event_fetch_src = Event::NO_EVENT;
   if (src_inst.address_space() != current_proc.address_space()) {
-    event_fetch_src = src_inst.fetch_metadata(current_proc);
-    event_fetch_src.wait();
+    src_inst.fetch_metadata(current_proc).wait();
   }
 
   CopySrcDstField src_field;
