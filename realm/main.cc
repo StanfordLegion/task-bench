@@ -112,6 +112,14 @@ DECLARE_REDUCTION(RedopMax, unsigned long long, unsigned long long,
 Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
            size_t value_size, Event wait_for)
 {
+  Processor current_proc = ThreadLocal::current_processor;
+  if (dst_inst.address_space() != current_proc.address_space()) {
+    dst_inst.fetch_metadata(current_proc).wait();
+  }
+  if (src_inst.address_space() != current_proc.address_space()) {
+    src_inst.fetch_metadata(current_proc).wait();
+  }
+
   CopySrcDstField src_field;
   src_field.inst = src_inst;
   src_field.field_id = fid;
@@ -810,7 +818,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
                       .at(point - first_point)
                       .at(dep)
                       .at(slot),
-                    fid, graph.output_bytes_per_task,
+                    fid, sizeof(char),
                     task_postcondition);
                   copy_postconditions.at(point - first_point).at(fid - FID_FIRST).push_back(postcondition);
                 }
@@ -917,7 +925,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     for (size_t i = 0; i < proc_mem_affinities.size(); ++i) {
       Machine::ProcessorMemoryAffinity &affinity = proc_mem_affinities[i];
       if (affinity.p.kind() == Processor::LOC_PROC) {
-        if (affinity.m.kind() == Memory::SYSTEM_MEM) {
+        if (affinity.m.kind() == Memory::SYSTEM_MEM && affinity.m.capacity() > 0) {
           proc_sysmems[affinity.p] = affinity.m;
           if (proc_regmems.find(affinity.p) == proc_regmems.end())
             proc_regmems[affinity.p] = affinity.m;

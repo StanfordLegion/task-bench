@@ -112,6 +112,14 @@ DECLARE_REDUCTION(RedopMax, unsigned long long, unsigned long long,
 Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
            size_t value_size, Event wait_for)
 {
+  Processor current_proc = ThreadLocal::current_processor;
+  if (dst_inst.address_space() != current_proc.address_space()) {
+    dst_inst.fetch_metadata(current_proc).wait();
+  }
+  if (src_inst.address_space() != current_proc.address_space()) {
+    src_inst.fetch_metadata(current_proc).wait();
+  }
+
   CopySrcDstField src_field;
   src_field.inst = src_inst;
   src_field.field_id = fid;
@@ -135,6 +143,14 @@ Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
 SubgraphDefinition::CopyDesc copy_desc(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
                                        size_t value_size)
 {
+  Processor current_proc = ThreadLocal::current_processor;
+  if (dst_inst.address_space() != current_proc.address_space()) {
+    dst_inst.fetch_metadata(current_proc).wait();
+  }
+  if (src_inst.address_space() != current_proc.address_space()) {
+    src_inst.fetch_metadata(current_proc).wait();
+  }
+
   CopySrcDstField src_field;
   src_field.inst = src_inst;
   src_field.field_id = fid;
@@ -424,7 +440,7 @@ static Event define_subgraph(Subgraph &subgraph,
                   .at(point - first_point)
                   .at(dep)
                   .at(slot),
-                fid, graph.output_bytes_per_task));
+                fid, sizeof(char)));
 
               copy_postconditions.at(fid - FID_FIRST).push_back(copy_postcondition);
 
@@ -770,6 +786,20 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
   Barrier last_stop = a.last_stop;
 
   // Figure out who we're going to be communicating with.
+
+  for (size_t graph_index = 0; graph_index < graphs.size(); ++graph_index) {
+    auto graph = graphs.at(graph_index);
+
+    long first_point = proc_index * graph.max_width / num_procs;
+    long last_point = (proc_index + 1) * graph.max_width / num_procs - 1;
+
+    for (long point = first_point; point <= last_point; ++point) {
+      task_results.at(graph_index).at(point).fetch_metadata(p).wait();
+      task_inputs.at(graph_index).at(point).fetch_metadata(p).wait();
+      raw_exchange.at(graph_index).at(point).fetch_metadata(p).wait();
+      war_exchange.at(graph_index).at(point).fetch_metadata(p).wait();
+    }
+  }
 
   // graph -> point -> [remote point]
   std::vector<std::vector<std::set<long> > > raw_exchange_points(graphs.size());
@@ -1301,7 +1331,7 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
         }
       }
 
-      if (!subgraph.exists()) {
+      if (subgraph.exists()) {
         subgraph.destroy(postcondition);
       }
     }
@@ -1366,7 +1396,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     for (size_t i = 0; i < proc_mem_affinities.size(); ++i) {
       Machine::ProcessorMemoryAffinity &affinity = proc_mem_affinities[i];
       if (affinity.p.kind() == Processor::LOC_PROC) {
-        if (affinity.m.kind() == Memory::SYSTEM_MEM) {
+        if (affinity.m.kind() == Memory::SYSTEM_MEM && affinity.m.capacity() > 0) {
           proc_sysmems[affinity.p] = affinity.m;
           if (proc_regmems.find(affinity.p) == proc_regmems.end())
             proc_regmems[affinity.p] = affinity.m;
