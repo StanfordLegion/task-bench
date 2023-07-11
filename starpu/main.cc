@@ -525,6 +525,7 @@ private:
   int P;
   int Q;
   int MB;
+  char *starpu_schedule;
   matrix_t mat_array[10];
 };
 
@@ -678,6 +679,9 @@ void StarPUApp::parse_argument(int argc, char **argv)
     if (!strcmp(argv[i], "-S")) {
       starpu_enable_supertiling = true;
     }
+    if (!strcmp(argv[i], "-schedule")) {
+      starpu_schedule = argv[++i];
+    }
   }
 }
 
@@ -739,6 +743,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   P = 1;
   MB = 2;
   nb_cores = 1;
+  starpu_schedule = "lws";
   
   parse_argument(argc, argv);
   
@@ -748,7 +753,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   conf->ncpus = nb_cores;
   conf->ncuda = 0;
   conf->nopencl = 0;
-  conf->sched_policy_name = "lws";
+  conf->sched_policy_name = starpu_schedule;
   
   int ret;
   ret = starpu_init(conf);
