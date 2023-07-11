@@ -685,6 +685,18 @@ void StarPUApp::parse_argument(int argc, char **argv)
   }
 }
 
+starpu_perfmodel perfmodels[10];
+char *symbol[10] = {"task1_pm", "task2_pm", "task3_pm", "task4_pm", "task5_pm", "task6_pm", "task7_pm", "task8_pm", "task9_pm", "task10_pm"};
+
+static starpu_perfmodel * init_starpu_perfmodel(int index) {
+  struct starpu_perfmodel* model = &perfmodels[index];
+  model->symbol = symbol[index];
+	model->type = STARPU_HISTORY_BASED;
+
+	starpu_perfmodel_init(model);
+  return model;
+}
+
 StarPUApp::StarPUApp(int argc, char **argv)
   : App(argc, argv)
 {
@@ -692,51 +704,61 @@ StarPUApp::StarPUApp(int argc, char **argv)
   cl_task1.cpu_funcs[0]  = task1;                                       
   cl_task1.nbuffers  = 1;                                           
   cl_task1.name      = "task1";
+  cl_task1.model    = init_starpu_perfmodel(0);
   
   cl_task2.where     = STARPU_CPU;                                   
   cl_task2.cpu_funcs[0]  = task2;                                       
   cl_task2.nbuffers  = 2;                                           
   cl_task2.name      = "task2";
+  cl_task2.model    = init_starpu_perfmodel(1);
   
   cl_task3.where     = STARPU_CPU;                                   
   cl_task3.cpu_funcs[0]  = task3;                                       
   cl_task3.nbuffers  = 3;                                           
   cl_task3.name      = "task3";
+  cl_task3.model    = init_starpu_perfmodel(2);
   
   cl_task4.where     = STARPU_CPU;                                   
   cl_task4.cpu_funcs[0]  = task4;                                       
   cl_task4.nbuffers  = 4;                                           
   cl_task4.name      = "task4";
+  cl_task4.model    = init_starpu_perfmodel(3);
   
   cl_task5.where     = STARPU_CPU;                                   
   cl_task5.cpu_funcs[0]  = task5;                                       
   cl_task5.nbuffers  = 5;                                           
   cl_task5.name      = "task5";
-  
+  cl_task5.model    = init_starpu_perfmodel(4);  
+
   cl_task6.where     = STARPU_CPU;                                   
   cl_task6.cpu_funcs[0]  = task6;                                       
   cl_task6.nbuffers  = 6;                                           
   cl_task6.name      = "task6";
+  cl_task6.model    = init_starpu_perfmodel(5);
   
   cl_task7.where     = STARPU_CPU;                                   
   cl_task7.cpu_funcs[0]  = task7;                                       
   cl_task7.nbuffers  = 7;                                           
   cl_task7.name      = "task7";
-  
+  cl_task7.model    = init_starpu_perfmodel(6);
+
   cl_task8.where     = STARPU_CPU;                                   
   cl_task8.cpu_funcs[0]  = task8;                                       
   cl_task8.nbuffers  = 8;                                           
   cl_task8.name      = "task8";
+  cl_task8.model    = init_starpu_perfmodel(7);
   
   cl_task9.where     = STARPU_CPU;                                   
   cl_task9.cpu_funcs[0]  = task9;                                       
   cl_task9.nbuffers  = 9;                                           
   cl_task9.name      = "task9";
+  cl_task9.model    = init_starpu_perfmodel(8);
   
   cl_task10.where     = STARPU_CPU;                                   
   cl_task10.cpu_funcs[0]  = task10;                                       
   cl_task10.nbuffers  = 10;                                           
   cl_task10.name      = "task10";
+  cl_task10.model    = init_starpu_perfmodel(9);
   
   int i;
   
