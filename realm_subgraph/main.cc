@@ -112,7 +112,7 @@ DECLARE_REDUCTION(RedopMax, unsigned long long, unsigned long long,
 Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
            size_t value_size, Event wait_for)
 {
-  Processor current_proc = ThreadLocal::current_processor;
+  Processor current_proc = Processor::get_executing_processor();
   if (dst_inst.address_space() != current_proc.address_space()) {
     dst_inst.fetch_metadata(current_proc).wait();
   }
@@ -143,7 +143,7 @@ Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
 SubgraphDefinition::CopyDesc copy_desc(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
                                        size_t value_size)
 {
-  Processor current_proc = ThreadLocal::current_processor;
+  Processor current_proc = Processor::get_executing_processor();
   if (dst_inst.address_space() != current_proc.address_space()) {
     dst_inst.fetch_metadata(current_proc).wait();
   }
