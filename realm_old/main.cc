@@ -138,7 +138,7 @@ long num_rev_dependencies(TaskGraph &graph, long dset, long taskid)
 Event copy(RegionInstance src_inst, RegionInstance dst_inst, FieldID fid,
            Event wait_for)
 {
-  Processor current_proc = ThreadLocal::current_processor;
+  Processor current_proc = Processor::get_executing_processor();
   if (dst_inst.address_space() != current_proc.address_space()) {
     dst_inst.fetch_metadata(current_proc).wait();
   }
