@@ -222,6 +222,7 @@ fi)
         cmake .. \
             -DCMAKE_INSTALL_PREFIX=$HPX_INSTALL_ROOT/hpx \
             -DCMAKE_BUILD_TYPE=Release \
+            -DHPX_WITH_PKGCONFIG=OFF \
             -DHPX_WITH_FETCH_ASIO=ON \
             -DHPX_WITH_PARCELPORT_MPI=ON \
             -DHPX_WITH_PARCELPORT_TCP=OFF \
