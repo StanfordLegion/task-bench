@@ -16,9 +16,14 @@
 #ifndef CORE_C_H
 #define CORE_C_H
 
+// Guard these includes behind a special defines so that the Python
+// CFFI parser does not get confused once these headers are expanded
+// by the preprocessor.
+#ifndef TASK_BENCH_PYTHON_CFFI
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
