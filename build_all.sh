@@ -158,9 +158,9 @@ if [[ $USE_PARSEC -eq 1 ]]; then
     mkdir -p "$PARSEC_DIR"
     pushd "$PARSEC_DIR"
     if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
-      ../configure --prefix=$PWD --with-mpi --with-hwloc=$HWLOC_DIR --disable-debug
+      ../configure --prefix=$PWD --with-mpi --with-hwloc=$HWLOC_DIR --disable-debug --with-cuda=no --disable-testing
     else
-      ../configure --prefix=$PWD --with-mpi --disable-debug --with-cuda=no
+      ../configure --prefix=$PWD --with-mpi --disable-debug --with-cuda=no --disable-testing
     fi
     make -j$THREADS
     make install

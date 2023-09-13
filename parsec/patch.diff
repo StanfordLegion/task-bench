@@ -1,8 +1,8 @@
 diff --git a/parsec/include/parsec/parsec_config_bottom.h b/parsec/include/parsec/parsec_config_bottom.h
-index 748c310..8dba995 100644
+index f87a74e6d..de350e4d3 100644
 --- a/parsec/include/parsec/parsec_config_bottom.h
 +++ b/parsec/include/parsec/parsec_config_bottom.h
-@@ -102,11 +102,11 @@ typedef int32_t parsec_dependency_t;
+@@ -156,11 +156,11 @@ typedef int32_t parsec_dependency_t;
   * A set of constants defining the capabilities of the underlying
   * runtime.
   */
@@ -16,3 +16,18 @@ index 748c310..8dba995 100644
  
  #define MAX_TASK_STRLEN 128
  
+diff --git a/parsec/parsec_internal.h b/parsec/parsec_internal.h
+index 3beb1310f..f5910cc69 100644
+--- a/parsec/parsec_internal.h
++++ b/parsec/parsec_internal.h
+@@ -33,6 +33,10 @@
+ 
+ #include <string.h>
+ 
++#ifdef __cplusplus
++#define restrict __restrict
++#endif
++
+ BEGIN_C_DECLS
+ 
+ /**
