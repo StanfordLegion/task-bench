@@ -28,9 +28,9 @@ jobs:
           - system: X10
           - system: OPENMP
           - system: SPARK
-          # - system: OMPSS
-          # - system: OMPSS2
-          #   hwloc: 1
+          - system: OMPSS
+          - system: OMPSS2
+            hwloc: 1
           - system: SWIFT
           - system: TENSORFLOW
           - system: DASK
