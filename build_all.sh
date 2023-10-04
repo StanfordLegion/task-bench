@@ -19,11 +19,6 @@ else
 fi
 THREADS=${THREADS:-$DEFAULT_THREADS}
 
-# On Cray machines, default to static build. (Cori switched this
-# default from static to dynamic in the January 2020 maintenance
-# cycle, but we want to stick with static builds.)
-export CRAYPE_LINK_TYPE=static
-
 make -C core clean
 make -C core -j$THREADS
 
@@ -106,23 +101,19 @@ if [[ $USE_REGENT -eq 1 ]]; then
         fi
         unset LG_RT_DIR
         if [[ -z $GITHUB_ACTIONS ]]; then
+            export CONDUIT=$LEGION_GASNET_CONDUIT${LEGION_GASNET_SYSTEM+-}$LEGION_GASNET_SYSTEM
             ./scripts/setup_env.py -j$THREADS
         else
             ./install.py --rdir=auto
         fi
     )
     popd
-    (
-        if [[ -n $CRAYPE_VERSION ]]; then
-            export CC=gcc CXX=g++
-        fi
-        SHARD_SIZE=30 make -C regent -j$THREADS &
-        sleep 1
-        SHARD_SIZE=15 make -C regent -j$THREADS &
-        sleep 1
-        SHARD_SIZE=14 make -C regent -j$THREADS &
-        wait
-    )
+    SHARD_SIZE=30 make -C regent -j$THREADS &
+    sleep 1
+    SHARD_SIZE=15 make -C regent -j$THREADS &
+    sleep 1
+    SHARD_SIZE=14 make -C regent -j$THREADS &
+    wait
 fi
 if [[ $USE_LEGION -eq 1 ]]; then
     make -C legion -j$THREADS

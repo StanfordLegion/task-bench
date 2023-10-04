@@ -18,6 +18,8 @@ TASKBENCH_ROOT_DIR="\$(dirname "\$TASKBENCH_DEPS_DIR")"
 
 EOF
 
+# Machine-specific settings. On Cray systems, we can use a common set of
+# settings, but other machines require specific configuration.
 if [[ $(hostname --fqdn) = *"summit"* ]]; then
     cat >>deps/env.sh <<EOF
 module load gcc/6.4.0
@@ -29,29 +31,12 @@ export CXX=g++
 export MPICXX=mpicxx
 
 EOF
-elif [[ $(hostname) = "cori"* ]]; then
+elif [[ -n $CRAYPE_VERSION ]]; then
     cat >>deps/env.sh <<EOF
-module unload PrgEnv-intel
 module load PrgEnv-gnu
-module swap gcc/8.3.0 gcc/7.3.0 # GCC 8 cannot build LLVM 3.8
-module load cmake
-module load pcre
-module unload craype-hugepages2M # this got added after the 2019-07-30 system maintenance, but it causes some systems to stop building
 export CC=cc
 export CXX=CC
 export MPICXX=CC
-
-EOF
-elif [[ $(hostname) = "daint"* ]]; then
-    cat >>deps/env.sh <<EOF
-module load daint-gpu
-module unload PrgEnv-cray
-module load PrgEnv-gnu
-# module load cudatoolkit # FIXME (Elliott 2020-12-10): this must have broken in a recent Piz Daint upgrade, C compiler cannot build executables
-export CC=cc
-export CXX=CC
-export MPICXX=CC
-export CRAYPE_LINK_TYPE=static
 
 EOF
 fi
@@ -90,18 +75,27 @@ APACHE_MIRROR="https://archive.apache.org/dist"
 SOURCEFORGE_MIRROR="https://prdownloads.sourceforge.net"
 
 if [[ $USE_GASNET -eq 1 ]]; then
-    if [ -z ${CONDUIT+x} ]; then
-        echo "CONDUIT is required for GASNet build."
-        echo "Please set CONDUIT and run again."
+    if [ -z ${LEGION_GASNET_CONDUIT+x} ]; then
+        echo "LEGION_GASNET_CONDUIT is required for GASNet build."
+        echo "Please set LEGION_GASNET_CONDUIT and run again."
         false
     fi
     export GASNET_DIR="$TASKBENCH_DEPS_DIR"/gasnet
     cat >>deps/env.sh <<EOF
 export GASNET_DIR="\$TASKBENCH_DEPS_DIR"/gasnet
 export GASNET="\$GASNET_DIR"/release
-export CONDUIT=$CONDUIT
-
+export REALM_NETWORKS=gasnetex
+export LEGION_GASNET_CONDUIT=$LEGION_GASNET_CONDUIT
 EOF
+
+    if [[ -n $LEGION_GASNET_SYSTEM ]]; then
+        cat >>deps/env.sh <<EOF
+export LEGION_GASNET_SYSTEM=$LEGION_GASNET_SYSTEM
+EOF
+    fi
+
+    echo >>deps/env.sh
+
     git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
 fi
 
@@ -227,7 +221,7 @@ EOF
     elif [[ $USE_GASNET -eq 1 ]]; then
         cat >>deps/env.sh <<EOF
 export CHPL_COMM=gasnet
-export CHPL_COMM_SUBSTRATE=$CONDUIT
+export CHPL_COMM_SUBSTRATE=$CHPL_COMM_SUBSTRATE
 export CHPL_LAUNCHER=${CHPL_LAUNCHER:-slurm-srun}
 export CHPL_GASNET_MORE_CFG_OPTIONS=$CHPL_GASNET_MORE_CFG_OPTIONS
 EOF
