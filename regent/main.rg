@@ -17,6 +17,20 @@ import "regent"
 local c = regentlib.c
 local core = terralib.includec("core_c.h")
 
+-- Hacks to allow control replication
+core.app_create.replicable = true
+core.app_display.replicable = true
+core.app_report_timing.replicable = true
+core.app_task_graphs.replicable = true
+core.interval_list_destroy.replicable = true
+core.interval_list_interval.replicable = true
+core.interval_list_num_intervals.replicable = true
+core.task_graph_dependencies.replicable = true
+core.task_graph_list_num_task_graphs.replicable = true
+core.task_graph_list_task_graph.replicable = true
+core.task_graph_max_dependence_sets.replicable = true
+core.task_graph_timestep_period.replicable = true
+
 do
   local root_dir = arg[0]:match(".*/") or "./"
 
@@ -324,6 +338,7 @@ terra make_secondary_partition(graph : core.task_graph_t, dset : int, input : in
   end
   return c.legion_logical_partition_create(runtime, r, ip)
 end
+make_secondary_partition.replicable = true
 
 function gcd(a, b)
   while b ~= 0 do
@@ -510,7 +525,9 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
       end)
     end
     actions:insert(rquote
-      core.app_report_timing(app, double(stop_time - start_time)/1e9)
+      if regentlib.c.legion_context_get_shard_id(__runtime(), __context(), true) == 0 then
+        core.app_report_timing(app, double(stop_time - start_time)/1e9)
+      end
     end)
     return actions
   end
@@ -526,10 +543,12 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
   local main_loop_actions = generate_main_loop(graphs, primary_partitions, secondary_partitions, pscratch, ptiming)
   local report_actions = generate_report(app, graphs, timing)
 
-  local __demand(__inner) task w()
+  local __demand(__inner, __replicable) task w()
     var args = c.legion_runtime_get_input_args()
     var [app] = core.app_create(args.argc, args.argv)
-    core.app_display(app)
+    if regentlib.c.legion_context_get_shard_id(__runtime(), __context(), true) == 0 then
+      core.app_display(app)
+    end
 
     var [graph_list] = core.app_task_graphs(app);
     [graph_actions];
@@ -685,7 +704,7 @@ function dispatch_work_task(n_graphs, n_dsets, max_inputs)
   return actions
 end
 
-__demand(__inner)
+__demand(__inner, __replicable)
 task main()
   var args = c.legion_runtime_get_input_args()
   var app = core.app_create(args.argc, args.argv)
