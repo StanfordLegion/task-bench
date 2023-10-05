@@ -78,9 +78,9 @@ if [[ $USE_PYGION -eq 1 ]]; then
     make -C pygion clean
 fi
 if [[ $USE_REGENT -eq 1 ]]; then
-    SHARD_SIZE=30 make -C regent clean
-    SHARD_SIZE=15 make -C regent clean
-    SHARD_SIZE=14 make -C regent clean
+    SHARD_SIZE=54 make -C regent clean
+    SHARD_SIZE=26 make -C regent clean
+    SHARD_SIZE=12 make -C regent clean
 fi
 if [[ $USE_REALM -eq 1 ]]; then
     make -C realm clean
@@ -108,11 +108,11 @@ if [[ $USE_REGENT -eq 1 ]]; then
         fi
     )
     popd
-    SHARD_SIZE=30 make -C regent -j$THREADS &
+    SHARD_SIZE=54 make -C regent -j$THREADS &
     sleep 1
-    SHARD_SIZE=15 make -C regent -j$THREADS &
+    SHARD_SIZE=26 make -C regent -j$THREADS &
     sleep 1
-    SHARD_SIZE=14 make -C regent -j$THREADS &
+    SHARD_SIZE=12 make -C regent -j$THREADS &
     wait
 fi
 if [[ $USE_LEGION -eq 1 ]]; then
