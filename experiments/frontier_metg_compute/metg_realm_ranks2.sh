@@ -5,14 +5,19 @@
 #SBATCH --mail-type=ALL
 
 total_cores=56
-cores=$(( $total_cores - 4 ))
+cores=$(( $total_cores - 2 ))
+
+export GASNET_OFI_DEVICE_TYPE=Node
+export GASNET_OFI_DEVICE_0=dummy # https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4669
+export GASNET_OFI_DEVICE_0_1=cxi1
+export GASNET_OFI_DEVICE_2_3=cxi0
 
 function launch {
     srun_flags=
     if (( $1 == 1 )); then
         srun_flags="--network=single_node_vni"
     fi
-    srun -n $(( $1 * 4 )) -N $1 --cpus-per-task=$(( total_cores / 4 )) --cpu_bind cores $srun_flags ../../realm${VARIANT+_}$VARIANT/task_bench "${@:2}" -field 6 -ll:cpu $(( cores / 4 )) -ll:util 0 -ll:rsize 512
+    srun -n $(( $1 * 2 )) -N $1 --cpus-per-task=$(( total_cores / 2 )) --cpu_bind cores $srun_flags ../../realm${VARIANT+_}$VARIANT/task_bench "${@:2}" -field 6 -ll:cpu $(( cores / 2 )) -ll:util 0 -ll:rsize 512
 }
 
 function repeat {
@@ -42,7 +47,7 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            sweep launch $n $g $t > realm${VARIANT+_}${VARIANT}_quad_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch $n $g $t > realm${VARIANT+_}${VARIANT}_socket_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done

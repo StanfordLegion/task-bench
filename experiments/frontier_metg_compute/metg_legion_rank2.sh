@@ -7,6 +7,11 @@
 total_cores=56
 cores=$(( $total_cores - 4 ))
 
+export GASNET_OFI_DEVICE_TYPE=Node
+export GASNET_OFI_DEVICE_0=dummy # https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4669
+export GASNET_OFI_DEVICE_0_1=cxi1
+export GASNET_OFI_DEVICE_2_3=cxi0
+
 function launch_util_0 {
     memoize="-dm:memoize -lg:parallel_replay $(( cores / 2 ))"
     srun_flags=
@@ -61,9 +66,9 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            # sweep launch_util_0 $n $g $t > legion_util_0_socket_ngraphs_${g}_type_${t}_nodes_${n}.log
-            # sweep launch_util_1 $n $g $t > legion_util_1_socket_ngraphs_${g}_type_${t}_nodes_${n}.log
-            sweep launch_util_2 $n $g $t > legion_util_2_socket_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_0 $n $g $t > legion_util_0_rank2_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_1 $n $g $t > legion_util_1_rank2_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch_util_2 $n $g $t > legion_util_2_rank2_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done

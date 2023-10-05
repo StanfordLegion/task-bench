@@ -5,15 +5,15 @@
 #SBATCH --mail-type=ALL
 
 total_cores=56
-cores=$(( $total_cores - 8 ))
+cores=$(( $total_cores - 2 ))
 
 function launch_util_0 {
-    memoize="-dm:memoize -lg:parallel_replay $(( cores / 4 ))"
+    memoize="-dm:memoize -lg:parallel_replay $cores"
     srun_flags=
     if (( $1 == 1 )); then
         srun_flags="--network=single_node_vni"
     fi
-    srun -n $(( $1 * 4 )) -N $1 --cpus-per-task=$(( total_cores / 4 )) --cpu_bind cores $srun_flags ../../legion/task_bench "${@:2}" -ll:cpu $(( cores / 4 )) -ll:io 1 -ll:util 0 -lg:replay_on_cpus $memoize -lg:window 8192 -fields 2
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 0 $memoize
 }
 
 function launch_util_1 {
@@ -22,16 +22,16 @@ function launch_util_1 {
     if (( $1 == 1 )); then
         srun_flags="--network=single_node_vni"
     fi
-    srun -n $(( $1 * 4 )) -N $1 --cpus-per-task=$(( total_cores / 4 )) --cpu_bind cores $srun_flags ../../legion/task_bench "${@:2}" -ll:cpu $(( cores / 4 )) -ll:io 1 -ll:util 1 -ll:pin_util $memoize -lg:window 8192 -fields 2
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize
 }
 
 function launch_util_2 {
-    memoize="-dm:memoize -lg:parallel_replay 2"
+    memoize="-dm:memoize"
     srun_flags=
     if (( $1 == 1 )); then
         srun_flags="--network=single_node_vni"
     fi
-    srun -n $(( $1 * 4 )) -N $1 --cpus-per-task=$(( total_cores / 4 )) --cpu_bind cores $srun_flags ../../legion/task_bench "${@:2}" -ll:cpu $(( cores / 4 )) -ll:util 2 $memoize -lg:window 8192 -fields 2
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 2 $memoize
 }
 
 function repeat {
@@ -61,9 +61,9 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            # sweep launch_util_0 $n $g $t > legion_util_0_quad_ngraphs_${g}_type_${t}_nodes_${n}.log
-            # sweep launch_util_1 $n $g $t > legion_util_1_quad_ngraphs_${g}_type_${t}_nodes_${n}.log
-            sweep launch_util_2 $n $g $t > legion_util_2_quad_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch_util_0 $n $g $t > legion_util_0_rank1_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_1 $n $g $t > legion_util_1_rank1_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_2 $n $g $t > legion_util_2_rank1_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done

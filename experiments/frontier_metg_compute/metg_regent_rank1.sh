@@ -13,7 +13,7 @@ function launch_util_0 {
     if (( $1 == 1 )); then
         srun_flags="--network=single_node_vni"
     fi
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 0 $memoize
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:io 1 -ll:util 0 -lg:replay_on_cpus $memoize # -scratch 64
 }
 
 function launch_util_1 {
@@ -22,16 +22,16 @@ function launch_util_1 {
     if (( $1 == 1 )); then
         srun_flags="--network=single_node_vni"
     fi
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 1 -ll:pin_util $memoize
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:io 1 -ll:util 1 $memoize # -scratch 64
 }
 
 function launch_util_2 {
-    memoize="-dm:memoize"
+    memoize="-dm:memoize -lg:parallel_replay 2"
     srun_flags=
     if (( $1 == 1 )); then
         srun_flags="--network=single_node_vni"
     fi
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../legion/task_bench "${@:2}" -fields 2 -ll:cpu $cores -ll:util 2 $memoize
+    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:io 1 -ll:util 2 $memoize # -scratch 64
 }
 
 function repeat {
@@ -61,9 +61,9 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            sweep launch_util_0 $n $g $t > legion_util_0_ngraphs_${g}_type_${t}_nodes_${n}.log
-            # sweep launch_util_1 $n $g $t > legion_util_1_ngraphs_${g}_type_${t}_nodes_${n}.log
-            # sweep launch_util_2 $n $g $t > legion_util_2_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_0 $n $g $t > regent${VARIANT+_}${VARIANT}_util_0_rank1_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_1 $n $g $t > regent${VARIANT+_}${VARIANT_}_util_1_rank1_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch_util_2 $n $g $t > regent${VARIANT+_}${VARIANT}_util_2_rank1_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done

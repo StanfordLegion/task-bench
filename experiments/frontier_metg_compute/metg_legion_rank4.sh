@@ -5,15 +5,21 @@
 #SBATCH --mail-type=ALL
 
 total_cores=56
-cores=$(( $total_cores - 2 ))
+cores=$(( $total_cores - 8 ))
+
+export GASNET_OFI_DEVICE_TYPE=Node
+export GASNET_OFI_DEVICE_0=cxi2
+export GASNET_OFI_DEVICE_1=cxi1
+export GASNET_OFI_DEVICE_2=cxi3
+export GASNET_OFI_DEVICE_3=cxi0
 
 function launch_util_0 {
-    memoize="-dm:memoize -lg:parallel_replay $cores"
+    memoize="-dm:memoize -lg:parallel_replay $(( cores / 4 ))"
     srun_flags=
     if (( $1 == 1 )); then
         srun_flags="--network=single_node_vni"
     fi
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:io 1 -ll:util 0 -lg:replay_on_cpus $memoize # -scratch 64
+    srun -n $(( $1 * 4 )) -N $1 --cpus-per-task=$(( total_cores / 4 )) --cpu_bind cores $srun_flags ../../legion/task_bench "${@:2}" -ll:cpu $(( cores / 4 )) -ll:io 1 -ll:util 0 -lg:replay_on_cpus $memoize -lg:window 8192 -fields 2
 }
 
 function launch_util_1 {
@@ -22,7 +28,7 @@ function launch_util_1 {
     if (( $1 == 1 )); then
         srun_flags="--network=single_node_vni"
     fi
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:io 1 -ll:util 1 $memoize # -scratch 64
+    srun -n $(( $1 * 4 )) -N $1 --cpus-per-task=$(( total_cores / 4 )) --cpu_bind cores $srun_flags ../../legion/task_bench "${@:2}" -ll:cpu $(( cores / 4 )) -ll:io 1 -ll:util 1 -ll:pin_util $memoize -lg:window 8192 -fields 2
 }
 
 function launch_util_2 {
@@ -31,7 +37,7 @@ function launch_util_2 {
     if (( $1 == 1 )); then
         srun_flags="--network=single_node_vni"
     fi
-    srun -n $1 -N $1 --cpus-per-task=$(( total_cores )) --cpu_bind none $srun_flags ../../regent${VARIANT+_}$VARIANT/main.shard$cores "${@:2}" -ll:cpu $cores -ll:io 1 -ll:util 2 $memoize # -scratch 64
+    srun -n $(( $1 * 4 )) -N $1 --cpus-per-task=$(( total_cores / 4 )) --cpu_bind cores $srun_flags ../../legion/task_bench "${@:2}" -ll:cpu $(( cores / 4 )) -ll:util 2 $memoize -lg:window 8192 -fields 2
 }
 
 function repeat {
@@ -61,9 +67,9 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            # sweep launch_util_0 $n $g $t > regent${VARIANT+_}${VARIANT}_util_0_ngraphs_${g}_type_${t}_nodes_${n}.log
-            # sweep launch_util_1 $n $g $t > regent${VARIANT+_}${VARIANT_}_util_1_ngraphs_${g}_type_${t}_nodes_${n}.log
-            sweep launch_util_2 $n $g $t > regent${VARIANT+_}${VARIANT}_util_2_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_0 $n $g $t > legion_util_0_rank4_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_1 $n $g $t > legion_util_1_rank4_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch_util_2 $n $g $t > legion_util_2_rank4_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done

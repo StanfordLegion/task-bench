@@ -7,6 +7,12 @@
 total_cores=56
 cores=$(( $total_cores - 8 ))
 
+export GASNET_OFI_DEVICE_TYPE=Node
+export GASNET_OFI_DEVICE_0=cxi2
+export GASNET_OFI_DEVICE_1=cxi1
+export GASNET_OFI_DEVICE_2=cxi3
+export GASNET_OFI_DEVICE_3=cxi0
+
 function launch_util_0 {
     memoize="-dm:memoize -lg:parallel_replay $(( cores / 4 ))"
     srun_flags=
@@ -61,9 +67,9 @@ function sweep {
 for n in $SLURM_JOB_NUM_NODES; do
     for g in ${NGRAPHS:-1}; do
         for t in ${PATTERN:-stencil_1d}; do
-            # sweep launch_util_0 $n $g $t > regent${VARIANT+_}${VARIANT}_util_0_quad_ngraphs_${g}_type_${t}_nodes_${n}.log
-            # sweep launch_util_1 $n $g $t > regent${VARIANT+_}${VARIANT}_util_1_quad_ngraphs_${g}_type_${t}_nodes_${n}.log
-            sweep launch_util_2 $n $g $t > regent${VARIANT+_}${VARIANT}_util_2_quad_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_0 $n $g $t > regent${VARIANT+_}${VARIANT}_util_0_rank4_ngraphs_${g}_type_${t}_nodes_${n}.log
+            # sweep launch_util_1 $n $g $t > regent${VARIANT+_}${VARIANT}_util_1_rank4_ngraphs_${g}_type_${t}_nodes_${n}.log
+            sweep launch_util_2 $n $g $t > regent${VARIANT+_}${VARIANT}_util_2_rank4_ngraphs_${g}_type_${t}_nodes_${n}.log
         done
     done
 done
