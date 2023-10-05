@@ -12,9 +12,6 @@ Corresponding authors:
 
 ### Frontier
 
-Note: This configuration is obsolete and is provided for documentation
-purposes only.
-
 ```
 git clone https://github.com/StanfordLegion/task-bench.git
 cd task-bench
