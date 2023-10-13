@@ -48,9 +48,9 @@ void TaskBenchMapper::select_task_options(const MapperContext ctx,
                                           TaskOptions &output)
 {
   DefaultMapper::select_task_options(ctx, task, output);
-  // Replicate top two levels of tasks
-  if ((total_nodes > 1) && (task.get_depth() <= 1))
-    output.replicate = replication_enabled;
+  // // Replicate top two levels of tasks
+  // if ((total_nodes > 1) && (task.get_depth() <= 1))
+  //   output.replicate = replication_enabled;
 }
 
 void TaskBenchMapper::default_policy_rank_processor_kinds(MapperContext ctx,

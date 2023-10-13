@@ -543,7 +543,7 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
   local main_loop_actions = generate_main_loop(graphs, primary_partitions, secondary_partitions, pscratch, ptiming)
   local report_actions = generate_report(app, graphs, timing)
 
-  local __demand(__inner, __replicable) task w()
+  local __demand(__inner, __replicable, __inline) task w()
     var args = c.legion_runtime_get_input_args()
     var [app] = core.app_create(args.argc, args.argv)
     if regentlib.c.legion_context_get_shard_id(__runtime(), __context(), true) == 0 then
