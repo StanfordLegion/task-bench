@@ -158,12 +158,10 @@ if args.x_invert:
 if args.y_invert:
     ax.invert_yaxis()
 
-if args.xlog and args.ylog:
-    plt.loglog(basex=args.xbase)
-elif args.xlog:
-    plt.semilogx(basex=args.xbase)
-elif args.ylog:
-    plt.semilogy()
+if args.xlog:
+    ax.set_xscale("log", base=args.xbase)
+if args.ylog:
+    ax.set_yscale("log", base=10)
 
 data = csv2rec(args.filename)
 nodes = getattr(data, args.xdata)

@@ -29,6 +29,9 @@ class TaskBenchMapper : public DefaultMapper
 public:
   TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor local,
                 const char *mapper_name);
+  virtual void select_task_options(const MapperContext ctx,
+                                   const Task &task,
+                                   TaskOptions &output);
   virtual void default_policy_rank_processor_kinds(
                                     MapperContext ctx, const Task &task,
                                     std::vector<Processor::Kind> &ranking);
@@ -38,6 +41,16 @@ TaskBenchMapper::TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor l
                                  const char *mapper_name)
   : DefaultMapper(rt, machine, local, mapper_name)
 {
+}
+
+void TaskBenchMapper::select_task_options(const MapperContext ctx,
+                                          const Task &task,
+                                          TaskOptions &output)
+{
+  DefaultMapper::select_task_options(ctx, task, output);
+  // // Replicate top two levels of tasks
+  // if ((total_nodes > 1) && (task.get_depth() <= 1))
+  //   output.replicate = replication_enabled;
 }
 
 void TaskBenchMapper::default_policy_rank_processor_kinds(MapperContext ctx,
