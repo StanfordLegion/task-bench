@@ -12,7 +12,7 @@ function launch {
     if (( $1 == 1 )); then
         srun_flags="--network=single_node_vni"
     fi
-    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none $srun_flags ../../realm${VARIANT+_}$VARIANT/task_bench "${@:2}" -ll:cpu $cores -field 6 -ll:util 0 -ll:rsize 512
+    srun -n $1 -N $1 --cpus-per-task=$total_cores --cpu_bind none $srun_flags ../../realm${VARIANT+_}$VARIANT/task_bench "${@:2}" -ll:cpu $cores -field 6 -ll:util 0 -ll:rsize 2048
 }
 
 function repeat {
