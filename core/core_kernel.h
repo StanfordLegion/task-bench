@@ -19,6 +19,9 @@
 #include <cstddef>
 
 struct Kernel;
+struct GPUKernel;
+
+void init_cublas();
 
 void execute_kernel_empty(const Kernel &kernel);
 
@@ -31,7 +34,14 @@ void execute_kernel_memory(const Kernel &kernel,
 void execute_kernel_dgemm(const Kernel &kernel,
                           char *scratch_ptr, size_t scratch_bytes);
 
+void execute_kernel_dgemm_cuda(const GPUKernel &kernel,
+                          char *scratch_ptr, size_t scratch_bytes, cublasHandle_t inhandle);
+                          
 void execute_kernel_daxpy(const Kernel &kernel,
+                          char *scratch_large_ptr, size_t scratch_large_bytes, 
+                          long timestep);
+
+void execute_kernel_daxpy_cuda(const GPUKernel &kernel,
                           char *scratch_large_ptr, size_t scratch_large_bytes, 
                           long timestep);
 
@@ -47,4 +57,6 @@ long select_imbalance_iterations(const Kernel &kernel,
 double execute_kernel_imbalance(const Kernel &kernel,
                                 long graph_index, long timestep, long point);
 
+void execute_kernel_customize(const Kernel &kernel, double expect_runtime);
+void execute_kernel_customize_cuda(const GPUKernel &kernel, double expect_runtime);
 #endif

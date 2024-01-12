@@ -21,25 +21,157 @@
 #include <atomic>
 #include <algorithm>
 #include <map>
+#include <unordered_set>
+#include <unordered_map>
 #include <set>
 #include <string>
 #include <math.h>
+#include <iostream>
 
 #include "core.h"
 #include "core_kernel.h"
 #include "core_random.h"
+#include "custom_taskinfo.h"
+
+#define USER_DEFINED_DEBUG
 
 #ifdef DEBUG_CORE
 typedef unsigned long long TaskGraphMask;
 static std::atomic<TaskGraphMask> has_executed_graph;
 #endif
 
+
+// Only for pairs of std::hash-able types for simplicity.
+// You can of course template this struct to allow other hash functions
+struct pair_hash {
+    template <class T1, class T2>
+    std::size_t operator () (const std::pair<T1,T2> &p) const {
+        auto h1 = std::hash<T1>{}(p.first);
+        auto h2 = std::hash<T2>{}(p.second);
+
+        // Mainly for demonstration purposes, i.e. works but is overly simple
+        // In the real world, use sth. like boost.hash_combine
+        return h1 ^ h2;  
+    }
+};
+
+using DependenceResultType = std::vector<std::pair<long, long> >;
+using DependenceKeyType = std::pair<long, long>;
+using DependenceMapType = std::unordered_map<DependenceKeyType, DependenceResultType, pair_hash>; 
+
+void TaskGraph::set_task_info(std::string task_info_file) {
+  task_info = new CustomTaskInfo(task_info_file);
+  nb_fields = task_info->get_timestamp();
+  timesteps = nb_fields;
+  max_width = task_info->get_max_width();
+}
+
+void TaskGraph::set_task_info(CustomTaskInfo *task_info) {
+  this->task_info = task_info;
+  nb_fields = task_info->get_timestamp();
+  timesteps = nb_fields;
+  max_width = task_info->get_max_width();
+}
+
+void TaskGraph::destroy_task_info() const {
+  delete task_info;
+}
+
+TaskDepInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) const {
+  assert (task_info != nullptr);
+  TaskDepInfo::TaskDep task_dep = task_info->get_dep(t, point);
+  return task_dep;
+}
+
+// void setDependenceToTaskInfo(long t, long point, DependenceResultType& result) {
+//   DependenceKeyType key = std::make_pair(t, point);
+//   assert(dependence_map.find(key) == dependence_map.end());
+//   if (timestep2point.find(t) == timestep2point.end()) {
+//     timestep2point[t] = std::set<long>();
+//   }
+//   assert(timestep2point[t].find(point) == timestep2point[t].end());
+//   timestep2point[t].insert(point);
+//   dependence_map[key] = result;
+// }
+
+double TaskGraph::getTaskExecTimeAtPoint(long t, long point, bool use_gpu) const {
+  assert (task_info != nullptr);
+  return task_info->getTaskExecTimeAtPoint(t, point, use_gpu);
+}
+
+
+long TaskGraph::getUserDefineWidthAtTimestep(long timestep) const {
+  assert (task_info != nullptr);
+  return task_info->get_width_of_timestamp(timestep);
+}
+
+long TaskGraph::getUserDefineMaxWidth() const {
+  assert (task_info != nullptr);
+  return task_info->get_max_width();
+}
+
 static bool needs_period(DependenceType dtype) {
   return dtype == DependenceType::SPREAD || dtype == DependenceType::RANDOM_NEAREST;
 }
 
+// A static map, the first key is the num_args, which means how many arguments the kernel has.
+// The second key is whether the kernel is a GPU kernel or not.
+// The value is the expect execution time of the kernel.
+static std::unordered_map<int, std::unordered_map<bool, double>> kernel_expect_execution_time = {
+  {1, {{false, 10.000000}, {true, 5.000000}}},
+  {2, {{false, 10.000000}, {true, 5.000000}}},
+  {3, {{false, 10.000000}, {true, 5.000000}}},
+  {4, {{false, 10.000000}, {true, 5.000000}}},
+  {5, {{false, 10.000000}, {true, 5.000000}}},
+  {6, {{false, 10.000000}, {true, 5.000000}}},
+  {7, {{false, 10.000000}, {true, 5.000000}}},
+  {8, {{false, 10.000000}, {true, 5.000000}}},
+  {9, {{false, 10.000000}, {true, 5.000000}}},
+  {10, {{false, 10.000000}, {true, 5.000000}}},
+};
+
+static std::unordered_map<int, double> kernel_flops = {
+  {1, 0.000000},
+  {2, 0.000000},
+  {3, 0.000000},
+  {4, 0.000000},
+  {5, 0.000000},
+  {6, 0.000000},
+  {7, 0.000000},
+  {8, 0.000000},
+  {9, 0.000000},
+  {10, 0.000000},
+};
+
+static double get_expect_kernel_execution_time(int num_args, bool is_gpu_kernel) {
+  return kernel_expect_execution_time[num_args][is_gpu_kernel];
+}
+
+
+void GPUKernel::execute(long graph_index, long timestep, long point,
+                     char *scratch_ptr, size_t scratch_bytes, double expect_time, cublasHandle_t inhandle) const {
+  switch (type)
+  {
+  case KernelType::EMPTY:
+    execute_kernel_empty(*this);
+    break;
+  case KernelType::COMPUTE_DGEMM:
+    execute_kernel_dgemm_cuda(*this, scratch_ptr, scratch_bytes, inhandle);
+    break;
+  case KernelType::MEMORY_DAXPY:
+    execute_kernel_daxpy_cuda(*this, scratch_ptr, scratch_bytes, timestep);
+    break;
+  case KernelType::CUSTOMIZE:
+    execute_kernel_customize_cuda(*this, expect_time);
+    break;
+  default:
+    assert(false && "unimplemented kernel type");
+    break;
+  }                     
+}
+
 void Kernel::execute(long graph_index, long timestep, long point,
-                     char *scratch_ptr, size_t scratch_bytes) const
+                     char *scratch_ptr, size_t scratch_bytes, double expect_time) const
 {
   switch(type) {
   case KernelType::EMPTY:
@@ -76,6 +208,9 @@ void Kernel::execute(long graph_index, long timestep, long point,
     assert(timestep >= 0 && point >= 0);
     execute_kernel_imbalance(*this, graph_index, timestep, point);
     break;
+  case KernelType::CUSTOMIZE:
+    execute_kernel_customize(*this, expect_time);
+    break;
   default:
     assert(false && "unimplemented kernel type");
   };
@@ -91,6 +226,7 @@ static const std::map<std::string, KernelType> ktype_by_name = {
   {"compute_bound2", KernelType::COMPUTE_BOUND2},
   {"io_bound", KernelType::IO_BOUND},
   {"load_imbalance", KernelType::LOAD_IMBALANCE},
+  {"customize", KernelType::CUSTOMIZE},
 };
 
 static std::map<KernelType, std::string> make_name_by_ktype()
@@ -122,6 +258,8 @@ static const std::map<std::string, DependenceType> dtype_by_name = {
   {"spread", DependenceType::SPREAD},
   {"random_nearest", DependenceType::RANDOM_NEAREST},
   {"random_spread", DependenceType::RANDOM_SPREAD},
+  {"cholesky_like_random", DependenceType::CHOLESKY_LIKE_RANDOM},
+  {"user_defined", DependenceType::USER_DEFINED},
 };
 
 static std::map<DependenceType, std::string> make_name_by_dtype()
@@ -161,10 +299,17 @@ long TaskGraph::offset_at_timestep(long timestep) const
   case DependenceType::SPREAD:
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
+  case DependenceType::CHOLESKY_LIKE_RANDOM:
+  case DependenceType::USER_DEFINED:
     return 0;
   default:
     assert(false && "unexpected dependence type");
   };
+}
+
+static long getWidthOfCholeskyLikeRandom(long timestep) {
+  static long time2width[100] = {0};
+  return time2width[timestep];
 }
 
 long TaskGraph::width_at_timestep(long timestep) const
@@ -191,6 +336,10 @@ long TaskGraph::width_at_timestep(long timestep) const
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
     return max_width;
+  case DependenceType::CHOLESKY_LIKE_RANDOM:
+    return getWidthOfCholeskyLikeRandom(timestep);
+  case DependenceType::USER_DEFINED:
+    return getUserDefineWidthAtTimestep(timestep);
   default:
     assert(false && "unexpected dependence type");
   };
@@ -215,6 +364,8 @@ long TaskGraph::max_dependence_sets() const
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
     return period;
+  case DependenceType::CHOLESKY_LIKE_RANDOM:
+    return 1;
   default:
     assert(false && "unexpected dependence type");
   };
@@ -246,6 +397,9 @@ long TaskGraph::dependence_set_at_timestep(long timestep) const
   case DependenceType::RANDOM_NEAREST:
   case DependenceType::RANDOM_SPREAD:
     return timestep % max_dependence_sets();
+  case DependenceType::CHOLESKY_LIKE_RANDOM:
+  case DependenceType::USER_DEFINED:
+    return 0;
   default:
     assert(false && "unexpected dependence type");
   };
@@ -400,6 +554,55 @@ size_t TaskGraph::num_reverse_dependencies(long dset, long point) const
   return SIZE_MAX;
 }
 
+static std::vector<int> get_certain_random_numbers_by_number(int x, int start, int end, int num) {
+  // the random numbers are in [start, end)
+  // and the randoms numbers should be relevent to x
+  // and the number of random numbers is num
+  std::unordered_set<int> random_numbers;
+  for (int i = 0; i < num; i++) {
+    int random_number = rand();
+    random_number = random_number % (end - start) + start;
+    while (random_numbers.find(random_number) != random_numbers.end()) {
+      random_number = rand();
+      random_number = random_number % (end - start) + start;
+    }
+    random_numbers.insert(random_number);
+  }
+  return std::vector<int>(random_numbers.begin(), random_numbers.end());
+}
+
+// t for timestamp. d. Since we want to get the task number of last timestep, we need to get the offset of last timestep.
+std::vector<std::pair<long, long> > TaskGraph::random_dependencies(long dset, long point, int t) const {
+  size_t count = num_dependencies(dset, point);
+  std::vector<std::pair<long, long> > deps(count);
+  size_t actual_count = random_dependencies(dset, point, deps.data(), t);
+  assert(actual_count <= count);
+  deps.resize(actual_count);
+  return deps;
+}
+
+size_t TaskGraph::random_dependencies(long dset, long point, std::pair<long, long> *deps, int t) const {
+  if (dependence != DependenceType::RANDOM_NEAREST) {
+    return dependencies(dset, point, deps);
+  }
+  size_t idx = 0;
+  assert(t >= 1);
+  long last_width = width_at_timestep(t - 1);
+  std::vector<int> random_numbers = get_certain_random_numbers_by_number(point, 0, last_width, radix);
+  for (int i = 0; i < random_numbers.size(); i++) {
+    deps[idx++] = std::pair<long, long>(random_numbers[i], random_numbers[i]);
+  }
+  return idx;
+}
+
+std::vector<std::pair<long, long> > TaskGraph::user_defined_dependencies(int time, long point) const {
+  assert (dependence == DependenceType::USER_DEFINED && task_info != nullptr);
+  if (time == 0) {
+    return std::vector<std::pair<long, long> >();
+  }
+  return getDependenceFromTaskInfo(time, point);
+}
+
 std::vector<std::pair<long, long> > TaskGraph::dependencies(long dset, long point) const
 {
   size_t count = num_dependencies(dset, point);
@@ -534,6 +737,10 @@ size_t TaskGraph::num_dependencies(long dset, long point) const
   case DependenceType::SPREAD:
   case DependenceType::RANDOM_NEAREST:
     return radix;
+  case DependenceType::CHOLESKY_LIKE_RANDOM:
+    return 1;
+  case DependenceType::USER_DEFINED:
+    return getUserDefineMaxWidth();
   default:
     assert(false && "unexpected dependence type");
   };
@@ -623,6 +830,106 @@ void TaskGraph::execute_point(long timestep, long point,
   // Execute kernel
   Kernel k(kernel);
   k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes);
+}
+
+void TaskGraph::execute_point_common(int starpu_cuda, long timestep, long point,
+                              char *output_ptr, size_t output_bytes,
+                              const char **input_ptr, const size_t *input_bytes,
+                              size_t n_inputs,
+                              char *scratch_ptr, size_t scratch_bytes, cublasHandle_t inhandle) const
+{
+#ifdef DEBUG_CORE
+  // Validate graph_index
+  assert(graph_index >= 0 && graph_index < sizeof(TaskGraphMask)*8);
+  has_executed_graph |= 1 << graph_index;
+#endif
+
+  // Validate timestep and point
+  assert(0 <= timestep && timestep < timesteps);
+
+  long offset = offset_at_timestep(timestep);
+  long width = width_at_timestep(timestep);
+  assert(offset <= point && point < offset+width);
+
+  long last_offset = offset_at_timestep(timestep-1);
+  long last_width = width_at_timestep(timestep-1);
+
+  // Validate input
+  /*
+  {
+    size_t idx = 0;
+    long dset = dependence_set_at_timestep(timestep);
+    size_t max_deps = num_dependencies(dset, point);
+    std::pair<long, long> *deps = reinterpret_cast<std::pair<long, long> *>(alloca(sizeof(std::pair<long, long>) * max_deps));
+    size_t num_deps = dependencies(dset, point, deps);
+    for (size_t span = 0; span < num_deps; span++) {
+      for (long dep = deps[span].first; dep <= deps[span].second; dep++) {
+        if (last_offset <= dep && dep < last_offset + last_width) {
+          assert(idx < n_inputs);
+
+          assert(input_bytes[idx] == output_bytes_per_task);
+          assert(input_bytes[idx] >= sizeof(std::pair<long, long>));
+
+          const std::pair<long, long> *input = reinterpret_cast<const std::pair<long, long> *>(input_ptr[idx]);
+          for (size_t i = 0; i < input_bytes[idx]/sizeof(std::pair<long, long>); ++i) {
+#ifdef DEBUG_CORE
+            if (input[i].first != timestep - 1 || input[i].second != dep) {
+              printf("ERROR: Task Bench detected corrupted value in task (graph %ld timestep %ld point %ld) input %ld\n  At position %lu within the buffer, expected value (timestep %ld point %ld) but got (timestep %ld point %ld)\n",
+                     graph_index, timestep, point, idx,
+                     i, timestep - 1, dep, input[i].first, input[i].second);
+              fflush(stdout);
+            }
+#endif
+            assert(input[i].first == timestep - 1);
+            assert(input[i].second == dep);
+          }
+          idx++;
+        }
+      }
+    }
+    // FIXME (Elliott): Legion is currently passing in uninitialized
+    // memory for dependencies outside of the last offset/width.
+    // assert(idx == n_inputs);
+  }
+
+  // Validate output
+  assert(output_bytes == output_bytes_per_task);
+  assert(output_bytes >= sizeof(std::pair<long, long>));
+
+  // Generate output
+  std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(output_ptr);
+  for (size_t i = 0; i < output_bytes/sizeof(std::pair<long, long>); ++i) {
+    output[i].first = timestep;
+    output[i].second = point;
+  }
+
+  // Validate scratch
+  assert(scratch_bytes == scratch_bytes_per_task);
+  if (scratch_bytes > 0) {
+    uint64_t *scratch = reinterpret_cast<uint64_t *>(scratch_ptr);
+    assert(*scratch == MAGIC_VALUE);
+  }
+  */
+  // std::pair<long, long> *output = reinterpret_cast<std::pair<long, long> *>(output_ptr);
+  // for (size_t i = 0; i < output_bytes/sizeof(std::pair<long, long>); ++i) {
+  //   output[i].first = timestep;
+  //   output[i].second = point;
+  // }
+  // if (scratch_bytes > 0) {
+  //   uint64_t *scratch = reinterpret_cast<uint64_t *>(scratch_ptr);
+  //   assert(*scratch == MAGIC_VALUE);
+  // }
+
+  double expect_execute_time = getTaskExecTimeAtPoint(timestep, point, starpu_cuda);
+
+  // Execute kernel
+  if (starpu_cuda == 0) {
+    Kernel k(kernel);
+    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, expect_execute_time);
+  } else {
+    GPUKernel k(kernel);
+    k.execute(graph_index, timestep, point, scratch_ptr, scratch_bytes, expect_execute_time, inhandle);
+  }
 }
 
 void TaskGraph::prepare_scratch(char *scratch_ptr, size_t scratch_bytes)
@@ -918,6 +1225,10 @@ App::App(int argc, char **argv)
 
 void App::check() const
 {
+#ifdef USER_DEFINED_DEBUG
+  return;
+#endif
+
 #ifdef DEBUG_CORE
   if (graphs.size() >= sizeof(TaskGraphMask)*8) {
     fprintf(stderr, "error: Can only execute up to %lu task graphs\n", sizeof(TaskGraphMask)*8);
@@ -1081,6 +1392,9 @@ long long count_flops_per_task(const TaskGraph &g, long timestep, long point)
   case KernelType::IO_BOUND:
     return 0;
 
+  case KernelType::CUSTOMIZE:
+    return 0;
+
   case KernelType::LOAD_IMBALANCE:
   {
     long iterations = select_imbalance_iterations(g.kernel, g.graph_index, timestep, point);
@@ -1111,6 +1425,7 @@ long long count_bytes_per_task(const TaskGraph &g, long timestep, long point)
   case KernelType::COMPUTE_BOUND2:
   case KernelType::IO_BOUND:
   case KernelType::LOAD_IMBALANCE:
+  case KernelType::CUSTOMIZE:
     return 0;
   default:
     assert(false && "unimplemented kernel type");
@@ -1143,6 +1458,10 @@ static long long count_bytes(const TaskGraph &g)
     }
   }
   return bytes;
+}
+
+void init() {
+  init_cublas();
 }
 
 static std::tuple<long, long> clamp(long start, long end, long min_value, long max_value) {
@@ -1193,21 +1512,29 @@ void App::report_timing(double elapsed_seconds) const
           node_first = point_node * g.max_width / nodes;
           node_last = (point_node + 1) * g.max_width / nodes - 1;
         }
-
-        auto deps = g.dependencies(dset, p);
-        for (auto dep : deps) {
-          long dep_first, dep_last;
-          std::tie(dep_first, dep_last) = clamp(dep.first, dep.second, last_offset, last_offset + last_width - 1);
-          num_deps += dep_last - dep_first + 1;
-          if (nodes > 0) {
-            long initial_first, initial_last, local_first, local_last, final_first, final_last;
-            std::tie(initial_first, initial_last) = clamp(dep_first, dep_last, 0, node_first - 1);
-            std::tie(local_first, local_last) = clamp(dep_first, dep_last, node_first, node_last);
-            std::tie(final_first, final_last) = clamp(dep_first, dep_last, node_last + 1, g.max_width - 1);
-            nonlocal_deps += initial_last - initial_first + 1;
-            local_deps += local_last - local_first + 1;
-            nonlocal_deps += final_last - final_first + 1;
+        TaskDepInfo::TaskDep deps;
+        if (g.dependence != DependenceType::USER_DEFINED) {
+          deps = g.dependencies(dset, p);
+        } else {
+          deps = g.user_defined_dependencies(t, p);
+        }
+        if (g.dependence != DependenceType::USER_DEFINED) {
+          for (auto dep : deps) {
+            long dep_first, dep_last;
+            std::tie(dep_first, dep_last) = clamp(dep.first, dep.second, last_offset, last_offset + last_width - 1);
+            num_deps += dep_last - dep_first + 1;
+            if (nodes > 0) {
+              long initial_first, initial_last, local_first, local_last, final_first, final_last;
+              // std::tie(initial_first, initial_last) = clamp(dep_first, dep_last, 0, node_first - 1);
+              // std::tie(local_first, local_last) = clamp(dep_first, dep_last, node_first, node_last);
+              // std::tie(final_first, final_last) = clamp(dep_first, dep_last, node_last + 1, g.max_width - 1);
+              // nonlocal_deps += initial_last - initial_first + 1;
+              // local_deps += local_last - local_first + 1;
+              // nonlocal_deps += final_last - final_first + 1;
+            }
           }
+        } else {
+          local_deps += deps.size();
         }
       }
     }
@@ -1216,8 +1543,8 @@ void App::report_timing(double elapsed_seconds) const
     total_num_deps += num_deps;
     total_local_deps += local_deps;
     total_nonlocal_deps += nonlocal_deps;
-    flops += count_flops(g);
-    bytes += count_bytes(g);
+    // flops += count_flops(g);
+    // bytes += count_bytes(g);
     local_transfer += local_deps * g.output_bytes_per_task;
     nonlocal_transfer += nonlocal_deps * g.output_bytes_per_task;
   }

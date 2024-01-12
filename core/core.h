@@ -17,6 +17,7 @@
 #define CORE_H
 
 #include "core_c.h"
+#include <cublas_v2.h>
 
 #include <string>
 #include <vector>
@@ -33,8 +34,19 @@ struct Kernel : public kernel_t {
 
 private:
   void execute(long graph_index, long timestep, long point,
-               char *scratch_ptr, size_t scratch_bytes) const;
+               char *scratch_ptr, size_t scratch_bytes, double expect_time = 0) const;
   friend struct TaskGraph;
+};
+
+struct GPUKernel : public kernel_t {
+  GPUKernel() = default;
+  GPUKernel(kernel_t k) : kernel_t(k) {}
+
+private:
+  void execute(long graph_index, long timestep, long point,
+               char *scratch_ptr, size_t scratch_bytes, double expect_time = 0, cublasHandle_t inhandle = nullptr) const;
+  friend struct TaskGraph;
+
 };
 
 struct TaskGraph : public task_graph_t {
@@ -49,9 +61,21 @@ struct TaskGraph : public task_graph_t {
   long timestep_period() const;
   long dependence_set_at_timestep(long timestep) const;
 
+  // only can be called when dependence type is USER_DEFINED
+  void set_task_info(std::string task_info_file);
+  void set_task_info(CustomTaskInfo *task_info);
+  void destroy_task_info() const;
+  std::vector<std::pair<long, long>> getDependenceFromTaskInfo(long t, long point) const;
+  long getUserDefineWidthAtTimestep(long timestep) const;
+  long getUserDefineMaxWidth() const;
+
+  double getTaskExecTimeAtPoint(long t, long point, bool use_gpu) const;
+
   // std::pair(a, b) represents the INCLUSIVE interval from a to b
   std::vector<std::pair<long, long> > reverse_dependencies(long dset, long point) const;
   std::vector<std::pair<long, long> > dependencies(long dset, long point) const;
+  std::vector<std::pair<long, long> > random_dependencies(long dset, long point, int t) const;
+  std::vector<std::pair<long, long> > user_defined_dependencies(int t, long point) const;
 
   // Same as above, but using user-supplied buffer. Returns number of
   // elements written. WARNING: If more elements are written than can
@@ -59,6 +83,7 @@ struct TaskGraph : public task_graph_t {
   // to figure out how large of a buffer to alloate.
   size_t reverse_dependencies(long dset, long point, std::pair<long, long> *deps) const;
   size_t dependencies(long dset, long point, std::pair<long, long> *deps) const;
+  size_t random_dependencies(long dset, long point, std::pair<long, long> *deps, int t) const;
 
   // Note: May over-approximate the number of dependencies.
   size_t num_reverse_dependencies(long dset, long point) const;
@@ -69,6 +94,11 @@ struct TaskGraph : public task_graph_t {
                      const char **input_ptr, const size_t *input_bytes,
                      size_t n_inputs,
                      char *scratch_ptr, size_t scratch_bytes) const;
+  void execute_point_common(int starpu_cuda, long timestep, long point,
+                     char *output_ptr, size_t output_bytes,
+                     const char **input_ptr, const size_t *input_bytes,
+                     size_t n_inputs,
+                     char *scratch_ptr, size_t scratch_bytes, cublasHandle_t handle) const;
   static void prepare_scratch(char *scratch_ptr, size_t scratch_bytes);
 };
 
@@ -90,5 +120,11 @@ static_assert(std::is_pod<TaskGraph>::value, "TaskGraph must be POD");
 
 long long count_flops_per_task(const TaskGraph &g, long timestep, long point);
 long long count_bytes_per_task(const TaskGraph &g, long timestep, long point);
+
+// return timesteps
+long set_task_info(std::string task_info_file);
+void destroy_task_info();
+
+void init();
 
 #endif

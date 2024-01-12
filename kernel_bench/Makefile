@@ -14,11 +14,11 @@ LDFLAGS  += -O3 # -march=native
 endif
 
 # Include directories
-INC        = -I../core
+INC        = -I../core -I/usr/local/cuda-11.6/targets/x86_64-linux/include
 INC_EXT    =  
 
 # Location of the libraries.
-LIB        = -L../core -lcore_s
+LIB        = -L/usr/local/cuda-11.6/targets/x86_64-linux/lib -L../core -lcore_s -lcudart
 LIB_EXT    = 
 
 INC := $(INC) $(INC_EXT)
@@ -27,6 +27,7 @@ LIB := $(LIB) $(LIB_EXT)
 CXXFLAGS += $(INC)
 
 include ../core/make_blas.mk
+LDFLAGS += -lcublas
 
 TARGET = main
 all: $(TARGET)

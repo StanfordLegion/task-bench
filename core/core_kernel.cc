@@ -15,6 +15,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <thread>
 
 #if (__AVX2__ == 1) || (__AVX__ == 1)
 #include <immintrin.h>
@@ -26,9 +27,23 @@
 #include "core_kernel.h"
 #include "core_random.h"
 
+#define STARPU_USE_CUDA
+
+#ifdef STARPU_USE_CUDA
+#include <cublas_v2.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+static cublasHandle_t handle;
+// #include <starpu_cublas_v2.h>
+#endif
+
 #ifdef USE_BLAS_KERNEL
 #include <mkl.h>
 #endif
+
+void init_cublas() {
+  cublasCreate(&handle);
+}
 
 void execute_kernel_empty(const Kernel &kernel)
 {
@@ -187,7 +202,89 @@ void execute_kernel_dgemm(const Kernel &kernel,
                 m, n, p, alpha, A, p, B, n, beta, C, n);
   }
 #else
-  fprintf(stderr, "No BLAS is detected\n");
+  fprintf(stderr, "STARPU_USE_CUDA is not enabled\n");
+  fflush(stderr);
+  abort();
+#endif
+}
+
+void checkCublasStatus(cublasStatus_t status) {
+    switch (status) {
+        case CUBLAS_STATUS_SUCCESS:
+            printf("CUBLAS_STATUS_SUCCESS\n");
+            break;
+        case CUBLAS_STATUS_NOT_INITIALIZED:
+            printf("CUBLAS_STATUS_NOT_INITIALIZED\n");
+            break;
+        case CUBLAS_STATUS_ALLOC_FAILED:
+            printf("CUBLAS_STATUS_ALLOC_FAILED\n");
+            break;
+        case CUBLAS_STATUS_INVALID_VALUE:
+            printf("CUBLAS_STATUS_INVALID_VALUE\n");
+            break;
+        case CUBLAS_STATUS_ARCH_MISMATCH:
+            printf("CUBLAS_STATUS_ARCH_MISMATCH\n");
+            break;
+        case CUBLAS_STATUS_MAPPING_ERROR:
+            printf("CUBLAS_STATUS_MAPPING_ERROR\n");
+            break;
+        case CUBLAS_STATUS_EXECUTION_FAILED:
+            printf("CUBLAS_STATUS_EXECUTION_FAILED\n");
+            break;
+        case CUBLAS_STATUS_INTERNAL_ERROR:
+            printf("CUBLAS_STATUS_INTERNAL_ERROR\n");
+            break;
+        case CUBLAS_STATUS_NOT_SUPPORTED:
+            printf("CUBLAS_STATUS_NOT_SUPPORTED\n");
+            break;
+        case CUBLAS_STATUS_LICENSE_ERROR:
+            printf("CUBLAS_STATUS_LICENSE_ERROR\n");
+            break;
+        default:
+            printf("Unknown CUBLAS status\n");
+    }
+}
+
+void execute_kernel_dgemm_cuda(const GPUKernel &kernel,
+                           char *scratch_ptr, size_t scratch_bytes, cublasHandle_t inhandle)
+{
+#ifdef STARPU_USE_CUDA
+  long long N = scratch_bytes / (3 * sizeof(double));
+  int m, n, p;
+  double alpha, beta;
+
+  m = n = p = sqrt(N);
+  alpha = 1.0; beta = 1.0;
+  float* d_ptr; // 设备指针
+  cudaError_t err = cudaMalloc((void**)&d_ptr, scratch_bytes);
+  if (err != cudaSuccess) {
+      printf("Error allocating GPU memory: %s\n", cudaGetErrorString(err));
+      return;
+  }
+
+  // 将数据从CPU复制到GPU
+  err = cudaMemcpy(d_ptr, scratch_ptr, 3 * N * sizeof(double), cudaMemcpyHostToDevice);
+  if (err != cudaSuccess) {
+      printf("Error copying data to GPU: %s\n", cudaGetErrorString(err));
+      cudaFree(d_ptr); // 释放之前分配的GPU内存
+      return;
+  }
+
+  double *A = reinterpret_cast<double *>(d_ptr);
+  double *B = reinterpret_cast<double *>(d_ptr + N * sizeof(double));
+  double *C = reinterpret_cast<double *>(d_ptr + 2 * N * sizeof(double));
+  cublasStatus_t status;
+  // A[0] = 1.0;
+  for (long iter = 0; iter < kernel.iterations; iter++) {
+    status = cublasDgemm(inhandle, CUBLAS_OP_N, CUBLAS_OP_N, 
+                m, n, p, &alpha, A, p, B, n, &beta, C, n);
+    // printf("after call cublasDgemm %d\n", iter);
+    // checkCublasStatus(status);
+    // assert(status == CUBLAS_STATUS_SUCCESS);
+  }
+  cudaFree(d_ptr);
+#else
+  fprintf(stderr, "STARPU_USE_CUDA is not enabled\n");
   fflush(stderr);
   abort();
 #endif
@@ -220,52 +317,81 @@ void execute_kernel_daxpy(const Kernel &kernel,
 #endif
 }
 
-double execute_kernel_compute(const Kernel &kernel)
+void execute_kernel_daxpy_cuda(const GPUKernel &kernel,
+                          char *scratch_large_ptr, size_t scratch_large_bytes,
+                          long timestep)
 {
-#if __AVX2__ == 1
-  __m256d A[16];
+#ifdef STARPU_USE_CUDA
+  for (long iter = 0; iter < kernel.iterations; iter++) {  
+    size_t scratch_bytes = scratch_large_bytes / kernel.samples;
+    int idx = (timestep * kernel.iterations + iter) % kernel.samples;
+    char *scratch_ptr = scratch_large_ptr + idx * scratch_bytes;
   
-  for (int i = 0; i < 16; i++) {
-    A[i] = _mm256_set_pd(1.0f, 2.0f, 3.0f, 4.0f);
-  }
-  
-  for (long iter = 0; iter < kernel.iterations; iter++) {
-    for (int i = 0; i < 16; i++) {
-      A[i] = _mm256_fmadd_pd(A[i], A[i], A[i]);
+    int N = scratch_bytes / (2 * sizeof(double));
+    double alpha;
+
+    alpha = 1.0;
+    float* d_ptr; // 设备指针
+    cudaError_t err = cudaMalloc((void**)&d_ptr, scratch_bytes); 
+    if (err != cudaSuccess) {
+        printf("Error allocating GPU memory: %s\n", cudaGetErrorString(err));
+        return;
     }
-  }
-#elif __AVX__ == 1
-  __m256d A[16];
-  
-  for (int i = 0; i < 16; i++) {
-    A[i] = _mm256_set_pd(1.0f, 2.0f, 3.0f, 4.0f);
-  }
-  
-  for (long iter = 0; iter < kernel.iterations; iter++) {
-    for (int i = 0; i < 16; i++) {
-      A[i] = _mm256_mul_pd(A[i], A[i]);
-      A[i] = _mm256_add_pd(A[i], A[i]);
+
+    // 将数据从CPU复制到GPU
+    err = cudaMemcpy(d_ptr, scratch_ptr, 2 * N * sizeof(double), cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        printf("Error copying data to GPU: %s\n", cudaGetErrorString(err));
+        cudaFree(d_ptr); // 释放之前分配的GPU内存
+        return;
     }
+
+    double *X = reinterpret_cast<double *>(d_ptr);
+    double *Y = reinterpret_cast<double *>(d_ptr + N * sizeof(double));
+    
+    cublasDaxpy(handle, N, &alpha, X, 1, Y, 1);
+    cudaFree(d_ptr);
   }
 #else
+  fprintf(stderr, "No BLAS is detected\n");
+  fflush(stderr);
+  abort();
+#endif
+}
+
+double execute_kernel_compute(const Kernel &kernel)
+{
   double A[64];
-  
+  double D[64];
+  int n = 64;
   for (int i = 0; i < 64; i++) {
     A[i] = 1.2345;
   }
+  // float d = 0.0;
+  // for (long iter = 0; iter < kernel.iterations; iter++) {
+  //   cublasDdot(handle, n, A, 1, A, 1, D);
+  //   float alpha = 1.0;
+  //   cublasDaxpy(handle, n, &alpha, A, 1, D, 1);
+  // }
   
   for (long iter = 0; iter < kernel.iterations; iter++) {
     for (int i = 0; i < 64; i++) {
         A[i] = A[i] * A[i] + A[i];
     }
   } 
-#endif
   double *C = (double *)A;
   double dot = 1.0;
   for (int i = 0; i < 64; i++) {
     dot *= C[i];
   }
   return dot;  
+}
+
+
+
+double execute_kernel_compute_cuda(const GPUKernel &kernel) {
+
+  return 0.0f;
 }
 
 double execute_kernel_compute2(const Kernel &kernel)
@@ -317,4 +443,16 @@ double execute_kernel_imbalance(const Kernel &kernel,
   k.iterations = iterations;
   // printf("iteration %ld\n", iterations);
   return execute_kernel_compute(k);
+}
+
+void execute_kernel_customize(const Kernel &kernel, double expect_runtime)
+{
+  // Need to sleep for the expected time, use milliseconds
+  std::this_thread::sleep_for(std::chrono::microseconds((long)(expect_runtime * 1000)));
+}
+
+void execute_kernel_customize_cuda(const GPUKernel &kernel, double expect_runtime)
+{
+  // Need to sleep for the expected time, use milliseconds
+  std::this_thread::sleep_for(std::chrono::microseconds((long)(expect_runtime * 1000)));
 }

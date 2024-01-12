@@ -17,16 +17,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <iostream>
 #include <mpi.h>
 #include <math.h>
 #include <array>
 #include <starpu_mpi.h>
 #include <starpu_profiling.h>
+#include <starpu_cublas_v2.h>
 #include "data.h"
 #include "core.h"
 #include "timer.h"
 
 #include <unistd.h>
+
+#define DEBUG 0
 
 #define VERBOSE_LEVEL 0
 
@@ -51,7 +55,8 @@ static void init_extra_local_memory(void *arg)
   TaskGraph::prepare_scratch(extra_local_memory[tid], sizeof(char)*max_scratch_bytes_per_task);
 }
 
-static void task1(void *descr[], void *cl_arg)
+
+static void task1(void *descr[], void *cl_arg, int starpu_cuda)
 {
   float *out;
   payload_t payload;
@@ -70,9 +75,9 @@ static void task1(void *descr[], void *cl_arg)
   size_t input_bytes[] = {
     output_bytes,
   };
-  
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 1, extra_local_memory[tid], graph->scratch_bytes_per_task);
+  cublasHandle_t handle = starpu_cublas_get_local_handle(); 
+  graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 1, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -82,7 +87,7 @@ static void task1(void *descr[], void *cl_arg)
 #endif
 }
 
-static void task2(void *descr[], void *cl_arg)
+static void task2(void *descr[], void *cl_arg, int starpu_cuda)
 {
   float *in1, *out;
   payload_t payload;
@@ -102,9 +107,9 @@ static void task2(void *descr[], void *cl_arg)
   size_t input_bytes[] = {
     output_bytes,
   };
-  
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task);
+  cublasHandle_t handle = starpu_cublas_get_local_handle(); 
+  graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 #else  
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -114,7 +119,7 @@ static void task2(void *descr[], void *cl_arg)
 #endif
 }
 
-static void task3(void *descr[], void *cl_arg)
+static void task3(void *descr[], void *cl_arg, int starpu_cuda)
 {
   float *in1, *in2, *out;
   payload_t payload;
@@ -137,9 +142,9 @@ static void task3(void *descr[], void *cl_arg)
     output_bytes,
     output_bytes,
   };
-
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task);
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
+  graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 2, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 #else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
@@ -149,7 +154,7 @@ static void task3(void *descr[], void *cl_arg)
 #endif
 }
 
-static void task4(void *descr[], void *cl_arg)
+static void task4(void *descr[], void *cl_arg, int starpu_cuda)
 {
   float *in1, *in2, *in3, *out;
   payload_t payload;
@@ -175,9 +180,9 @@ static void task4(void *descr[], void *cl_arg)
     output_bytes,
     output_bytes,
   };
-
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 3, extra_local_memory[tid], graph->scratch_bytes_per_task);
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
+  graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 3, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -188,7 +193,7 @@ static void task4(void *descr[], void *cl_arg)
 #endif
 }
 
-static void task5(void *descr[], void *cl_arg)
+static void task5(void *descr[], void *cl_arg, int starpu_cuda)
 {
   float *in1, *in2, *in3, *in4, *out;
   payload_t payload;
@@ -217,9 +222,9 @@ static void task5(void *descr[], void *cl_arg)
     output_bytes,
     output_bytes,
   };
-
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 4, extra_local_memory[tid], graph->scratch_bytes_per_task);
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
+  graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 4, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -230,7 +235,7 @@ static void task5(void *descr[], void *cl_arg)
 #endif
 }
 
-static void task6(void *descr[], void *cl_arg)
+static void task6(void *descr[], void *cl_arg, int starpu_cuda)
 {
   float *in1, *in2, *in3, *in4, *in5, *out;
   payload_t payload;
@@ -262,9 +267,9 @@ static void task6(void *descr[], void *cl_arg)
     output_bytes,
     output_bytes,
   };
-
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 5, extra_local_memory[tid], graph->scratch_bytes_per_task);
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
+  graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 5, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -275,7 +280,7 @@ static void task6(void *descr[], void *cl_arg)
 #endif
 }
 
-static void task7(void *descr[], void *cl_arg)
+static void task7(void *descr[], void *cl_arg, int starpu_cuda)
 {
   float *in1, *in2, *in3, *in4, *in5, *in6, *out;
   payload_t payload;
@@ -310,9 +315,9 @@ static void task7(void *descr[], void *cl_arg)
     output_bytes,
     output_bytes,
   };
-
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 6, extra_local_memory[tid], graph->scratch_bytes_per_task);
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
+  graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 6, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -324,7 +329,7 @@ static void task7(void *descr[], void *cl_arg)
 #endif
 }
 
-static void task8(void *descr[], void *cl_arg)
+static void task8(void *descr[], void *cl_arg, int starpu_cuda)
 {
   float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *out;
   payload_t payload;
@@ -363,9 +368,9 @@ static void task8(void *descr[], void *cl_arg)
     output_bytes,
   };
   
-  
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 7, extra_local_memory[tid], graph->scratch_bytes_per_task);
+  cublasHandle_t handle = starpu_cublas_get_local_handle(); 
+  graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 7, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -377,7 +382,7 @@ static void task8(void *descr[], void *cl_arg)
 #endif
 }
 
-static void task9(void *descr[], void *cl_arg)
+static void task9(void *descr[], void *cl_arg, int starpu_cuda)
 {
   float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *out;
   payload_t payload;
@@ -418,9 +423,9 @@ static void task9(void *descr[], void *cl_arg)
     output_bytes,
     output_bytes,
   };
-
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 8, extra_local_memory[tid], graph->scratch_bytes_per_task);
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
+  graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 8, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -432,7 +437,7 @@ static void task9(void *descr[], void *cl_arg)
 #endif
 }
 
-static void task10(void *descr[], void *cl_arg)
+static void task10(void *descr[], void *cl_arg, int starpu_cuda)
 {
   float *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *in9, *out;
   payload_t payload;
@@ -476,9 +481,9 @@ static void task10(void *descr[], void *cl_arg)
     output_bytes,
     output_bytes,
   };
-
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 9, extra_local_memory[tid], graph->scratch_bytes_per_task);
+  cublasHandle_t handle = starpu_cublas_get_local_handle();
+  graph->execute_point_common(starpu_cuda, payload.i, payload.j, output_ptr, output_bytes,
+                       input_data, input_bytes, 9, extra_local_memory[tid], graph->scratch_bytes_per_task, handle);
 
 #else
   int rank;
@@ -489,6 +494,150 @@ static void task10(void *descr[], void *cl_arg)
     payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *in9, *out, extra_local_memory[tid]);
 #endif
 }
+
+static void mysync() 
+{
+    cudaError_t err = cudaStreamSynchronize(starpu_cuda_get_local_stream());
+    if (err != cudaSuccess) {
+      printf("Error synchronizing the stream: %s\n", cudaGetErrorString(err));
+    }
+}
+
+static void check_stream() 
+{
+    cudaStream_t stream = starpu_cuda_get_local_stream();
+    cudaError_t status = cudaStreamQuery(stream);
+    if (status == cudaSuccess) {
+        printf("All operations in the stream are complete.\n");
+    } else if (status == cudaErrorNotReady) {
+        printf("Operations in the stream are still in progress.\n");
+    } else {
+        printf("Error querying the stream: %s\n", cudaGetErrorString(status));
+    }
+}
+
+#ifdef STARPU_USE_CUDA
+void task1_cuda(void *descr[], void *cl_arg) 
+{
+  task1(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
+}
+
+void task2_cuda(void *descr[], void *cl_arg) 
+{
+  task2(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
+}
+
+void task3_cuda(void *descr[], void *cl_arg) 
+{
+  task3(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
+}
+
+void task4_cuda(void *descr[], void *cl_arg) 
+{
+  task4(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
+}
+
+void task5_cuda(void *descr[], void *cl_arg) 
+{
+  task5(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
+}
+
+void task6_cuda(void *descr[], void *cl_arg) 
+{
+  task6(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
+}
+
+void task7_cuda(void *descr[], void *cl_arg) 
+{
+  task7(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
+}
+
+void task8_cuda(void *descr[], void *cl_arg) 
+{
+  task8(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
+}
+
+void task9_cuda(void *descr[], void *cl_arg) 
+{
+  task9(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
+}
+
+void task10_cuda(void *descr[], void *cl_arg) 
+{
+  task10(descr, cl_arg, 1);
+  // check_stream();
+  // mysync();
+}
+#endif
+
+void task1_cpu(void *descr[], void *cl_arg) 
+{
+  task1(descr, cl_arg, 0);
+}
+
+void task2_cpu(void *descr[], void *cl_arg) 
+{
+  task2(descr, cl_arg, 0);
+}
+
+void task3_cpu(void *descr[], void *cl_arg) 
+{
+  task3(descr, cl_arg, 0);
+}
+
+void task4_cpu(void *descr[], void *cl_arg) 
+{
+  task4(descr, cl_arg, 0);
+}
+
+void task5_cpu(void *descr[], void *cl_arg) 
+{
+  task5(descr, cl_arg, 0);
+}
+
+void task6_cpu(void *descr[], void *cl_arg) 
+{
+  task6(descr, cl_arg, 0);
+}
+
+void task7_cpu(void *descr[], void *cl_arg) 
+{
+  task7(descr, cl_arg, 0);
+}
+
+void task8_cpu(void *descr[], void *cl_arg) 
+{
+  task8(descr, cl_arg, 0);
+}
+
+void task9_cpu(void *descr[], void *cl_arg) 
+{
+  task9(descr, cl_arg, 0);
+}
+
+void task10_cpu(void *descr[], void *cl_arg) 
+{
+  task10(descr, cl_arg, 0);
+}
+
 
 struct starpu_codelet cl_task1; 
 struct starpu_codelet cl_task2;
@@ -526,6 +675,11 @@ private:
   int Q;
   int MB;
   char *starpu_schedule;
+  char *custom_dag_file = nullptr;
+  char *task_type_runtime_file = nullptr;
+  char *priority_file = nullptr;
+  char *efficiency_file = nullptr;
+  int n_gpu;
   matrix_t mat_array[10];
 };
 
@@ -673,6 +827,9 @@ void StarPUApp::parse_argument(int argc, char **argv)
     if (!strcmp(argv[i], "-core")) {
       nb_cores = atoi(argv[++i]);
     }
+    if (!strcmp(argv[i], "-ngpu")) {
+      n_gpu = atoi(argv[++i]);
+    }
     if (!strcmp(argv[i], "-p")) {
       P = atoi(argv[++i]);
     }
@@ -682,10 +839,22 @@ void StarPUApp::parse_argument(int argc, char **argv)
     if (!strcmp(argv[i], "-schedule")) {
       starpu_schedule = argv[++i];
     }
+    if (!strcmp(argv[i], "-custom_dag")) {
+      custom_dag_file = argv[++i];
+    }
+    if (!strcmp(argv[i], "-task_type_runtime")) {
+      task_type_runtime_file = argv[++i];
+    }
+    if (!strcmp(argv[i], "-priority")) {
+      priority_file = argv[++i];
+    }
+    if (!strcmp(argv[i], "-efficiency")) {
+      efficiency_file = argv[++i];
+    }
   }
 }
 
-starpu_perfmodel perfmodels[10];
+static starpu_perfmodel perfmodels[10];
 char *symbol[10] = {"task1_pm", "task2_pm", "task3_pm", "task4_pm", "task5_pm", "task6_pm", "task7_pm", "task8_pm", "task9_pm", "task10_pm"};
 
 static starpu_perfmodel * init_starpu_perfmodel(int index) {
@@ -693,69 +862,90 @@ static starpu_perfmodel * init_starpu_perfmodel(int index) {
   model->symbol = symbol[index];
 	model->type = STARPU_HISTORY_BASED;
 
-	starpu_perfmodel_init(model);
+	// starpu_perfmodel_init(model);
   return model;
 }
 
 StarPUApp::StarPUApp(int argc, char **argv)
   : App(argc, argv)
 {
-  cl_task1.where     = STARPU_CPU;                                   
-  cl_task1.cpu_funcs[0]  = task1;                                       
+  init(); // init cublas
+  cl_task1.where     = STARPU_CPU | STARPU_CUDA;                                   
+  cl_task1.cpu_funcs[0]  = task1_cpu;                                       
+  cl_task1.cpu_funcs_name[0] = "task1_cpu",
+  cl_task1.cuda_funcs[0]  = task1_cuda;
   cl_task1.nbuffers  = 1;                                           
   cl_task1.name      = "task1";
   cl_task1.model    = init_starpu_perfmodel(0);
   
-  cl_task2.where     = STARPU_CPU;                                   
-  cl_task2.cpu_funcs[0]  = task2;                                       
+  cl_task2.where     = STARPU_CPU | STARPU_CUDA;                                   
+  cl_task2.cpu_funcs[0]  = task2_cpu;                                       
+  cl_task2.cpu_funcs_name[0] = "task2_cpu",
+  cl_task2.cuda_funcs[0]  = task2_cuda;
   cl_task2.nbuffers  = 2;                                           
   cl_task2.name      = "task2";
   cl_task2.model    = init_starpu_perfmodel(1);
   
-  cl_task3.where     = STARPU_CPU;                                   
-  cl_task3.cpu_funcs[0]  = task3;                                       
+  cl_task3.where     = STARPU_CPU | STARPU_CUDA;                                   
+  cl_task3.cpu_funcs[0]  = task3_cpu;                                       
+  cl_task3.cpu_funcs_name[0] = "task3_cpu",
+  cl_task3.cuda_funcs[0]  = task3_cuda;
   cl_task3.nbuffers  = 3;                                           
   cl_task3.name      = "task3";
   cl_task3.model    = init_starpu_perfmodel(2);
   
-  cl_task4.where     = STARPU_CPU;                                   
-  cl_task4.cpu_funcs[0]  = task4;                                       
+  cl_task4.where     = STARPU_CPU | STARPU_CUDA;                                   
+  cl_task4.cpu_funcs[0]  = task4_cpu;                                       
+  cl_task4.cpu_funcs_name[0] = "task4_cpu",
+  cl_task4.cuda_funcs[0]  = task4_cuda;
   cl_task4.nbuffers  = 4;                                           
   cl_task4.name      = "task4";
   cl_task4.model    = init_starpu_perfmodel(3);
   
-  cl_task5.where     = STARPU_CPU;                                   
-  cl_task5.cpu_funcs[0]  = task5;                                       
+  cl_task5.where     = STARPU_CPU | STARPU_CUDA;                                   
+  cl_task5.cpu_funcs[0]  = task5_cpu;                                       
+  cl_task5.cpu_funcs_name[0] = "task5_cpu",
+  cl_task5.cuda_funcs[0]  = task5_cuda;
   cl_task5.nbuffers  = 5;                                           
   cl_task5.name      = "task5";
   cl_task5.model    = init_starpu_perfmodel(4);  
 
-  cl_task6.where     = STARPU_CPU;                                   
-  cl_task6.cpu_funcs[0]  = task6;                                       
+  cl_task6.where     = STARPU_CPU | STARPU_CUDA;                                   
+  cl_task6.cpu_funcs[0]  = task6_cpu;                                       
+  cl_task6.cpu_funcs_name[0] = "task6_cpu",
+  cl_task6.cuda_funcs[0]  = task6_cuda;
   cl_task6.nbuffers  = 6;                                           
   cl_task6.name      = "task6";
   cl_task6.model    = init_starpu_perfmodel(5);
   
-  cl_task7.where     = STARPU_CPU;                                   
-  cl_task7.cpu_funcs[0]  = task7;                                       
+  cl_task7.where     = STARPU_CPU | STARPU_CUDA;                                   
+  cl_task7.cpu_funcs[0]  = task7_cpu;                                       
+  cl_task7.cpu_funcs_name[0] = "task7_cpu",
+  cl_task7.cuda_funcs[0]  = task7_cuda;
   cl_task7.nbuffers  = 7;                                           
   cl_task7.name      = "task7";
   cl_task7.model    = init_starpu_perfmodel(6);
 
-  cl_task8.where     = STARPU_CPU;                                   
-  cl_task8.cpu_funcs[0]  = task8;                                       
+  cl_task8.where     = STARPU_CPU | STARPU_CUDA;                                   
+  cl_task8.cpu_funcs[0]  = task8_cpu;                                       
+  cl_task8.cpu_funcs_name[0] = "task8_cpu",
+  cl_task8.cuda_funcs[0]  = task8_cuda;
   cl_task8.nbuffers  = 8;                                           
   cl_task8.name      = "task8";
   cl_task8.model    = init_starpu_perfmodel(7);
   
-  cl_task9.where     = STARPU_CPU;                                   
-  cl_task9.cpu_funcs[0]  = task9;                                       
+  cl_task9.where     = STARPU_CPU | STARPU_CUDA;                                   
+  cl_task9.cpu_funcs[0]  = task9_cpu;                                       
+  cl_task9.cpu_funcs_name[0] = "task9_cpu",
+  cl_task9.cuda_funcs[0]  = task9_cuda;
   cl_task9.nbuffers  = 9;                                           
   cl_task9.name      = "task9";
   cl_task9.model    = init_starpu_perfmodel(8);
   
-  cl_task10.where     = STARPU_CPU;                                   
-  cl_task10.cpu_funcs[0]  = task10;                                       
+  cl_task10.where     = STARPU_CPU | STARPU_CUDA;                                   
+  cl_task10.cpu_funcs[0]  = task10_cpu;                                       
+  cl_task10.cpu_funcs_name[0] = "task10_cpu",
+  cl_task10.cuda_funcs[0]  = task10_cuda;
   cl_task10.nbuffers  = 10;                                           
   cl_task10.name      = "task10";
   cl_task10.model    = init_starpu_perfmodel(9);
@@ -765,15 +955,39 @@ StarPUApp::StarPUApp(int argc, char **argv)
   P = 1;
   MB = 2;
   nb_cores = 1;
+  n_gpu = 0;
   starpu_schedule = "lws";
   
   parse_argument(argc, argv);
+  if (custom_dag_file != nullptr) {
+    for (int i = 0; i < graphs.size(); i++) {
+      TaskGraph &graph = graphs[i];
+      CustomTaskInfo *custom_task_info;
+      assert(graph.dependence == DependenceType::USER_DEFINED);
+      assert(priority_file != nullptr && efficiency_file != nullptr || priority_file == nullptr && efficiency_file == nullptr);
+      if (priority_file != nullptr && efficiency_file != nullptr) {
+        custom_task_info = new CustomTaskInfo(custom_dag_file, priority_file, efficiency_file, task_type_runtime_file);
+      } else if (priority_file == nullptr && task_type_runtime_file != nullptr) {
+        custom_task_info = new CustomTaskInfo(custom_dag_file, task_type_runtime_file);
+      } else if (priority_file != nullptr && task_type_runtime_file == nullptr) {
+        custom_task_info = new CustomTaskInfo(custom_dag_file, priority_file, efficiency_file);
+      } else {
+        custom_task_info = new CustomTaskInfo(custom_dag_file);
+      }
+      graph.set_task_info(custom_task_info);
+    }
+  } else {
+    for (int i = 0; i < graphs.size(); i++) {
+      TaskGraph &graph = graphs[i];
+      assert(graph.dependence != DependenceType::USER_DEFINED);
+    }
+  }
   
   conf =  (struct starpu_conf *)malloc (sizeof(struct starpu_conf));
   starpu_conf_init( conf );
 
   conf->ncpus = nb_cores;
-  conf->ncuda = 0;
+  conf->ncuda = n_gpu;
   conf->nopencl = 0;
   conf->sched_policy_name = starpu_schedule;
   
@@ -782,6 +996,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   STARPU_CHECK_RETURN_VALUE(ret, "starpu_init");
   ret = starpu_mpi_init(&argc, &argv, 1);
   STARPU_CHECK_RETURN_VALUE(ret, "starpu_mpi_init");
+  starpu_cublas_init();
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
   starpu_mpi_comm_size(MPI_COMM_WORLD, &world);
   
@@ -820,9 +1035,8 @@ StarPUApp::StarPUApp(int argc, char **argv)
     extra_local_memory[i] = NULL;
   }
   if (max_scratch_bytes_per_task > 0) {
-    starpu_execute_on_each_worker_ex(init_extra_local_memory, (void*) (uintptr_t) max_scratch_bytes_per_task, STARPU_CPU, "init_scratch");
+    starpu_execute_on_each_worker_ex(init_extra_local_memory, (void*) (uintptr_t) max_scratch_bytes_per_task, STARPU_CPU | STARPU_CUDA, "init_scratch");
   }
-  
   debug_printf(0, "max_scratch_bytes_per_task %lld\n", max_scratch_bytes_per_task);
 }
 
@@ -849,6 +1063,7 @@ StarPUApp::~StarPUApp()
   starpu_shutdown();
 }
 
+
 void StarPUApp::execute_main_loop()
 {
   if (rank == 0) {
@@ -862,10 +1077,15 @@ void StarPUApp::execute_main_loop()
   /* Initialize data structures before measurement */
   for (int i = 0; i < graphs.size(); i++) {
     const TaskGraph &g = graphs[i];
+    // if DependencyType::USER_DEFINED, we need to initialize the data for the first timestep
+    // Now, graph.size() always equals to 1
+    // TODO: implement this. Read from file, and call setDependenceFromPreSet
 
     for (y = 0; y < g.timesteps; y++) {
       long offset = g.offset_at_timestep(y);
       long width = g.width_at_timestep(y);
+      if (DEBUG)
+        std::cout << "timestep " << y << ", offset " << offset << ", width " << width << std::endl;
       matrix_t &mat = mat_array[i];
       int nb_fields = g.nb_fields;
 
@@ -873,7 +1093,6 @@ void StarPUApp::execute_main_loop()
         starpu_desc_getaddr( mat.ddescA, y%nb_fields, x );
     }
   }
-
   /* start timer */
   starpu_mpi_barrier(MPI_COMM_WORLD);
   if (rank == 0) {
@@ -894,6 +1113,13 @@ void StarPUApp::execute_main_loop()
     double elapsed = Timer::time_end();
     report_timing(elapsed);
   }
+
+  for (int i = 0; i < graphs.size(); i++) { 
+    const TaskGraph &g = graphs[i]; 
+    if (g.dependence == DependenceType::USER_DEFINED) {
+      g.destroy_task_info();
+    }
+  }
 }
 
 void StarPUApp::execute_timestep(size_t idx, long t)
@@ -910,7 +1136,12 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   
   debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
   for (int x = offset; x <= offset+width-1; x++) {
-    std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
+    std::vector<std::pair<long, long> > deps;
+    if (g.dependence != DependenceType::USER_DEFINED) {
+      deps = g.dependencies(dset, x);
+    } else {
+      deps = g.user_defined_dependencies(t, x);
+    }
     int num_args; 
     starpu_data_handle_t output = starpu_desc_getaddr( mat.ddescA, t%nb_fields, x );
 #ifdef ENABLE_PRUNE_MPI_TASK_INSERT
@@ -947,6 +1178,8 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     num_args = 0;
     if (deps.size() == 0) {
       args[num_args++] = output;
+      std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
+      std::cout << "------------------" << std::endl;
       debug_printf(1, "%d[%d] ", x, num_args);
     } else {
       if (t == 0) {
@@ -956,13 +1189,28 @@ void StarPUApp::execute_timestep(size_t idx, long t)
         args[num_args++] = output;
         long last_offset = g.offset_at_timestep(t-1);
         long last_width = g.width_at_timestep(t-1);
-        for (std::pair<long, long> dep : deps) {
-          for (int i = dep.first; i <= dep.second; i++) {
-            if (i >= last_offset && i < last_offset + last_width) {
-              args[num_args++] = starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, i );
-            }
+        if (g.dependence == DependenceType::USER_DEFINED) {
+          if (DEBUG) {
+            std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
           }
-          debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          for (std::pair<long, long> dep : deps) {
+            long last_time_step = dep.first;
+            long last_point = dep.second;
+            if (DEBUG) {
+              std::cout << "last_time_step = " << last_time_step << ", last_point = " << last_point << std::endl;
+              std::cout << "------------------" << std::endl;
+            }
+            args[num_args++] = starpu_desc_getaddr( mat.ddescA, (last_time_step)%nb_fields, last_point);
+          }
+        } else {
+          for (std::pair<long, long> dep : deps) {
+            for (int i = dep.first; i <= dep.second; i++) {
+              if (i >= last_offset && i < last_offset + last_width) {
+                args[num_args++] = starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, i );
+              }
+            }
+            debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          }
         }
       }
     }

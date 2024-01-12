@@ -20,6 +20,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "custom_taskinfo.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,6 +39,8 @@ typedef enum dependence_type_t {
   SPREAD,
   RANDOM_NEAREST,
   RANDOM_SPREAD,
+  CHOLESKY_LIKE_RANDOM,
+  USER_DEFINED,
 } dependence_type_t;
 
 typedef enum kernel_type_t {
@@ -49,6 +53,7 @@ typedef enum kernel_type_t {
   COMPUTE_BOUND2,
   IO_BOUND,
   LOAD_IMBALANCE,
+  CUSTOMIZE,
 } kernel_type_t;
 
 typedef struct kernel_t {
@@ -84,6 +89,7 @@ typedef struct task_graph_t {
   size_t output_bytes_per_task;
   size_t scratch_bytes_per_task;
   int nb_fields;
+  CustomTaskInfo *task_info;
 } task_graph_t;
 
 long task_graph_offset_at_timestep(task_graph_t graph, long timestep);

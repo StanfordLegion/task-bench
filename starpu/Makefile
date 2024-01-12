@@ -16,18 +16,18 @@ STARPU_VERSION ?= 1.3
 
 ifeq ($(strip $(DEBUG)),0)
 CFLAGS		 += -O3
-LDFLAGS		 += -O3
+LDFLAGS		 += -O3 -lcublas -lcudart
 else
 CFLAGS		 += -g -O0
-LDFLAGS		 += -g -O0
+LDFLAGS		 += -g -O0 -lcublas -lcudart
 endif
 
 # Include directories
 INC        = -I$(STARPU_DIR)/include/starpu/$(STARPU_VERSION) -I../core
-INC_EXT    = 
+INC_EXT    = -I/usr/local/cuda-11.6/targets/x86_64-linux/include
 
 # Location of the libraries.
-LIB        = -Wl,-rpath,$(STARPU_DIR)/lib: $(STARPU_DIR)/lib/libstarpu-$(STARPU_VERSION).so $(STARPU_DIR)/lib/libstarpumpi-$(STARPU_VERSION).so -L../core -lcore_s
+LIB        = -Wl,-rpath,$(STARPU_DIR)/lib: $(STARPU_DIR)/lib/libstarpu-$(STARPU_VERSION).so $(STARPU_DIR)/lib/libstarpumpi-$(STARPU_VERSION).so -L../core -lcore_s -L/usr/local/cuda-11.6/targets/x86_64-linux/lib
 LIB_EXT    =
 
 ifeq ($(strip $(TASKBENCH_USE_HWLOC)),1)

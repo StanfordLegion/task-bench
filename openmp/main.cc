@@ -430,6 +430,7 @@ void OpenMPApp::execute_main_loop()
   display();
   
   Timer::time_start();
+  // parallel在上面
   
   #pragma omp parallel
   {
