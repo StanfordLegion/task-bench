@@ -96,3 +96,17 @@ And different kernels can be plugged in to the execution:
 
 For detailed instructions on configuring task bench for performance
 experiments, see [EXPERIMENT.md](EXPERIMENT.md).
+
+## Enhance
+
+In generator directory, we add an DAG generator inspired by paper "Neural Topological Ordering for Computation Graphs".
+
+Once the dag generated, we can import it into task bench to run simulation.
+
+The command is as follow:
+
+```bash
+./main -type user_defined -kernel customize -schedule dmda -custom_dag dag_dot_prof_file_3840_dmda.txt -task_type_runtime cholesky2.runtime  -core 3 -ngpu 1 -output 3686400 
+```
+
+Use `user_defined` data dependency type, and use `customize` kernel type. Then appoint the DAG file and the file that contains the execution time of each task type. The task use the `std::this_thread::sleep_for` method to let task run specific time. Then use `ngpu` to set the GPU number used in the simulation.
