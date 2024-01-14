@@ -477,6 +477,11 @@ int CustomTaskInfo::getTaskAbilityAtPoint(long t, long point) const {
     return TaskPriority::get_priority(task);
 }
 
+std::string CustomTaskInfo::getTaskTypeAtPoint(long t, long point) const {
+    int task = get_task_by_coordinate(t, point);
+    return task2tag.at(task);
+}
+
 bool CustomTaskInfo::validate() {
     assert(taskDepInfoInitialized());
     int task_num = TaskPriority::get_task_num();

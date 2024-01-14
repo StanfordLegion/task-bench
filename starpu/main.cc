@@ -30,7 +30,7 @@
 
 #include <unistd.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define VERBOSE_LEVEL 0
 
@@ -516,6 +516,8 @@ static void check_stream()
     }
 }
 
+// TODO:
+// Here may use template to generate to make it look better
 #ifdef STARPU_USE_CUDA
 void task1_cuda(void *descr[], void *cl_arg) 
 {
@@ -664,6 +666,7 @@ public:
   void execute_timestep(size_t idx, long t);
 private:
   void insert_task(int num_args, payload_t &payload, std::array<starpu_data_handle_t, 10> &args);
+  void insert_task(int num_args, int priority, payload_t &payload, std::array<starpu_data_handle_t, 10> &args);
   void parse_argument(int argc, char **argv);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
@@ -683,17 +686,42 @@ private:
   matrix_t mat_array[10];
 };
 
-void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_data_handle_t, 10> &args)
+static char* getTaskNameChar(const std::string& s) {
+  static std::unordered_map<std::string, std::string> _store;
+  if (_store.find(s) == _store.end()) {
+    _store[s] = s;
+  }
+  return (char*)_store[s].c_str();
+}
+
+void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std::array<starpu_data_handle_t, 10> &args)
 {
   void (*callback)(void*) = NULL;
   starpu_ddesc_t *descA = mat_array[payload.graph_id].ddescA;
+  int t = payload.i;
+  int p = payload.j;
+  CustomTaskInfo *task_info = payload.graph->get_task_info();
+  std::string task_name;
+  if (task_info != nullptr) {
+    task_name = task_info->getTaskTypeAtPoint(t, p);
+  } else {
+    task_name = "task_" + std::to_string(num_args);
+  }
+  char* task_name_char = getTaskNameChar(task_name);
+  assert (strcmp(starpu_schedule, "dmdap") == 0);
+  // if schedule == dmdap, check if there is priority_file
+  if (strcmp(starpu_schedule, "dmdap") == 0) {
+    assert(priority_file != nullptr);
+  }
+  
   switch(num_args) {
   case 1:
     starpu_mpi_insert_task(
         MPI_COMM_WORLD, &(cl_task1),
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_RW, args[0],
-        STARPU_NAME, "task1",
+        STARPU_NAME, task_name_char,
+        STARPU_PRIORITY, priority,
         0);
     break;
   case 2:
@@ -702,7 +730,8 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_RW, args[0],
-        STARPU_NAME, "task2",
+        STARPU_NAME, task_name_char,
+        STARPU_PRIORITY, priority,
         0);
     break;
   case 3:
@@ -712,7 +741,8 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
         STARPU_R, args[1],
         STARPU_R, args[2],
         STARPU_RW, args[0],
-        STARPU_NAME, "task3",
+        STARPU_NAME, task_name_char,
+        STARPU_PRIORITY, priority,
         0);
     break;
   case 4:
@@ -723,7 +753,8 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
         STARPU_R, args[2],
         STARPU_R, args[3],
         STARPU_RW, args[0],
-        STARPU_NAME, "task4",
+        STARPU_NAME, task_name_char,
+        STARPU_PRIORITY, priority,
         0);
     break;
   case 5:
@@ -735,7 +766,8 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
         STARPU_R, args[3],
         STARPU_R, args[4],
         STARPU_RW, args[0],
-        STARPU_NAME, "task5",
+        STARPU_NAME, task_name_char,
+        STARPU_PRIORITY, priority,
         0);
     break;
   case 6:
@@ -748,7 +780,8 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
         STARPU_R, args[4],
         STARPU_R, args[5],
         STARPU_RW, args[0],
-        STARPU_NAME, "task6",
+        STARPU_NAME, task_name_char,
+        STARPU_PRIORITY, priority,
         0);
     break;
   case 7:
@@ -762,7 +795,8 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
         STARPU_R, args[5],
         STARPU_R, args[6],
         STARPU_RW, args[0],
-        STARPU_NAME, "task7",
+        STARPU_NAME, task_name_char,
+        STARPU_PRIORITY, priority,
         0);
     break;
   case 8:
@@ -777,7 +811,8 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
         STARPU_R, args[6],
         STARPU_R, args[7],
         STARPU_RW, args[0],
-        STARPU_NAME, "task8",
+        STARPU_NAME, task_name_char,
+        STARPU_PRIORITY, priority,
         0);
     break;
   case 9:
@@ -793,7 +828,8 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
         STARPU_R, args[7],
         STARPU_R, args[8],
         STARPU_RW, args[0],
-        STARPU_NAME, "task9",
+        STARPU_NAME, task_name_char,
+        STARPU_PRIORITY, priority,
         0);
     break;
   case 10:
@@ -810,7 +846,155 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
         STARPU_R, args[8],
         STARPU_R, args[9],
         STARPU_RW, args[0],
-        STARPU_NAME, "task10",
+        STARPU_NAME, task_name_char,
+        STARPU_PRIORITY, priority,
+        0);
+    break;
+  default:
+    assert(false && "unexpected num_args");
+  };
+}
+
+
+void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_data_handle_t, 10> &args)
+{
+  void (*callback)(void*) = NULL;
+  starpu_ddesc_t *descA = mat_array[payload.graph_id].ddescA;
+  int t = payload.i;
+  int p = payload.j;
+  CustomTaskInfo *task_info = payload.graph->get_task_info();
+  std::string task_name;
+  if (task_info != nullptr) {
+    task_name = task_info->getTaskTypeAtPoint(t, p);
+  } else {
+    task_name = "task_" + std::to_string(num_args);
+  }
+  char* task_name_char = getTaskNameChar(task_name);
+  std::cout << "insert " << task_name_char << std::endl;
+  switch(num_args) {
+  case 1:
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task1),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_RW, args[0],
+        STARPU_NAME, task_name_char,
+        0);
+    break;
+  case 2:
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task2),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_RW, args[0],
+        STARPU_NAME, task_name_char,
+        0);
+    break;
+  case 3:
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task3),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_RW, args[0],
+        STARPU_NAME, task_name_char,
+        0);
+    break;
+  case 4:
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task4),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_RW, args[0],
+        STARPU_NAME, task_name_char,
+        0);
+    break;
+  case 5:
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task5),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_RW, args[0],
+        STARPU_NAME, task_name_char,
+        0);
+    break;
+  case 6:
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task6),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_R, args[5],
+        STARPU_RW, args[0],
+        STARPU_NAME, task_name_char,
+        0);
+    break;
+  case 7:
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task7),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_R, args[5],
+        STARPU_R, args[6],
+        STARPU_RW, args[0],
+        STARPU_NAME, task_name_char,
+        0);
+    break;
+  case 8:
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task8),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_R, args[5],
+        STARPU_R, args[6],
+        STARPU_R, args[7],
+        STARPU_RW, args[0],
+        STARPU_NAME, task_name_char,
+        0);
+    break;
+  case 9:
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task9),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_R, args[5],
+        STARPU_R, args[6],
+        STARPU_R, args[7],
+        STARPU_R, args[8],
+        STARPU_RW, args[0],
+        STARPU_NAME, task_name_char,
+        0);
+    break;
+  case 10:
+    starpu_mpi_insert_task(
+        MPI_COMM_WORLD, &(cl_task10),
+        STARPU_VALUE,    &payload, sizeof(payload_t),
+        STARPU_R, args[1],
+        STARPU_R, args[2],
+        STARPU_R, args[3],
+        STARPU_R, args[4],
+        STARPU_R, args[5],
+        STARPU_R, args[6],
+        STARPU_R, args[7],
+        STARPU_R, args[8],
+        STARPU_R, args[9],
+        STARPU_RW, args[0],
+        STARPU_NAME, task_name_char,
         0);
     break;
   default:
@@ -1219,7 +1403,20 @@ void StarPUApp::execute_timestep(size_t idx, long t)
     payload.j = x;
     payload.graph = &g;
     payload.graph_id = idx;
-    insert_task(num_args, payload, args); 
+    if (strcmp(starpu_schedule, "dmdap") == 0) {
+      int priority = 0;
+      if (g.dependence == DependenceType::USER_DEFINED) {
+        CustomTaskInfo *custom_task_info = (CustomTaskInfo*)g.get_task_info();
+        priority = custom_task_info->getTaskPriorityAtPoint(t, x);
+      } else {
+        assert(false && "dmdap with non-user-defined dependence is not supported yet");
+      }
+      insert_task(num_args, priority, payload, args);
+    } else {
+      std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
+      insert_task(num_args, payload, args);
+    }
+    // insert_task(num_args, payload, args); 
   }
   debug_printf(1, "\n");
 }

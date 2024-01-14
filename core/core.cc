@@ -73,6 +73,10 @@ void TaskGraph::set_task_info(CustomTaskInfo *task_info) {
   max_width = task_info->get_max_width();
 }
 
+CustomTaskInfo* TaskGraph::get_task_info() const {
+  return task_info;
+}
+
 void TaskGraph::destroy_task_info() const {
   delete task_info;
 }
@@ -81,6 +85,11 @@ TaskDepInfo::TaskDep TaskGraph::getDependenceFromTaskInfo(long t, long point) co
   assert (task_info != nullptr);
   TaskDepInfo::TaskDep task_dep = task_info->get_dep(t, point);
   return task_dep;
+}
+
+std::string TaskGraph::getTaskTypeAtPoint(long t, long point) const {
+  assert (task_info != nullptr);
+  return task_info->getTaskTypeAtPoint(t, point);
 }
 
 // void setDependenceToTaskInfo(long t, long point, DependenceResultType& result) {

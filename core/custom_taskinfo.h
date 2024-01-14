@@ -129,6 +129,8 @@ public:
     int getTaskPriorityAtPoint(long t, long point) const;
     int getTaskAbilityAtPoint(long t, long point) const;
 
+    std::string getTaskTypeAtPoint(long t, long point) const;
+
 private:
     bool validate();
 };
