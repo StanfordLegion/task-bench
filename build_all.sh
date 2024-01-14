@@ -140,14 +140,15 @@ fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
     # delete --disable-cuda
-    STARPU_CONFIGURE_FLAG="--disable-opencl "
+    STARPU_CONFIGURE_FLAG="--disable-opencl --disable-fxt "
+    echo $STARPU_CONFIGURE_FLAG
     if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
       STARPU_CONFIGURE_FLAG+=""
     else
-      STARPU_CONFIGURE_FLAG+="--without-hwloc"
+      STARPU_CONFIGURE_FLAG+=" --without-hwloc"
     fi
     pushd "$STARPU_SRC_DIR"
-    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ./configure --prefix=$STARPU_DIR $STARPU_CONFIGURE_FLAG
+    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ./configure --prefix=$STARPU_DIR $STARPU_CONFIGURE_FLAG --enable-blas-lib=mkl --with-mkl-ldflags="-lmkl_intel_lp64 -lmkl_sequential -lmkl_core"
     make -j$THREADS
     make install
     popd
