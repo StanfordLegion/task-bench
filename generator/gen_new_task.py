@@ -5,15 +5,14 @@ import graphviz
 import time
 
 """
-    1. 生成一个图，图的节点数为N，图的宽度为W，图的层数为L
+    1. 生成一个图，图的节点数为N，图的层数为L
     2. 返回图的节点类型(以输入的数量作为分类标准)
     3. 返回节点的输出节点
     4. 约定第一层为输入层，最后一层为输出层，输入层最好只有一个节点，输出层最好只有一个节点
 """
 class GenNewTask:
-    def __init__(self, V, W, sigma_N, edge_density, skip_connection_density):
+    def __init__(self, V, sigma_N, edge_density, skip_connection_density):
         self.V = V
-        self.W = W
         self.sigma_N = sigma_N
         self.edge_density = edge_density
         self.skip_connection_density = skip_connection_density
@@ -117,7 +116,8 @@ class GenNewTask:
         print("V: ", self.V)
         print("self.topo_order: ", self.topo_order)
         
-        assert compute_node_num == self.V
+        # if compute_node_num != self.V, because we make that the last layer has only one node
+        assert compute_node_num == self.V or compute_node_num == self.V + 1
         print(self.coordinate2node)
         self.algorithm2()
         self.algorithm3()
@@ -146,7 +146,8 @@ class GenNewTask:
     def algorithm1(self):
         # input: N 点数 sigma_N 点数可变性
         # output:  graph1
-        L = math.ceil(math.sqrt(self.V * (1 / self.W - 1)))
+        W = random.uniform(0.25, 0.5)
+        L = math.ceil(math.sqrt(self.V * (1 / W - 1)))
         l = 0
         node_counter = 0
         jump = False
@@ -178,6 +179,14 @@ class GenNewTask:
                 self.N_l.append(N_l)
             l = l + 1
             self.topo_order.append(layer_node)    
+        if len(self.topo_order[-1]) != 1:
+            self.all_node.append(node_counter)
+            self.node2layer[node_counter] = l
+            self.coordinate2node[(l, 0)] = node_counter
+            self.node2coordinate[node_counter] = (l, 0)
+            self.topo_order.append([node_counter])
+            self.N_l.append(1)
+            l = l + 1
         self.layer_depth = l
     
     def get_layer_width(self, l):
@@ -188,8 +197,8 @@ class GenNewTask:
         # output: graph2
         for l1 in range(self.layer_depth - 1):
             l2 = l1 + 1
-            E_l1_l2 = int(self.get_layer_width(l1) * self.get_layer_width(l2) * edge_density \
-                + (1 - edge_density) * max(self.get_layer_width(l1), self.get_layer_width(l2)))
+            E_l1_l2 = int(self.get_layer_width(l1) * self.get_layer_width(l2) * self.edge_density \
+                + (1 - self.edge_density) * max(self.get_layer_width(l1), self.get_layer_width(l2)))
             N_l1 = self.get_layer_width(l1)
             N_l2 = self.get_layer_width(l2)
             if N_l1 >= N_l2:
@@ -229,10 +238,10 @@ class GenNewTask:
         # input: graph2 skip_connection_density 跳跃密度 E 边数
         # output: graph3
         E = self.get_edge_num()
-        L = self.layer_depth
+        L = self.layer_depth - 1 # do not consider the last layer
         if L < 3: # too few layers
             return
-        skip_edge = math.ceil(E * (skip_connection_density) / (1 - skip_connection_density)) # skip_edge 跳跃的边总数
+        skip_edge = math.ceil(E * (self.skip_connection_density) / (1 - self.skip_connection_density)) # skip_edge 跳跃的边总数
         for i in range(skip_edge):
             ls = random.randint(0, L - 3) # lm 随机取的层的索引 L 层数
             lt = random.randint(ls + 2, L - 1)
@@ -258,11 +267,10 @@ class GenNewTask:
 
 if __name__ == "__main__":
     N = 50
-    W = 0.3 # W is a float in (0.25, 0.5)
     sigma_N = 0.75
     edge_density = 0.2
     skip_connection_density = 0.14
-    newtask = GenNewTask(N, W, sigma_N, edge_density, skip_connection_density)
+    newtask = GenNewTask(N, sigma_N, edge_density, skip_connection_density)
     newtask.dump()
     
     # graph, tasks = newtask.gen()
