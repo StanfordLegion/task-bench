@@ -54,6 +54,9 @@ class GenNewTask:
                 result_str += str(node) + ":(" + str(dst[0]) + ",),\n"
             else:
                 result_str += str(node) + ":(" + ", ".join([str(d) for d in dst]) + "),\n"
+        output_node = set(self.all_node) - set(self.node2output.keys())
+        for node in output_node:
+            result_str += str(node) + ":(),\n"
         return result_str
             
     def task_str(self) -> str:
@@ -100,7 +103,7 @@ class GenNewTask:
 
     
     def sort_node_by_inputnum(self):
-        for node, dst in self.node2output.items():
+        for node in self.all_node:
             input_num = self.get_node_inputnum(node)
             if input_num not in self.inputnum2node:
                 self.inputnum2node[input_num] = []
@@ -179,6 +182,7 @@ class GenNewTask:
                 self.N_l.append(N_l)
             l = l + 1
             self.topo_order.append(layer_node)    
+        # if the last layer doesn't meet the requirement(only one node), add a new layer
         if len(self.topo_order[-1]) != 1:
             self.all_node.append(node_counter)
             self.node2layer[node_counter] = l

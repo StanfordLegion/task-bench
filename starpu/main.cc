@@ -640,6 +640,20 @@ void task10_cpu(void *descr[], void *cl_arg)
   task10(descr, cl_arg, 0);
 }
 
+using TaskFunc = decltype(&task1_cpu);
+static std::vector<TaskFunc> task_func_list = {
+  task1_cpu,
+  task2_cpu,
+  task3_cpu,
+  task4_cpu,
+  task5_cpu,
+  task6_cpu,
+  task7_cpu,
+  task8_cpu,
+  task9_cpu,
+  task10_cpu,
+};
+
 
 struct starpu_codelet cl_task1; 
 struct starpu_codelet cl_task2;
@@ -666,7 +680,7 @@ public:
   void execute_timestep(size_t idx, long t);
 private:
   void insert_task(int num_args, payload_t &payload, std::array<starpu_data_handle_t, 10> &args);
-  void insert_task(int num_args, int priority, payload_t &payload, std::array<starpu_data_handle_t, 10> &args);
+  void insert_task_custom(int num_args, payload_t &payload, std::array<starpu_data_handle_t, 10> &args, int priority, int abi = 0, int efi = 0);
   void parse_argument(int argc, char **argv);
   void debug_printf(int verbose_level, const char *format, ...);
 private:
@@ -694,7 +708,10 @@ static char* getTaskNameChar(const std::string& s) {
   return (char*)_store[s].c_str();
 }
 
-void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std::array<starpu_data_handle_t, 10> &args)
+static std::map<std::string, starpu_codelet> task_name_to_codelet;
+static std::map<int, starpu_codelet> task_num_to_codelet;
+
+void StarPUApp::insert_task_custom(int num_args, payload_t &payload, std::array<starpu_data_handle_t, 10> &args, int priority, int abi, int efi)
 {
   void (*callback)(void*) = NULL;
   starpu_ddesc_t *descA = mat_array[payload.graph_id].ddescA;
@@ -703,9 +720,15 @@ void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std:
   CustomTaskInfo *task_info = payload.graph->get_task_info();
   std::string task_name;
   if (task_info != nullptr) {
-    task_name = task_info->getTaskTypeAtPoint(t, p);
+    task_name = payload.graph->getTaskTypeAtPoint(t, p);
   } else {
     task_name = "task_" + std::to_string(num_args);
+  }
+  starpu_codelet* cl_task;
+  if (payload.graph->dependence == DependenceType::USER_DEFINED) {
+    cl_task = &task_name_to_codelet[task_name];
+  } else {
+    assert (false && "Not implemented");
   }
   char* task_name_char = getTaskNameChar(task_name);
   assert (strcmp(starpu_schedule, "dmdap") == 0);
@@ -717,7 +740,7 @@ void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std:
   switch(num_args) {
   case 1:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task1),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_RW, args[0],
         STARPU_NAME, task_name_char,
@@ -726,7 +749,7 @@ void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std:
     break;
   case 2:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task2),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_RW, args[0],
@@ -736,7 +759,7 @@ void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std:
     break;
   case 3:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task3),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -747,7 +770,7 @@ void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std:
     break;
   case 4:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task4),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -759,7 +782,7 @@ void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std:
     break;
   case 5:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task5),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -772,7 +795,7 @@ void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std:
     break;
   case 6:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task6),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -786,7 +809,7 @@ void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std:
     break;
   case 7:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task7),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -801,7 +824,7 @@ void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std:
     break;
   case 8:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task8),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -817,7 +840,7 @@ void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std:
     break;
   case 9:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task9),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -834,7 +857,7 @@ void StarPUApp::insert_task(int num_args, int priority, payload_t &payload, std:
     break;
   case 10:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task10),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -865,16 +888,32 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
   CustomTaskInfo *task_info = payload.graph->get_task_info();
   std::string task_name;
   if (task_info != nullptr) {
-    task_name = task_info->getTaskTypeAtPoint(t, p);
+    task_name = payload.graph->getTaskTypeAtPoint(t, p);
   } else {
     task_name = "task_" + std::to_string(num_args);
   }
+  starpu_codelet* cl_task;
+  if (payload.graph->dependence == DependenceType::USER_DEFINED) {
+    cl_task = &task_name_to_codelet[task_name];
+  } else {
+    assert (false && "Not implemented");
+  }
   char* task_name_char = getTaskNameChar(task_name);
   std::cout << "insert " << task_name_char << std::endl;
+  std::cout << "cl_task.name " << cl_task->name << std::endl;
+  std::cout << "cl_task.n_buffers " << cl_task->nbuffers << std::endl;
+  for (int i = 0; i < 10; i++) {
+    if (cl_task->cpu_funcs[0] == task_func_list[i]) {
+      std::cout << "cl_task.cpu_funcs[0] == " << i << std::endl;
+      break;
+    }
+  }
+  std::cout << "num_args " << num_args << std::endl;
+  assert (cl_task->cpu_funcs[0] == task_func_list[num_args - 1]);
   switch(num_args) {
   case 1:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task1),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_RW, args[0],
         STARPU_NAME, task_name_char,
@@ -882,7 +921,7 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
     break;
   case 2:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task2),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_RW, args[0],
@@ -891,7 +930,7 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
     break;
   case 3:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task3),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -901,7 +940,7 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
     break;
   case 4:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task4),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -912,7 +951,7 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
     break;
   case 5:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task5),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -924,7 +963,7 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
     break;
   case 6:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task6),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -937,7 +976,7 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
     break;
   case 7:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task7),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -951,7 +990,7 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
     break;
   case 8:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task8),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -966,7 +1005,7 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
     break;
   case 9:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task9),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -982,7 +1021,7 @@ void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_
     break;
   case 10:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task10),
+        MPI_COMM_WORLD, cl_task,
         STARPU_VALUE,    &payload, sizeof(payload_t),
         STARPU_R, args[1],
         STARPU_R, args[2],
@@ -1050,10 +1089,62 @@ static starpu_perfmodel * init_starpu_perfmodel(int index) {
   return model;
 }
 
-StarPUApp::StarPUApp(int argc, char **argv)
-  : App(argc, argv)
-{
-  init(); // init cublas
+static starpu_perfmodel* get_history_based_perfmodel(const std::string& task_type, int index) {
+  static std::map<std::string, starpu_perfmodel*> task_type_to_perfmodel;
+  starpu_perfmodel* model;
+  if (task_type_to_perfmodel.find(task_type) == task_type_to_perfmodel.end()) {
+    model = new starpu_perfmodel();
+    model->symbol = getTaskNameChar(task_type);
+    model->type = STARPU_HISTORY_BASED;
+    task_type_to_perfmodel[task_type] = model;
+  } else {
+    model = task_type_to_perfmodel[task_type];
+  }
+  return model;
+}
+
+static void init_task_cl_custom(int input_num, const std::string& task_name) {
+  static std::map<int, TaskFunc> task_num_to_cpu_func = {
+    {1, task1_cpu},
+    {2, task2_cpu},
+    {3, task3_cpu},
+    {4, task4_cpu},
+    {5, task5_cpu},
+    {6, task6_cpu},
+    {7, task7_cpu},
+    {8, task8_cpu},
+    {9, task9_cpu},
+    {10, task10_cpu},
+  };
+  static std::map<int, TaskFunc> task_num_to_cuda_func = {
+    {1, task1_cuda},
+    {2, task2_cuda},
+    {3, task3_cuda},
+    {4, task4_cuda},
+    {5, task5_cuda},
+    {6, task6_cuda},
+    {7, task7_cuda},
+    {8, task8_cuda},
+    {9, task9_cuda},
+    {10, task10_cuda},
+  };
+  if (task_name_to_codelet.find(task_name) == task_name_to_codelet.end()) {
+    starpu_codelet codelet = starpu_codelet();
+
+    codelet = starpu_codelet();
+    codelet.where     = STARPU_CPU | STARPU_CUDA;                                   
+    codelet.cpu_funcs[0] = task_num_to_cpu_func[input_num + 1]; // because has output
+    codelet.cpu_funcs_name[0] = getTaskNameChar(task_name),
+    codelet.cuda_funcs[0]  = task_num_to_cuda_func[input_num + 1];
+    codelet.nbuffers  = input_num + 1;                                           
+    codelet.name      = getTaskNameChar(task_name);
+    codelet.model    = get_history_based_perfmodel(task_name, input_num + 1);
+
+    task_name_to_codelet[task_name] = codelet;
+  }
+}
+
+static void init_task_default() {
   cl_task1.where     = STARPU_CPU | STARPU_CUDA;                                   
   cl_task1.cpu_funcs[0]  = task1_cpu;                                       
   cl_task1.cpu_funcs_name[0] = "task1_cpu",
@@ -1133,6 +1224,12 @@ StarPUApp::StarPUApp(int argc, char **argv)
   cl_task10.nbuffers  = 10;                                           
   cl_task10.name      = "task10";
   cl_task10.model    = init_starpu_perfmodel(9);
+}
+
+StarPUApp::StarPUApp(int argc, char **argv)
+  : App(argc, argv)
+{
+  init(); 
   
   int i;
   
@@ -1143,6 +1240,7 @@ StarPUApp::StarPUApp(int argc, char **argv)
   starpu_schedule = "lws";
   
   parse_argument(argc, argv);
+
   if (custom_dag_file != nullptr) {
     for (int i = 0; i < graphs.size(); i++) {
       TaskGraph &graph = graphs[i];
@@ -1164,6 +1262,25 @@ StarPUApp::StarPUApp(int argc, char **argv)
     for (int i = 0; i < graphs.size(); i++) {
       TaskGraph &graph = graphs[i];
       assert(graph.dependence != DependenceType::USER_DEFINED);
+    }
+  }
+
+  for (int i = 0; i < graphs.size(); i++) {
+    TaskGraph &graph = graphs[i];
+    // if dependency is not user_defined, init task_cl using init_task_default
+    if (graph.dependence != DependenceType::USER_DEFINED) {
+      init_task_default();
+      continue;
+    }
+    // if dependency is user_defined, init task_cl using init_task_cl_custom
+    // should traverse all the task
+    for (int t = 0; t < graph.timesteps; t++) {
+      int width = graph.getUserDefineWidthAtTimestep(t);
+      for (int p = 0; p < width; p++) {
+        const std::string& task_type = graph.getTaskTypeAtPoint(t, p);
+        int num_args = graph.user_defined_dependencies(t, p).size();
+        init_task_cl_custom(num_args, task_type);
+      }
     }
   }
   
@@ -1411,7 +1528,7 @@ void StarPUApp::execute_timestep(size_t idx, long t)
       } else {
         assert(false && "dmdap with non-user-defined dependence is not supported yet");
       }
-      insert_task(num_args, priority, payload, args);
+      insert_task_custom(num_args, payload, args, priority, 0, 0);
     } else {
       std::cout << "t = " << t << " p = "<<  x << " dep size = " << deps.size() << std::endl;
       insert_task(num_args, payload, args);
