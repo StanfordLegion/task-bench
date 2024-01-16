@@ -86,7 +86,8 @@ class GenNewTask:
         with open(file_prefix + "_auxilary_info.txt", "w") as f:
             f.write(self.auxilary_info())
 
-        self.draw(file_prefix + ".gv")
+        if self.V < 100:
+            self.draw(file_prefix + ".gv")
         
     def draw(self, file_name="round-table.gv"):
         dot = graphviz.Digraph(comment='The Round Table')
@@ -109,6 +110,15 @@ class GenNewTask:
                 self.inputnum2node[input_num] = []
             self.inputnum2node[input_num].append(node)
 
+    def gen_input_limit(self):
+        self.coordinate2limit = {}
+        for node, coordinate in self.node2coordinate.items():
+            # Normal distribution from 1 to 9, contains 1 and 9
+            limit = math.ceil(random.normalvariate(5, 2))
+            limit = max(1, limit)
+            limit = min(9, limit)
+            self.coordinate2limit[coordinate] = limit
+
     def gen(self):
         self.algorithm1()
         compute_node_num = 0
@@ -118,6 +128,9 @@ class GenNewTask:
         print("compute_node_num: ", compute_node_num)
         print("V: ", self.V)
         print("self.topo_order: ", self.topo_order)
+
+        # prevent input num greater than 9
+        self.gen_input_limit() 
         
         # if compute_node_num != self.V, because we make that the last layer has only one node
         assert compute_node_num == self.V or compute_node_num == self.V + 1
@@ -139,6 +152,11 @@ class GenNewTask:
             self.node2output[src] = set()
         if dst not in self.node2input:
             self.node2input[dst] = set()
+        # get dst's input limit
+        dst_coordinate = self.node2coordinate[dst]
+        dst_limit = self.coordinate2limit[dst_coordinate]
+        if len(self.node2input[dst]) >= dst_limit:
+            return
         self.node2input[dst].add(src)
         self.node2output[src].add(dst)
 
