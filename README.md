@@ -110,3 +110,8 @@ The command is as follow:
 ```
 
 Use `user_defined` data dependency type, and use `customize` kernel type. Then appoint the DAG file and the file that contains the execution time of each task type. The task use the `std::this_thread::sleep_for` method to let task run specific time. Then use `ngpu` to set the GPU number used in the simulation.
+
+If priority is given, the command is as follow:
+```bash
+./main -type user_defined -kernel customize -schedule dmdap -custom_dag dag_dot_prof_file_30720_dmda.txt -task_type_runtime cholesky2.runtime -priority 30720.txt -core 14 -ngpu 1 -output 3686400
+```

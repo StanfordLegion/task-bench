@@ -324,7 +324,7 @@ std::ostream& operator<<(std::ostream& os, const TaskDepInfo& task_info) {
     return os;
 }
 
-TaskPriority::TaskPriority(const std::string& pri, const std::string& efi): priority_file(pri), efficiency_file(efi), InitializeState(true) {
+TaskPriority::TaskPriority(const std::string& pri, const std::string& abi, const std::string& efi): priority_file(pri), efficiency_file(efi), ability_file(abi), InitializeState(true) {
     parseTaskPriority();
 }
 
@@ -348,6 +348,7 @@ void TaskPriority::parse(std::string file, std::vector<int> &vec) {
 void TaskPriority::parseTaskPriority() {
     parse(priority_file, priority);
     parse(efficiency_file, efficiency);
+    parse(ability_file, ability);
 }
 
 int TaskPriority::get_priority(int task_id) const {
@@ -428,10 +429,10 @@ double TaskExecTime::get_exec_time(const std::string& task_type, bool use_gpu) c
 }
 
 
-CustomTaskInfo::CustomTaskInfo(const std::string& dag_file, const std::string& pri, const std::string& efi, const std::string& task_exec_time) : TaskDepInfo(dag_file), TaskPriority(pri, efi), TaskExecTime(task_exec_time) {
+CustomTaskInfo::CustomTaskInfo(const std::string& dag_file, const std::string& task_exec_time, const std::string& pri, const std::string& abi, const std::string& efi) : TaskDepInfo(dag_file), TaskPriority(pri, abi, efi), TaskExecTime(task_exec_time) {
 }
 
-CustomTaskInfo::CustomTaskInfo(const std::string& dag_file, const std::string& pri, const std::string& efi) : TaskDepInfo(dag_file), TaskPriority(pri, efi), TaskExecTime() {
+CustomTaskInfo::CustomTaskInfo(const std::string& dag_file, const std::string& pri, const std::string& abi, const std::string& efi) : TaskDepInfo(dag_file), TaskPriority(pri, abi, efi), TaskExecTime() {
 }
 
 CustomTaskInfo::CustomTaskInfo(const std::string& dag_file, const std::string& task_exec_time) : TaskDepInfo(dag_file), TaskPriority(), TaskExecTime(task_exec_time) {

@@ -81,7 +81,7 @@ private:
 
 class TaskPriority : public InitializeState {
 public:
-    TaskPriority(const std::string& pri, const std::string& efi);
+    TaskPriority(const std::string& pri, const std::string& abi, const std::string& efi);
     TaskPriority();
 
     void parse(std::string file, std::vector<int>& vec);
@@ -94,9 +94,11 @@ public:
 private:
     std::string priority_file;
     std::string efficiency_file;
+    std::string ability_file;
 
     std::vector<int> priority;
     std::vector<int> efficiency;
+    std::vector<int> ability;
 };
 
 class TaskExecTime : public InitializeState {
@@ -116,8 +118,8 @@ private:
 
 class CustomTaskInfo : public TaskDepInfo, public TaskPriority, public TaskExecTime {
 public:
-    CustomTaskInfo(const std::string& dag_file, const std::string& pri, const std::string& efi, const std::string& task_exec_time);
-    CustomTaskInfo(const std::string& dag_file, const std::string& pri, const std::string& efi);
+    CustomTaskInfo(const std::string& dag_file, const std::string& task_exec_time, const std::string& pri, const std::string& abi, const std::string& efi);
+    CustomTaskInfo(const std::string& dag_file, const std::string& pri, const std::string& abi, const std::string& efi);
     CustomTaskInfo(const std::string& dag_file, const std::string& task_exec_time);
     CustomTaskInfo(const std::string& dag_file);
 
