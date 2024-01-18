@@ -1324,6 +1324,12 @@ StarPUApp::StarPUApp(int argc, char **argv)
     if (MB_cal > MB) {
       MB = MB_cal;
     }
+    // std::cout << "MB_cal " << MB_cal << std::endl;
+    // std::cout << "MB " << MB << std::endl;
+
+    // std:: cout << "graph.output_bytes_per_task " << graph.output_bytes_per_task << std::endl;
+    // // print MB * MB * sizeof(float)
+    // std::cout << "MB * MB * sizeof(float) " << MB * MB * sizeof(float) << std::endl;
     
     mat.NT = graph.max_width;
     mat.MT = graph.nb_fields;

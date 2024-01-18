@@ -1,7 +1,7 @@
 import argparse
 from gen_new_task import GenNewTask
 
-N_list = [x for x in range(1000, 50000, 8000)]
+N_list = [x for x in range(5000, 33000, 8000)]
 sigma_N = 0.75
 edge_density = 0.2
 skip_connection_density = 0.14

@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser(description="Run custom DAG")
 parser.add_argument("--runtime", type=str, help="runtime file")
 parser.add_argument("--work_dir", type=str, help="work directory")
 # parse to_run_scale argument
-parser.add_argument("--to_run_scale", type=int, nargs="+", help="scale to run")
+parser.add_argument("--to_run_scale", type=int, nargs="*", help="scale to run")
 args = parser.parse_args()
 
 # Define the RUNTIME variable
@@ -95,7 +95,7 @@ def run_single_scale(task_scale, task_file, task_priority_file):
 task_files = [file for file in os.listdir(work_dir) if file.startswith("task_") and file.endswith(".txt")]
 
 # filter task_files by to_run_scale
-if to_run_scale is not None:
+if to_run_scale:
     task_files = [file for file in task_files if int(file.split("_")[1]) in to_run_scale]
 
 # replace ".txt" with ".prio"
