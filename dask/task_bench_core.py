@@ -33,12 +33,13 @@ import subprocess
 root_dir = os.path.dirname(os.path.dirname(__file__))
 core_header = subprocess.check_output(
     [
-        "gcc", "-D", "__attribute__(x)=", "-E", "-P",
+        "gcc", "-D", "__attribute__(x)=",
+        "-D", "TASK_BENCH_PYTHON_CFFI",
+        "-E", "-P",
         os.path.join(root_dir, "core/core_c.h")
     ]).decode("utf-8")
 ffi = cffi.FFI()
 ffi.cdef(core_header)
-c = ffi.dlopen("libcore.so")
 
 
 def init_client():
