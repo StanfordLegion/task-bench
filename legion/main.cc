@@ -603,8 +603,7 @@ LegionApp::LegionApp(Runtime *runtime, Context ctx)
 
 void LegionApp::run()
 {
-  // FIXME (Elliott): Do this correctly for control replication
-  if (runtime->get_executing_processor(ctx).address_space() == 0) {
+  if (runtime->get_shard_id(ctx, true) == 0) {
     display();
   }
 
@@ -623,7 +622,7 @@ void LegionApp::run()
   unsigned long long stop = Realm::Clock::current_time_in_nanoseconds();
 
   double elapsed = (stop - start) / 1e9;
-  if (runtime->get_executing_processor(ctx).address_space() == 0) {
+  if (runtime->get_shard_id(ctx, true) == 0) {
     report_timing(elapsed);
   }
 }

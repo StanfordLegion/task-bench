@@ -49,6 +49,15 @@ def get_machine_parameters(machine, processor_kind, resource):
                 assert False
         else:
             assert False
+    elif machine == 'frontier':
+        assert processor_kind == 'cpu'
+        if resource == 'flops':
+            return {'cores': 56, 'peak_flops': 2.341191e+12, 'peak_bytes': None}
+        elif resource == 'bytes':
+            assert False # TODO: need to complete experiments
+            # return {'cores': 56, 'peak_flops': None, 'peak_bytes': 7.902120e+10}
+        else:
+            assert False
     else:
         assert False
 

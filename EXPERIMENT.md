@@ -6,9 +6,25 @@ with Task Bench.**
 Corresponding authors:
 
   * Elliott Slaughter <slaughter@cs.stanford.edu>
-  * Wei Wu <wwu@lanl.gov>
+  * Wei Wu <weiwu@nvidia.com>
 
 ## Instructions for Specific Machines
+
+### Frontier
+
+```
+git clone https://github.com/StanfordLegion/task-bench.git
+cd task-bench
+USE_GASNET=1 LEGION_GASNET_CONDUIT=ofi LEGION_GASNET_SYSTEM=slingshot11 ./get_deps.sh
+THREADS=32 ./build_all.sh
+cd experiment/frontier_metg_compute
+sbatch --nodes 1 metg_legion.sh
+```
+
+## Deprecated or Obsolete Machines
+
+Note: These configurations are obsolete and are provided for documentation
+purposes only.
 
 ### Cori
 

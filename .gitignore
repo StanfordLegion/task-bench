@@ -4,6 +4,7 @@
 .DS_Store
 *.swp
 *.a
+*.d
 *.o
 *.so
 *.dSYM
