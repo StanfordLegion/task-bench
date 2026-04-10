@@ -476,17 +476,15 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
         regentlib.assert(period % core.task_graph_timestep_period(graph) == 0, "precomputed period is not divisible by task graph period")
         var [max_timesteps] = graph.timesteps
         var [max_width] = graph.max_width
-        __demand(__spmd)
-        do
-          for point = 0, max_width do
-            init_scratch([pscratch[graph_idx]][point])
-          end
 
-          for [trial] = 0, 3 do
-            __demand(__trace)
-            for [timestep] = 0, max_timesteps + period - 1, period do
-              [body_actions]
-            end
+        for point = 0, max_width do
+          init_scratch([pscratch[graph_idx]][point])
+        end
+
+        for [trial] = 0, 3 do
+          __demand(__trace)
+          for [timestep] = 0, max_timesteps + period - 1, period do
+            [body_actions]
           end
         end
       end)
@@ -608,7 +606,7 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
 
     regentlib.assert(max_timesteps % 2 == 0, "must run even number of timesteps")
 
-    __demand(__spmd, __trace)
+    __demand(__trace)
     for timestep = 0, max_timesteps, 2 do
       for point = 0, max_width do
         f1(primary[point], secondary[point], pscratch[point], ptime[point],
