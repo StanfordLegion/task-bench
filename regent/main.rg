@@ -683,4 +683,4 @@ task main()
 end
 
 regentlib.linklibrary("../core/libcore.so")
-launcher.launch(toplevel, "task_bench", cmapper.register_mappers, {"-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore", "-L" .. out_dir, "-lmapper"})
+launcher.launch(main, "task_bench", cmapper.register_mappers, {"-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore", "-L" .. out_dir, "-lmapper"})
