@@ -108,7 +108,7 @@ if [[ $USE_REGENT -eq 1 ]]; then
         if [[ -z $GITHUB_ACTIONS ]]; then
             ./scripts/setup_env.py -j$THREADS
         else
-            ./install.py --rdir=auto
+            ./install.py
         fi
     )
     popd
