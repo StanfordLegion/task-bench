@@ -17,21 +17,16 @@
 
 #include "mappers/default_mapper.h"
 
-#define SPMD_SHARD_USE_IO_PROC 1
-
 using namespace Legion;
 using namespace Legion::Mapping;
 
-static LegionRuntime::Logger::Category log_stencil("stencil");
+static Logger::Category log_task_bench("task_bench");
 
 class TaskBenchMapper : public DefaultMapper
 {
 public:
   TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor local,
                 const char *mapper_name);
-  virtual void default_policy_rank_processor_kinds(
-                                    MapperContext ctx, const Task &task,
-                                    std::vector<Processor::Kind> &ranking);
 };
 
 TaskBenchMapper::TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor local,
@@ -40,32 +35,7 @@ TaskBenchMapper::TaskBenchMapper(MapperRuntime *rt, Machine machine, Processor l
 {
 }
 
-void TaskBenchMapper::default_policy_rank_processor_kinds(MapperContext ctx,
-                        const Task &task, std::vector<Processor::Kind> &ranking)
-{
-#if SPMD_SHARD_USE_IO_PROC
-  const char* task_name = task.get_task_name();
-  const char* prefix = "shard_";
-  if (strncmp(task_name, prefix, strlen(prefix)) == 0) {
-    // Put shard tasks on IO processors.
-    ranking.resize(4);
-    ranking[0] = Processor::TOC_PROC;
-    ranking[1] = Processor::PROC_SET;
-    ranking[2] = Processor::IO_PROC;
-    ranking[3] = Processor::LOC_PROC;
-  } else {
-#endif
-    ranking.resize(4);
-    ranking[0] = Processor::TOC_PROC;
-    ranking[1] = Processor::PROC_SET;
-    ranking[2] = Processor::LOC_PROC;
-    ranking[3] = Processor::IO_PROC;
-#if SPMD_SHARD_USE_IO_PROC
-  }
-#endif
-}
-
-static void create_mappers(Machine machine, HighLevelRuntime *runtime, const std::set<Processor> &local_procs)
+static void create_mappers(Machine machine, Runtime *runtime, const std::set<Processor> &local_procs)
 {
   for (std::set<Processor>::const_iterator it = local_procs.begin();
         it != local_procs.end(); it++)
@@ -78,5 +48,5 @@ static void create_mappers(Machine machine, HighLevelRuntime *runtime, const std
 
 void register_mappers()
 {
-  HighLevelRuntime::add_registration_callback(create_mappers);
+  Runtime::add_registration_callback(create_mappers);
 }
