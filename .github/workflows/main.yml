@@ -26,7 +26,7 @@ jobs:
           - system: MPI_OPENMP
           - system: LEGION
           # - system: PYGION
-          # - system: REGENT
+          - system: REGENT
           - system: REALM
           # - system: STARPU
           #   hwloc: 1
