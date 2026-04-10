@@ -127,7 +127,7 @@ export USE_PYTHON=\$USE_PYGION
 export USE_LIBDL=\$USE_PYGION
 
 EOF
-    git clone https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+    git clone -b legion-26.03.0 https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
 
 if [[ $USE_REALM -eq 1 ]]; then
