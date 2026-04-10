@@ -94,28 +94,28 @@ if [[ $USE_REALM -eq 1 ]]; then
         for k in "${kernels[@]}"; do
             for variant in realm realm_subgraph; do
                 for option in "" "-force-copies"; do
-                    ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 1 $option
-                    ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 2 $option
-                    ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 4 $option
+                    ./$variant/build/task_bench -steps $steps -type $t $k -ll:cpu 1 $option
+                    ./$variant/build/task_bench -steps $steps -type $t $k -ll:cpu 2 $option
+                    ./$variant/build/task_bench -steps $steps -type $t $k -ll:cpu 4 $option
                     if [[ $USE_GASNET -eq 1 ]]; then
-                        mpirun -np 2 ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 1 $option -nodes 2
-                        mpirun -np 2 ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 2 $option -nodes 2
-                        mpirun -np 4 ./$variant/task_bench -steps $steps -type $t $k -ll:cpu 1 $option -nodes 4
+                        mpirun -np 2 ./$variant/build/task_bench -steps $steps -type $t $k -ll:cpu 1 $option -nodes 2
+                        mpirun -np 2 ./$variant/build/task_bench -steps $steps -type $t $k -ll:cpu 2 $option -nodes 2
+                        mpirun -np 4 ./$variant/build/task_bench -steps $steps -type $t $k -ll:cpu 1 $option -nodes 4
                     fi
-                    ./$variant/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2 $option
+                    ./$variant/build/task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k -ll:cpu 2 $option
                 done
             done
 
             # FIXME: Realm old triggers a bug in GASNet MPI conduit with higher steps.
-            ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 1
-            ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 2
-            ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 4
+            ./realm_old/build/task_bench -steps 9 -type $t $k -ll:cpu 1
+            ./realm_old/build/task_bench -steps 9 -type $t $k -ll:cpu 2
+            ./realm_old/build/task_bench -steps 9 -type $t $k -ll:cpu 4
             if [[ $USE_GASNET -eq 1 ]]; then
-                mpirun -np 2 ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 1 -nodes 2
-                mpirun -np 2 ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 2 -nodes 2
-                mpirun -np 4 ./realm_old/task_bench -steps 9 -type $t $k -ll:cpu 1 -nodes 4
+                mpirun -np 2 ./realm_old/build/task_bench -steps 9 -type $t $k -ll:cpu 1 -nodes 2
+                mpirun -np 2 ./realm_old/build/task_bench -steps 9 -type $t $k -ll:cpu 2 -nodes 2
+                mpirun -np 4 ./realm_old/build/task_bench -steps 9 -type $t $k -ll:cpu 1 -nodes 4
             fi
-            ./realm_old/task_bench -steps 9 -type $t $k -and -steps 9 -type $t $k -ll:cpu 2
+            ./realm_old/build/task_bench -steps 9 -type $t $k -and -steps 9 -type $t $k -ll:cpu 2
         done
     done
 fi

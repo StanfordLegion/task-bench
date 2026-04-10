@@ -118,7 +118,7 @@ EOF
     rm -rf hwloc-1.11.10.tar.gz
 fi
 
-if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
     export LEGION_DIR="$TASKBENCH_DEPS_DIR"/legion
     cat >>deps/env.sh <<EOF
 export LEGION_DIR="\$TASKBENCH_DEPS_DIR"/legion
@@ -128,6 +128,15 @@ export USE_LIBDL=\$USE_PYGION
 
 EOF
     git clone -b legion-26.03.0 https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+fi
+
+if [[ $USE_REALM -eq 1 ]]; then
+    export REALM_DIR="$TASKBENCH_DEPS_DIR"/realm
+    cat >>deps/env.sh <<EOF
+export REALM_DIR="\$TASKBENCH_DEPS_DIR"/realm
+
+EOF
+    git clone https://github.com/StanfordLegion/realm.git "$REALM_DIR"
 fi
 
 (if [[ $USE_PYGION -eq 1 ]]; then

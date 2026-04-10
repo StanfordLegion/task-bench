@@ -27,8 +27,10 @@ export CRAYPE_LINK_TYPE=static
 make -C core clean
 make -C core -j$THREADS
 
-make -C kernel_bench clean
-make -C kernel_bench all -j$THREADS
+if [[ $(uname -s) != Darwin ]]; then
+    make -C kernel_bench clean
+    make -C kernel_bench all -j$THREADS
+fi
 
 
 if [[ $TASKBENCH_USE_MPI -eq 1 ]]; then
@@ -72,7 +74,7 @@ fi
 if [[ -n $CRAYPE_VERSION ]]; then
     export HOST_CC=gcc HOST_CXX=g++
 fi
-if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
+if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
     mkdir "$LEGION_DIR"/build
     mkdir "$LEGION_DIR"/install
     legion_cmake_flags=(
@@ -117,11 +119,6 @@ if [[ $USE_REGENT -eq 1 ]]; then
     SHARD_SIZE=15 make -C regent clean
     SHARD_SIZE=14 make -C regent clean
 fi
-if [[ $USE_REALM -eq 1 ]]; then
-    make -C realm clean
-    make -C realm_subgraph clean
-    make -C realm_old clean
-fi
 if [[ $USE_REGENT -eq 1 ]]; then
     pushd "$REGENT_DIR"
     if [[ $USE_GASNET -eq 1 ]]; then
@@ -161,12 +158,36 @@ if [[ $USE_PYGION -eq 1 ]]; then
     make -C "$LEGION_DIR"/bindings/python -j$THREADS
     make -C pygion -j$THREADS
 fi
-if [[ $USE_REALM -eq 1 ]]; then
-    make -C realm -j$THREADS
-    make -C realm_subgraph -j$THREADS
-    make -C realm_old -j$THREADS
-fi
 )
+
+if [[ $USE_REALM -eq 1 ]]; then
+    mkdir -p "$REALM_DIR"/build
+    mkdir -p "$REALM_DIR"/install
+    realm_cmake_flags=(
+        -DCMAKE_BUILD_TYPE=Release
+        -DBUILD_SHARED_LIBS=ON
+        -DCMAKE_INSTALL_PREFIX="$REALM_DIR"/install
+    )
+    if [[ $USE_GASNET -eq 1 ]]; then
+        realm_cmake_flags+=(
+            -DREALM_ENABLE_GASNETEX=ON
+            -DGASNet_ROOT="$GASNET_DIR"/release
+            -DGASNET_CONDUIT="$GASNET_CONDUIT"
+        )
+    fi
+    pushd "$REALM_DIR"/build
+    cmake .. "${realm_cmake_flags[@]}"
+    make install -j$THREADS
+    popd
+
+    for variant in realm realm_subgraph realm_old; do
+        mkdir -p $variant/build
+        pushd $variant/build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DRealm_ROOT="$REALM_DIR"/install
+        make -j$THREADS
+        popd
+    done
+fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
     STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples --disable-mlr --disable-hdf5 --enable-fast --enable-maxnodes=1"
