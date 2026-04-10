@@ -70,25 +70,17 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     popd
 fi
 
-(
-if [[ -n $CRAYPE_VERSION ]]; then
-    export HOST_CC=gcc HOST_CXX=g++
-fi
-if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
-    mkdir "$LEGION_DIR"/build
-    mkdir "$LEGION_DIR"/install
+if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 ]]; then
+    mkdir -p "$LEGION_DIR"/build
+    mkdir -p "$LEGION_DIR"/install
     legion_cmake_flags=(
         -DCMAKE_BUILD_TYPE=Release
         -DBUILD_SHARED_LIBS=ON
         -DCMAKE_INSTALL_PREFIX="$LEGION_DIR"/install
     )
-    if [[ $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
-        legion_cmake_flags=(
-            -DLegion_BUILD_BINDINGS=ON
-        )
-    fi
     if [[ $USE_PYGION -eq 1 ]]; then
         legion_cmake_flags=(
+            -DLegion_BUILD_BINDINGS=ON
             -DLegion_USE_Python=ON
         )
     fi
@@ -104,20 +96,24 @@ if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
     make install -j$THREADS
     popd
 fi
-if [[ $USE_PYGION -eq 1 ]]; then
-    source "$PYGION_DIR"/env.sh
-fi
 if [[ $USE_LEGION -eq 1 ]]; then
-    make -C legion clean
+    mkdir -p legion/build
+    pushd legion/build
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DLegion_ROOT="$LEGION_DIR"/install
+    make -j$THREADS
+    popd
 fi
 if [[ $USE_PYGION -eq 1 ]]; then
-    make -C "$LEGION_DIR"/bindings/python clean
-    make -C pygion clean
+    (
+        source "$PYGION_DIR"/env.sh
+        make -C "$LEGION_DIR"/bindings/python -j$THREADS
+        make -C pygion -j$THREADS
+    )
 fi
-if [[ $USE_REGENT -eq 1 ]]; then
-    SHARD_SIZE=30 make -C regent clean
-    SHARD_SIZE=15 make -C regent clean
-    SHARD_SIZE=14 make -C regent clean
+
+(
+if [[ -n $CRAYPE_VERSION ]]; then
+    export HOST_CC=gcc HOST_CXX=g++
 fi
 if [[ $USE_REGENT -eq 1 ]]; then
     pushd "$REGENT_DIR"
@@ -150,13 +146,6 @@ if [[ $USE_REGENT -eq 1 ]]; then
         SHARD_SIZE=14 make -C regent -j$THREADS &
         wait
     )
-fi
-if [[ $USE_LEGION -eq 1 ]]; then
-    make -C legion -j$THREADS
-fi
-if [[ $USE_PYGION -eq 1 ]]; then
-    make -C "$LEGION_DIR"/bindings/python -j$THREADS
-    make -C pygion -j$THREADS
 fi
 )
 

@@ -14,7 +14,7 @@ jobs:
         include:
           - system: MPI
           - system: MPI_OPENMP
-          # - system: LEGION
+          - system: LEGION
           # - system: PYGION
           # - system: REGENT
           - system: REALM
