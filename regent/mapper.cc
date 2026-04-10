@@ -20,7 +20,7 @@
 using namespace Legion;
 using namespace Legion::Mapping;
 
-static Logger::Category log_task_bench("task_bench");
+static Logger log_task_bench("task_bench");
 
 class TaskBenchMapper : public DefaultMapper
 {
