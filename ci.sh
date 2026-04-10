@@ -17,15 +17,10 @@ if [[ "$(uname)" = "Linux" ]]; then
     export CMAKE_PREFIX_PATH=/usr/lib/llvm-16:/usr/share/llvm-16
   fi
   if [[ $USE_OMPSS2 -eq 1 ]]; then
-    sudo apt-get install -qq libnuma-dev gperf libboost1.71-dev
+    sudo apt-get install -qq libnuma-dev gperf libboost1.74-dev
   fi
   if [[ $USE_OMPSS2 -eq 1 || $USE_HPX -eq 1 ]]; then
-    sudo apt-get install -qq libboost1.71-dev
-  fi
-  if [[ $USE_PARSEC -eq 1 || $USE_HPX -eq 1 ]]; then
-    sudo snap install cmake --classic
-    export PATH=/snap/bin:$PATH
-    cmake --version
+    sudo apt-get install -qq libboost1.74-dev
   fi
 fi
 
