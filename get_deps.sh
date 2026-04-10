@@ -98,8 +98,7 @@ if [[ $USE_GASNET -eq 1 ]]; then
     export GASNET_DIR="$TASKBENCH_DEPS_DIR"/gasnet
     cat >>deps/env.sh <<EOF
 export GASNET_DIR="\$TASKBENCH_DEPS_DIR"/gasnet
-export GASNET="\$GASNET_DIR"/release
-export CONDUIT=$CONDUIT
+export GASNET_CONDUIT=$CONDUIT
 
 EOF
     git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
@@ -123,13 +122,12 @@ if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM 
     export LEGION_DIR="$TASKBENCH_DEPS_DIR"/legion
     cat >>deps/env.sh <<EOF
 export LEGION_DIR="\$TASKBENCH_DEPS_DIR"/legion
-export LG_RT_DIR="\$LEGION_DIR"/runtime
 export REGENT_DIR="\$LEGION_DIR"/language
 export USE_PYTHON=\$USE_PYGION
 export USE_LIBDL=\$USE_PYGION
 
 EOF
-    git clone -b control_replication https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+    git clone -b legion-26.03.0 https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
 
 (if [[ $USE_PYGION -eq 1 ]]; then
@@ -248,10 +246,10 @@ EOF
 
 EOF
 
-    wget -nv https://github.com/chapel-lang/chapel/releases/download/1.27.0/chapel-1.27.0.tar.gz
+    wget -nv https://github.com/chapel-lang/chapel/releases/download/2.8.0/chapel-2.8.0.tar.gz
     mkdir "$CHPL_HOME"
-    tar xfz chapel-1.27.0.tar.gz -C "$CHPL_HOME" --strip-components 1
-    rm chapel-1.27.0.tar.gz
+    tar xfz chapel-2.8.0.tar.gz -C "$CHPL_HOME" --strip-components 1
+    rm chapel-2.8.0.tar.gz
 fi
 
 if [[ $USE_X10 -eq 1 ]]; then

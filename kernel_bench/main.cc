@@ -1,7 +1,8 @@
-#include <stdarg.h>
-#include <assert.h>
-#include <string.h>
 #include <algorithm> 
+#include <cassert>
+#include <cstdarg>
+#include <cstring>
+#include <pthread.h>
 #include "core.h"
 #include "timer.h"
 

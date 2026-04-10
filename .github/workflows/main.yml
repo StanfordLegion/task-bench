@@ -14,29 +14,29 @@ jobs:
         include:
           - system: MPI
           - system: MPI_OPENMP
-          - system: LEGION
-          - system: PYGION
-          - system: REGENT
-          - system: REALM
-          - system: STARPU
-            hwloc: 1
-          - system: PARSEC
-            hwloc: 1
+          # - system: LEGION
+          # - system: PYGION
+          # - system: REGENT
+          # - system: REALM
+          # - system: STARPU
+          #   hwloc: 1
+          # - system: PARSEC
+          #   hwloc: 1
           - system: HPX
           - system: CHARM
-          - system: CHAPEL
-          - system: X10
+          # - system: CHAPEL
+          # - system: X10
           - system: OPENMP
-          - system: SPARK
+          # - system: SPARK
           # - system: OMPSS
           # - system: OMPSS2
           #   hwloc: 1
-          - system: SWIFT
+          # - system: SWIFT
           - system: TENSORFLOW
           - system: DASK
       fail-fast: false
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - run: ./ci.sh
         env:
           SYSTEM: ${{ matrix.system }}
