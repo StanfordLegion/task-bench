@@ -127,7 +127,6 @@ if [[ $USE_REGENT -eq 1 ]]; then
         if [[ -z $CXX ]]; then
             export CXX=c++
         fi
-        unset LG_RT_DIR
         if [[ -z $GITHUB_ACTIONS ]]; then
             ./scripts/setup_env.py -j$THREADS
         else
