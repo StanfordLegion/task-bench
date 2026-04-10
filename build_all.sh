@@ -19,10 +19,11 @@ else
 fi
 THREADS=${THREADS:-$DEFAULT_THREADS}
 
-# On Cray machines, default to static build. (Cori switched this
-# default from static to dynamic in the January 2020 maintenance
-# cycle, but we want to stick with static builds.)
-export CRAYPE_LINK_TYPE=static
+if [[ ${DEBUG:-0} -eq 0 ]]; then
+    export CMAKE_BUILD_TYPE=Release
+else
+    export CMAKE_BUILD_TYPE=Debug
+fi
 
 make -C core clean
 make -C core -j$THREADS
@@ -74,7 +75,6 @@ if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 ]]; then
     mkdir -p "$LEGION_DIR"/build
     mkdir -p "$LEGION_DIR"/install
     legion_cmake_flags=(
-        -DCMAKE_BUILD_TYPE=Release
         -DBUILD_SHARED_LIBS=ON
         -DCMAKE_INSTALL_PREFIX="$LEGION_DIR"/install
     )
@@ -99,7 +99,7 @@ fi
 if [[ $USE_LEGION -eq 1 ]]; then
     mkdir -p legion/build
     pushd legion/build
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DLegion_ROOT="$LEGION_DIR"/install
+    cmake .. -DLegion_ROOT="$LEGION_DIR"/install
     make -j$THREADS
     popd
 fi
@@ -153,7 +153,6 @@ if [[ $USE_REALM -eq 1 ]]; then
     mkdir -p "$REALM_DIR"/build
     mkdir -p "$REALM_DIR"/install
     realm_cmake_flags=(
-        -DCMAKE_BUILD_TYPE=Release
         -DBUILD_SHARED_LIBS=ON
         -DCMAKE_INSTALL_PREFIX="$REALM_DIR"/install
     )
@@ -172,7 +171,7 @@ if [[ $USE_REALM -eq 1 ]]; then
     for variant in realm realm_subgraph realm_old; do
         mkdir -p $variant/build
         pushd $variant/build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DRealm_ROOT="$REALM_DIR"/install
+        cmake .. -DRealm_ROOT="$REALM_DIR"/install
         make -j$THREADS
         popd
     done
@@ -261,7 +260,6 @@ fi)
 
         cmake .. \
             -DCMAKE_INSTALL_PREFIX=$HPX_INSTALL_ROOT/hpx \
-            -DCMAKE_BUILD_TYPE=Release \
             -DHPX_WITH_PKGCONFIG=OFF \
             -DHPX_WITH_FETCH_ASIO=ON \
             -DHPX_WITH_PARCELPORT_MPI=ON \

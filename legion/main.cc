@@ -656,9 +656,27 @@ void LegionApp::execute_main_loop()
     max_timesteps = std::max(max_timesteps, g.timesteps);
   }
 
+  bool valid_trace = true;
   for (long t = 0; t < max_timesteps; ++t) {
     if (t % period == 0 && t + period - 1 < max_timesteps) {
-      runtime->begin_trace(ctx, 0);
+      // Only attempt to manually trace if we expect to issue full-width
+      // launches for all graphs. Otherwise we'll let Legion's auto-tracing
+      // handle it.
+      for (size_t idx = 0; idx < graphs.size(); ++idx) {
+        const TaskGraph &g = graphs[idx];
+        for (long t1 = t; t1 < t + period; ++t1) {
+          long offset = g.offset_at_timestep(t);
+          long width = g.width_at_timestep(t);
+          if (offset != 0 || width != g.max_width) {
+            valid_trace = false;
+            break;
+          }
+        }
+      }
+
+      if (valid_trace) {
+        runtime->begin_trace(ctx, 0);
+      }
     }
     for (size_t idx = 0; idx < graphs.size(); ++idx) {
       const TaskGraph &g = graphs[idx];
@@ -667,7 +685,10 @@ void LegionApp::execute_main_loop()
       }
     }
     if ((t+1) % period == 0 && t < max_timesteps) {
-      runtime->end_trace(ctx, 0);
+      if (valid_trace) {
+        runtime->end_trace(ctx, 0);
+      }
+      valid_trace = true;
     }
   }
 }
