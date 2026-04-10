@@ -14,53 +14,13 @@
 
 import "regent"
 
+local launcher = require("std/launcher")
+
 local c = regentlib.c
 local core = terralib.includec("core_c.h")
 
-do
-  local root_dir = arg[0]:match(".*/") or "./"
-
-  local include_path = ""
-  local include_dirs = terralib.newlist()
-  include_dirs:insert("-I")
-  include_dirs:insert(root_dir)
-  for path in string.gmatch(os.getenv("INCLUDE_PATH"), "[^;]+") do
-    include_path = include_path .. " -I " .. path
-    include_dirs:insert("-I")
-    include_dirs:insert(path)
-  end
-
-  local mapper_cc = root_dir .. "mapper.cc"
-  if os.getenv('OBJNAME') then
-    local out_dir = os.getenv('OBJNAME'):match('.*/') or './'
-    mapper_so = out_dir .. "libmapper.so"
-  elseif os.getenv('SAVEOBJ') == '1' then
-    mapper_so = root_dir .. "libmapper.so"
-  else
-    mapper_so = os.tmpname() .. ".so" -- root_dir .. "mapper.so"
-  end
-  local cxx = os.getenv('CXX') or 'c++'
-  local max_dim = os.getenv('MAX_DIM') or '3'
-
-  local cxx_flags = os.getenv('CC_FLAGS') or ''
-  cxx_flags = cxx_flags .. " -O2 -Wall -Werror -DLEGION_MAX_DIM=" .. max_dim .. " -DREALM_MAX_DIM=" .. max_dim
-  if os.execute('test "$(uname)" = Darwin') == 0 then
-    cxx_flags =
-      (cxx_flags ..
-         " -dynamiclib -single_module -undefined dynamic_lookup -fPIC")
-  else
-    cxx_flags = cxx_flags .. " -shared -fPIC"
-  end
-
-  local cmd = (cxx .. " " .. cxx_flags .. include_path .. " " ..
-                 mapper_cc .. " -o " .. mapper_so)
-  if os.execute(cmd) ~= 0 then
-    print("Error: failed to compile " .. mapper_cc)
-    assert(false)
-  end
-  terralib.linklibrary(mapper_so)
-  cmapper = terralib.includec("mapper.h", include_dirs)
-end
+-- Compile and link mapper.cc
+local cmapper = launcher.build_library("mapper")
 
 local MAX_GRAPHS = 1
 local MAX_DSETS = 3
@@ -722,20 +682,5 @@ task main()
   [dispatch_work_task(n_graphs, n_dsets, max_inputs)]
 end
 
-if os.getenv('SAVEOBJ') == '1' then
-  local root_dir = arg[0]:match(".*/") or "./"
-  local core_dir = root_dir .. "../core/"
-  local out_dir = (os.getenv('OBJNAME') and os.getenv('OBJNAME'):match('.*/')) or root_dir
-  local link_flags = terralib.newlist({"-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore", "-L" .. out_dir, "-lmapper"})
-
-  if os.getenv('STANDALONE') == '1' then
-    os.execute('cp ' .. core_dir .. 'libcore.so ' .. out_dir)
-    os.execute('cp ' .. os.getenv('LG_RT_DIR') .. '/../bindings/regent/libregent.so ' .. out_dir)
-  end
-
-  local exe = os.getenv('OBJNAME') or "main"
-  regentlib.saveobj(main, exe, "executable", cmapper.register_mappers, link_flags)
-else
-  terralib.linklibrary("../core/libcore.so")
-  regentlib.start(main, cmapper.register_mappers)
-end
+regentlib.linklibrary("../core/libcore.so")
+launcher.launch(toplevel, "task_bench", cmapper.register_mappers, {"-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore", "-L" .. out_dir, "-lmapper"})
