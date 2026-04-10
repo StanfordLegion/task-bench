@@ -98,8 +98,7 @@ if [[ $USE_GASNET -eq 1 ]]; then
     export GASNET_DIR="$TASKBENCH_DEPS_DIR"/gasnet
     cat >>deps/env.sh <<EOF
 export GASNET_DIR="\$TASKBENCH_DEPS_DIR"/gasnet
-export GASNET="\$GASNET_DIR"/release
-export CONDUIT=$CONDUIT
+export GASNET_CONDUIT=$CONDUIT
 
 EOF
     git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
@@ -123,13 +122,12 @@ if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM 
     export LEGION_DIR="$TASKBENCH_DEPS_DIR"/legion
     cat >>deps/env.sh <<EOF
 export LEGION_DIR="\$TASKBENCH_DEPS_DIR"/legion
-export LG_RT_DIR="\$LEGION_DIR"/runtime
 export REGENT_DIR="\$LEGION_DIR"/language
 export USE_PYTHON=\$USE_PYGION
 export USE_LIBDL=\$USE_PYGION
 
 EOF
-    git clone -b legion-25.06.0 https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+    git clone -b legion-26.03.0 https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
 
 (if [[ $USE_PYGION -eq 1 ]]; then

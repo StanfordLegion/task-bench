@@ -72,6 +72,36 @@ fi
 if [[ -n $CRAYPE_VERSION ]]; then
     export HOST_CC=gcc HOST_CXX=g++
 fi
+if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 || $USE_REALM -eq 1 ]]; then
+    mkdir "$LEGION_DIR"/build
+    mkdir "$LEGION_DIR"/install
+    legion_cmake_flags=(
+        -DCMAKE_BUILD_TYPE=Release
+        -DBUILD_SHARED_LIBS=ON
+        -DCMAKE_INSTALL_PREFIX="$LEGION_DIR"/install
+    )
+    if [[ $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
+        legion_cmake_flags=(
+            -DLegion_BUILD_BINDINGS=ON
+        )
+    fi
+    if [[ $USE_PYGION -eq 1 ]]; then
+        legion_cmake_flags=(
+            -DLegion_USE_Python=ON
+        )
+    fi
+    if [[ $USE_GASNET -eq 1 ]]; then
+        legion_cmake_flags+=(
+            -DLegion_NETWORKS=gasnetex
+            -DGASNet_ROOT="$GASNET_DIR"/release
+            -DGASNet_CONDUIT="$GASNET_CONDUIT"
+        )
+    fi
+    pushd "$LEGION_DIR"/build
+    cmake .. "${legion_cmake_flags[@]}"
+    make install -j$THREADS
+    popd
+fi
 if [[ $USE_PYGION -eq 1 ]]; then
     source "$PYGION_DIR"/env.sh
 fi
