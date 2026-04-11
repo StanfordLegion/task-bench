@@ -30,10 +30,12 @@ def execute_task_graph(graph, computations, next_tid):
     scratch = [None for _ in range(graph.max_width)]
     if graph.scratch_bytes_per_task > 0:
         for point in range(graph.max_width):
-            scratch[point] = 'task_%s' % next_tid
+            scratch[point] = "task_%s" % next_tid
             next_tid += 1
             computations[scratch[point]] = (
-                core.init_scratch_direct, graph.scratch_bytes_per_task)
+                core.init_scratch_direct,
+                graph.scratch_bytes_per_task,
+            )
 
     outputs = []
     last_row = None
@@ -48,17 +50,22 @@ def execute_task_graph(graph, computations, next_tid):
             for dep in core.task_graph_dependencies(graph, timestep, point):
                 inputs.append(last_row[dep])
 
-            result = 'task_%s' % next_tid
+            result = "task_%s" % next_tid
             next_tid += 1
 
             computations[result] = (
-                core.execute_point_direct, graph_array, timestep, point,
-                scratch[point], *inputs)
+                core.execute_point_direct,
+                graph_array,
+                timestep,
+                point,
+                scratch[point],
+                *inputs,
+            )
 
             if scratch[point] is not None:
-                output = 'task_%s' % next_tid
+                output = "task_%s" % next_tid
                 next_tid += 1
-                scratch[point] = 'task_%s' % next_tid
+                scratch[point] = "task_%s" % next_tid
                 next_tid += 1
 
                 computations[output] = (core.splitter, result, 0)
@@ -83,11 +90,11 @@ def execute_task_bench(client):
     next_tid = 0
     results = []
     for task_graph in task_graphs:
-        result, next_tid = execute_task_graph(
-            task_graph, computations, next_tid)
+        result, next_tid = execute_task_graph(task_graph, computations, next_tid)
         results.extend(result)
     if client:
         from dask.distributed import wait
+
         futures = client.get(computations, results, sync=False)
         wait(futures)
     else:

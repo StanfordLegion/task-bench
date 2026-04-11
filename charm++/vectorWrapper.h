@@ -13,25 +13,24 @@
  * limitations under the License.
  */
 
-#include <vector>
 #include <string>
+#include <vector>
+
 #include "charm++.h"
 #include "pup_stl.h"
 
 class VectorWrapper {
-
- private:
+private:
   char **argv;
   bool live;
 
- public:
+public:
   std::vector<std::string> vec;
 
   VectorWrapper();
-  VectorWrapper(CkArgMsg* msg);
+  VectorWrapper(CkArgMsg *msg);
   ~VectorWrapper();
 
-  char** toArgv();
+  char **toArgv();
   void pup(PUP::er &p);
-
 };

@@ -16,15 +16,14 @@
 #ifndef __SUBCHARE_H__
 #define __SUBCHARE_H__
 
-#include "multicastMsg.h"
-#include "../core/core.h"
-#include <vector>
 #include <set>
+#include <vector>
+
+#include "../core/core.h"
+#include "multicastMsg.h"
 
 class Subchare : public CBase_Subchare {
-
- private:
-
+private:
   /// Member Variables (Object State) ///
   int currentTimestep;
   int graphIndex;
@@ -44,17 +43,15 @@ class Subchare : public CBase_Subchare {
 
   void checkAndRun(bool receiving);
 
- public:
-
+public:
   /// Constructors ///
   Subchare(VectorWrapper wrapper, int graphIndex);
 
   /// Entry Methods ///
-  void initGraph(MulticastMsg* msg);
-  void runTimestep(MulticastMsg* msg);
+  void initGraph(MulticastMsg *msg);
+  void runTimestep(MulticastMsg *msg);
   void receive(const std::vector<char> &input);
-  void reset(MulticastMsg* msg);
-
+  void reset(MulticastMsg *msg);
 };
 
 #endif

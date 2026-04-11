@@ -15,22 +15,23 @@
 
 #include "vectorWrapper.h"
 
-VectorWrapper::VectorWrapper(CkArgMsg *msg) : vec(msg->argc), live(false) {
-  for (int i = 0; i < vec.size(); i++)
-    vec[i] = msg->argv[i];
+VectorWrapper::VectorWrapper(CkArgMsg *msg) : vec(msg->argc), live(false)
+{
+  for (int i = 0; i < vec.size(); i++) vec[i] = msg->argv[i];
 }
-VectorWrapper::VectorWrapper() : live(false) { }
+VectorWrapper::VectorWrapper() : live(false) {}
 
-char** VectorWrapper::toArgv() {
+char **VectorWrapper::toArgv()
+{
   argv = new char *[vec.size()];
-  for (size_t i = 0; i < vec.size(); i++)
-    argv[i] = &vec[i][0];
+  for (size_t i = 0; i < vec.size(); i++) argv[i] = &vec[i][0];
   live = true;
   return argv;
 }
 
-void VectorWrapper::pup(PUP::er &p) { p|vec; }
+void VectorWrapper::pup(PUP::er &p) { p | vec; }
 
-VectorWrapper::~VectorWrapper() {
+VectorWrapper::~VectorWrapper()
+{
   if (live) delete[] argv;
 }

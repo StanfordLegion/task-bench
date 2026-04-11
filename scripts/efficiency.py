@@ -22,10 +22,22 @@ import sys
 
 import chart_util as util
 
+
 class Parser(util.Parser):
-    def __init__(self, ngraphs, dependence, nodes, system, imbalance, comm, threshold, show_metg, csv_dialect):
+    def __init__(
+        self,
+        ngraphs,
+        dependence,
+        nodes,
+        system,
+        imbalance,
+        comm,
+        threshold,
+        show_metg,
+        csv_dialect,
+    ):
         self.ngraphs = ngraphs
-        self.dependence = dependence.replace('_', ' ')
+        self.dependence = dependence.replace("_", " ")
         self.nodes = nodes
         self.system = system
         self.imbalance = imbalance
@@ -36,30 +48,37 @@ class Parser(util.Parser):
 
         self.header = []
         self.table = []
-        self.min_granularity = float('inf')
-        self.max_granularity = float('-inf')
+        self.min_granularity = float("inf")
+        self.max_granularity = float("-inf")
 
     def filter(self, row):
         return (
-            row['ngraphs'] == self.ngraphs and
-            row['type'] == self.dependence and
-            row['nodes'] == self.nodes and
-            (not self.system or row['name'] == self.system) and
-            (not self.imbalance or row['imbalance'] == self.imbalance) and
-            (not self.comm or row['comm'] == self.comm))
+            row["ngraphs"] == self.ngraphs
+            and row["type"] == self.dependence
+            and row["nodes"] == self.nodes
+            and (not self.system or row["name"] == self.system)
+            and (not self.imbalance or row["imbalance"] == self.imbalance)
+            and (not self.comm or row["comm"] == self.comm)
+        )
 
     def process(self, row, data, metg=None):
-        if row['name'] not in self.header:
-            self.header.append(row['name'])
+        if row["name"] not in self.header:
+            self.header.append(row["name"])
 
         for values in zip(*list(data.values())):
             items = dict(zip(data.keys(), values))
-            self.table.append({
-                'time_per_task': items['time_per_task'],
-                row['name']: items['efficiency']
-            })
-            self.min_granularity = min(items['time_per_task'], self.min_granularity, key=float)
-            self.max_granularity = max(items['time_per_task'], self.max_granularity, key=float)
+            self.table.append(
+                {
+                    "time_per_task": items["time_per_task"],
+                    row["name"]: items["efficiency"],
+                }
+            )
+            self.min_granularity = min(
+                items["time_per_task"], self.min_granularity, key=float
+            )
+            self.max_granularity = max(
+                items["time_per_task"], self.max_granularity, key=float
+            )
 
     def error_value(self):
         return {}
@@ -69,35 +88,64 @@ class Parser(util.Parser):
         # we'd prefer to sort so that the list of names roughly parallels
         # the order of the bars in the graph.
         self.header.sort()
-        self.header.insert(0, 'time_per_task')
+        self.header.insert(0, "time_per_task")
 
         if self.show_metg:
-            self.header.append('metg')
-            self.table.append({'time_per_task': self.min_granularity, 'metg': self.threshold})
-            self.table.append({'time_per_task': self.max_granularity, 'metg': self.threshold})
+            self.header.append("metg")
+            self.table.append(
+                {"time_per_task": self.min_granularity, "metg": self.threshold}
+            )
+            self.table.append(
+                {"time_per_task": self.max_granularity, "metg": self.threshold}
+            )
 
         out = csv.DictWriter(sys.stdout, self.header, dialect=self.csv_dialect)
         out.writeheader()
         for row in self.table:
             out.writerow(row)
 
-def driver(ngraphs, dependence, nodes, system, imbalance, comm, machine, resource, threshold, show_metg, csv_dialect, verbose):
-    parser = Parser(ngraphs, dependence, nodes, system, imbalance, comm, threshold, show_metg, csv_dialect)
+
+def driver(
+    ngraphs,
+    dependence,
+    nodes,
+    system,
+    imbalance,
+    comm,
+    machine,
+    resource,
+    threshold,
+    show_metg,
+    csv_dialect,
+    verbose,
+):
+    parser = Parser(
+        ngraphs,
+        dependence,
+        nodes,
+        system,
+        imbalance,
+        comm,
+        threshold,
+        show_metg,
+        csv_dialect,
+    )
     parser.parse(machine, resource, threshold, False, verbose)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-g', '--ngraphs', type=int, required=True)
-    parser.add_argument('-d', '--dependence', required=True)
-    parser.add_argument('-n', '--nodes', type=int, required=True)
-    parser.add_argument('-s', '--system')
-    parser.add_argument('-i', '--imbalance')
-    parser.add_argument('-c', '--comm')
-    parser.add_argument('-m', '--machine', required=True)
-    parser.add_argument('-r', '--resource', default='flops')
-    parser.add_argument('-t', '--threshold', type=float, default=0.5)
-    parser.add_argument('--hide-metg', action='store_false', dest='show_metg')
-    parser.add_argument('--csv-dialect', default='excel-tab')
-    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument("-g", "--ngraphs", type=int, required=True)
+    parser.add_argument("-d", "--dependence", required=True)
+    parser.add_argument("-n", "--nodes", type=int, required=True)
+    parser.add_argument("-s", "--system")
+    parser.add_argument("-i", "--imbalance")
+    parser.add_argument("-c", "--comm")
+    parser.add_argument("-m", "--machine", required=True)
+    parser.add_argument("-r", "--resource", default="flops")
+    parser.add_argument("-t", "--threshold", type=float, default=0.5)
+    parser.add_argument("--hide-metg", action="store_false", dest="show_metg")
+    parser.add_argument("--csv-dialect", default="excel-tab")
+    parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
     driver(**vars(args))

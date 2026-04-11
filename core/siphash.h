@@ -29,5 +29,4 @@ int siphash(const uint8_t *in, const size_t inlen, const uint8_t *k,
 }
 #endif
 
-#endif // SIPHASH_H_
-
+#endif  // SIPHASH_H_

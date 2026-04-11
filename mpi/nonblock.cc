@@ -18,7 +18,6 @@
 #include <cstdlib>
 
 #include "core.h"
-
 #include "mpi.h"
 
 int main(int argc, char *argv[])
@@ -111,8 +110,10 @@ int main(int argc, char *argv[])
       }
 
       // Cache dependencies.
-      std::vector<std::vector<std::vector<std::pair<long, long> > > > dependencies(graph.max_dependence_sets());
-      std::vector<std::vector<std::vector<std::pair<long, long> > > > reverse_dependencies(graph.max_dependence_sets());
+      std::vector<std::vector<std::vector<std::pair<long, long> > > >
+          dependencies(graph.max_dependence_sets());
+      std::vector<std::vector<std::vector<std::pair<long, long> > > >
+          reverse_dependencies(graph.max_dependence_sets());
       for (long dset = 0; dset < graph.max_dependence_sets(); ++dset) {
         dependencies[dset].resize(n_points);
         reverse_dependencies[dset].resize(n_points);
@@ -121,7 +122,8 @@ int main(int argc, char *argv[])
           long point_index = point - first_point;
 
           dependencies[dset][point_index] = graph.dependencies(dset, point);
-          reverse_dependencies[dset][point_index] = graph.reverse_dependencies(dset, point);
+          reverse_dependencies[dset][point_index] =
+              graph.reverse_dependencies(dset, point);
         }
       }
 
@@ -129,8 +131,8 @@ int main(int argc, char *argv[])
         long offset = graph.offset_at_timestep(timestep);
         long width = graph.width_at_timestep(timestep);
 
-        long last_offset = graph.offset_at_timestep(timestep-1);
-        long last_width = graph.width_at_timestep(timestep-1);
+        long last_offset = graph.offset_at_timestep(timestep - 1);
+        long last_width = graph.width_at_timestep(timestep - 1);
 
         long dset = graph.dependence_set_at_timestep(timestep);
         auto &deps = dependencies[dset];
@@ -160,7 +162,8 @@ int main(int argc, char *argv[])
                 // Use shared memory for on-node data.
                 if (first_point <= dep && dep <= last_point) {
                   auto &output = outputs[dep - first_point];
-                  point_inputs[point_n_inputs].assign(output.begin(), output.end());
+                  point_inputs[point_n_inputs].assign(output.begin(),
+                                                      output.end());
                 } else {
                   int from = tag_bits_by_point[dep];
                   int to = tag_bits_by_point[point];
@@ -180,7 +183,9 @@ int main(int argc, char *argv[])
           if (point >= last_offset && point < last_offset + last_width) {
             for (auto interval : point_rev_deps) {
               for (long dep = interval.first; dep <= interval.second; dep++) {
-                if (dep < offset || dep >= offset + width || (first_point <= dep && dep <= last_point)) {
+                if (dep < offset || dep >= offset + width ||
+                    (first_point <= dep && dep <= last_point))
+                {
                   continue;
                 }
 
@@ -198,7 +203,9 @@ int main(int argc, char *argv[])
 
         MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-        for (long point = std::max(first_point, offset); point <= std::min(last_point, offset + width - 1); ++point) {
+        for (long point = std::max(first_point, offset);
+             point <= std::min(last_point, offset + width - 1); ++point)
+        {
           long point_index = point - first_point;
 
           auto &point_input_ptr = input_ptr[point_index];
@@ -206,10 +213,10 @@ int main(int argc, char *argv[])
           auto &point_n_inputs = n_inputs[point_index];
           auto &point_output = outputs[point_index];
 
-          graph.execute_point(timestep, point,
-                              point_output.data(), point_output.size(),
-                              point_input_ptr.data(), point_input_bytes.data(), point_n_inputs,
-                              scratch_ptr + scratch_bytes * point_index, scratch_bytes);
+          graph.execute_point(
+              timestep, point, point_output.data(), point_output.size(),
+              point_input_ptr.data(), point_input_bytes.data(), point_n_inputs,
+              scratch_ptr + scratch_bytes * point_index, scratch_bytes);
         }
       }
     }

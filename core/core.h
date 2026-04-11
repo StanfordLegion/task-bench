@@ -16,10 +16,10 @@
 #ifndef CORE_H
 #define CORE_H
 
-#include "core_c.h"
-
 #include <string>
 #include <vector>
+
+#include "core_c.h"
 
 typedef dependence_type_t DependenceType;
 
@@ -32,8 +32,8 @@ struct Kernel : public kernel_t {
   Kernel(kernel_t k) : kernel_t(k) {}
 
 private:
-  void execute(long graph_index, long timestep, long point,
-               char *scratch_ptr, size_t scratch_bytes) const;
+  void execute(long graph_index, long timestep, long point, char *scratch_ptr,
+               size_t scratch_bytes) const;
   friend struct TaskGraph;
 };
 
@@ -50,24 +50,25 @@ struct TaskGraph : public task_graph_t {
   long dependence_set_at_timestep(long timestep) const;
 
   // std::pair(a, b) represents the INCLUSIVE interval from a to b
-  std::vector<std::pair<long, long> > reverse_dependencies(long dset, long point) const;
+  std::vector<std::pair<long, long> > reverse_dependencies(long dset,
+                                                           long point) const;
   std::vector<std::pair<long, long> > dependencies(long dset, long point) const;
 
   // Same as above, but using user-supplied buffer. Returns number of
   // elements written. WARNING: If more elements are written than can
   // fit in the buffer, results in buffer overflow. Use methods below
   // to figure out how large of a buffer to alloate.
-  size_t reverse_dependencies(long dset, long point, std::pair<long, long> *deps) const;
+  size_t reverse_dependencies(long dset, long point,
+                              std::pair<long, long> *deps) const;
   size_t dependencies(long dset, long point, std::pair<long, long> *deps) const;
 
   // Note: May over-approximate the number of dependencies.
   size_t num_reverse_dependencies(long dset, long point) const;
   size_t num_dependencies(long dset, long point) const;
 
-  void execute_point(long timestep, long point,
-                     char *output_ptr, size_t output_bytes,
-                     const char **input_ptr, const size_t *input_bytes,
-                     size_t n_inputs,
+  void execute_point(long timestep, long point, char *output_ptr,
+                     size_t output_bytes, const char **input_ptr,
+                     const size_t *input_bytes, size_t n_inputs,
                      char *scratch_ptr, size_t scratch_bytes) const;
   static void prepare_scratch(char *scratch_ptr, size_t scratch_bytes);
 };
