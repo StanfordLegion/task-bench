@@ -16,7 +16,7 @@
 use Time;
 use BlockDist;
 config const quiet: bool = false;
-var t: Timer;
+var t: stopwatch;
 
 extern {
 
