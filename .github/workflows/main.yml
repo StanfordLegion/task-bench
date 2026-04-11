@@ -6,6 +6,13 @@ on:
     - cron: '35 3 * * 2' # once a week on Tuesday
 
 jobs:
+  format:
+    name: Format
+    runs-on: 'ubuntu-24.04'
+    steps:
+      - uses: actions/checkout@v6
+      - run: CHECK_FORMAT=1 ./format.sh
+
   build:
     name: Build (${{matrix.system}})
     runs-on: ubuntu-24.04
