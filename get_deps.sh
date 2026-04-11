@@ -350,22 +350,16 @@ if [[ $USE_OMPSS2 -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export OMPSS2_DL_DIR="\$TASKBENCH_DEPS_DIR"/ompss2
 export OMPSS2_TARGET="\$OMPSS2_DL_DIR"
-export OMPSS2_NANOS6_SRC_DIR="\$OMPSS2_DL_DIR"/ompss2-release/nanos6
-export OMPSS2_MCXX_SRC_DIR="\$OMPSS2_DL_DIR"/ompss2-release/mcxx
-export BOOST_SRC_DIR="\$OMPSS2_DL_DIR"/boost_1_68_0
+export OMPSS2_NANOS6_SRC_DIR="\$OMPSS2_DL_DIR"/nanos6-4.3
+export OMPSS2_NOSV_SRC_DIR="\$OMPSS2_DL_DIR"/nos-v-4.0.0
+export OMPSS2_NODES_SRC_DIR="\$OMPSS2_DL_DIR"/nodes-1.4.0
+export OMPSS2_LLVM_SRC_DIR="\$OMPSS2_DL_DIR"/llvm-22.0.0git
 
 EOF
     mkdir -p "$OMPSS2_DL_DIR"
-    git clone -b 2021.11.1 --depth 1 https://github.com/bsc-pm/ompss-2-releases.git "$OMPSS2_DL_DIR/ompss2-release"
-    # Note: don't initialize llvm submodule, it's large and not needed
-    for m in nanos6 mcxx; do
-        git -C "$OMPSS2_DL_DIR/ompss2-release" submodule update --init --recursive --depth 1 $m
-    done
-    
-    # wget -nv https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
-    # tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
-    # rm -rf boost_1_68_0.tar.gz
-    cat /usr/include/boost/version.hpp | grep "BOOST_LIB_VERSION"
+    wget -nv https://pm.bsc.es/ftp/ompss-2/releases/ompss-2-2025.11.tar.gz
+    tar -zxf ompss-2-2025.11.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
+    rm -rf ompss-2-2025.11.tar.gz
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then

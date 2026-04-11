@@ -373,14 +373,14 @@ if [[ $USE_OMPSS2 -eq 1 ]]; then
     # popd
 
     pushd "$OMPSS2_NANOS6_SRC_DIR"
-    autoreconf -fiv
+    ./autogen.sh
     mkdir -p build
     cd build
     PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_TARGET --with-boost=/usr
     make all -j$THREADS
     make install -j$THREADS
     popd
-    
+
     pushd "$OMPSS2_MCXX_SRC_DIR"
     autoreconf -fiv
     mkdir -p build
