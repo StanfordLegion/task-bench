@@ -682,5 +682,6 @@ task main()
   [dispatch_work_task(n_graphs, n_dsets, max_inputs)]
 end
 
-regentlib.linklibrary("../core/libcore.so")
+local core_dir = root_dir .. "../core/"
+regentlib.linklibrary(core_dir .. "libcore.so")
 launcher.launch(main, "task_bench", cmapper.register_mappers, {"-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore", "-L" .. out_dir, "-lmapper"})
