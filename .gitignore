@@ -5,7 +5,7 @@
 *.swp
 *.a
 *.o
-*.so
+*.so*
 *.dSYM
 *.pyc
 __pycache__

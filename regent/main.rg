@@ -685,4 +685,10 @@ end
 local root_dir = arg[0]:match(".*/") or "./"
 local core_dir = root_dir .. "../core/"
 regentlib.linklibrary(core_dir .. "libcore.so")
-launcher.launch(main, "task_bench", cmapper.register_mappers, {"-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore", "-lmapper"})
+if os.getenv('SAVEOBJ') == '1' and os.getenv('STANDALONE') == '1' then
+  -- Hack: work around incomplete launcher support in 26.03.0
+  local out_dir = (os.getenv('OBJNAME') and os.getenv('OBJNAME'):match('.*/')) or root_dir
+  os.execute('cp --no-dereference ' .. os.getenv('LEGION_INSTALL_PREFIX') .. '/lib/liblegion.so* ' .. out_dir)
+  os.execute('cp --no-dereference ' .. os.getenv('LEGION_INSTALL_PREFIX') .. '/lib/librealm.so* ' .. out_dir)
+end
+launcher.launch(main, "task_bench", cmapper.register_mappers, {"-Wl,-rpath,$ORIGIN/../core", "-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore", "-lmapper"})
