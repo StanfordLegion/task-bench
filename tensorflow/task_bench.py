@@ -24,11 +24,12 @@ import time
 
 import numpy as np
 import tensorflow.compat.v1 as tf
+
 tf.disable_v2_behavior()
 
 core_header = subprocess.check_output(
-    ["gcc", "-D", "__attribute__(x)=", "-E", "-P",
-     "../core/core_c.h"]).decode("utf-8")
+    ["gcc", "-D", "__attribute__(x)=", "-E", "-P", "../core/core_c.h"]
+).decode("utf-8")
 ffi = cffi.FFI()
 ffi.cdef(core_header)
 c = ffi.dlopen("libcore.so")
@@ -42,7 +43,7 @@ def app_create(args):
     c_args = []
     c_argv = ffi.new("char *[]", len(args) + 1)
     for i, arg in enumerate(args):
-        c_args.append(ffi.new("char []", arg.encode('utf-8')))
+        c_args.append(ffi.new("char []", arg.encode("utf-8")))
         c_argv[i] = c_args[-1]
     c_argv[len(args)] = ffi.NULL
 
@@ -63,8 +64,8 @@ def app_task_graphs(app):
 def build_task_graph_tensor(graph):
     return tf.convert_to_tensor(
         np.frombuffer(
-            ffi.buffer(ffi.addressof(graph), ffi.sizeof(graph)),
-            dtype=np.ubyte),
+            ffi.buffer(ffi.addressof(graph), ffi.sizeof(graph)), dtype=np.ubyte
+        ),
         dtype=tf.uint8,
     )
 
@@ -93,18 +94,26 @@ def execute_task_graph(graph):
 
     dummy_name = "dummy_%s" % graph.graph_index
     dummy = tf.placeholder(
-        tf.uint8, shape=(graph.output_bytes_per_task, ), name=dummy_name)
-    feed["%s:0" % dummy_name] = np.zeros(
-        graph.output_bytes_per_task, dtype=np.uint8)
+        tf.uint8, shape=(graph.output_bytes_per_task,), name=dummy_name
+    )
+    feed["%s:0" % dummy_name] = np.zeros(graph.output_bytes_per_task, dtype=np.uint8)
 
-    scratch_dummy_name = ["scratch_dummy_%s_%s" % (graph.graph_index, point) for point in range(graph.max_width)]
-    scratch_dummy = [tf.placeholder(
-        tf.uint8, shape=(0, ), name=scratch_dummy_name[point]) for point in range(graph.max_width)]
+    scratch_dummy_name = [
+        "scratch_dummy_%s_%s" % (graph.graph_index, point)
+        for point in range(graph.max_width)
+    ]
+    scratch_dummy = [
+        tf.placeholder(tf.uint8, shape=(0,), name=scratch_dummy_name[point])
+        for point in range(graph.max_width)
+    ]
     scratch_feed_value = np.zeros(0, dtype=np.uint8)
     for point in range(graph.max_width):
         feed["%s:0" % scratch_dummy_name[point]] = scratch_feed_value
 
-    scratch = [prepare_scratch_op(graph_tensor, scratch_dummy[point]) for point in range(graph.max_width)]
+    scratch = [
+        prepare_scratch_op(graph_tensor, scratch_dummy[point])
+        for point in range(graph.max_width)
+    ]
 
     outputs = []
     last_row = [dummy for point in range(graph.max_width)]
@@ -122,7 +131,9 @@ def execute_task_graph(graph):
             if len(inputs) == 0:
                 # Add a dummy to tasks with no input so that they can't be constant-folded.
                 inputs.append(dummy)
-            op, scratch[point] = kernel_op(graph_tensor, timestep, point, output, scratch[point], inputs)
+            op, scratch[point] = kernel_op(
+                graph_tensor, timestep, point, output, scratch[point], inputs
+            )
             row.append(op)
             outputs.append(op)
         for point in range(offset + width, graph.max_width):

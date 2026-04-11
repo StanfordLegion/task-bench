@@ -13,20 +13,21 @@
  * limitations under the License.
  */
 
+#include <math.h>
+#include <mpi.h>
+#include <starpu_mpi.h>
+#include <starpu_profiling.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-#include <mpi.h>
-#include <math.h>
-#include <array>
-#include <starpu_mpi.h>
-#include <starpu_profiling.h>
-#include "data.h"
-#include "core.h"
-#include "timer.h"
-
 #include <unistd.h>
+
+#include <array>
+
+#include "core.h"
+#include "data.h"
+#include "timer.h"
 
 #define VERBOSE_LEVEL 0
 
@@ -45,7 +46,7 @@ typedef struct payload_s {
   int i;
   int j;
   const TaskGraph *graph;
-}payload_t;
+} payload_t;
 
 static void task1(void *descr[], void *cl_arg)
 {
@@ -53,29 +54,34 @@ static void task1(void *descr[], void *cl_arg)
   payload_t payload;
   out = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
   starpu_codelet_unpack_args(cl_arg, &payload);
-  
+
   int tid = starpu_worker_get_id();
 
-#if defined (USE_CORE_VERIFICATION) 
+#if defined(USE_CORE_VERIFICATION)
   const TaskGraph *graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph->output_bytes_per_task;
+  char *output_ptr = (char *)out;
+  size_t output_bytes = graph->output_bytes_per_task;
   const char *input_data[] = {
-    (const char*) out,
+      (const char *)out,
   };
   size_t input_bytes[] = {
-    output_bytes,
+      output_bytes,
   };
- 
+
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(
+          extra_local_memory[tid] + k * memory_block_size,
+          sizeof(char) * graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 1, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
+  graph->execute_point(
+      payload.i, payload.j, output_ptr, output_bytes, input_data, input_bytes,
+      1,
+      extra_local_memory[tid] + extra_local_memory_idx[tid] * memory_block_size,
+      graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -83,7 +89,10 @@ static void task1(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   *out = 0.0;
-  printf("Graph %d, Task1, [%d, %d], rank %d, core %d, out %.2f, local_mem %p\n", payload.graph_id, payload.i, payload.j, rank, tid, *out, extra_local_memory[tid]);
+  printf(
+      "Graph %d, Task1, [%d, %d], rank %d, core %d, out %.2f, local_mem %p\n",
+      payload.graph_id, payload.i, payload.j, rank, tid, *out,
+      extra_local_memory[tid]);
 #endif
 }
 
@@ -94,37 +103,46 @@ static void task2(void *descr[], void *cl_arg)
   in1 = (float *)STARPU_MATRIX_GET_PTR(descr[0]);
   out = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
   starpu_codelet_unpack_args(cl_arg, &payload);
-  
+
   int tid = starpu_worker_get_id();
-  
-#if defined (USE_CORE_VERIFICATION)   
+
+#if defined(USE_CORE_VERIFICATION)
   const TaskGraph *graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph->output_bytes_per_task;
+  char *output_ptr = (char *)out;
+  size_t output_bytes = graph->output_bytes_per_task;
   const char *input_data[] = {
-    (const char*) in1,
+      (const char *)in1,
   };
   size_t input_bytes[] = {
-    output_bytes,
+      output_bytes,
   };
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(
+          extra_local_memory[tid] + k * memory_block_size,
+          sizeof(char) * graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 2, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
+  graph->execute_point(
+      payload.i, payload.j, output_ptr, output_bytes, input_data, input_bytes,
+      2,
+      extra_local_memory[tid] + extra_local_memory_idx[tid] * memory_block_size,
+      graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
-#else  
+#else
   int rank;
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
-  
+
   *out = *in1 + 1.0;
-  printf("Graph %d, Task2, [%d, %d], rank %d, core %d, in1 %.2f, out %.2f, local_mem %p\n", payload.graph_id, payload.i, payload.j, rank, tid, *in1, *out, extra_local_memory[tid]);
+  printf(
+      "Graph %d, Task2, [%d, %d], rank %d, core %d, in1 %.2f, out %.2f, "
+      "local_mem %p\n",
+      payload.graph_id, payload.i, payload.j, rank, tid, *in1, *out,
+      extra_local_memory[tid]);
 #endif
 }
 
@@ -136,31 +154,36 @@ static void task3(void *descr[], void *cl_arg)
   in2 = (float *)STARPU_MATRIX_GET_PTR(descr[1]);
   out = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
   starpu_codelet_unpack_args(cl_arg, &payload);
-  
+
   int tid = starpu_worker_get_id();
 
-#if defined (USE_CORE_VERIFICATION)  
+#if defined(USE_CORE_VERIFICATION)
   const TaskGraph *graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph->output_bytes_per_task;
+  char *output_ptr = (char *)out;
+  size_t output_bytes = graph->output_bytes_per_task;
   const char *input_data[] = {
-    (const char*) in1,
-    (const char*) in2,
+      (const char *)in1,
+      (const char *)in2,
   };
   size_t input_bytes[] = {
-    output_bytes,
-    output_bytes,
+      output_bytes,
+      output_bytes,
   };
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(
+          extra_local_memory[tid] + k * memory_block_size,
+          sizeof(char) * graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
-  
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 2, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
+
+  graph->execute_point(
+      payload.i, payload.j, output_ptr, output_bytes, input_data, input_bytes,
+      2,
+      extra_local_memory[tid] + extra_local_memory_idx[tid] * memory_block_size,
+      graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -168,7 +191,11 @@ static void task3(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   *out = *in1 + *in2 + 1.0;
-  printf("Graph %d, Task3, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, out %.2f, local_mem %p\n", payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *out, extra_local_memory[tid]);
+  printf(
+      "Graph %d, Task3, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, out "
+      "%.2f, local_mem %p\n",
+      payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *out,
+      extra_local_memory[tid]);
 #endif
 }
 
@@ -181,33 +208,38 @@ static void task4(void *descr[], void *cl_arg)
   in3 = (float *)STARPU_MATRIX_GET_PTR(descr[2]);
   out = (float *)STARPU_MATRIX_GET_PTR(descr[3]);
   starpu_codelet_unpack_args(cl_arg, &payload);
-  
+
   int tid = starpu_worker_get_id();
 
-#if defined (USE_CORE_VERIFICATION)  
+#if defined(USE_CORE_VERIFICATION)
   const TaskGraph *graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph->output_bytes_per_task;
+  char *output_ptr = (char *)out;
+  size_t output_bytes = graph->output_bytes_per_task;
   const char *input_data[] = {
-    (const char*) in1,
-    (const char*) in2,
-    (const char*) in3,
+      (const char *)in1,
+      (const char *)in2,
+      (const char *)in3,
   };
   size_t input_bytes[] = {
-    output_bytes,
-    output_bytes,
-    output_bytes,
+      output_bytes,
+      output_bytes,
+      output_bytes,
   };
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(
+          extra_local_memory[tid] + k * memory_block_size,
+          sizeof(char) * graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 3, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
+  graph->execute_point(
+      payload.i, payload.j, output_ptr, output_bytes, input_data, input_bytes,
+      3,
+      extra_local_memory[tid] + extra_local_memory_idx[tid] * memory_block_size,
+      graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -215,7 +247,11 @@ static void task4(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   *out = *in1 + *in2 + *in3 + 1.0;
-  printf("Graph %d, Task4, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, out %.2f, local_mem %p\n", payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *out, extra_local_memory[tid]);
+  printf(
+      "Graph %d, Task4, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 "
+      "%.2f, out %.2f, local_mem %p\n",
+      payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *out,
+      extra_local_memory[tid]);
 #endif
 }
 
@@ -229,35 +265,40 @@ static void task5(void *descr[], void *cl_arg)
   in4 = (float *)STARPU_MATRIX_GET_PTR(descr[3]);
   out = (float *)STARPU_MATRIX_GET_PTR(descr[4]);
   starpu_codelet_unpack_args(cl_arg, &payload);
-  
+
   int tid = starpu_worker_get_id();
 
-#if defined (USE_CORE_VERIFICATION)  
+#if defined(USE_CORE_VERIFICATION)
   const TaskGraph *graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph->output_bytes_per_task;
+  char *output_ptr = (char *)out;
+  size_t output_bytes = graph->output_bytes_per_task;
   const char *input_data[] = {
-    (const char*) in1,
-    (const char*) in2,
-    (const char*) in3,
-    (const char*) in4,
+      (const char *)in1,
+      (const char *)in2,
+      (const char *)in3,
+      (const char *)in4,
   };
   size_t input_bytes[] = {
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
+      output_bytes,
+      output_bytes,
+      output_bytes,
+      output_bytes,
   };
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(
+          extra_local_memory[tid] + k * memory_block_size,
+          sizeof(char) * graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 4, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
+  graph->execute_point(
+      payload.i, payload.j, output_ptr, output_bytes, input_data, input_bytes,
+      4,
+      extra_local_memory[tid] + extra_local_memory_idx[tid] * memory_block_size,
+      graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -265,7 +306,11 @@ static void task5(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   *out = *in1 + *in2 + *in3 + *in4 + 1.0;
-  printf("Graph %d, Task5, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, out %.2f, local_mem %p\n", payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *out, extra_local_memory[tid]);
+  printf(
+      "Graph %d, Task5, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 "
+      "%.2f, in4 %.2f, out %.2f, local_mem %p\n",
+      payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4,
+      *out, extra_local_memory[tid]);
 #endif
 }
 
@@ -280,37 +325,35 @@ static void task6(void *descr[], void *cl_arg)
   in5 = (float *)STARPU_MATRIX_GET_PTR(descr[4]);
   out = (float *)STARPU_MATRIX_GET_PTR(descr[5]);
   starpu_codelet_unpack_args(cl_arg, &payload);
-  
+
   int tid = starpu_worker_get_id();
 
-#if defined (USE_CORE_VERIFICATION)  
+#if defined(USE_CORE_VERIFICATION)
   const TaskGraph *graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph->output_bytes_per_task;
+  char *output_ptr = (char *)out;
+  size_t output_bytes = graph->output_bytes_per_task;
   const char *input_data[] = {
-    (const char*) in1,
-    (const char*) in2,
-    (const char*) in3,
-    (const char*) in4,
-    (const char*) in5,
+      (const char *)in1, (const char *)in2, (const char *)in3,
+      (const char *)in4, (const char *)in5,
   };
   size_t input_bytes[] = {
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
+      output_bytes, output_bytes, output_bytes, output_bytes, output_bytes,
   };
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(
+          extra_local_memory[tid] + k * memory_block_size,
+          sizeof(char) * graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
- 
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 5, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
+
+  graph->execute_point(
+      payload.i, payload.j, output_ptr, output_bytes, input_data, input_bytes,
+      5,
+      extra_local_memory[tid] + extra_local_memory_idx[tid] * memory_block_size,
+      graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -318,7 +361,11 @@ static void task6(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + 1.0;
-  printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, out %.2f, local_mem %p\n", payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *out, extra_local_memory[tid]);
+  printf(
+      "Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 "
+      "%.2f, in4 %.2f, in5 %.2f, out %.2f, local_mem %p\n",
+      payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4,
+      *in5, *out, extra_local_memory[tid]);
 #endif
 }
 
@@ -334,39 +381,36 @@ static void task7(void *descr[], void *cl_arg)
   in6 = (float *)STARPU_MATRIX_GET_PTR(descr[5]);
   out = (float *)STARPU_MATRIX_GET_PTR(descr[6]);
   starpu_codelet_unpack_args(cl_arg, &payload);
-  
+
   int tid = starpu_worker_get_id();
 
-#if defined (USE_CORE_VERIFICATION)  
+#if defined(USE_CORE_VERIFICATION)
   const TaskGraph *graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph->output_bytes_per_task;
+  char *output_ptr = (char *)out;
+  size_t output_bytes = graph->output_bytes_per_task;
   const char *input_data[] = {
-    (const char*) in1,
-    (const char*) in2,
-    (const char*) in3,
-    (const char*) in4,
-    (const char*) in5,
-    (const char*) in6,
+      (const char *)in1, (const char *)in2, (const char *)in3,
+      (const char *)in4, (const char *)in5, (const char *)in6,
   };
   size_t input_bytes[] = {
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
+      output_bytes, output_bytes, output_bytes,
+      output_bytes, output_bytes, output_bytes,
   };
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(
+          extra_local_memory[tid] + k * memory_block_size,
+          sizeof(char) * graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 6, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
+  graph->execute_point(
+      payload.i, payload.j, output_ptr, output_bytes, input_data, input_bytes,
+      6,
+      extra_local_memory[tid] + extra_local_memory_idx[tid] * memory_block_size,
+      graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -374,8 +418,11 @@ static void task7(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + 1.0;
-  printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, out %.2f, local_mem %p\n", 
-    payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *in6, *out, extra_local_memory[tid]);
+  printf(
+      "Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 "
+      "%.2f, in4 %.2f, in5 %.2f, in6 %.2f, out %.2f, local_mem %p\n",
+      payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4,
+      *in5, *in6, *out, extra_local_memory[tid]);
 #endif
 }
 
@@ -392,41 +439,37 @@ static void task8(void *descr[], void *cl_arg)
   in7 = (float *)STARPU_MATRIX_GET_PTR(descr[6]);
   out = (float *)STARPU_MATRIX_GET_PTR(descr[7]);
   starpu_codelet_unpack_args(cl_arg, &payload);
-  
+
   int tid = starpu_worker_get_id();
 
-#if defined (USE_CORE_VERIFICATION)  
+#if defined(USE_CORE_VERIFICATION)
   const TaskGraph *graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph->output_bytes_per_task;
+  char *output_ptr = (char *)out;
+  size_t output_bytes = graph->output_bytes_per_task;
   const char *input_data[] = {
-    (const char*) in1,
-    (const char*) in2,
-    (const char*) in3,
-    (const char*) in4,
-    (const char*) in5,
-    (const char*) in6,
-    (const char*) in7,
+      (const char *)in1, (const char *)in2, (const char *)in3,
+      (const char *)in4, (const char *)in5, (const char *)in6,
+      (const char *)in7,
   };
   size_t input_bytes[] = {
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
+      output_bytes, output_bytes, output_bytes, output_bytes,
+      output_bytes, output_bytes, output_bytes,
   };
-  
+
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(
+          extra_local_memory[tid] + k * memory_block_size,
+          sizeof(char) * graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 7, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
+  graph->execute_point(
+      payload.i, payload.j, output_ptr, output_bytes, input_data, input_bytes,
+      7,
+      extra_local_memory[tid] + extra_local_memory_idx[tid] * memory_block_size,
+      graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -434,8 +477,11 @@ static void task8(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + 1.0;
-  printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, out %.2f, local_mem %p\n", 
-    payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *out, extra_local_memory[tid]);
+  printf(
+      "Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 "
+      "%.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, out %.2f, local_mem %p\n",
+      payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4,
+      *in5, *in6, *in7, *out, extra_local_memory[tid]);
 #endif
 }
 
@@ -453,43 +499,37 @@ static void task9(void *descr[], void *cl_arg)
   in8 = (float *)STARPU_MATRIX_GET_PTR(descr[7]);
   out = (float *)STARPU_MATRIX_GET_PTR(descr[8]);
   starpu_codelet_unpack_args(cl_arg, &payload);
-  
+
   int tid = starpu_worker_get_id();
 
-#if defined (USE_CORE_VERIFICATION)  
+#if defined(USE_CORE_VERIFICATION)
   const TaskGraph *graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph->output_bytes_per_task;
+  char *output_ptr = (char *)out;
+  size_t output_bytes = graph->output_bytes_per_task;
   const char *input_data[] = {
-    (const char*) in1,
-    (const char*) in2,
-    (const char*) in3,
-    (const char*) in4,
-    (const char*) in5,
-    (const char*) in6,
-    (const char*) in7,
-    (const char*) in8,
+      (const char *)in1, (const char *)in2, (const char *)in3,
+      (const char *)in4, (const char *)in5, (const char *)in6,
+      (const char *)in7, (const char *)in8,
   };
   size_t input_bytes[] = {
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
+      output_bytes, output_bytes, output_bytes, output_bytes,
+      output_bytes, output_bytes, output_bytes, output_bytes,
   };
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(
+          extra_local_memory[tid] + k * memory_block_size,
+          sizeof(char) * graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
 
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 8, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
+  graph->execute_point(
+      payload.i, payload.j, output_ptr, output_bytes, input_data, input_bytes,
+      8,
+      extra_local_memory[tid] + extra_local_memory_idx[tid] * memory_block_size,
+      graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -497,8 +537,12 @@ static void task9(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + *in8 + 1.0;
-  printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, out %.2f, local_mem %p\n", 
-    payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *out, extra_local_memory[tid]);
+  printf(
+      "Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 "
+      "%.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, out %.2f, "
+      "local_mem %p\n",
+      payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4,
+      *in5, *in6, *in7, *in8, *out, extra_local_memory[tid]);
 #endif
 }
 
@@ -517,45 +561,37 @@ static void task10(void *descr[], void *cl_arg)
   in9 = (float *)STARPU_MATRIX_GET_PTR(descr[8]);
   out = (float *)STARPU_MATRIX_GET_PTR(descr[9]);
   starpu_codelet_unpack_args(cl_arg, &payload);
-  
+
   int tid = starpu_worker_get_id();
 
-#if defined (USE_CORE_VERIFICATION)  
+#if defined(USE_CORE_VERIFICATION)
   const TaskGraph *graph = payload.graph;
-  char *output_ptr = (char*)out;
-  size_t output_bytes= graph->output_bytes_per_task;
+  char *output_ptr = (char *)out;
+  size_t output_bytes = graph->output_bytes_per_task;
   const char *input_data[] = {
-    (const char*) in1,
-    (const char*) in2,
-    (const char*) in3,
-    (const char*) in4,
-    (const char*) in5,
-    (const char*) in6,
-    (const char*) in7,
-    (const char*) in8,
-    (const char*) in9,
+      (const char *)in1, (const char *)in2, (const char *)in3,
+      (const char *)in4, (const char *)in5, (const char *)in6,
+      (const char *)in7, (const char *)in8, (const char *)in9,
   };
   size_t input_bytes[] = {
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
-    output_bytes,
+      output_bytes, output_bytes, output_bytes, output_bytes, output_bytes,
+      output_bytes, output_bytes, output_bytes, output_bytes,
   };
 
   if (extra_local_memory_init_flag[tid] == 1) {
     for (int k = 0; k < NB_LOCAL_MEMORY; k++) {
-      TaskGraph::prepare_scratch(extra_local_memory[tid] + k * memory_block_size, sizeof(char)*graph->scratch_bytes_per_task);
+      TaskGraph::prepare_scratch(
+          extra_local_memory[tid] + k * memory_block_size,
+          sizeof(char) * graph->scratch_bytes_per_task);
     }
     extra_local_memory_init_flag[tid] = 2;
   }
-  
-  graph->execute_point(payload.i, payload.j, output_ptr, output_bytes,
-                       input_data, input_bytes, 9, extra_local_memory[tid]+extra_local_memory_idx[tid]*memory_block_size, graph->scratch_bytes_per_task);
+
+  graph->execute_point(
+      payload.i, payload.j, output_ptr, output_bytes, input_data, input_bytes,
+      9,
+      extra_local_memory[tid] + extra_local_memory_idx[tid] * memory_block_size,
+      graph->scratch_bytes_per_task);
   extra_local_memory_idx[tid]++;
   extra_local_memory_idx[tid] = extra_local_memory_idx[tid] % NB_LOCAL_MEMORY;
 #else
@@ -563,12 +599,16 @@ static void task10(void *descr[], void *cl_arg)
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
 
   *out = *in1 + *in2 + *in3 + *in4 + *in5 + *in6 + *in7 + *in8 + *in9 + 1.0;
-  printf("Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 %.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, in9 %.2f, out %.2f, local_mem %p\n", 
-    payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4, *in5, *in6, *in7, *in8, *in9, *out, extra_local_memory[tid]);
+  printf(
+      "Graph %d, Task6, [%d, %d], rank %d, core %d, in1 %.2f, in2 %.2f, in3 "
+      "%.2f, in4 %.2f, in5 %.2f, in6 %.2f, in7 %.2f, in8 %.2f, in9 %.2f, out "
+      "%.2f, local_mem %p\n",
+      payload.graph_id, payload.i, payload.j, rank, tid, *in1, *in2, *in3, *in4,
+      *in5, *in6, *in7, *in8, *in9, *out, extra_local_memory[tid]);
 #endif
 }
 
-struct starpu_codelet cl_task1; 
+struct starpu_codelet cl_task1;
 struct starpu_codelet cl_task2;
 struct starpu_codelet cl_task3;
 struct starpu_codelet cl_task4;
@@ -583,7 +623,7 @@ typedef struct matrix_s {
   int MT;
   int NT;
   starpu_ddesc_t *ddescA;
-}matrix_t;
+} matrix_t;
 
 struct StarPUApp : public App {
 public:
@@ -591,10 +631,13 @@ public:
   ~StarPUApp();
   void execute_main_loop();
   void execute_timestep(size_t idx, long t);
+
 private:
-  void insert_task(int num_args, payload_t &payload, std::array<starpu_data_handle_t, 10> &args);
+  void insert_task(int num_args, payload_t &payload,
+                   std::array<starpu_data_handle_t, 10> &args);
   void parse_argument(int argc, char **argv);
   void debug_printf(int verbose_level, const char *format, ...);
+
 private:
   struct starpu_conf *conf;
   int rank;
@@ -606,135 +649,75 @@ private:
   matrix_t mat_array[10];
 };
 
-void StarPUApp::insert_task(int num_args, payload_t &payload, std::array<starpu_data_handle_t, 10> &args)
+void StarPUApp::insert_task(int num_args, payload_t &payload,
+                            std::array<starpu_data_handle_t, 10> &args)
 {
-  void (*callback)(void*) = NULL;
+  void (*callback)(void *) = NULL;
   starpu_ddesc_t *descA = mat_array[payload.graph_id].ddescA;
-  switch(num_args) {
+  switch (num_args) {
   case 1:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task1),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_RW, args[0],
-        STARPU_NAME, "task1",
-        0);
+    starpu_mpi_insert_task(MPI_COMM_WORLD, &(cl_task1), STARPU_VALUE, &payload,
+                           sizeof(payload_t), STARPU_RW, args[0], STARPU_NAME,
+                           "task1", 0);
     break;
   case 2:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task2),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_RW, args[0],
-        STARPU_NAME, "task2",
-        0);
+    starpu_mpi_insert_task(MPI_COMM_WORLD, &(cl_task2), STARPU_VALUE, &payload,
+                           sizeof(payload_t), STARPU_R, args[1], STARPU_RW,
+                           args[0], STARPU_NAME, "task2", 0);
     break;
   case 3:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task3),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_R, args[2],
-        STARPU_RW, args[0],
-        STARPU_NAME, "task3",
-        0);
+    starpu_mpi_insert_task(MPI_COMM_WORLD, &(cl_task3), STARPU_VALUE, &payload,
+                           sizeof(payload_t), STARPU_R, args[1], STARPU_R,
+                           args[2], STARPU_RW, args[0], STARPU_NAME, "task3",
+                           0);
     break;
   case 4:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task4),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_R, args[2],
-        STARPU_R, args[3],
-        STARPU_RW, args[0],
-        STARPU_NAME, "task4",
-        0);
+    starpu_mpi_insert_task(MPI_COMM_WORLD, &(cl_task4), STARPU_VALUE, &payload,
+                           sizeof(payload_t), STARPU_R, args[1], STARPU_R,
+                           args[2], STARPU_R, args[3], STARPU_RW, args[0],
+                           STARPU_NAME, "task4", 0);
     break;
   case 5:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task5),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_R, args[2],
-        STARPU_R, args[3],
-        STARPU_R, args[4],
-        STARPU_RW, args[0],
-        STARPU_NAME, "task5",
-        0);
+    starpu_mpi_insert_task(MPI_COMM_WORLD, &(cl_task5), STARPU_VALUE, &payload,
+                           sizeof(payload_t), STARPU_R, args[1], STARPU_R,
+                           args[2], STARPU_R, args[3], STARPU_R, args[4],
+                           STARPU_RW, args[0], STARPU_NAME, "task5", 0);
     break;
   case 6:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task6),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_R, args[2],
-        STARPU_R, args[3],
-        STARPU_R, args[4],
-        STARPU_R, args[5],
-        STARPU_RW, args[0],
-        STARPU_NAME, "task6",
-        0);
+    starpu_mpi_insert_task(MPI_COMM_WORLD, &(cl_task6), STARPU_VALUE, &payload,
+                           sizeof(payload_t), STARPU_R, args[1], STARPU_R,
+                           args[2], STARPU_R, args[3], STARPU_R, args[4],
+                           STARPU_R, args[5], STARPU_RW, args[0], STARPU_NAME,
+                           "task6", 0);
     break;
   case 7:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task7),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_R, args[2],
-        STARPU_R, args[3],
-        STARPU_R, args[4],
-        STARPU_R, args[5],
-        STARPU_R, args[6],
-        STARPU_RW, args[0],
-        STARPU_NAME, "task7",
-        0);
+    starpu_mpi_insert_task(MPI_COMM_WORLD, &(cl_task7), STARPU_VALUE, &payload,
+                           sizeof(payload_t), STARPU_R, args[1], STARPU_R,
+                           args[2], STARPU_R, args[3], STARPU_R, args[4],
+                           STARPU_R, args[5], STARPU_R, args[6], STARPU_RW,
+                           args[0], STARPU_NAME, "task7", 0);
     break;
   case 8:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task8),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_R, args[2],
-        STARPU_R, args[3],
-        STARPU_R, args[4],
-        STARPU_R, args[5],
-        STARPU_R, args[6],
-        STARPU_R, args[7],
-        STARPU_RW, args[0],
-        STARPU_NAME, "task8",
-        0);
+        MPI_COMM_WORLD, &(cl_task8), STARPU_VALUE, &payload, sizeof(payload_t),
+        STARPU_R, args[1], STARPU_R, args[2], STARPU_R, args[3], STARPU_R,
+        args[4], STARPU_R, args[5], STARPU_R, args[6], STARPU_R, args[7],
+        STARPU_RW, args[0], STARPU_NAME, "task8", 0);
     break;
   case 9:
     starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task9),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_R, args[2],
-        STARPU_R, args[3],
-        STARPU_R, args[4],
-        STARPU_R, args[5],
-        STARPU_R, args[6],
-        STARPU_R, args[7],
-        STARPU_R, args[8],
-        STARPU_RW, args[0],
-        STARPU_NAME, "task9",
-        0);
+        MPI_COMM_WORLD, &(cl_task9), STARPU_VALUE, &payload, sizeof(payload_t),
+        STARPU_R, args[1], STARPU_R, args[2], STARPU_R, args[3], STARPU_R,
+        args[4], STARPU_R, args[5], STARPU_R, args[6], STARPU_R, args[7],
+        STARPU_R, args[8], STARPU_RW, args[0], STARPU_NAME, "task9", 0);
     break;
   case 10:
-    starpu_mpi_insert_task(
-        MPI_COMM_WORLD, &(cl_task10),
-        STARPU_VALUE,    &payload, sizeof(payload_t),
-        STARPU_R, args[1],
-        STARPU_R, args[2],
-        STARPU_R, args[3],
-        STARPU_R, args[4],
-        STARPU_R, args[5],
-        STARPU_R, args[6],
-        STARPU_R, args[7],
-        STARPU_R, args[8],
-        STARPU_R, args[9],
-        STARPU_RW, args[0],
-        STARPU_NAME, "task10",
-        0);
+    starpu_mpi_insert_task(MPI_COMM_WORLD, &(cl_task10), STARPU_VALUE, &payload,
+                           sizeof(payload_t), STARPU_R, args[1], STARPU_R,
+                           args[2], STARPU_R, args[3], STARPU_R, args[4],
+                           STARPU_R, args[5], STARPU_R, args[6], STARPU_R,
+                           args[7], STARPU_R, args[8], STARPU_R, args[9],
+                           STARPU_RW, args[0], STARPU_NAME, "task10", 0);
     break;
   default:
     assert(false && "unexpected num_args");
@@ -759,75 +742,74 @@ void StarPUApp::parse_argument(int argc, char **argv)
   }
 }
 
-StarPUApp::StarPUApp(int argc, char **argv)
-  : App(argc, argv)
+StarPUApp::StarPUApp(int argc, char **argv) : App(argc, argv)
 {
-  cl_task1.where     = STARPU_CPU;                                   
-  cl_task1.cpu_funcs[0]  = task1;                                       
-  cl_task1.nbuffers  = 1;                                           
-  cl_task1.name      = "task1";
-  
-  cl_task2.where     = STARPU_CPU;                                   
-  cl_task2.cpu_funcs[0]  = task2;                                       
-  cl_task2.nbuffers  = 2;                                           
-  cl_task2.name      = "task2";
-  
-  cl_task3.where     = STARPU_CPU;                                   
-  cl_task3.cpu_funcs[0]  = task3;                                       
-  cl_task3.nbuffers  = 3;                                           
-  cl_task3.name      = "task3";
-  
-  cl_task4.where     = STARPU_CPU;                                   
-  cl_task4.cpu_funcs[0]  = task4;                                       
-  cl_task4.nbuffers  = 4;                                           
-  cl_task4.name      = "task4";
-  
-  cl_task5.where     = STARPU_CPU;                                   
-  cl_task5.cpu_funcs[0]  = task5;                                       
-  cl_task5.nbuffers  = 5;                                           
-  cl_task5.name      = "task5";
-  
-  cl_task6.where     = STARPU_CPU;                                   
-  cl_task6.cpu_funcs[0]  = task6;                                       
-  cl_task6.nbuffers  = 6;                                           
-  cl_task6.name      = "task6";
-  
-  cl_task7.where     = STARPU_CPU;                                   
-  cl_task7.cpu_funcs[0]  = task7;                                       
-  cl_task7.nbuffers  = 7;                                           
-  cl_task7.name      = "task7";
-  
-  cl_task8.where     = STARPU_CPU;                                   
-  cl_task8.cpu_funcs[0]  = task8;                                       
-  cl_task8.nbuffers  = 8;                                           
-  cl_task8.name      = "task8";
-  
-  cl_task9.where     = STARPU_CPU;                                   
-  cl_task9.cpu_funcs[0]  = task9;                                       
-  cl_task9.nbuffers  = 9;                                           
-  cl_task9.name      = "task9";
-  
-  cl_task10.where     = STARPU_CPU;                                   
-  cl_task10.cpu_funcs[0]  = task10;                                       
-  cl_task10.nbuffers  = 10;                                           
-  cl_task10.name      = "task10";
-  
+  cl_task1.where = STARPU_CPU;
+  cl_task1.cpu_funcs[0] = task1;
+  cl_task1.nbuffers = 1;
+  cl_task1.name = "task1";
+
+  cl_task2.where = STARPU_CPU;
+  cl_task2.cpu_funcs[0] = task2;
+  cl_task2.nbuffers = 2;
+  cl_task2.name = "task2";
+
+  cl_task3.where = STARPU_CPU;
+  cl_task3.cpu_funcs[0] = task3;
+  cl_task3.nbuffers = 3;
+  cl_task3.name = "task3";
+
+  cl_task4.where = STARPU_CPU;
+  cl_task4.cpu_funcs[0] = task4;
+  cl_task4.nbuffers = 4;
+  cl_task4.name = "task4";
+
+  cl_task5.where = STARPU_CPU;
+  cl_task5.cpu_funcs[0] = task5;
+  cl_task5.nbuffers = 5;
+  cl_task5.name = "task5";
+
+  cl_task6.where = STARPU_CPU;
+  cl_task6.cpu_funcs[0] = task6;
+  cl_task6.nbuffers = 6;
+  cl_task6.name = "task6";
+
+  cl_task7.where = STARPU_CPU;
+  cl_task7.cpu_funcs[0] = task7;
+  cl_task7.nbuffers = 7;
+  cl_task7.name = "task7";
+
+  cl_task8.where = STARPU_CPU;
+  cl_task8.cpu_funcs[0] = task8;
+  cl_task8.nbuffers = 8;
+  cl_task8.name = "task8";
+
+  cl_task9.where = STARPU_CPU;
+  cl_task9.cpu_funcs[0] = task9;
+  cl_task9.nbuffers = 9;
+  cl_task9.name = "task9";
+
+  cl_task10.where = STARPU_CPU;
+  cl_task10.cpu_funcs[0] = task10;
+  cl_task10.nbuffers = 10;
+  cl_task10.name = "task10";
+
   int i;
-  
+
   P = 1;
   MB = 2;
   nb_cores = 1;
-  
+
   parse_argument(argc, argv);
-  
-  conf =  (struct starpu_conf *)malloc (sizeof(struct starpu_conf));
-  starpu_conf_init( conf );
+
+  conf = (struct starpu_conf *)malloc(sizeof(struct starpu_conf));
+  starpu_conf_init(conf);
 
   conf->ncpus = nb_cores;
   conf->ncuda = 0;
   conf->nopencl = 0;
   conf->sched_policy_name = "lws";
-  
+
   int ret;
   ret = starpu_init(conf);
   STARPU_CHECK_RETURN_VALUE(ret, "starpu_init");
@@ -835,57 +817,64 @@ StarPUApp::StarPUApp(int argc, char **argv)
   STARPU_CHECK_RETURN_VALUE(ret, "starpu_mpi_init");
   starpu_mpi_comm_rank(MPI_COMM_WORLD, &rank);
   starpu_mpi_comm_size(MPI_COMM_WORLD, &world);
-  
-  Q = world/P;
-  assert(P*Q == world);  
-  
+
+  Q = world / P;
+  assert(P * Q == world);
+
   size_t max_scratch_bytes_per_task = 0;
-  
+
   int MB_cal = 0;
-  
+
   for (i = 0; i < graphs.size(); i++) {
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
-    
+
     MB_cal = sqrt(graph.output_bytes_per_task / sizeof(float));
     if (MB_cal > MB) {
       MB = MB_cal;
     }
-    
+
     mat.NT = graph.max_width;
     mat.MT = graph.nb_fields;
-  
-    debug_printf(0, "mb %d, mt %d, nt %d, timesteps %d, enable_supertiling %d, nb_fields %d\n", MB, mat.MT, mat.NT, graph.timesteps, starpu_enable_supertiling, graph.nb_fields);
-    assert (graph.output_bytes_per_task <= sizeof(float) * MB * MB);
 
-    mat.ddescA = create_and_distribute_data(rank, world, MB, MB, mat.MT, mat.NT, P, Q, i);
-    
+    debug_printf(0,
+                 "mb %d, mt %d, nt %d, timesteps %d, enable_supertiling %d, "
+                 "nb_fields %d\n",
+                 MB, mat.MT, mat.NT, graph.timesteps, starpu_enable_supertiling,
+                 graph.nb_fields);
+    assert(graph.output_bytes_per_task <= sizeof(float) * MB * MB);
+
+    mat.ddescA = create_and_distribute_data(rank, world, MB, MB, mat.MT, mat.NT,
+                                            P, Q, i);
+
     if (graph.scratch_bytes_per_task > max_scratch_bytes_per_task) {
       max_scratch_bytes_per_task = graph.scratch_bytes_per_task;
     }
   }
-   
-  extra_local_memory = (char**)malloc(sizeof(char*) * nb_cores);
+
+  extra_local_memory = (char **)malloc(sizeof(char *) * nb_cores);
   assert(extra_local_memory != NULL);
-  extra_local_memory_idx = (int*)malloc(sizeof(int) * nb_cores);
+  extra_local_memory_idx = (int *)malloc(sizeof(int) * nb_cores);
   assert(extra_local_memory_idx != NULL);
-  extra_local_memory_init_flag = (int*)malloc(sizeof(int) * nb_cores);
+  extra_local_memory_init_flag = (int *)malloc(sizeof(int) * nb_cores);
   assert(extra_local_memory_init_flag != NULL);
   for (i = 0; i < nb_cores; i++) {
     if (max_scratch_bytes_per_task > 0) {
-      extra_local_memory[i] = (char*)malloc(sizeof(char) * max_scratch_bytes_per_task * NB_LOCAL_MEMORY);
+      extra_local_memory[i] = (char *)malloc(
+          sizeof(char) * max_scratch_bytes_per_task * NB_LOCAL_MEMORY);
       extra_local_memory_init_flag[i] = 1;
-      //TaskGraph::prepare_scratch(extra_local_memory[i], sizeof(char)*max_scratch_bytes_per_task);
+      // TaskGraph::prepare_scratch(extra_local_memory[i], sizeof(char)*max_scratch_bytes_per_task);
     } else {
       extra_local_memory[i] = NULL;
       extra_local_memory_init_flag[i] = 0;
     }
     extra_local_memory_idx[i] = 0;
   }
-  
+
   memory_block_size = max_scratch_bytes_per_task;
-  
-  debug_printf(0, "max_scratch_bytes_per_task %lld\n", max_scratch_bytes_per_task);
+
+  debug_printf(0, "max_scratch_bytes_per_task %lld\n",
+               max_scratch_bytes_per_task);
 }
 
 StarPUApp::~StarPUApp()
@@ -903,15 +892,15 @@ StarPUApp::~StarPUApp()
   extra_local_memory_idx = NULL;
   free(extra_local_memory_init_flag);
   extra_local_memory_init_flag = NULL;
-  
+
   for (i = 0; i < graphs.size(); i++) {
     matrix_t &mat = mat_array[i];
     destroy_data(mat.ddescA);
   }
-  
+
   if (conf != NULL) {
-    free (conf);
-  } 
+    free(conf);
+  }
   starpu_mpi_shutdown();
   starpu_shutdown();
 }
@@ -922,7 +911,7 @@ void StarPUApp::execute_main_loop()
     display();
   }
 
-  void (*callback)(void*) = NULL;
+  void (*callback)(void *) = NULL;
 
   int x, y;
 
@@ -936,8 +925,8 @@ void StarPUApp::execute_main_loop()
       matrix_t &mat = mat_array[i];
       int nb_fields = g.nb_fields;
 
-      for (int x = offset; x <= offset+width-1; x++)
-        starpu_desc_getaddr( mat.ddescA, y%nb_fields, x );
+      for (int x = offset; x <= offset + width - 1; x++)
+        starpu_desc_getaddr(mat.ddescA, y % nb_fields, x);
     }
   }
 
@@ -946,7 +935,7 @@ void StarPUApp::execute_main_loop()
   if (rank == 0) {
     Timer::time_start();
   }
-  
+
   for (int i = 0; i < graphs.size(); i++) {
     const TaskGraph &g = graphs[i];
 
@@ -971,70 +960,73 @@ void StarPUApp::execute_timestep(size_t idx, long t)
   long dset = g.dependence_set_at_timestep(t);
   matrix_t &mat = mat_array[idx];
   int nb_fields = g.nb_fields;
-  
+
   std::array<starpu_data_handle_t, 10> args;
   payload_t payload;
-  
-  debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset, width, offset+width-1);
-  for (int x = offset; x <= offset+width-1; x++) {
+
+  debug_printf(1, "ts %d, offset %d, width %d, offset+width-1 %d\n", t, offset,
+               width, offset + width - 1);
+  for (int x = offset; x <= offset + width - 1; x++) {
     std::vector<std::pair<long, long> > deps = g.dependencies(dset, x);
-    int num_args; 
+    int num_args;
 #ifdef ENABLE_PRUNE_MPI_TASK_INSERT
-    int has_task = 0;   
-    
-    if(desc_islocal(mat.ddescA, t%nb_fields, x)) {
+    int has_task = 0;
+
+    if (desc_islocal(mat.ddescA, t % nb_fields, x)) {
       has_task = 1;
     }
-    
+
     if (deps.size() != 0 && t != 0 && has_task != 1) {
       for (std::pair<long, long> dep : deps) {
         for (int i = dep.first; i <= dep.second; i++) {
-          if(desc_islocal(mat.ddescA, (t-1)%nb_fields, i)) {
+          if (desc_islocal(mat.ddescA, (t - 1) % nb_fields, i)) {
             has_task = 1;
             break;
           }
         }
-        if (has_task)
-          break;
+        if (has_task) break;
       }
     }
 
-    debug_printf(1, "rank: %d, has_task: %d, x: %d, t: %d, task_id: %d\n", rank , has_task, x, t, mat.NT * t + x + 1);
-    
+    debug_printf(1, "rank: %d, has_task: %d, x: %d, t: %d, task_id: %d\n", rank,
+                 has_task, x, t, mat.NT * t + x + 1);
+
     if (has_task == 0) {
       continue;
     }
 
 #endif
-    
+
     num_args = 0;
     if (deps.size() == 0) {
-      args[num_args++] = starpu_desc_getaddr( mat.ddescA, t%nb_fields, x );
+      args[num_args++] = starpu_desc_getaddr(mat.ddescA, t % nb_fields, x);
       debug_printf(1, "%d[%d] ", x, num_args);
     } else {
       if (t == 0) {
-        args[num_args++] = starpu_desc_getaddr( mat.ddescA, t%nb_fields, x );
+        args[num_args++] = starpu_desc_getaddr(mat.ddescA, t % nb_fields, x);
         debug_printf(1, "%d[%d] ", x, num_args);
       } else {
-        args[num_args++] = starpu_desc_getaddr( mat.ddescA, t%nb_fields, x );
-        long last_offset = g.offset_at_timestep(t-1);
-        long last_width = g.width_at_timestep(t-1);
+        args[num_args++] = starpu_desc_getaddr(mat.ddescA, t % nb_fields, x);
+        long last_offset = g.offset_at_timestep(t - 1);
+        long last_width = g.width_at_timestep(t - 1);
         for (std::pair<long, long> dep : deps) {
           for (int i = dep.first; i <= dep.second; i++) {
             if (i >= last_offset && i < last_offset + last_width) {
-              args[num_args++] = starpu_desc_getaddr( mat.ddescA, (t-1)%nb_fields, i );
+              args[num_args++] =
+                  starpu_desc_getaddr(mat.ddescA, (t - 1) % nb_fields, i);
             }
           }
-          debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first, dep.second); 
+          debug_printf(1, "%d[%d, %d, %d] ", x, num_args, dep.first,
+                       dep.second);
         }
       }
     }
-    
+
     payload.i = t;
     payload.j = x;
     payload.graph = &g;
     payload.graph_id = idx;
-    insert_task(num_args, payload, args); 
+    insert_task(num_args, payload, args);
   }
   debug_printf(1, "\n");
 }
@@ -1052,13 +1044,11 @@ void StarPUApp::debug_printf(int verbose_level, const char *format, ...)
   }
 }
 
-
 int main(int argc, char **argv)
 {
- // printf("pid %d, %d\n", getpid(), STARPU_NMAXBUFS);
- // sleep(10); 
+  // printf("pid %d, %d\n", getpid(), STARPU_NMAXBUFS);
+  // sleep(10);
 
-  
   StarPUApp app(argc, argv);
   app.execute_main_loop();
 

@@ -16,17 +16,15 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-#include "main.decl.h"
-#include "subchare.decl.h"
-#include "../core/core.h"
-#include "../core/timer.h"
 #include <vector>
 
+#include "../core/core.h"
+#include "../core/timer.h"
+#include "main.decl.h"
+#include "subchare.decl.h"
 
 class Main : public CBase_Main {
-
- private:
-
+private:
   /// Member Variables (Object State) ///
   CProxySection_Subchare sectionProxy;
   Timer timer;
@@ -37,14 +35,13 @@ class Main : public CBase_Main {
   int numRuns;
   int numRunsDone;
 
- public:
-
+public:
   /// Constructors ///
-  Main(CkArgMsg* msg);
+  Main(CkArgMsg *msg);
 
   /// Entry Methods ///
   void finishedGraph();
   void workerReady();
 };
 
-#endif //__MAIN_H__
+#endif  //__MAIN_H__

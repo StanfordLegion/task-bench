@@ -33,9 +33,14 @@ import subprocess
 root_dir = os.path.dirname(os.path.dirname(__file__))
 core_header = subprocess.check_output(
     [
-        "gcc", "-D", "__attribute__(x)=", "-E", "-P",
-        os.path.join(root_dir, "core/core_c.h")
-    ]).decode("utf-8")
+        "gcc",
+        "-D",
+        "__attribute__(x)=",
+        "-E",
+        "-P",
+        os.path.join(root_dir, "core/core_c.h"),
+    ]
+).decode("utf-8")
 ffi = cffi.FFI()
 ffi.cdef(core_header)
 c = ffi.dlopen("libcore.so")
@@ -43,13 +48,15 @@ c = ffi.dlopen("libcore.so")
 
 def init_client():
     import argparse
+
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('-scheduler', required=False)
-    parser.add_argument('-expect-workers', type=int, default=0)
+    parser.add_argument("-scheduler", required=False)
+    parser.add_argument("-expect-workers", type=int, default=0)
     args, unknown = parser.parse_known_args()
 
     if args.scheduler:
         from dask.distributed import Client
+
         client = Client(args.scheduler)
         if args.expect_workers > 0:
             while True:
@@ -57,10 +64,12 @@ def init_client():
                 if num_workers >= args.expect_workers:
                     break
                 print(
-                    'Client waiting for workers (have %s expect %s)' %
-                    (num_workers, args.expect_workers),
-                    flush=True)
+                    "Client waiting for workers (have %s expect %s)"
+                    % (num_workers, args.expect_workers),
+                    flush=True,
+                )
                 import time
+
                 time.sleep(5)
     else:
         client = None
@@ -70,7 +79,8 @@ def init_client():
 
 def encode_task_graph(graph):
     return np.frombuffer(
-        ffi.buffer(ffi.addressof(graph), ffi.sizeof(graph)), dtype=np.ubyte)
+        ffi.buffer(ffi.addressof(graph), ffi.sizeof(graph)), dtype=np.ubyte
+    )
 
 
 def decode_task_graph(graph_array):
@@ -81,7 +91,7 @@ def app_create(args):
     c_args = []
     c_argv = ffi.new("char *[]", len(args) + 1)
     for i, arg in enumerate(args):
-        c_args.append(ffi.new("char []", arg.encode('utf-8')))
+        c_args.append(ffi.new("char []", arg.encode("utf-8")))
         c_argv[i] = c_args[-1]
     c_argv[len(args)] = ffi.NULL
 
@@ -119,7 +129,8 @@ def execute_point_impl(graph_array, timestep, point, scratch, *inputs):
     graph = decode_task_graph(graph_array)
 
     input_ptrs = ffi.new(
-        "char *[]", [ffi.cast("char *", i.ctypes.data) for i in inputs])
+        "char *[]", [ffi.cast("char *", i.ctypes.data) for i in inputs]
+    )
     input_sizes = ffi.new("size_t []", [i.shape[0] for i in inputs])
 
     output = np.empty(graph.output_bytes_per_task, dtype=np.ubyte)
@@ -133,16 +144,24 @@ def execute_point_impl(graph_array, timestep, point, scratch, *inputs):
         scratch_size = 0
 
     c.task_graph_execute_point_scratch(
-        graph, timestep, point, output_ptr, output.shape[0], input_ptrs,
-        input_sizes, len(inputs), scratch_ptr, scratch_size)
+        graph,
+        timestep,
+        point,
+        output_ptr,
+        output.shape[0],
+        input_ptrs,
+        input_sizes,
+        len(inputs),
+        scratch_ptr,
+        scratch_size,
+    )
 
     return output
 
 
 @dask.delayed(nout=2)
 def execute_point_scratch(graph_array, timestep, point, scratch, *inputs):
-    return execute_point_impl(
-        graph_array, timestep, point, scratch, *inputs), scratch
+    return execute_point_impl(graph_array, timestep, point, scratch, *inputs), scratch
 
 
 @dask.delayed
@@ -175,7 +194,8 @@ def splitter(value, idx):
 def execute_point_direct(graph_array, timestep, point, scratch, *inputs):
     if scratch is not None:
         return execute_point_impl(
-            graph_array, timestep, point, scratch, *inputs), scratch
+            graph_array, timestep, point, scratch, *inputs
+        ), scratch
     else:
         return execute_point_impl(graph_array, timestep, point, None, *inputs)
 
@@ -183,8 +203,6 @@ def execute_point_direct(graph_array, timestep, point, scratch, *inputs):
 # Entry points for dask.delayed
 def execute_point_delayed(graph_array, timestep, point, scratch, *inputs):
     if scratch is not None:
-        return execute_point_scratch(
-            graph_array, timestep, point, scratch, *inputs)
+        return execute_point_scratch(graph_array, timestep, point, scratch, *inputs)
     else:
-        return execute_point_no_scratch(
-            graph_array, timestep, point, *inputs), None
+        return execute_point_no_scratch(graph_array, timestep, point, *inputs), None

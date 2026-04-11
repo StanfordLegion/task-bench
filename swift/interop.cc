@@ -13,28 +13,31 @@
  * limitations under the License.
  */
 
-#include "../core/core_c.h"
-#include <vector>
+#include <cstring>
 #include <string>
 #include <utility>
-#include <cstring>
+#include <vector>
+
+#include "../core/core_c.h"
 
 std::vector<char *> argv;
 
 // Add a single argument.
-void addArg(char *arg) {
-  char *saved = (char *) malloc(strlen(arg) + 1);
+void addArg(char *arg)
+{
+  char *saved = (char *)malloc(strlen(arg) + 1);
   memcpy(saved, arg, strlen(arg) + 1);
   argv.push_back(saved);
 }
 
 // Add a set of space separated arguments.
-void addArgs(char *args) {
+void addArgs(char *args)
+{
   std::string arg = "";
   char *saved;
   while (*args != '\0') {
     if (*args == ' ') {
-      saved = (char *) malloc(arg.size() + 1);
+      saved = (char *)malloc(arg.size() + 1);
       memcpy(saved, arg.c_str(), arg.size() + 1);
       argv.push_back(saved);
       arg = "";
@@ -44,29 +47,24 @@ void addArgs(char *args) {
     args++;
   }
   if (arg != "") {
-    saved = (char *) malloc(arg.size() + 1);
+    saved = (char *)malloc(arg.size() + 1);
     memcpy(saved, arg.c_str(), arg.size() + 1);
     argv.push_back(saved);
   }
 }
 
 // Retrieve the argument vector.
-char **getArgv() {
-  return argv.data();
-}
+char **getArgv() { return argv.data(); }
 
 // Retrieve the number of arguments.
-int getArgc() {
-  return argv.size();
-}
+int getArgc() { return argv.size(); }
 
 // Retrieve an argument.
-char *getArg(int index) {
-  return argv[index];
-}
+char *getArg(int index) { return argv[index]; }
 
 // Clear the arguments.
-void clearAll() {
+void clearAll()
+{
   for (size_t i = 0; i < argv.size(); i++) {
     free(argv[i]);
   }
@@ -74,7 +72,9 @@ void clearAll() {
 }
 
 // Get an allocated array that has room for all inputs.
-std::pair<long,long> **getInputArray(interval_list_t list, long offset, long width) {
+std::pair<long, long> **getInputArray(interval_list_t list, long offset,
+                                      long width)
+{
   long numIntervals = interval_list_num_intervals(list);
   long numInputs = 0;
   for (long i = 0; i < numIntervals; i++) {
@@ -85,12 +85,13 @@ std::pair<long,long> **getInputArray(interval_list_t list, long offset, long wid
       }
     }
   }
-  std::pair<long,long> **result = new std::pair<long,long>*[numInputs];
+  std::pair<long, long> **result = new std::pair<long, long> *[numInputs];
   return result;
 }
 
 // Gather the number of inputs for a given timestep and point.
-long getNumInputs(interval_list_t list, long offset, long width) {
+long getNumInputs(interval_list_t list, long offset, long width)
+{
   long numIntervals = interval_list_num_intervals(list);
   long numInputs = 0;
   for (long i = 0; i < numIntervals; i++) {
@@ -105,7 +106,8 @@ long getNumInputs(interval_list_t list, long offset, long width) {
 }
 
 // Gather an array of input bytes information.
-size_t *getInputBytes(long numInputs) {
+size_t *getInputBytes(long numInputs)
+{
   size_t *result = new size_t[numInputs];
   for (long i = 0; i < numInputs; i++) {
     result[i] = sizeof(std::pair<long, long>);
@@ -114,18 +116,26 @@ size_t *getInputBytes(long numInputs) {
 }
 
 // Place the given information in the correct array.
-void placeInput(std::pair<long,long> **inputArray, long timestep, long point, long idx) {
-  std::pair<long,long> *inputPointer = new std::pair<long,long>(timestep, point);
+void placeInput(std::pair<long, long> **inputArray, long timestep, long point,
+                long idx)
+{
+  std::pair<long, long> *inputPointer =
+      new std::pair<long, long>(timestep, point);
   inputArray[idx] = inputPointer;
 }
 
 // Execute the current point.
-void executePoint(task_graph_t graph, long timestep, long point, std::pair<long,long> **inputPointer, size_t *inputBytes, size_t numInputs) {
-  std::pair<long,long> *outputPointer = new std::pair<long, long>;
+void executePoint(task_graph_t graph, long timestep, long point,
+                  std::pair<long, long> **inputPointer, size_t *inputBytes,
+                  size_t numInputs)
+{
+  std::pair<long, long> *outputPointer = new std::pair<long, long>;
   size_t outputBytes = sizeof(std::pair<long, long>);
   std::vector<char> scratch(graph.scratch_bytes_per_task);
   task_graph_prepare_scratch(scratch.data(), scratch.size());
-  task_graph_execute_point_scratch(graph, timestep, point, (char *)outputPointer, outputBytes, (const char **)inputPointer, inputBytes, numInputs,
-                                   const_cast<char *>(scratch.data()), scratch.size());
+  task_graph_execute_point_scratch(
+      graph, timestep, point, (char *)outputPointer, outputBytes,
+      (const char **)inputPointer, inputBytes, numInputs,
+      const_cast<char *>(scratch.data()), scratch.size());
   delete outputPointer;
 }

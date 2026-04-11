@@ -16,9 +16,8 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "realm.h"
-
 #include "core.h"
+#include "realm.h"
 
 typedef long long int coord_t;
 

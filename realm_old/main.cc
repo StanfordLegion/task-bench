@@ -15,15 +15,14 @@
 
 #include "main.h"
 
+#include <float.h>
+
 #include <algorithm>
 #include <limits>
 #include <vector>
 
-#include <float.h>
-
-#include "realm.h"
-
 #include "core.h"
+#include "realm.h"
 #include "timer.h"
 
 #define OUT_INDEX 0
@@ -38,13 +37,13 @@ static int global_argc = 0;
 static char **global_argv = NULL;
 
 enum {
-  TOP_LEVEL_TASK           = Processor::TASK_ID_FIRST_AVAILABLE + 0,
-  CREATE_REGION_TASK       = Processor::TASK_ID_FIRST_AVAILABLE + 1,
-  CREATE_REGION_DONE_TASK  = Processor::TASK_ID_FIRST_AVAILABLE + 2,
-  CREATE_BARRIER_TASK      = Processor::TASK_ID_FIRST_AVAILABLE + 3,
+  TOP_LEVEL_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 0,
+  CREATE_REGION_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 1,
+  CREATE_REGION_DONE_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 2,
+  CREATE_BARRIER_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 3,
   CREATE_BARRIER_DONE_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 4,
-  SHARD_TASK               = Processor::TASK_ID_FIRST_AVAILABLE + 5,
-  COMM_TASK                = Processor::TASK_ID_FIRST_AVAILABLE + 6,
+  SHARD_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 5,
+  COMM_TASK = Processor::TASK_ID_FIRST_AVAILABLE + 6,
 };
 
 enum {
@@ -257,14 +256,16 @@ void deserialize_byte_array(
           long num_rev_deps = num_rev_dependencies(graph, dset, taskid);
           if (index == IN_INDEX) {
             for (long dep_num = 0; dep_num < num_deps * NUM_INPUT_REGIONS;
-                 dep_num++) {
+                 dep_num++)
+            {
               Barrier bar = *(Barrier *)walking_pointer;
               walking_pointer = (Barrier *)walking_pointer + 1;
               barriers.push_back(bar);
             }
           } else {
             for (long dep_num = 0; dep_num < num_rev_deps * NUM_INPUT_REGIONS;
-                 dep_num++) {
+                 dep_num++)
+            {
               Barrier bar = *(Barrier *)walking_pointer;
               walking_pointer = (Barrier *)walking_pointer + 1;
               barriers.push_back(bar);
@@ -355,8 +356,8 @@ void get_output_locations(
     std::vector<RegionInstance> &output_locations,
     std::vector<std::vector<std::vector<RegionInstance> > >
         &tasks_for_each_graph,
-    std::vector<std::pair<long, long> > &rev_deps, TaskGraph &graph, long taskid,
-    long dset, long k_input)
+    std::vector<std::pair<long, long> > &rev_deps, TaskGraph &graph,
+    long taskid, long dset, long k_input)
 {
   for (auto interval : rev_deps) {
     for (long inter = interval.first; inter <= interval.second; inter++) {
@@ -378,7 +379,8 @@ std::vector<Event> create_recv_barriers(std::vector<Barrier> &recv_barriers,
 {
   std::vector<long> deps;
   for (auto interval :
-       graph.dependencies(graph.dependence_set_at_timestep(timestep), taskid)) {
+       graph.dependencies(graph.dependence_set_at_timestep(timestep), taskid))
+  {
     for (long inter = interval.first; inter <= interval.second; inter++)
       deps.push_back(inter);
   }
@@ -388,7 +390,8 @@ std::vector<Event> create_recv_barriers(std::vector<Barrier> &recv_barriers,
   for (long bar_num = 0; bar_num < num_deps; bar_num++) {
     if (deps[bar_num] < graph.width_at_timestep(timestep - 1) +
                             graph.offset_at_timestep(timestep - 1) &&
-        deps[bar_num] >= graph.offset_at_timestep(timestep - 1)) {
+        deps[bar_num] >= graph.offset_at_timestep(timestep - 1))
+    {
       Barrier bar = recv_barriers[bar_num + (k_input * num_deps)];
       result_vec.push_back((Event)bar.get_previous_phase());
     }
@@ -496,7 +499,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
         /* If not in the graph at timestep, just advance the barriers */
         if (taskid < graph.width_at_timestep(timestep) +
                          graph.offset_at_timestep(timestep) &&
-            taskid >= graph.offset_at_timestep(timestep)) {
+            taskid >= graph.offset_at_timestep(timestep))
+        {
           args.taskid = taskid;
           args.timestep = timestep;
           args.output_bytes = output_bytes;
@@ -540,8 +544,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           long loop_dset =
               graph.dependence_set_at_timestep(timestep + NUM_INPUT_REGIONS);
           for (auto interval : graph_dependencies[graph_num][loop_dset]) {
-            for (long inter = interval.first; inter <= interval.second;
-                 inter++) {
+            for (long inter = interval.first; inter <= interval.second; inter++)
+            {
               long index = alt_find_index(inter, graph, taskid, loop_dset);
               assert(index != -1);
               long num_rev_deps = num_rev_dependencies(graph, loop_dset, inter);
@@ -567,13 +571,14 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           if (iter == 1 && timestep == graph.timesteps - 1) break;
           long index = 0;
           for (auto interval : graph_rev_deps[graph_num][new_dset]) {
-            for (long inter = interval.first; inter <= interval.second;
-                 inter++) {
+            for (long inter = interval.first; inter <= interval.second; inter++)
+            {
               /* If task is out of bounds in the next timestep, do not copy to
                * it */
               if (inter < graph.width_at_timestep(timestep + 1) +
                               graph.offset_at_timestep(timestep + 1) &&
-                  inter >= graph.offset_at_timestep(timestep + 1)) {
+                  inter >= graph.offset_at_timestep(timestep + 1))
+              {
                 long num_rev_deps = num_rev_deps_per_graph[graph_num][new_dset];
                 long inter_num_deps = num_dependencies(graph, new_dset, inter);
 
@@ -611,8 +616,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           // this needs to be looped dset, even though fft doesn't use this
           // section
           for (auto interval : graph_dependencies[graph_num][new_dset]) {
-            for (long inter = interval.first; inter <= interval.second;
-                 inter++) {
+            for (long inter = interval.first; inter <= interval.second; inter++)
+            {
               long index = alt_find_index(inter, graph, taskid, new_dset);
               long num_rev_deps = num_rev_dependencies(graph, new_dset, inter);
               if (inter < graph.width_at_timestep(timestep + NUM_INPUT_REGIONS -
@@ -629,8 +634,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
           }
           long index = 0;
           for (auto interval : graph_rev_deps[graph_num][new_dset]) {
-            for (long inter = interval.first; inter <= interval.second;
-                 inter++) {
+            for (long inter = interval.first; inter <= interval.second; inter++)
+            {
               long num_rev_deps = num_rev_dependencies(graph, new_dset, taskid);
               if (timestep < NUM_INPUT_REGIONS - 1 ||
                   inter >= graph.width_at_timestep(timestep + 1 -
@@ -659,8 +664,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
 
           index = 0;
           for (auto interval : graph_rev_deps[graph_num][new_dset]) {
-            for (long inter = interval.first; inter <= interval.second;
-                 inter++) {
+            for (long inter = interval.first; inter <= interval.second; inter++)
+            {
               long recv_index = find_index(inter, graph, taskid, new_dset);
               long inter_num_deps = num_dependencies(graph, new_dset, inter);
               graph_recv_bars[graph_num][inter][new_dset][IN_INDEX]
@@ -676,7 +681,8 @@ void shard_task(const void *args, size_t arglen, const void *userdata,
         /* Advance local copy of every barrier */
         for (long task_num = 0; task_num < graph.max_width; task_num++) {
           for (long cur_dset = 0; cur_dset < graph.max_dependence_sets();
-               cur_dset++) {
+               cur_dset++)
+          {
             for (long in_out = OUT_INDEX; in_out <= IN_INDEX; in_out++) {
               if (in_out == IN_INDEX) {
                 long cur_num_deps = num_dependencies(graph, cur_dset, task_num);
@@ -765,7 +771,7 @@ void create_region_task(const void *args, size_t arglen, const void *userdata,
 }
 
 void create_barrier_done_task(const void *args, size_t arglen,
-                             const void *userdata, size_t userlen, Processor p)
+                              const void *userdata, size_t userlen, Processor p)
 {
   assert(arglen == sizeof(CreateBarrierDoneArgs));
   const CreateBarrierDoneArgs &a =
@@ -778,10 +784,11 @@ void create_barrier_done_task(const void *args, size_t arglen,
 }
 
 void create_barrier_task(const void *args, size_t arglen, const void *userdata,
-                        size_t userlen, Processor p)
+                         size_t userlen, Processor p)
 {
   assert(arglen == sizeof(CreateBarrierArgs));
-  const CreateBarrierArgs &a = *reinterpret_cast<const CreateBarrierArgs *>(args);
+  const CreateBarrierArgs &a =
+      *reinterpret_cast<const CreateBarrierArgs *>(args);
 
   Barrier barrier = Barrier::create_barrier(a.expected_arrivals);
 
@@ -887,7 +894,9 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
     for (size_t i = 0; i < proc_mem_affinities.size(); ++i) {
       Machine::ProcessorMemoryAffinity &affinity = proc_mem_affinities[i];
       if (affinity.p.kind() == Processor::LOC_PROC) {
-        if (affinity.m.kind() == Memory::SYSTEM_MEM && affinity.m.capacity() > 0) {
+        if (affinity.m.kind() == Memory::SYSTEM_MEM &&
+            affinity.m.capacity() > 0)
+        {
           proc_sysmems[affinity.p] = affinity.m;
           if (proc_regmems.find(affinity.p) == proc_regmems.end())
             proc_regmems[affinity.p] = affinity.m;
@@ -934,7 +943,8 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
             RegionInstance::NO_INST);
         std::vector<std::vector<Barrier> > out_in_barriers;
         for (long index = OUT_INDEX; index <= IN_INDEX; index++) {
-          long num_bars = (index == IN_INDEX ? num_deps : num_rev_deps) * NUM_INPUT_REGIONS;
+          long num_bars =
+              (index == IN_INDEX ? num_deps : num_rev_deps) * NUM_INPUT_REGIONS;
           std::vector<Barrier> barriers(num_bars);
           for (long bar_num = 0; bar_num < num_bars; bar_num++) {
             CreateBarrierArgs args;
@@ -942,7 +952,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
             args.dest_proc = p;
             args.dest_barrier = &barriers[bar_num];
             events.push_back(
-              shard_proc.spawn(CREATE_BARRIER_TASK, &args, sizeof(args)));
+                shard_proc.spawn(CREATE_BARRIER_TASK, &args, sizeof(args)));
             size_of_byte_array += sizeof(Barrier);
           }
           out_in_barriers.emplace_back();
@@ -1025,7 +1035,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
 #ifndef NDEBUG
     bool ok =
 #endif
-      first_start_bar.get_result(&first_start, sizeof(first_start));
+        first_start_bar.get_result(&first_start, sizeof(first_start));
     assert(ok);
   }
 
@@ -1035,7 +1045,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
 #ifndef NDEBUG
     bool ok =
 #endif
-      last_start_bar.get_result(&last_start, sizeof(last_start));
+        last_start_bar.get_result(&last_start, sizeof(last_start));
     assert(ok);
   }
 
@@ -1045,7 +1055,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
 #ifndef NDEBUG
     bool ok =
 #endif
-      first_stop_bar.get_result(&first_stop, sizeof(first_stop));
+        first_stop_bar.get_result(&first_stop, sizeof(first_stop));
     assert(ok);
   }
 
@@ -1055,7 +1065,7 @@ void top_level_task(const void *args, size_t arglen, const void *userdata,
 #ifndef NDEBUG
     bool ok =
 #endif
-      last_stop_bar.get_result(&last_stop, sizeof(last_stop));
+        last_stop_bar.get_result(&last_stop, sizeof(last_stop));
     assert(ok);
   }
 

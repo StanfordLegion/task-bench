@@ -48,7 +48,8 @@ def execute_task_graph(graph):
             for dep in core.task_graph_dependencies(graph, timestep, point):
                 inputs.append(last_row[dep])
             output, scratch[point] = core.execute_point_delayed(
-                graph_array, timestep, point, scratch[point], *inputs)
+                graph_array, timestep, point, scratch[point], *inputs
+            )
             row.append(output)
             outputs.append(output)
         for point in range(offset + width, graph.max_width):

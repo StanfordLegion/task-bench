@@ -24,23 +24,32 @@ import sys
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
 core_header = subprocess.check_output(
-    ["gcc", "-D", "__attribute__(x)=", "-E", "-P", os.path.join(root_dir, "../core/core_c.h")]
+    [
+        "gcc",
+        "-D",
+        "__attribute__(x)=",
+        "-E",
+        "-P",
+        os.path.join(root_dir, "../core/core_c.h"),
+    ]
 ).decode("utf-8")
 ffi = cffi.FFI()
 ffi.cdef(core_header)
 c = ffi.dlopen("libcore.so")
 
+
 def app_create(args):
     c_args = []
     c_argv = ffi.new("char *[]", len(args) + 1)
     for i, arg in enumerate(args):
-        c_args.append(ffi.new("char []", arg.encode('utf-8')))
+        c_args.append(ffi.new("char []", arg.encode("utf-8")))
         c_argv[i] = c_args[-1]
     c_argv[len(args)] = ffi.NULL
 
     app = c.app_create(len(args), c_argv)
     c.app_display(app)
     return app
+
 
 def app_task_graphs(app):
     result = []
@@ -49,6 +58,7 @@ def app_task_graphs(app):
         result.append(c.task_graph_list_task_graph(graphs, i))
 
     return result
+
 
 def task_graph_dependencies(graph, timestep, point):
     last_offset = c.task_graph_offset_at_timestep(graph, timestep - 1)
@@ -62,13 +72,15 @@ def task_graph_dependencies(graph, timestep, point):
             if last_offset <= dep < last_offset + last_width:
                 yield dep
 
+
 def task_duration(timestep, point, imbalance):
     # FIXME: Query the actual API to figure out how long the tasks are
     # supposed to be running.
 
     value = random.uniform(0.0, 1.0)
 
-    return 1 + (value - 0.5)*imbalance
+    return 1 + (value - 0.5) * imbalance
+
 
 def simulate_task_graph(graph):
     last_completion = [0 for point in range(graph.max_width)]
@@ -85,9 +97,12 @@ def simulate_task_graph(graph):
             deps = task_graph_dependencies(graph, timestep, point)
             duration = task_duration(timestep, point, graph.kernel.imbalance)
             completion.append(
-                max((last_completion[dep] for dep in deps),
-                    default=last_completion[point]) +
-                duration)
+                max(
+                    (last_completion[dep] for dep in deps),
+                    default=last_completion[point],
+                )
+                + duration
+            )
             cumulative_time += duration
         for point in range(offset + width, graph.max_width):
             completion.append(None)
@@ -95,6 +110,7 @@ def simulate_task_graph(graph):
     final_time = max(last_completion)
 
     return final_time, cumulative_time / graph.max_width
+
 
 def simulate_task_bench():
     app = app_create(sys.argv)
@@ -107,17 +123,18 @@ def simulate_task_bench():
         final_time += final
         busy_time += busy
 
-    print('Final time %f' % final_time)
-    print('Average busy time per core %f' % busy_time)
+    print("Final time %f" % final_time)
+    print("Average busy time per core %f" % busy_time)
 
     idle_time = final_time - busy_time
-    print('Average idle time per core %f' % idle_time)
+    print("Average idle time per core %f" % idle_time)
 
     busy_ratio = busy_time / final_time
-    print('Average busy ratio per core %f' % busy_ratio)
+    print("Average busy ratio per core %f" % busy_ratio)
 
     idle_ratio = idle_time / final_time
-    print('Average idle ratio per core %f' % idle_ratio)
+    print("Average idle ratio per core %f" % idle_ratio)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     simulate_task_bench()

@@ -8,4 +8,3 @@
 class MulticastMsg : public CkMcastBaseMsg, public CMessage_MulticastMsg {};
 
 #endif
-

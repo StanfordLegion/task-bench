@@ -2,8 +2,9 @@
 BasedOnStyle: Google
 AccessModifierOffset: -2
 BraceWrapping:
+  AfterCaseLabel:  true
   AfterClass:      false
-  AfterControlStatement: false
+  AfterControlStatement: MultiLine
   AfterEnum:       false
   AfterFunction:   true
   AfterNamespace:  false
@@ -13,10 +14,15 @@ BraceWrapping:
   AfterExternBlock: false
   BeforeCatch:     false
   BeforeElse:      false
+  BeforeLambdaBody: false
+  BeforeWhile:     false
   IndentBraces:    false
   SplitEmptyFunction: true
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
 BreakBeforeBraces: Custom
 IndentCaseLabels: false
+IndentCaseBlocks: true
+PointerAlignment: Right
+ReflowComments: IndentOnly
 ...
