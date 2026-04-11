@@ -130,13 +130,13 @@ proc execute_task_graph2(graph, task_result, task_ready, task_used) {
     var inputs: [{0..max_deps-1, 0..(output_bytes/8)-1}] int(64);
 
     var scratch_bytes = graph.scratch_bytes_per_task;
-    var scratch_ptr = c_malloc(int(8), scratch_bytes);
+    var scratch_ptr = allocate(int(8), scratch_bytes);
     task_graph_prepare_scratch(scratch_ptr, scratch_bytes);
 
     // Initialize input_ptr and input_bytes... these don't need to
     // change because we can just set n_inputs dynamically.
-    var input_ptr = c_malloc(c_ptr(int(64)), max_deps);
-    var input_bytes = c_malloc(uint(64), max_deps);
+    var input_ptr = allocate(c_ptr(int(64)), max_deps);
+    var input_bytes = allocate(uint(64), max_deps);
     for dep in 0..max_deps-1 {
         input_ptr[dep] = c_ptrTo(inputs[dep, 0]);
         input_bytes[dep] = output_bytes:uint(64);
@@ -261,16 +261,16 @@ proc execute_task_graph2(graph, task_result, task_ready, task_used) {
       }
     }
 
-    c_free(scratch_ptr);
+    deallocate(scratch_ptr);
   }
 }
 
 proc convert_args_to_c_args(argc, args) {
-  var result = c_malloc(c_ptr(int(8)), argc + 1);
+  var result = allocate(c_ptr(int(8)), argc + 1);
  	  // not efficent but needed to convert args
   for i in 0..argc - 1 {
  		  // make c memeory for each word
-    var curr = c_malloc(int(8), args[i].size + 1);
+    var curr = allocate(int(8), args[i].size + 1);
  		  // loop over each character to add it to a string 
     var j = 0;
     for chr in args[i] {
