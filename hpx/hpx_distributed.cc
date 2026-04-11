@@ -34,7 +34,7 @@ int hpx_main(int argc, char *argv[])
   int chunk_size =
       app.graphs[0].max_width / (n_ranks * hpx::get_os_thread_count());
 
-  hpx::execution::static_chunk_size cs(chunk_size);
+  hpx::execution::experimental::static_chunk_size cs(chunk_size);
 
   using executor = hpx::execution::experimental::fork_join_executor;
   executor exec(hpx::threads::thread_priority::normal,
@@ -161,7 +161,7 @@ int hpx_main(int argc, char *argv[])
           auto &deps = dependencies[dset];
           auto &rev_deps = reverse_dependencies[dset];
 
-          hpx::for_loop(policy, first_point, last_point+1, [&](int point) {
+          hpx::experimental::for_loop(policy, first_point, last_point+1, [&](int point) {
             std::vector<MPI_Request> requests;
             long point_index = point - first_point;
             auto &point_inputs = inputs[point_index];
@@ -320,7 +320,7 @@ int hpx_main(int argc, char *argv[])
           long start = std::max(first_point, offset);
           long end = std::min(last_point + 1, offset + width);
           if (start < end) {
-            hpx::for_loop(policy, start, end, [&](int point) {
+            hpx::experimental::for_loop(policy, start, end, [&](int point) {
               long point_index = point - first_point;
               auto &point_input_ptr = input_ptr[point_index];
               auto &point_input_bytes = input_bytes[point_index];

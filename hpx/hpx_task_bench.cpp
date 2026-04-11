@@ -78,7 +78,7 @@ int hpx_main(int argc, char* argv[])
     if (chunk_size < 1)
         chunk_size = 1;
 
-    hpx::execution::static_chunk_size cs(chunk_size);
+    hpx::execution::experimental::static_chunk_size cs(chunk_size);
 
     using executor = hpx::execution::experimental::fork_join_executor;
     executor exec(hpx::threads::thread_priority::normal,
@@ -220,7 +220,7 @@ int hpx_main(int argc, char* argv[])
                     auto& deps = dependencies[dset];
                     auto& rev_deps = reverse_dependencies[dset];
 
-                    hpx::for_loop(
+                    hpx::experimental::for_loop(
                         policy, first_point, last_point + 1, [&](int point) {
                             std::vector<MPI_Request> requests;
                             long point_index = point - first_point;
@@ -445,7 +445,7 @@ int hpx_main(int argc, char* argv[])
                     long end = std::min(last_point + 1, offset + width);
                     if (start < end)
                     {
-                        hpx::for_loop(
+                        hpx::experimental::for_loop(
                             policy, start, end, [&](int point) {
                                 long point_index = point - first_point;
                                 auto& point_input_ptr = input_ptr[point_index];
