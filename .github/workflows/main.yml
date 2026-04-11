@@ -28,8 +28,8 @@ jobs:
           # - system: PYGION
           - system: REGENT
           - system: REALM
-          # - system: STARPU
-          #   hwloc: 1
+          - system: STARPU
+            hwloc: 1
           # - system: PARSEC
           #   hwloc: 1
           - system: HPX
