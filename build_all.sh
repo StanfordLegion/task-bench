@@ -127,24 +127,14 @@ if [[ $USE_REGENT -eq 1 ]]; then
         if [[ -z $CXX ]]; then
             export CXX=c++
         fi
-        unset LG_RT_DIR
-        if [[ -z $GITHUB_ACTIONS ]]; then
-            ./scripts/setup_env.py -j$THREADS
-        else
-            ./install.py
-        fi
+        ./scripts/setup_env.py -j$THREADS
     )
     popd
     (
         if [[ -n $CRAYPE_VERSION ]]; then
             export CC=gcc CXX=g++
         fi
-        SHARD_SIZE=30 make -C regent -j$THREADS &
-        sleep 1
-        SHARD_SIZE=15 make -C regent -j$THREADS &
-        sleep 1
-        SHARD_SIZE=14 make -C regent -j$THREADS &
-        wait
+        make -C regent -j$THREADS
     )
 fi
 )

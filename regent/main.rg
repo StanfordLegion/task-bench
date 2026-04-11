@@ -14,53 +14,13 @@
 
 import "regent"
 
+local launcher = require("std/launcher")
+
 local c = regentlib.c
 local core = terralib.includec("core_c.h")
 
-do
-  local root_dir = arg[0]:match(".*/") or "./"
-
-  local include_path = ""
-  local include_dirs = terralib.newlist()
-  include_dirs:insert("-I")
-  include_dirs:insert(root_dir)
-  for path in string.gmatch(os.getenv("INCLUDE_PATH"), "[^;]+") do
-    include_path = include_path .. " -I " .. path
-    include_dirs:insert("-I")
-    include_dirs:insert(path)
-  end
-
-  local mapper_cc = root_dir .. "mapper.cc"
-  if os.getenv('OBJNAME') then
-    local out_dir = os.getenv('OBJNAME'):match('.*/') or './'
-    mapper_so = out_dir .. "libmapper.so"
-  elseif os.getenv('SAVEOBJ') == '1' then
-    mapper_so = root_dir .. "libmapper.so"
-  else
-    mapper_so = os.tmpname() .. ".so" -- root_dir .. "mapper.so"
-  end
-  local cxx = os.getenv('CXX') or 'c++'
-  local max_dim = os.getenv('MAX_DIM') or '3'
-
-  local cxx_flags = os.getenv('CC_FLAGS') or ''
-  cxx_flags = cxx_flags .. " -O2 -Wall -Werror -DLEGION_MAX_DIM=" .. max_dim .. " -DREALM_MAX_DIM=" .. max_dim
-  if os.execute('test "$(uname)" = Darwin') == 0 then
-    cxx_flags =
-      (cxx_flags ..
-         " -dynamiclib -single_module -undefined dynamic_lookup -fPIC")
-  else
-    cxx_flags = cxx_flags .. " -shared -fPIC"
-  end
-
-  local cmd = (cxx .. " " .. cxx_flags .. include_path .. " " ..
-                 mapper_cc .. " -o " .. mapper_so)
-  if os.execute(cmd) ~= 0 then
-    print("Error: failed to compile " .. mapper_cc)
-    assert(false)
-  end
-  terralib.linklibrary(mapper_so)
-  cmapper = terralib.includec("mapper.h", include_dirs)
-end
+-- Compile and link mapper.cc
+local cmapper = launcher.build_library("mapper")
 
 local MAX_GRAPHS = 1
 local MAX_DSETS = 3
@@ -476,17 +436,15 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
         regentlib.assert(period % core.task_graph_timestep_period(graph) == 0, "precomputed period is not divisible by task graph period")
         var [max_timesteps] = graph.timesteps
         var [max_width] = graph.max_width
-        __demand(__spmd)
-        do
-          for point = 0, max_width do
-            init_scratch([pscratch[graph_idx]][point])
-          end
 
-          for [trial] = 0, 3 do
-            __demand(__trace)
-            for [timestep] = 0, max_timesteps + period - 1, period do
-              [body_actions]
-            end
+        for point = 0, max_width do
+          init_scratch([pscratch[graph_idx]][point])
+        end
+
+        for [trial] = 0, 3 do
+          __demand(__trace)
+          for [timestep] = 0, max_timesteps + period - 1, period do
+            [body_actions]
           end
         end
       end)
@@ -608,7 +566,7 @@ local work_task = terralib.memoize(function(n_graphs, n_dsets, max_inputs)
 
     regentlib.assert(max_timesteps % 2 == 0, "must run even number of timesteps")
 
-    __demand(__spmd, __trace)
+    __demand(__trace)
     for timestep = 0, max_timesteps, 2 do
       for point = 0, max_width do
         f1(primary[point], secondary[point], pscratch[point], ptime[point],
@@ -724,20 +682,13 @@ task main()
   [dispatch_work_task(n_graphs, n_dsets, max_inputs)]
 end
 
-if os.getenv('SAVEOBJ') == '1' then
-  local root_dir = arg[0]:match(".*/") or "./"
-  local core_dir = root_dir .. "../core/"
+local root_dir = arg[0]:match(".*/") or "./"
+local core_dir = root_dir .. "../core/"
+regentlib.linklibrary(core_dir .. "libcore.so")
+if os.getenv('SAVEOBJ') == '1' and os.getenv('STANDALONE') == '1' then
+  -- Hack: work around incomplete launcher support in 26.03.0
   local out_dir = (os.getenv('OBJNAME') and os.getenv('OBJNAME'):match('.*/')) or root_dir
-  local link_flags = terralib.newlist({"-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore", "-L" .. out_dir, "-lmapper"})
-
-  if os.getenv('STANDALONE') == '1' then
-    os.execute('cp ' .. core_dir .. 'libcore.so ' .. out_dir)
-    os.execute('cp ' .. os.getenv('LG_RT_DIR') .. '/../bindings/regent/libregent.so ' .. out_dir)
-  end
-
-  local exe = os.getenv('OBJNAME') or "main"
-  regentlib.saveobj(main, exe, "executable", cmapper.register_mappers, link_flags)
-else
-  terralib.linklibrary("../core/libcore.so")
-  regentlib.start(main, cmapper.register_mappers)
+  os.execute('cp --no-dereference ' .. os.getenv('LEGION_INSTALL_PREFIX') .. '/lib/liblegion.so* ' .. out_dir)
+  os.execute('cp --no-dereference ' .. os.getenv('LEGION_INSTALL_PREFIX') .. '/lib/librealm.so* ' .. out_dir)
 end
+launcher.launch(main, "task_bench", cmapper.register_mappers, {"-Wl,-rpath,$ORIGIN/../core", "-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore", "-lmapper"})
