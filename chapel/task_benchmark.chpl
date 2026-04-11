@@ -49,8 +49,9 @@ proc main(args: [] string) {
   }
 
   var task_result = make_task_result(n_graphs, max_width, max_output_bytes);
-  var task_ready = make_task_atomics(n_graphs, max_width, max_timesteps);
-  var task_used = make_task_atomics(n_graphs, max_width, max_timesteps);
+  const task_atomics_dom = make_task_atomics_domain(n_graphs, max_width, max_timesteps);
+  var task_ready: [task_atomics_dom] atomic int(64);
+  var task_used: [task_atomics_dom] atomic int(64);
 
   task_ready[.., .., ..].write(0);
   task_used[.., .., ..].write(0);
@@ -74,24 +75,24 @@ proc make_task_result(n_graphs, max_width, max_output_bytes) {
   forall i in 0..numLocales-1 {
     targets[0, i, 0] = Locales[i];
   }
-  const D: domain(3) dmapped Block(boundingBox=space, targetLocales=targets) = space;
+  const BlkDist = new blockDist(boundingBox=space, targetLocales=targets);
+  const D = BlkDist.createDomain(space);
   var result: [D] int(64);
   return result;
 }
 
-proc make_task_atomics(n_graphs, max_width, max_timesteps) {
+proc make_task_atomics_domain(n_graphs, max_width, max_timesteps) {
   const space = {0..n_graphs-1, 0..max_width-1, 0..max_timesteps-1};
   const locale_space = {0..0, 0..numLocales-1, 0..0};
   var targets: [locale_space] locale;
   forall i in 0..numLocales-1 {
     targets[0, i, 0] = Locales[i];
   }
-  const D: domain(3) dmapped Block(boundingBox=space, targetLocales=targets) = space;
-  var result: [D] atomic int(64);
-  return result;
+  const BlkDist = new blockDist(boundingBox=space, targetLocales=targets);
+  return BlkDist.createDomain(space);
 }
 
-proc execute_task_graphs(graphs, task_result, task_ready, task_used) {
+proc execute_task_graphs(graphs, ref task_result, ref task_ready, ref task_used) {
   coforall loc in Locales {
     on loc {
       coforall graph in graphs {
@@ -102,7 +103,7 @@ proc execute_task_graphs(graphs, task_result, task_ready, task_used) {
   }
 }
 
-proc execute_task_graph2(graph, task_result, task_ready, task_used) {
+proc execute_task_graph2(graph, ref task_result, ref task_ready, ref task_used) {
   const graph_index = graph.graph_index;
 
   // Figure out which set of points have been assigned to this locale.
