@@ -34,7 +34,7 @@ jobs:
           #   hwloc: 1
           - system: HPX
           - system: CHARM
-          # - system: CHAPEL
+          - system: CHAPEL
           # - system: X10
           - system: OPENMP
           # - system: SPARK

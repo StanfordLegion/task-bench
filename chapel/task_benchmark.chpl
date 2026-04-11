@@ -16,7 +16,7 @@
 use Time;
 use BlockDist;
 config const quiet: bool = false;
-var t: Timer;
+var t: stopwatch;
 
 extern {
 
@@ -49,8 +49,9 @@ proc main(args: [] string) {
   }
 
   var task_result = make_task_result(n_graphs, max_width, max_output_bytes);
-  var task_ready = make_task_atomics(n_graphs, max_width, max_timesteps);
-  var task_used = make_task_atomics(n_graphs, max_width, max_timesteps);
+  const task_atomics_dom = make_task_atomics_domain(n_graphs, max_width, max_timesteps);
+  var task_ready: [task_atomics_dom] atomic int(64);
+  var task_used: [task_atomics_dom] atomic int(64);
 
   task_ready[.., .., ..].write(0);
   task_used[.., .., ..].write(0);
@@ -74,24 +75,24 @@ proc make_task_result(n_graphs, max_width, max_output_bytes) {
   forall i in 0..numLocales-1 {
     targets[0, i, 0] = Locales[i];
   }
-  const D: domain(3) dmapped Block(boundingBox=space, targetLocales=targets) = space;
+  const BlkDist = new blockDist(boundingBox=space, targetLocales=targets);
+  const D = BlkDist.createDomain(space);
   var result: [D] int(64);
   return result;
 }
 
-proc make_task_atomics(n_graphs, max_width, max_timesteps) {
+proc make_task_atomics_domain(n_graphs, max_width, max_timesteps) {
   const space = {0..n_graphs-1, 0..max_width-1, 0..max_timesteps-1};
   const locale_space = {0..0, 0..numLocales-1, 0..0};
   var targets: [locale_space] locale;
   forall i in 0..numLocales-1 {
     targets[0, i, 0] = Locales[i];
   }
-  const D: domain(3) dmapped Block(boundingBox=space, targetLocales=targets) = space;
-  var result: [D] atomic int(64);
-  return result;
+  const BlkDist = new blockDist(boundingBox=space, targetLocales=targets);
+  return BlkDist.createDomain(space);
 }
 
-proc execute_task_graphs(graphs, task_result, task_ready, task_used) {
+proc execute_task_graphs(graphs, ref task_result, ref task_ready, ref task_used) {
   coforall loc in Locales {
     on loc {
       coforall graph in graphs {
@@ -102,7 +103,7 @@ proc execute_task_graphs(graphs, task_result, task_ready, task_used) {
   }
 }
 
-proc execute_task_graph2(graph, task_result, task_ready, task_used) {
+proc execute_task_graph2(graph, ref task_result, ref task_ready, ref task_used) {
   const graph_index = graph.graph_index;
 
   // Figure out which set of points have been assigned to this locale.
@@ -130,13 +131,13 @@ proc execute_task_graph2(graph, task_result, task_ready, task_used) {
     var inputs: [{0..max_deps-1, 0..(output_bytes/8)-1}] int(64);
 
     var scratch_bytes = graph.scratch_bytes_per_task;
-    var scratch_ptr = c_malloc(int(8), scratch_bytes);
+    var scratch_ptr = allocate(int(8), scratch_bytes);
     task_graph_prepare_scratch(scratch_ptr, scratch_bytes);
 
     // Initialize input_ptr and input_bytes... these don't need to
     // change because we can just set n_inputs dynamically.
-    var input_ptr = c_malloc(c_ptr(int(64)), max_deps);
-    var input_bytes = c_malloc(uint(64), max_deps);
+    var input_ptr = allocate(c_ptr(int(64)), max_deps);
+    var input_bytes = allocate(uint(64), max_deps);
     for dep in 0..max_deps-1 {
         input_ptr[dep] = c_ptrTo(inputs[dep, 0]);
         input_bytes[dep] = output_bytes:uint(64);
@@ -261,16 +262,16 @@ proc execute_task_graph2(graph, task_result, task_ready, task_used) {
       }
     }
 
-    c_free(scratch_ptr);
+    deallocate(scratch_ptr);
   }
 }
 
 proc convert_args_to_c_args(argc, args) {
-  var result = c_malloc(c_ptr(int(8)), argc + 1);
+  var result = allocate(c_ptr(int(8)), argc + 1);
  	  // not efficent but needed to convert args
   for i in 0..argc - 1 {
  		  // make c memeory for each word
-    var curr = c_malloc(int(8), args[i].size + 1);
+    var curr = allocate(int(8), args[i].size + 1);
  		  // loop over each character to add it to a string 
     var j = 0;
     for chr in args[i] {
