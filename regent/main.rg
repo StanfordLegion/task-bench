@@ -685,4 +685,4 @@ end
 local root_dir = arg[0]:match(".*/") or "./"
 local core_dir = root_dir .. "../core/"
 regentlib.linklibrary(core_dir .. "libcore.so")
-launcher.launch(main, "task_bench", cmapper.register_mappers, {"-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore", "-L" .. out_dir, "-lmapper"})
+launcher.launch(main, "task_bench", cmapper.register_mappers, {"-Wl,-rpath,$ORIGIN", "-L" .. core_dir, "-lcore", "-lmapper"})
