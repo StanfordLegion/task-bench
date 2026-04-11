@@ -11,6 +11,9 @@ jobs:
     runs-on: 'ubuntu-24.04'
     steps:
       - uses: actions/checkout@v6
+      - run: pip install clang-format
+      - run: which clang-format
+      - run: clang-format --version
       - run: CHECK_FORMAT=1 ./format.sh
 
   build:
