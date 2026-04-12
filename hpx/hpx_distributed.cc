@@ -18,7 +18,6 @@
 #include "../core/core.h"
 #include "hpx/hpx.hpp"
 #include "hpx/hpx_init.hpp"
-
 #include "mpi.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -65,7 +64,6 @@ int hpx_main(int argc, char *argv[])
     double start_time = MPI_Wtime();
 
     for (auto graph : app.graphs) {
-
       long first_point = rank * graph.max_width / n_ranks;
       long last_point = (rank + 1) * graph.max_width / n_ranks - 1;
       long n_points = last_point - first_point + 1;
@@ -150,8 +148,10 @@ int hpx_main(int argc, char *argv[])
       // optimization for certain types, wherein only the boundary cores of a
       // node need to communicate with cores from another nodes, which means the
       // inner cores only use on-node sharing.
-      if (graph.dependence == (RANDOM_NEAREST ||  NEAREST || STENCIL_1D ||
-          STENCIL_1D_PERIODIC || FFT || NO_COMM || TRIVIAL)) {
+      if (graph.dependence == (RANDOM_NEAREST || NEAREST || STENCIL_1D ||
+                               STENCIL_1D_PERIODIC || FFT || NO_COMM ||
+                               TRIVIAL))
+      {
         for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
           long offset = graph.offset_at_timestep(timestep);
           long width = graph.width_at_timestep(timestep);
@@ -161,92 +161,102 @@ int hpx_main(int argc, char *argv[])
           auto &deps = dependencies[dset];
           auto &rev_deps = reverse_dependencies[dset];
 
-          hpx::experimental::for_loop(policy, first_point, last_point+1, [&](int point) {
-            std::vector<MPI_Request> requests;
-            long point_index = point - first_point;
-            auto &point_inputs = inputs[point_index];
-            auto &point_n_inputs = n_inputs[point_index];
-            auto &point_output = outputs[point_index];
-            auto &point_output_new = outputs_new[point_index];
-            auto &point_input_ptr = input_ptr[point_index];
-            auto &point_input_bytes = input_bytes[point_index];
-            auto &point_deps = deps[point_index];
-            auto &point_rev_deps = rev_deps[point_index];
+          hpx::experimental::for_loop(
+              policy, first_point, last_point + 1, [&](int point) {
+                std::vector<MPI_Request> requests;
+                long point_index = point - first_point;
+                auto &point_inputs = inputs[point_index];
+                auto &point_n_inputs = n_inputs[point_index];
+                auto &point_output = outputs[point_index];
+                auto &point_output_new = outputs_new[point_index];
+                auto &point_input_ptr = input_ptr[point_index];
+                auto &point_input_bytes = input_bytes[point_index];
+                auto &point_deps = deps[point_index];
+                auto &point_rev_deps = rev_deps[point_index];
 
-            // Receive
-            point_n_inputs = 0;
-            if (point >= offset && point < offset + width) {
-              for (auto interval : point_deps) {
-                for (long dep = interval.first; dep <= interval.second; ++dep) {
-                  if (dep < last_offset || dep >= last_offset + last_width) {
-                    continue;
-                  }
-                  // Use shared memory for on-node data.
-                  if (first_point <= dep && dep <= last_point) {
-                    auto output = outputs[dep - first_point];
-                    if (timestep % 2 == 0) {
-                      point_inputs[point_n_inputs].assign(output.begin(),
-                                                        output.end());
-                    } else {
-                      auto output_new = outputs_new[dep - first_point];
-                      point_inputs[point_n_inputs].assign(output_new.begin(),
-                                                        output_new.end());
+                // Receive
+                point_n_inputs = 0;
+                if (point >= offset && point < offset + width) {
+                  for (auto interval : point_deps) {
+                    for (long dep = interval.first; dep <= interval.second;
+                         ++dep) {
+                      if (dep < last_offset ||
+                          dep >= last_offset + last_width) {
+                        continue;
+                      }
+                      // Use shared memory for on-node data.
+                      if (first_point <= dep && dep <= last_point) {
+                        auto output = outputs[dep - first_point];
+                        if (timestep % 2 == 0) {
+                          point_inputs[point_n_inputs].assign(output.begin(),
+                                                              output.end());
+                        } else {
+                          auto output_new = outputs_new[dep - first_point];
+                          point_inputs[point_n_inputs].assign(
+                              output_new.begin(), output_new.end());
+                        }
+                      } else {
+                        int from = tag_bits_by_point[dep];
+                        int to = tag_bits_by_point[point];
+                        int tag = (from << 8) | to;
+                        MPI_Request req;
+                        MPI_Irecv(point_inputs[point_n_inputs].data(),
+                                  point_inputs[point_n_inputs].size(), MPI_BYTE,
+                                  rank_by_point[dep], tag, MPI_COMM_WORLD,
+                                  &req);
+                        requests.push_back(req);
+                      }
+                      point_n_inputs++;
                     }
-                  } else {
-                    int from = tag_bits_by_point[dep];
-                    int to = tag_bits_by_point[point];
-                    int tag = (from << 8) | to;
-                    MPI_Request req;
-                    MPI_Irecv(point_inputs[point_n_inputs].data(),
-                              point_inputs[point_n_inputs].size(), MPI_BYTE,
-                              rank_by_point[dep], tag, MPI_COMM_WORLD, &req);
-                    requests.push_back(req);
                   }
-                  point_n_inputs++;
+                }  // receive
+
+                // Send
+                if (point >= last_offset && point < last_offset + last_width) {
+                  for (auto interval : point_rev_deps) {
+                    for (long dep = interval.first; dep <= interval.second;
+                         dep++) {
+                      if (dep < offset || dep >= offset + width ||
+                          (first_point <= dep && dep <= last_point))
+                      {
+                        continue;
+                      }
+                      int from = tag_bits_by_point[point];
+                      int to = tag_bits_by_point[dep];
+                      int tag = (from << 8) | to;
+                      MPI_Request req;
+                      if (timestep % 2 == 0) {
+                        MPI_Isend(point_output.data(), point_output.size(),
+                                  MPI_BYTE, rank_by_point[dep], tag,
+                                  MPI_COMM_WORLD, &req);
+                      } else {
+                        MPI_Isend(point_output_new.data(),
+                                  point_output_new.size(), MPI_BYTE,
+                                  rank_by_point[dep], tag, MPI_COMM_WORLD,
+                                  &req);
+                      }
+                      requests.push_back(req);
+                    }
+                  }
+                }  // send
+
+                MPI_Waitall(requests.size(), requests.data(),
+                            MPI_STATUSES_IGNORE);
+
+                if (timestep % 2 == 0) {
+                  graph.execute_point(
+                      timestep, point, point_output_new.data(),
+                      point_output_new.size(), point_input_ptr.data(),
+                      point_input_bytes.data(), point_n_inputs,
+                      scratch_ptr + scratch_bytes * point_index, scratch_bytes);
+                } else {
+                  graph.execute_point(
+                      timestep, point, point_output.data(), point_output.size(),
+                      point_input_ptr.data(), point_input_bytes.data(),
+                      point_n_inputs, scratch_ptr + scratch_bytes * point_index,
+                      scratch_bytes);
                 }
-              }
-            }  // receive
-
-            // Send
-            if (point >= last_offset && point < last_offset + last_width) {
-              for (auto interval : point_rev_deps) {
-                for (long dep = interval.first; dep <= interval.second; dep++) {
-                  if (dep < offset || dep >= offset + width ||
-                      (first_point <= dep && dep <= last_point)) {
-                    continue;
-                  }
-                  int from = tag_bits_by_point[point];
-                  int to = tag_bits_by_point[dep];
-                  int tag = (from << 8) | to;
-                  MPI_Request req;
-                  if (timestep % 2 == 0) {
-                      MPI_Isend(point_output.data(), point_output.size(), MPI_BYTE,
-                            rank_by_point[dep], tag, MPI_COMM_WORLD, &req);
-                  } else {
-                      MPI_Isend(point_output_new.data(), point_output_new.size(), MPI_BYTE,
-                            rank_by_point[dep], tag, MPI_COMM_WORLD, &req);
-                  }
-                  requests.push_back(req);
-                }
-              }
-            }  // send
-
-            MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-
-            if (timestep % 2 == 0) {
-                graph.execute_point(timestep, point, point_output_new.data(),
-                                point_output_new.size(), point_input_ptr.data(),
-                                point_input_bytes.data(), point_n_inputs,
-                                scratch_ptr + scratch_bytes * point_index,
-                                scratch_bytes);
-            } else {
-                graph.execute_point(timestep, point, point_output.data(),
-                                point_output.size(), point_input_ptr.data(),
-                                point_input_bytes.data(), point_n_inputs,
-                                scratch_ptr + scratch_bytes * point_index,
-                                scratch_bytes);
-            }
-          });  // one hpx for loop 
+              });  // one hpx for loop
         }
       } else {
         for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
@@ -300,7 +310,8 @@ int hpx_main(int argc, char *argv[])
               for (auto interval : point_rev_deps) {
                 for (long dep = interval.first; dep <= interval.second; dep++) {
                   if (dep < offset || dep >= offset + width ||
-                      (first_point <= dep && dep <= last_point)) {
+                      (first_point <= dep && dep <= last_point))
+                  {
                     continue;
                   }
                   int from = tag_bits_by_point[point];
@@ -313,7 +324,7 @@ int hpx_main(int argc, char *argv[])
                 }
               }
             }  // send
-          }  
+          }
 
           MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
@@ -332,11 +343,11 @@ int hpx_main(int argc, char *argv[])
                                   point_input_bytes.data(), point_n_inputs,
                                   scratch_ptr + scratch_bytes * point_index,
                                   scratch_bytes);
-            });  
+            });
           }
-        } 
-      } 
-    }    // for graphs loop
+        }
+      }
+    }  // for graphs loop
 
     double stop_time = MPI_Wtime();
     elapsed_time = stop_time - start_time;
@@ -354,7 +365,8 @@ int main(int argc, char *argv[])
 {
   // all ranks run their main function
   std::vector<std::string> const cfg = {
-      "hpx.run_hpx_main!=1", "--hpx:ini=hpx.commandline.allow_unknown!=1",
+      "hpx.run_hpx_main!=1",
+      "--hpx:ini=hpx.commandline.allow_unknown!=1",
       "--hpx:ini=hpx.commandline.aliasing!=0",
       //"--hpx:ini=hpx.stacks.small_size!=0x20000"
   };
