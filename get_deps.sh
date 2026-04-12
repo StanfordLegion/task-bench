@@ -108,14 +108,14 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
     export HWLOC_DL_DIR="$TASKBENCH_DEPS_DIR"/hwloc
     cat >>deps/env.sh <<EOF
 export HWLOC_DL_DIR="\$TASKBENCH_DEPS_DIR"/hwloc
-export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
+export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.13
 export HWLOC_DIR=$HWLOC_DL_DIR/install
 
 EOF
-    wget -nv https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
+    wget -nv https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.13.tar.gz
     mkdir -p "$HWLOC_DL_DIR"
-    tar -zxf hwloc-1.11.10.tar.gz -C "$HWLOC_DL_DIR"
-    rm hwloc-1.11.10.tar.gz
+    tar -zxf hwloc-1.11.13.tar.gz -C "$HWLOC_DL_DIR"
+    rm hwloc-1.11.13.tar.gz
 fi
 
 if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
