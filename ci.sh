@@ -27,6 +27,8 @@ if [[ "$(uname)" = "Linux" ]]; then
   fi
 fi
 
-./get_deps.sh
+if [[ ! -d deps ]]; then
+    ./get_deps.sh
+fi
 ./build_all.sh
 ./test_all.sh
