@@ -173,8 +173,8 @@ int hpx_main(int argc, char *argv[])
                   for (auto interval : point_deps) {
                     for (long dep = interval.first; dep <= interval.second;
                          ++dep) {
-                      if (dep < last_offset || dep >= last_offset + last_width)
-                      {
+                      if (dep < last_offset ||
+                          dep >= last_offset + last_width) {
                         continue;
                       }
                       // Use shared memory for on-node data.
