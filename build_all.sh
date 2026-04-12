@@ -174,16 +174,30 @@ if [[ $USE_REALM -eq 1 ]]; then
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
-    STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples --disable-mlr --disable-hdf5 --enable-fast --enable-maxnodes=1"
-    if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
-      STARPU_CONFIGURE_FLAG+=""
-    else
-      STARPU_CONFIGURE_FLAG+="--without-hwloc"
+    pushd "$STARPU_DL_DIR"
+    if [[ ! -d install ]]; then
+        mkdir build
+        starpu_configure_flags=(
+            --disable-cuda
+            --disable-opencl
+            --disable-fortran
+            --disable-build-tests
+            --disable-build-examples
+            --disable-mlr
+            --disable-hdf5
+            --enable-fast
+            --enable-maxnodes=1
+        )
+        if [[ $TASKBENCH_USE_HWLOC -ne 1 ]]; then
+            starpu_configure_flags+=(--without-hwloc)
+        fi
+        pushd "$STARPU_SRC_DIR"
+        PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ./configure --prefix=$STARPU_DIR "${starpu_configure_flags[@]}"
+        make -j$THREADS
+        make install
+        popd
+        rm -rf build
     fi
-    pushd "$STARPU_SRC_DIR"
-    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ./configure --prefix=$STARPU_DIR $STARPU_CONFIGURE_FLAG
-    make -j$THREADS
-    make install
     popd
     make -C starpu clean
     make -C starpu -j$THREADS

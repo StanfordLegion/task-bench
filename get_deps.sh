@@ -170,7 +170,7 @@ if [[ $USE_STARPU -eq 1 ]]; then
     cat >>deps/env.sh <<EOF
 export STARPU_DL_DIR="\$TASKBENCH_DEPS_DIR"/starpu
 export STARPU_SRC_DIR="\$STARPU_DL_DIR"/starpu-1.3.11
-export STARPU_DIR="\$STARPU_DL_DIR"
+export STARPU_DIR="\$STARPU_DL_DIR/install"
 
 EOF
     wget -nv https://files.inria.fr/starpu/starpu-1.3.11/starpu-1.3.11.tar.gz
