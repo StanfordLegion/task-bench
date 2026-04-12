@@ -29,6 +29,16 @@ if [[ "$(uname)" = "Linux" ]]; then
     export STARPU_WORKERS_NOBIND=1
     ulimit -c unlimited || true
     sudo sysctl -w kernel.core_pattern="$PWD/core.%e.%p" || true
+    sudo apt-get install -qq gdb
+    dump_cores() {
+      for c in "$PWD"/core.*; do
+        [[ -e "$c" ]] || continue
+        echo "=== backtrace for $c ==="
+        gdb -batch -ex "thread apply all bt" ./starpu/main "$c" || true
+        gdb -batch -ex "thread apply all bt" ./starpu/main_expl "$c" || true
+      done
+    }
+    trap dump_cores EXIT
   fi
   if [[ $USE_CHAPEL -eq 1 ]]; then
     sudo apt-get install -qq clang-18 libclang-18-dev libclang-cpp18-dev llvm-18-dev libedit-dev libncurses5-dev zlib1g-dev
