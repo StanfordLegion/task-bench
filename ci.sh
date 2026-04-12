@@ -24,6 +24,7 @@ if [[ "$(uname)" = "Linux" ]]; then
     echo "=== /proc/cpuinfo (summary) ==="; grep -c ^processor /proc/cpuinfo || true
     export STARPU_SILENT=0
     export STARPU_WORKER_STATS=1
+    export STARPU_WORKERS_NOBIND=1
     ulimit -c unlimited || true
     sudo sysctl -w kernel.core_pattern="$PWD/core.%e.%p" || true
   fi
