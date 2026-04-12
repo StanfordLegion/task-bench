@@ -47,6 +47,11 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/cache@v4
+        with:
+          path: deps
+          key: deps-${{ matrix.system }}-${{ hashFiles('get_deps.sh', 'build_all.sh') }}
+          restore-keys: deps-${{ matrix.system }}-
       - run: ./ci.sh
         env:
           SYSTEM: ${{ matrix.system }}

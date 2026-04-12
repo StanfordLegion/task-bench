@@ -101,7 +101,7 @@ export GASNET_DIR="\$TASKBENCH_DEPS_DIR"/gasnet
 export GASNET_CONDUIT=$CONDUIT
 
 EOF
-    git clone https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
+    git clone --depth 1 https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
 fi
 
 if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
@@ -115,7 +115,7 @@ EOF
     wget -nv https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
     mkdir -p "$HWLOC_DL_DIR"
     tar -zxf hwloc-1.11.10.tar.gz -C "$HWLOC_DL_DIR"
-    rm -rf hwloc-1.11.10.tar.gz
+    rm hwloc-1.11.10.tar.gz
 fi
 
 if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
@@ -127,7 +127,7 @@ export USE_PYTHON=\$USE_PYGION
 export USE_LIBDL=\$USE_PYGION
 
 EOF
-    git clone -b legion-26.03.0 https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
+    git clone -b legion-26.03.0 --depth 1 https://gitlab.com/StanfordLegion/legion.git "$LEGION_DIR"
 fi
 
 if [[ $USE_REALM -eq 1 ]]; then
@@ -136,7 +136,7 @@ if [[ $USE_REALM -eq 1 ]]; then
 export REALM_DIR="\$TASKBENCH_DEPS_DIR"/realm
 
 EOF
-    git clone https://github.com/StanfordLegion/realm.git "$REALM_DIR"
+    git clone --depth 1 https://github.com/StanfordLegion/realm.git "$REALM_DIR"
 fi
 
 (if [[ $USE_PYGION -eq 1 ]]; then
@@ -291,7 +291,7 @@ EOF
     # FIXME: hitting https://github.com/x10-lang/x10/issues/32
     # git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
     # git -C "$X10_DIR"/x10 reset --hard 9212dc271c8bcba805c82114617d47506747ee3a
-    git clone -b task-bench https://github.com/elliottslaughter/x10.git "$X10_DIR"/x10
+    git clone -b task-bench --depth 1 https://github.com/elliottslaughter/x10.git "$X10_DIR"/x10
 fi
 
 (if [[ $USE_HPX -eq 1 ]]; then
