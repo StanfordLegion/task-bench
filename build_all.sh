@@ -191,8 +191,8 @@ if [[ $USE_STARPU -eq 1 ]]; then
         if [[ $TASKBENCH_USE_HWLOC -ne 1 ]]; then
             starpu_configure_flags+=(--without-hwloc)
         fi
-        pushd "$STARPU_SRC_DIR"
-        PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ./configure --prefix=$STARPU_DIR "${starpu_configure_flags[@]}"
+        pushd build
+        PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig "$STARPU_SRC_DIR"/configure --prefix=$STARPU_DIR "${starpu_configure_flags[@]}"
         make -j$THREADS
         make install
         popd
