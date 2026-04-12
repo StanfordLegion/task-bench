@@ -104,7 +104,7 @@ EOF
     git clone --depth 1 https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
 fi
 
-if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
+if [[ $TASKBENCH_USE_HWLOC -eq 1 && -z $CI ]]; then
     export HWLOC_DL_DIR="$TASKBENCH_DEPS_DIR"/hwloc
     cat >>deps/env.sh <<EOF
 export HWLOC_DL_DIR="\$TASKBENCH_DEPS_DIR"/hwloc

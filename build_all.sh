@@ -59,7 +59,7 @@ if [[ $USE_GASNET -eq 1 ]]; then
     make -C "$GASNET_DIR"
 fi
 
-if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
+if [[ $TASKBENCH_USE_HWLOC -eq 1 && -z $CI ]]; then
     pushd "$HWLOC_DL_DIR"
     if [[ ! -d $HWLOC_DIR ]]; then
         mkdir build
