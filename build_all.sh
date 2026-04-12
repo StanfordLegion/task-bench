@@ -60,13 +60,15 @@ if [[ $USE_GASNET -eq 1 ]]; then
 fi
 
 if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
-    pushd "$HWLOC_SRC_DIR"
-    if [[ ! -d build ]]; then
+    pushd "$HWLOC_DL_DIR"
+    if [[ ! -d $HWLOC_DIR ]]; then
         mkdir build
-        cd build
-        ../configure --prefix=$HWLOC_DIR
+        pushd build
+        $HWLOC_SRC_DIR/configure --prefix=$HWLOC_DIR
         make -j$THREADS
         make install
+        popd
+        rm -rf build
     fi
     popd
 fi
