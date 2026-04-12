@@ -15,6 +15,8 @@ if [[ "$(uname)" = "Linux" ]]; then
   # To avoid error where OpenMPI doesn't think it has enough slots available.
   export OMPI_MCA_rmaps_base_oversubscribe=yes
   export OMPI_MCA_rmaps_base_mapping_policy="core:OVERSUBSCRIBE"
+  # Don't bind cores either.
+  export OMPI_MCA_hwloc_base_binding_policy=none
   # Print stack traces on failure of MPI programs.
   export OMPI_MCA_mpi_abort_print_stack=1
   # Debug StarPU CI-only crash: dump topology, force single worker, enable core dumps.
