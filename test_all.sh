@@ -195,17 +195,15 @@ fi
         done
     done
 
-    # FIXME: hpx_distributed is known to freeze nondeterministically due to a
-    # synchronization bug in the MPI+HPX implementation (see issue #94).
-    # Skip these tests until the bug is resolved.
-    # for t in "${extended_types[@]}"; do
-    #     for k in "${kernels[@]}"; do
-    #         mpirun -np 1 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
-    #         mpirun -np 2 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
-    #         mpirun -np 4 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
-    #         mpirun -np 4 ./hpx/bin/hpx_distributed -steps $steps -type $t $k  -and -steps $steps -type $t $k
-    #     done
-    # done
+    # Test hpx_distributed (default parallel executor + MPI)
+    for t in "${extended_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            mpirun -np 1 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
+            mpirun -np 2 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
+            mpirun -np 4 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
+            mpirun -np 4 ./hpx/bin/hpx_distributed -steps $steps -type $t $k -and -steps $steps -type $t $k
+        done
+    done
 fi)
 
 if [[ $USE_CHAPEL -eq 1 ]]; then

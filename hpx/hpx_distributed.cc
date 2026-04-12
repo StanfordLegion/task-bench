@@ -30,19 +30,10 @@ int hpx_main(int argc, char *argv[])
   App app(argc, argv);
   if (rank == 0) app.display();
 
-  int chunk_size =
-      app.graphs[0].max_width / (n_ranks * hpx::get_os_thread_count());
-
-  hpx::execution::experimental::static_chunk_size cs(chunk_size);
-
-  using executor = hpx::execution::experimental::fork_join_executor;
-  executor exec(hpx::threads::thread_priority::normal,
-                hpx::threads::thread_stacksize::small_,
-                chunk_size == 1 ? executor::loop_schedule::static_
-                                : executor::loop_schedule::dynamic,
-                std::chrono::microseconds(100));
-
-  auto policy = hpx::execution::par.on(exec).with(cs);
+  // Use the default parallel executor (task-based) instead of fork_join_executor.
+  // fork_join_executor busy-spins all HPX threads, starving OpenMPI's async
+  // progress thread and causing MPI_Waitall to hang nondeterministically.
+  auto policy = hpx::execution::par;
 
   std::vector<std::vector<char> > scratch;
 
@@ -148,10 +139,12 @@ int hpx_main(int argc, char *argv[])
       // optimization for certain types, wherein only the boundary cores of a
       // node need to communicate with cores from another nodes, which means the
       // inner cores only use on-node sharing.
-      if (graph.dependence == (RANDOM_NEAREST || NEAREST || STENCIL_1D ||
-                               STENCIL_1D_PERIODIC || FFT || NO_COMM ||
-                               TRIVIAL))
-      {
+      auto is_optimized = [](DependenceType d) {
+        return d == RANDOM_NEAREST || d == NEAREST || d == STENCIL_1D ||
+               d == STENCIL_1D_PERIODIC || d == FFT || d == NO_COMM ||
+               d == TRIVIAL;
+      };
+      if (is_optimized(graph.dependence)) {
         for (long timestep = 0; timestep < graph.timesteps; ++timestep) {
           long offset = graph.offset_at_timestep(timestep);
           long width = graph.width_at_timestep(timestep);
@@ -180,18 +173,18 @@ int hpx_main(int argc, char *argv[])
                   for (auto interval : point_deps) {
                     for (long dep = interval.first; dep <= interval.second;
                          ++dep) {
-                      if (dep < last_offset ||
-                          dep >= last_offset + last_width) {
+                      if (dep < last_offset || dep >= last_offset + last_width)
+                      {
                         continue;
                       }
                       // Use shared memory for on-node data.
                       if (first_point <= dep && dep <= last_point) {
-                        auto output = outputs[dep - first_point];
                         if (timestep % 2 == 0) {
+                          auto &output = outputs[dep - first_point];
                           point_inputs[point_n_inputs].assign(output.begin(),
                                                               output.end());
                         } else {
-                          auto output_new = outputs_new[dep - first_point];
+                          auto &output_new = outputs_new[dep - first_point];
                           point_inputs[point_n_inputs].assign(
                               output_new.begin(), output_new.end());
                         }
@@ -368,7 +361,9 @@ int main(int argc, char *argv[])
       "hpx.run_hpx_main!=1",
       "--hpx:ini=hpx.commandline.allow_unknown!=1",
       "--hpx:ini=hpx.commandline.aliasing!=0",
-      //"--hpx:ini=hpx.stacks.small_size!=0x20000"
+      // Disable HPX's MPI parcelport so it does not interfere with the
+      // application-level MPI calls (tag collisions / progress-thread contention).
+      "--hpx:ini=hpx.parcel.mpi.enable=0",
   };
 
   // Init MPI
