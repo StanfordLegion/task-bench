@@ -73,6 +73,18 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 && -z $CI ]]; then
     popd
 fi
 
+if [[ $TASKBENCH_USE_HWLOC2 -eq 1 ]]; then
+    pushd "$HWLOC2_SRC_DIR"
+    if [[ ! -d build ]]; then
+        mkdir build
+        cd build
+        ../configure --prefix=$HWLOC2_DIR
+        make -j$THREADS
+        make install
+    fi
+    popd
+fi
+
 if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 ]]; then
     pushd "$LEGION_DIR"
     if [[ ! -d build ]]; then
@@ -367,27 +379,52 @@ if [[ $USE_OMPSS -eq 1 ]]; then
 fi
 
 if [[ $USE_OMPSS2 -eq 1 ]]; then
-    # pushd "$BOOST_SRC_DIR"
-    # ./bootstrap.sh --prefix=$OMPSS2_TARGET
-    # ./b2 install
-    # popd
-
-    pushd "$OMPSS2_NANOS6_SRC_DIR"
-    ./autogen.sh
-    mkdir -p build
-    cd build
-    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_TARGET --with-boost=/usr
-    make all -j$THREADS
-    make install -j$THREADS
+    pushd "$OMPSS2_NOSV_SRC_DIR"
+    if [[ ! -d build ]]; then
+	#autoreconf -fiv
+        mkdir build
+	cd build
+	PKG_CONFIG_PATH=$HWLOC2_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_TARGET
+	make -j$THREADS
+	make install
+    fi
     popd
 
-    pushd "$OMPSS2_MCXX_SRC_DIR"
-    autoreconf -fiv
-    mkdir -p build
-    cd build
-    ../configure --prefix=$OMPSS2_TARGET --enable-ompss-2 --with-nanos6=$OMPSS2_TARGET
-    make -j$THREADS
-    make install
+    pushd "$OMPSS2_NANOS6_SRC_DIR"
+    if [[ ! -d build ]]; then
+	mkdir build
+	cd build
+	PKG_CONFIG_PATH=$HWLOC2_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_TARGET --with-boost=/usr --with-hwloc=pkgconfig
+	make all -j$THREADS
+	make install -j$THREADS
+    fi
+    popd
+
+    pushd "$OMPSS2_NODES_SRC_DIR"
+    if [[ ! -d build ]]; then
+	#autoreconf -fiv
+	mkdir build
+	cd build
+	../configure --prefix=$OMPSS2_TARGET --with-nosv=$OMPSS2_TARGET --with-boost=/usr
+	make -j$THREADS
+	make install
+    fi
+    popd
+
+    pushd "$OMPSS2_LLVM_SRC_DIR"
+    if [[ ! -d build ]]; then
+	cmake -S llvm -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$OMPSS2_TARGET \
+              -DLLVM_ENABLE_PROJECTS=clang \
+              -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
+              -DCLANG_DEFAULT_OMPSS2_RUNTIME=libnanos6 \
+              -DCLANG_DEFAULT_NANOS6_HOME=$OMPSS2_TARGET \
+              -DCLANG_DEFAULT_NODES_HOME=$OMPSS2_TARGET \
+              -DCLANG_DEFAULT_NOSV_HOME=$OMPSS2_TARGET
+	make -C build -j$THREADS
+	make -C build install
+    fi
     popd
 
     make -C ompss2 clean

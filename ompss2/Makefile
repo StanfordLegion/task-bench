@@ -1,9 +1,11 @@
 DEBUG ?= 0
 
-MCXX = $(OMPSS2_TARGET)/bin/mcxx
+MCXX = $(OMPSS2_TARGET)/bin/clang++
 
-CXXFLAGS = -DOMPSS2 --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
-LDFLAGS  = --ompss-2 -std=c++11 -Wall -Wno-unused -mcmodel=large --no-copy-deps
+GCC_INSTALL_DIR := $(patsubst %/,%,$(dir $(shell g++ -print-libgcc-file-name)))
+
+CXXFLAGS = -DOMPSS2 -fompss-2 -std=c++11 -Wall -Wno-unused --gcc-install-dir=$(GCC_INSTALL_DIR)
+LDFLAGS  = -fompss-2 -std=c++11 -Wall -Wno-unused --gcc-install-dir=$(GCC_INSTALL_DIR)
 
 ifeq ($(strip $(DEBUG)),1)
 CXXFLAGS += -g -O0 -mavx

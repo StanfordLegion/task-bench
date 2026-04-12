@@ -61,6 +61,7 @@ export TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 export USE_MPI_OPENMP=${USE_MPI_OPENMP:-$DEFAULT_FEATURES}
 export USE_GASNET=${USE_GASNET:-0}
 export TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
+export TASKBENCH_USE_HWLOC2=${TASKBENCH_USE_HWLOC2:-$DEFAULT_FEATURES}
 export USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
 export USE_PYGION=${USE_PYGION:-$DEFAULT_FEATURES}
 export USE_REGENT=${USE_REGENT:-$DEFAULT_FEATURES}
@@ -116,6 +117,20 @@ EOF
     mkdir -p "$HWLOC_DL_DIR"
     tar -zxf hwloc-1.11.13.tar.gz -C "$HWLOC_DL_DIR"
     rm hwloc-1.11.13.tar.gz
+fi
+
+if [[ $TASKBENCH_USE_HWLOC2 -eq 1 ]]; then
+    export HWLOC2_DL_DIR="$TASKBENCH_DEPS_DIR"/hwloc2
+    cat >>deps/env.sh <<EOF
+export HWLOC2_DL_DIR="\$TASKBENCH_DEPS_DIR"/hwloc2
+export HWLOC2_SRC_DIR=$HWLOC2_DL_DIR/hwloc-2.12.2
+export HWLOC2_DIR=$HWLOC2_DL_DIR/install
+
+EOF
+    wget -nv https://download.open-mpi.org/release/hwloc/v2.12/hwloc-2.12.2.tar.gz
+    mkdir -p "$HWLOC2_DL_DIR"
+    tar -zxf hwloc-2.12.2.tar.gz -C "$HWLOC2_DL_DIR"
+    rm -rf hwloc-2.12.2.tar.gz
 fi
 
 if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
@@ -354,11 +369,13 @@ export OMPSS2_NANOS6_SRC_DIR="\$OMPSS2_DL_DIR"/nanos6-4.3
 export OMPSS2_NOSV_SRC_DIR="\$OMPSS2_DL_DIR"/nos-v-4.0.0
 export OMPSS2_NODES_SRC_DIR="\$OMPSS2_DL_DIR"/nodes-1.4.0
 export OMPSS2_LLVM_SRC_DIR="\$OMPSS2_DL_DIR"/llvm-22.0.0git
+export PATH="\$OMPSS2_TARGET/bin:\$PATH"
+export LD_LIBRARY_PATH="\$OMPSS2_TARGET/lib:\$LD_LIBRARY_PATH"
 
 EOF
     mkdir -p "$OMPSS2_DL_DIR"
     wget -nv https://pm.bsc.es/ftp/ompss-2/releases/ompss-2-2025.11.tar.gz
-    tar -zxf ompss-2-2025.11.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
+    tar -zxf ompss-2-2025.11.tar.gz -C "$OMPSS2_DL_DIR" --strip-components 1
     rm -rf ompss-2-2025.11.tar.gz
 fi
 
