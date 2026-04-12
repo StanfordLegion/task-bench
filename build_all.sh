@@ -72,28 +72,31 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
 fi
 
 if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 ]]; then
-    mkdir -p "$LEGION_DIR"/build
-    mkdir -p "$LEGION_DIR"/install
-    legion_cmake_flags=(
-        -DBUILD_SHARED_LIBS=ON
-        -DCMAKE_INSTALL_PREFIX="$LEGION_DIR"/install
-    )
-    if [[ $USE_PYGION -eq 1 ]]; then
+    pushd "$LEGION_DIR"
+    if [[ ! -d build ]]; then
+        mkdir build
         legion_cmake_flags=(
-            -DLegion_BUILD_BINDINGS=ON
-            -DLegion_USE_Python=ON
+            -DBUILD_SHARED_LIBS=ON
+            -DCMAKE_INSTALL_PREFIX="$LEGION_DIR"/install
         )
+        if [[ $USE_PYGION -eq 1 ]]; then
+            legion_cmake_flags=(
+                -DLegion_BUILD_BINDINGS=ON
+                -DLegion_USE_Python=ON
+            )
+        fi
+        if [[ $USE_GASNET -eq 1 ]]; then
+            legion_cmake_flags+=(
+                -DLegion_NETWORKS=gasnetex
+                -DGASNet_ROOT="$GASNET_DIR"/release
+                -DGASNet_CONDUIT="$GASNET_CONDUIT"
+            )
+        fi
+        pushd build
+        cmake .. "${legion_cmake_flags[@]}"
+        make install -j$THREADS
+        popd
     fi
-    if [[ $USE_GASNET -eq 1 ]]; then
-        legion_cmake_flags+=(
-            -DLegion_NETWORKS=gasnetex
-            -DGASNet_ROOT="$GASNET_DIR"/release
-            -DGASNet_CONDUIT="$GASNET_CONDUIT"
-        )
-    fi
-    pushd "$LEGION_DIR"/build
-    cmake .. "${legion_cmake_flags[@]}"
-    make install -j$THREADS
     popd
 fi
 if [[ $USE_LEGION -eq 1 ]]; then
@@ -140,22 +143,25 @@ fi
 )
 
 if [[ $USE_REALM -eq 1 ]]; then
-    mkdir -p "$REALM_DIR"/build
-    mkdir -p "$REALM_DIR"/install
-    realm_cmake_flags=(
-        -DBUILD_SHARED_LIBS=ON
-        -DCMAKE_INSTALL_PREFIX="$REALM_DIR"/install
-    )
-    if [[ $USE_GASNET -eq 1 ]]; then
-        realm_cmake_flags+=(
-            -DREALM_ENABLE_GASNETEX=ON
-            -DGASNet_ROOT="$GASNET_DIR"/release
-            -DGASNET_CONDUIT="$GASNET_CONDUIT"
+    pushd "$REALM_DIR"
+    if [[ ! -d build ]]; then
+        mkdir build
+        realm_cmake_flags=(
+            -DBUILD_SHARED_LIBS=ON
+            -DCMAKE_INSTALL_PREFIX="$REALM_DIR"/install
         )
+        if [[ $USE_GASNET -eq 1 ]]; then
+            realm_cmake_flags+=(
+                -DREALM_ENABLE_GASNETEX=ON
+                -DGASNet_ROOT="$GASNET_DIR"/release
+                -DGASNET_CONDUIT="$GASNET_CONDUIT"
+            )
+        fi
+        pushd build
+        cmake .. "${realm_cmake_flags[@]}"
+        make install -j$THREADS
+        popd
     fi
-    pushd "$REALM_DIR"/build
-    cmake .. "${realm_cmake_flags[@]}"
-    make install -j$THREADS
     popd
 
     for variant in realm realm_subgraph realm_old; do
