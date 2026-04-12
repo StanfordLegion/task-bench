@@ -22,7 +22,6 @@ if [[ "$(uname)" = "Linux" ]]; then
     echo "=== lscpu ==="; lscpu || true
     echo "=== nproc ==="; nproc || true
     echo "=== /proc/cpuinfo (summary) ==="; grep -c ^processor /proc/cpuinfo || true
-    export STARPU_NCPU=1
     export STARPU_SILENT=0
     export STARPU_WORKER_STATS=1
     ulimit -c unlimited || true
