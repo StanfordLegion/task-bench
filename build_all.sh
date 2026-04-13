@@ -351,50 +351,50 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     make -C openmp -j$THREADS
 fi
 
-if [[ $USE_OMPSS2 -eq 1 ]]; then
-    pushd "$OMPSS2_NOSV_SRC_DIR"
+if [[ $USE_OMPSS -eq 1 ]]; then
+    pushd "$OMPSS_NOSV_SRC_DIR"
     if [[ ! -d build ]]; then
 	#autoreconf -fiv
         mkdir build
 	cd build
-	PKG_CONFIG_PATH=$HWLOC2_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_TARGET
+	PKG_CONFIG_PATH=$HWLOC2_DIR/lib/pkgconfig ../configure --prefix=$OMPSS_TARGET
 	make -j$THREADS
 	make install
     fi
     popd
 
-    pushd "$OMPSS2_NANOS6_SRC_DIR"
+    pushd "$OMPSS_NANOS6_SRC_DIR"
     if [[ ! -d build ]]; then
 	mkdir build
 	cd build
-	PKG_CONFIG_PATH=$HWLOC2_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_TARGET --with-boost=/usr --with-hwloc=pkgconfig
+	PKG_CONFIG_PATH=$HWLOC2_DIR/lib/pkgconfig ../configure --prefix=$OMPSS_TARGET --with-boost=/usr --with-hwloc=pkgconfig
 	make all -j$THREADS
 	make install -j$THREADS
     fi
     popd
 
-    pushd "$OMPSS2_NODES_SRC_DIR"
+    pushd "$OMPSS_NODES_SRC_DIR"
     if [[ ! -d build ]]; then
 	#autoreconf -fiv
 	mkdir build
 	cd build
-	../configure --prefix=$OMPSS2_TARGET --with-nosv=$OMPSS2_TARGET --with-boost=/usr
+	../configure --prefix=$OMPSS_TARGET --with-nosv=$OMPSS_TARGET --with-boost=/usr
 	make -j$THREADS
 	make install
     fi
     popd
 
-    pushd "$OMPSS2_LLVM_SRC_DIR"
+    pushd "$OMPSS_LLVM_SRC_DIR"
     if [[ ! -d build ]]; then
 	cmake -S llvm -B build \
               -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_INSTALL_PREFIX=$OMPSS2_TARGET \
+              -DCMAKE_INSTALL_PREFIX=$OMPSS_TARGET \
               -DLLVM_ENABLE_PROJECTS=clang \
               -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
               -DCLANG_DEFAULT_OMPSS2_RUNTIME=libnanos6 \
-              -DCLANG_DEFAULT_NANOS6_HOME=$OMPSS2_TARGET \
-              -DCLANG_DEFAULT_NODES_HOME=$OMPSS2_TARGET \
-              -DCLANG_DEFAULT_NOSV_HOME=$OMPSS2_TARGET
+              -DCLANG_DEFAULT_NANOS6_HOME=$OMPSS_TARGET \
+              -DCLANG_DEFAULT_NODES_HOME=$OMPSS_TARGET \
+              -DCLANG_DEFAULT_NOSV_HOME=$OMPSS_TARGET
 	make -C build -j$THREADS
 	make -C build install
     fi

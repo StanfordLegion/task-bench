@@ -237,11 +237,11 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     done
 fi
 
-if [[ $USE_OMPSS2 -eq 1 ]]; then
+if [[ $USE_OMPSS -eq 1 ]]; then
     for t in "${basic_types[@]}"; do
         for k in "${kernels[@]}"; do
-            taskset -c 0-1 ./ompss2/main -steps $steps -type $t $k
-            taskset -c 0-1 ./ompss2/main -steps $steps -type $t $k -and -steps $steps -type $t $k
+            taskset -c 0-1 ./ompss/main -steps $steps -type $t $k
+            taskset -c 0-1 ./ompss/main -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
     done
 fi

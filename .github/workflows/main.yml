@@ -38,7 +38,7 @@ jobs:
           # - system: X10
           - system: OPENMP
           - system: SPARK
-          - system: OMPSS2
+          - system: OMPSS
             hwloc: 1
           - system: SWIFT
           - system: TENSORFLOW

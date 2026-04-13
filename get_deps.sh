@@ -73,7 +73,7 @@ export USE_HPX=${USE_HPX:-$DEFAULT_FEATURES}
 export USE_CHAPEL=${USE_CHAPEL:-$DEFAULT_FEATURES}
 export USE_X10=${USE_X10:-$DEFAULT_FEATURES}
 export USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
-export USE_OMPSS2=${USE_OMPSS2:-$DEFAULT_FEATURES}
+export USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
 export USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 export USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 export USE_TENSORFLOW=${USE_TENSORFLOW:-$DEFAULT_FEATURES}
@@ -343,22 +343,22 @@ EOF
     git clone https://github.com/STEllAR-GROUP/hpx.git "$HPX_SOURCE_ROOT"/hpx
 fi)
 
-if [[ $USE_OMPSS2 -eq 1 ]]; then
-    export OMPSS2_DL_DIR="$TASKBENCH_DEPS_DIR"/ompss2
+if [[ $USE_OMPSS -eq 1 ]]; then
+    export OMPSS_DL_DIR="$TASKBENCH_DEPS_DIR"/ompss2
     cat >>deps/env.sh <<EOF
-export OMPSS2_DL_DIR="\$TASKBENCH_DEPS_DIR"/ompss2
-export OMPSS2_TARGET="\$OMPSS2_DL_DIR"
-export OMPSS2_NANOS6_SRC_DIR="\$OMPSS2_DL_DIR"/nanos6-4.3
-export OMPSS2_NOSV_SRC_DIR="\$OMPSS2_DL_DIR"/nos-v-4.0.0
-export OMPSS2_NODES_SRC_DIR="\$OMPSS2_DL_DIR"/nodes-1.4.0
-export OMPSS2_LLVM_SRC_DIR="\$OMPSS2_DL_DIR"/llvm-22.0.0git
-export PATH="\$OMPSS2_TARGET/bin:\$PATH"
-export LD_LIBRARY_PATH="\$OMPSS2_TARGET/lib:\$LD_LIBRARY_PATH"
+export OMPSS_DL_DIR="\$TASKBENCH_DEPS_DIR"/ompss2
+export OMPSS_TARGET="\$OMPSS_DL_DIR"
+export OMPSS_NANOS6_SRC_DIR="\$OMPSS_DL_DIR"/nanos6-4.3
+export OMPSS_NOSV_SRC_DIR="\$OMPSS_DL_DIR"/nos-v-4.0.0
+export OMPSS_NODES_SRC_DIR="\$OMPSS_DL_DIR"/nodes-1.4.0
+export OMPSS_LLVM_SRC_DIR="\$OMPSS_DL_DIR"/llvm-22.0.0git
+export PATH="\$OMPSS_TARGET/bin:\$PATH"
+export LD_LIBRARY_PATH="\$OMPSS_TARGET/lib:\$LD_LIBRARY_PATH"
 
 EOF
-    mkdir -p "$OMPSS2_DL_DIR"
+    mkdir -p "$OMPSS_DL_DIR"
     wget -nv https://pm.bsc.es/ftp/ompss-2/releases/ompss-2-2025.11.tar.gz
-    tar -zxf ompss-2-2025.11.tar.gz -C "$OMPSS2_DL_DIR" --strip-components 1
+    tar -zxf ompss-2-2025.11.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
     rm -rf ompss-2-2025.11.tar.gz
 fi
 
