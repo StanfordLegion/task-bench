@@ -108,8 +108,9 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 && -z $CI ]]; then
     export HWLOC_DL_DIR="$TASKBENCH_DEPS_DIR"/hwloc
     cat >>deps/env.sh <<EOF
 export HWLOC_DL_DIR="\$TASKBENCH_DEPS_DIR"/hwloc
-export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.13
-export HWLOC_DIR=$HWLOC_DL_DIR/install
+export HWLOC_SRC_DIR="\$HWLOC_DL_DIR"/hwloc-1.11.13
+export HWLOC_DIR="\$HWLOC_DL_DIR"/install
+export PKG_CONFIG_PATH="\$PKG_CONFIG_PATH:\$HWLOC_DIR"/lib/pkgconfig
 
 EOF
     wget -nv https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.13.tar.gz
@@ -118,12 +119,13 @@ EOF
     rm hwloc-1.11.13.tar.gz
 fi
 
-if [[ $TASKBENCH_USE_HWLOC2 -eq 1 ]]; then
+if [[ $TASKBENCH_USE_HWLOC2 -eq 1 && -z $CI ]]; then
     export HWLOC2_DL_DIR="$TASKBENCH_DEPS_DIR"/hwloc2
     cat >>deps/env.sh <<EOF
 export HWLOC2_DL_DIR="\$TASKBENCH_DEPS_DIR"/hwloc2
-export HWLOC2_SRC_DIR=$HWLOC2_DL_DIR/hwloc-2.12.2
-export HWLOC2_DIR=$HWLOC2_DL_DIR/install
+export HWLOC2_SRC_DIR="\$HWLOC2_DL_DIR"/hwloc-2.12.2
+export HWLOC2_DIR="\$HWLOC2_DL_DIR"/install
+export PKG_CONFIG_PATH="\$PKG_CONFIG_PATH:\$HWLOC2_DIR"/lib/pkgconfig
 
 EOF
     wget -nv https://download.open-mpi.org/release/hwloc/v2.12/hwloc-2.12.2.tar.gz

@@ -73,7 +73,7 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 && -z $CI ]]; then
     popd
 fi
 
-if [[ $TASKBENCH_USE_HWLOC2 -eq 1 ]]; then
+if [[ $TASKBENCH_USE_HWLOC2 -eq 1 && -z $CI ]]; then
     pushd "$HWLOC2_SRC_DIR"
     if [[ ! -d build ]]; then
         mkdir build
@@ -206,7 +206,7 @@ if [[ $USE_STARPU -eq 1 ]]; then
             starpu_configure_flags+=(--without-hwloc)
         fi
         pushd build
-        PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig "$STARPU_SRC_DIR"/configure --prefix=$STARPU_DIR "${starpu_configure_flags[@]}"
+        "$STARPU_SRC_DIR"/configure --prefix=$STARPU_DIR "${starpu_configure_flags[@]}"
         make -j$THREADS
         make install
         popd
@@ -357,7 +357,7 @@ if [[ $USE_OMPSS -eq 1 ]]; then
 	#autoreconf -fiv
         mkdir build
 	cd build
-	PKG_CONFIG_PATH=$HWLOC2_DIR/lib/pkgconfig ../configure --prefix=$OMPSS_TARGET
+	../configure --prefix=$OMPSS_TARGET
 	make -j$THREADS
 	make install
     fi
@@ -367,7 +367,7 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     if [[ ! -d build ]]; then
 	mkdir build
 	cd build
-	PKG_CONFIG_PATH=$HWLOC2_DIR/lib/pkgconfig ../configure --prefix=$OMPSS_TARGET --with-boost=/usr --with-hwloc=pkgconfig
+	../configure --prefix=$OMPSS_TARGET --with-boost=/usr --with-hwloc=pkgconfig
 	make all -j$THREADS
 	make install -j$THREADS
     fi

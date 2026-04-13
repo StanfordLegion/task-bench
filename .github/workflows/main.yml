@@ -54,7 +54,6 @@ jobs:
         env:
           SYSTEM: ${{ matrix.system }}
           TASKBENCH_USE_HWLOC: ${{ matrix.hwloc }}
-          TASKBENCH_USE_HWLOC2: ${{ matrix.hwloc2 }}
 
           # Global settings:
           DEBUG: 1
