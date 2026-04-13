@@ -437,35 +437,40 @@ export ANT_HOME="\$SWIFT_DIR"/ant
 export PATH="\$ANT_HOME"/bin:"\$PATH"
 EOF
 
-    wget -nv $SOURCEFORGE_MIRROR/tcl/tcl8.6.8-src.tar.gz
-    tar xfz tcl8.6.8-src.tar.gz -C "$SWIFT_DIR"
-    rm tcl8.6.8-src.tar.gz
+    wget -nv $SOURCEFORGE_MIRROR/tcl/tcl8.6.14-src.tar.gz
+    tar xfz tcl8.6.14-src.tar.gz -C "$SWIFT_DIR"
+    rm tcl8.6.14-src.tar.gz
 
-    wget -nv $SOURCEFORGE_MIRROR/swig/swig-3.0.12.tar.gz
-    tar xfz swig-3.0.12.tar.gz -C "$SWIFT_DIR"
-    rm swig-3.0.12.tar.gz
+    wget -nv $SOURCEFORGE_MIRROR/swig/swig-4.2.1.tar.gz
+    tar xfz swig-4.2.1.tar.gz -C "$SWIFT_DIR"
+    rm swig-4.2.1.tar.gz
 
-    wget -nv https://download.java.net/java/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_linux-x64_bin.tar.gz
+    # PCRE2 is required by SWIG 4.x; place tarball in swig source dir
+    # so Tools/pcre-build.sh can build it as a static dependency.
+    wget -nv -O "$SWIFT_DIR"/swig-4.2.1/pcre2-10.44.tar.gz \
+        https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.44/pcre2-10.44.tar.gz
+
+    wget -nv https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.24%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.24_8.tar.gz
     mkdir "$SWIFT_DIR"/java
-    tar xfz openjdk-10.0.2_linux-x64_bin.tar.gz -C "$SWIFT_DIR"/java --strip-components=1
-    rm openjdk-10.0.2_linux-x64_bin.tar.gz
+    tar xfz OpenJDK11U-jdk_x64_linux_hotspot_11.0.24_8.tar.gz -C "$SWIFT_DIR"/java --strip-components=1
+    rm OpenJDK11U-jdk_x64_linux_hotspot_11.0.24_8.tar.gz
 
-    wget -nv "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
+    wget -nv "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.14-bin.tar.gz
     mkdir "$SWIFT_DIR"/ant
-    tar xfz apache-ant-1.10.7-bin.tar.gz -C "$SWIFT_DIR"/ant --strip-components=1
-    rm apache-ant-1.10.7-bin.tar.gz
+    tar xfz apache-ant-1.10.14-bin.tar.gz -C "$SWIFT_DIR"/ant --strip-components=1
+    rm apache-ant-1.10.14-bin.tar.gz
 
-    wget -nv https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.1.tar.gz
-    tar xfz ncurses-6.1.tar.gz -C "$SWIFT_DIR"
-    rm ncurses-6.1.tar.gz
+    wget -nv https://ftp.gnu.org/pub/gnu/ncurses/ncurses-6.4.tar.gz
+    tar xfz ncurses-6.4.tar.gz -C "$SWIFT_DIR"
+    rm ncurses-6.4.tar.gz
 
-    wget -nv $SOURCEFORGE_MIRROR/zsh/5.5.1/zsh-5.5.1.tar.gz
-    tar xfz zsh-5.5.1.tar.gz -C "$SWIFT_DIR"
-    rm zsh-5.5.1.tar.gz
+    wget -nv https://www.zsh.org/pub/zsh-5.9.tar.xz
+    tar xf zsh-5.9.tar.xz -C "$SWIFT_DIR"
+    rm zsh-5.9.tar.xz
 
-    wget -nv http://swift-lang.github.io/swift-t-downloads/1.5/swift-t-1.5.0.tar.gz
-    tar xfz swift-t-1.5.0.tar.gz -C "$SWIFT_DIR"
-    rm swift-t-1.5.0.tar.gz
+    wget -nv https://swift-lang.github.io/swift-t-downloads/1.6/swift-t-1.6.7.tar.gz
+    tar xfz swift-t-1.6.7.tar.gz -C "$SWIFT_DIR"
+    rm swift-t-1.6.7.tar.gz
 fi
 
 (if [[ $USE_TENSORFLOW -eq 1 ]]; then
