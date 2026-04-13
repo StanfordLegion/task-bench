@@ -59,14 +59,16 @@ if [[ $USE_GASNET -eq 1 ]]; then
     make -C "$GASNET_DIR"
 fi
 
-if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
-    pushd "$HWLOC_SRC_DIR"
-    if [[ ! -d build ]]; then
+if [[ $TASKBENCH_USE_HWLOC -eq 1 && -z $CI ]]; then
+    pushd "$HWLOC_DL_DIR"
+    if [[ ! -d $HWLOC_DIR ]]; then
         mkdir build
-        cd build
-        ../configure --prefix=$HWLOC_DIR
+        pushd build
+        $HWLOC_SRC_DIR/configure --prefix=$HWLOC_DIR
         make -j$THREADS
         make install
+        popd
+        rm -rf build
     fi
     popd
 fi
@@ -174,16 +176,30 @@ if [[ $USE_REALM -eq 1 ]]; then
 fi
 
 if [[ $USE_STARPU -eq 1 ]]; then
-    STARPU_CONFIGURE_FLAG="--disable-cuda --disable-opencl --disable-fortran --disable-build-tests --disable-build-examples --disable-mlr --disable-hdf5 --enable-fast --enable-maxnodes=1"
-    if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
-      STARPU_CONFIGURE_FLAG+=""
-    else
-      STARPU_CONFIGURE_FLAG+="--without-hwloc"
+    pushd "$STARPU_DL_DIR"
+    if [[ ! -d install ]]; then
+        mkdir build
+        starpu_configure_flags=(
+            --disable-cuda
+            --disable-opencl
+            --disable-fortran
+            --disable-build-tests
+            --disable-build-examples
+            --disable-mlr
+            --disable-hdf5
+            --enable-fast
+            --enable-maxnodes=1
+        )
+        if [[ $TASKBENCH_USE_HWLOC -ne 1 ]]; then
+            starpu_configure_flags+=(--without-hwloc)
+        fi
+        pushd build
+        PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig "$STARPU_SRC_DIR"/configure --prefix=$STARPU_DIR "${starpu_configure_flags[@]}"
+        make -j$THREADS
+        make install
+        popd
+        rm -rf build
     fi
-    pushd "$STARPU_SRC_DIR"
-    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ./configure --prefix=$STARPU_DIR $STARPU_CONFIGURE_FLAG
-    make -j$THREADS
-    make install
     popd
     make -C starpu clean
     make -C starpu -j$THREADS

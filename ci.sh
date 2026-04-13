@@ -11,7 +11,7 @@ fi
 
 if [[ "$(uname)" = "Linux" ]]; then
   sudo apt-get update -qq
-  sudo apt-get install -qq openmpi-bin libopenmpi-dev libpcre3-dev binutils-dev
+  sudo apt-get install -qq openmpi-bin libopenmpi-dev libhwloc-dev libpcre3-dev binutils-dev
   # To avoid error where OpenMPI doesn't think it has enough slots available.
   export OMPI_MCA_rmaps_base_oversubscribe=yes
   export OMPI_MCA_rmaps_base_mapping_policy="core:OVERSUBSCRIBE"

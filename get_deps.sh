@@ -104,18 +104,18 @@ EOF
     git clone --depth 1 https://github.com/StanfordLegion/gasnet.git "$GASNET_DIR"
 fi
 
-if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
+if [[ $TASKBENCH_USE_HWLOC -eq 1 && -z $CI ]]; then
     export HWLOC_DL_DIR="$TASKBENCH_DEPS_DIR"/hwloc
     cat >>deps/env.sh <<EOF
 export HWLOC_DL_DIR="\$TASKBENCH_DEPS_DIR"/hwloc
-export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.10
+export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.13
 export HWLOC_DIR=$HWLOC_DL_DIR/install
 
 EOF
-    wget -nv https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.10.tar.gz
+    wget -nv https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.13.tar.gz
     mkdir -p "$HWLOC_DL_DIR"
-    tar -zxf hwloc-1.11.10.tar.gz -C "$HWLOC_DL_DIR"
-    rm hwloc-1.11.10.tar.gz
+    tar -zxf hwloc-1.11.13.tar.gz -C "$HWLOC_DL_DIR"
+    rm hwloc-1.11.13.tar.gz
 fi
 
 if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
@@ -169,15 +169,14 @@ if [[ $USE_STARPU -eq 1 ]]; then
     export STARPU_DL_DIR="$TASKBENCH_DEPS_DIR"/starpu
     cat >>deps/env.sh <<EOF
 export STARPU_DL_DIR="\$TASKBENCH_DEPS_DIR"/starpu
-export STARPU_SRC_DIR="\$STARPU_DL_DIR"/starpu-1.3.4
-export STARPU_DIR="\$STARPU_DL_DIR"
+export STARPU_SRC_DIR="\$STARPU_DL_DIR"/starpu-1.3.11
+export STARPU_DIR="\$STARPU_DL_DIR/install"
 
 EOF
-    #wget -nv http://starpu.gforge.inria.fr/files/starpu-1.2.4/starpu-1.2.4.tar.gz
-    wget -nv https://files.inria.fr/starpu/starpu-1.3.4/starpu-1.3.4.tar.gz
+    wget -nv https://files.inria.fr/starpu/starpu-1.3.11/starpu-1.3.11.tar.gz
     mkdir -p "$STARPU_DL_DIR"
-    tar -zxf starpu-1.3.4.tar.gz -C "$STARPU_DL_DIR"
-    rm starpu-1.3.4.tar.gz
+    tar -zxf starpu-1.3.11.tar.gz -C "$STARPU_DL_DIR"
+    rm starpu-1.3.11.tar.gz
 fi
 
 if [[ $USE_PARSEC -eq 1 ]]; then
