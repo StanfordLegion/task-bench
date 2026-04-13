@@ -351,33 +351,6 @@ if [[ $USE_OPENMP -eq 1 ]]; then
     make -C openmp -j$THREADS
 fi
 
-if [[ $USE_OMPSS -eq 1 ]]; then
-    pushd "$NANOS_SRC_DIR"
-    if [[ ! -d build ]]; then
-        mkdir build
-        cd build
-        ../configure --prefix=$NANOS_PREFIX --disable-instrumentation --disable-debug
-        make -j$THREADS
-        make install
-    fi
-    popd
-
-    pushd "$MERCURIUM_SRC_DIR"
-    if [[ ! -d build ]]; then
-        mkdir build
-        cd build
-        ../configure --prefix=$MERCURIUM_PREFIX --enable-ompss --with-nanox=$NANOS_PREFIX
-        make -j$THREADS
-        make install
-    fi
-    popd
-
-    export PATH=$NANOS_PREFIX/bin:$MERCURIUM_PREFIX/bin:$PATH
-    export LD_LIBRARY_PATH=$NANOS_PREFIX/lib:$MERCURIUM_PREFIX/lib:$LD_LIBRARY_PATH
-    make -C ompss clean
-    make -C ompss -j$THREADS
-fi
-
 if [[ $USE_OMPSS2 -eq 1 ]]; then
     pushd "$OMPSS2_NOSV_SRC_DIR"
     if [[ ! -d build ]]; then
