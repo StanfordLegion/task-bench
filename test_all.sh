@@ -286,7 +286,7 @@ fi
             --files $SPARK_PROJ_DIR/libcore_c.so \
             --conf spark.scheduler.listenerbus.eventqueue.capacity=20000 \
             --conf spark.executor.extraLibraryPath=$CORE_DIR:$SPARK_PROJ_DIR:$LD_LIBRARY_PATH \
-            $SPARK_PROJ_DIR/target/scala-2.11/Taskbench-assembly-1.0.jar \
+            $SPARK_PROJ_DIR/target/scala-2.13/Taskbench-assembly-1.0.jar \
             "$@"
         #logging is off...
     }

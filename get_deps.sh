@@ -380,37 +380,43 @@ EOF
 
     cat >>"$SPARK_DIR"/env.sh <<EOF
 export SPARK_PREFIX="\$SPARK_DIR"/install
-export SPARK_SRC_DIR="\$SPARK_DIR"/spark-2.4.8-bin-hadoop2.7
+export SPARK_SRC_DIR="\$SPARK_DIR"/spark-4.1.1-bin-hadoop3
 export SPARK_SBT_DIR="\$SPARK_DIR"/sbt/bin
-export SPARK_SWIG_DIR="\$SPARK_DIR"/swig-3.0.12
+export SPARK_SWIG_DIR="\$SPARK_DIR"/swig-4.2.1
 export PATH="\$SPARK_PREFIX/bin:\$PATH"
 
-export JAVA_HOME="\$SPARK_DIR"/jdk1.8.0_131
+export JAVA_HOME="\$SPARK_DIR"/jdk-17
 export PATH="\$JAVA_HOME/bin:\$PATH"
 EOF
 
     pushd "$SPARK_DIR"
-    # don't install Scala--use 2.11.8 that comes with Spark 2.4.8
+    # Scala 2.13 comes bundled with Spark 4.1.1.
 
-    # Java
-    wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
-    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$SPARK_DIR"
-    rm jdk-8u131-linux-x64.tar.gz
+    # Java 17 (Temurin) -- Spark 4 requires Java 17+
+    wget -nv https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.12%2B7/OpenJDK17U-jdk_x64_linux_hotspot_17.0.12_7.tar.gz
+    mkdir "$SPARK_DIR"/jdk-17
+    tar -zxf OpenJDK17U-jdk_x64_linux_hotspot_17.0.12_7.tar.gz -C "$SPARK_DIR"/jdk-17 --strip-components=1
+    rm OpenJDK17U-jdk_x64_linux_hotspot_17.0.12_7.tar.gz
 
-    # Spark 2.4.8
-    wget -nv "$APACHE_MIRROR"/spark/spark-2.4.8/spark-2.4.8-bin-hadoop2.7.tgz #spark-shell doesn't work without hadoop
-    tar -zxf spark-2.4.8-bin-hadoop2.7.tgz -C "$SPARK_DIR" #didn't add to path-put full paths in emtg script
-    rm spark-2.4.8-bin-hadoop2.7.tgz
+    # Spark 4.1.1
+    wget -nv "$APACHE_MIRROR"/spark/spark-4.1.1/spark-4.1.1-bin-hadoop3.tgz
+    tar -zxf spark-4.1.1-bin-hadoop3.tgz -C "$SPARK_DIR"
+    rm spark-4.1.1-bin-hadoop3.tgz
 
-    # SWIG 3.0.12
-    wget -nv $SOURCEFORGE_MIRROR/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
-    tar -zxf swig-3.0.12.tar.gz -C "$SPARK_DIR"
-    rm swig-3.0.12.tar.gz
+    # SWIG 4.2.1 (3.0.12 fails to build on gcc 13 / Ubuntu 24.04)
+    wget -nv $SOURCEFORGE_MIRROR/swig/swig-4.2.1.tar.gz
+    tar -zxf swig-4.2.1.tar.gz -C "$SPARK_DIR"
+    rm swig-4.2.1.tar.gz
 
-    # SBT 1.7.1
-    wget -nv https://github.com/sbt/sbt/releases/download/v1.7.1/sbt-1.7.1.tgz
-    tar -zxf sbt-1.7.1.tgz -C "$SPARK_DIR"
-    rm sbt-1.7.1.tgz
+    # PCRE2 is required by SWIG 4.x; place tarball in swig source dir
+    # so Tools/pcre-build.sh can build it as a static dependency.
+    wget -nv -O "$SPARK_DIR"/swig-4.2.1/pcre2-10.44.tar.gz \
+        https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.44/pcre2-10.44.tar.gz
+
+    # SBT 1.10.5
+    wget -nv https://github.com/sbt/sbt/releases/download/v1.10.5/sbt-1.10.5.tgz
+    tar -zxf sbt-1.10.5.tgz -C "$SPARK_DIR"
+    rm sbt-1.10.5.tgz
 
     popd
 fi
