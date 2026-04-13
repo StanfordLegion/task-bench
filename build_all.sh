@@ -342,39 +342,49 @@ fi
 if [[ $USE_OMPSS -eq 1 ]]; then
     pushd "$OMPSS_NOSV_SRC_DIR"
     if [[ ! -d build ]]; then
-	#autoreconf -fiv
         mkdir build
-	cd build
-	../configure --prefix=$OMPSS_TARGET
-	make -j$THREADS
-	make install
+        pushd build
+        ../configure --prefix=$OMPSS_TARGET
+        make -j$THREADS
+        make install
+        popd
+        # Hack: remove the build directory and remake it to track whether we've built or not
+        rm -rf build
+        mkdir build
     fi
     popd
 
     pushd "$OMPSS_NANOS6_SRC_DIR"
     if [[ ! -d build ]]; then
-	mkdir build
-	cd build
-	../configure --prefix=$OMPSS_TARGET --with-boost=/usr --with-hwloc=pkgconfig
-	make all -j$THREADS
-	make install -j$THREADS
+        mkdir build
+        pushd build
+        ../configure --prefix=$OMPSS_TARGET --with-boost=/usr --with-hwloc=pkgconfig
+        make all -j$THREADS
+        make install -j$THREADS
+        popd
+        # Hack: remove the build directory and remake it to track whether we've built or not
+        rm -rf build
+        mkdir build
     fi
     popd
 
     pushd "$OMPSS_NODES_SRC_DIR"
     if [[ ! -d build ]]; then
-	#autoreconf -fiv
-	mkdir build
-	cd build
-	../configure --prefix=$OMPSS_TARGET --with-nosv=$OMPSS_TARGET --with-boost=/usr
-	make -j$THREADS
-	make install
+        mkdir build
+        pushd build
+        ../configure --prefix=$OMPSS_TARGET --with-nosv=$OMPSS_TARGET --with-boost=/usr
+        make -j$THREADS
+        make install
+        popd
+        # Hack: remove the build directory and remake it to track whether we've built or not
+        rm -rf build
+        mkdir build
     fi
     popd
 
     pushd "$OMPSS_LLVM_SRC_DIR"
     if [[ ! -d build ]]; then
-	cmake -S llvm -B build \
+        cmake -S llvm -B build \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_INSTALL_PREFIX=$OMPSS_TARGET \
               -DLLVM_ENABLE_PROJECTS=clang \
@@ -383,8 +393,11 @@ if [[ $USE_OMPSS -eq 1 ]]; then
               -DCLANG_DEFAULT_NANOS6_HOME=$OMPSS_TARGET \
               -DCLANG_DEFAULT_NODES_HOME=$OMPSS_TARGET \
               -DCLANG_DEFAULT_NOSV_HOME=$OMPSS_TARGET
-	make -C build -j$THREADS
-	make -C build install
+        make -C build -j$THREADS
+        make -C build install
+        # Hack: remove the build directory and remake it to track whether we've built or not
+        rm -rf build
+        mkdir build
     fi
     popd
 
