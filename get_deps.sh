@@ -61,7 +61,6 @@ export TASKBENCH_USE_MPI=${TASKBENCH_USE_MPI:-$DEFAULT_FEATURES}
 export USE_MPI_OPENMP=${USE_MPI_OPENMP:-$DEFAULT_FEATURES}
 export USE_GASNET=${USE_GASNET:-0}
 export TASKBENCH_USE_HWLOC=${TASKBENCH_USE_HWLOC:-$DEFAULT_FEATURES}
-export TASKBENCH_USE_HWLOC2=${TASKBENCH_USE_HWLOC2:-$DEFAULT_FEATURES}
 export USE_LEGION=${USE_LEGION:-$DEFAULT_FEATURES}
 export USE_PYGION=${USE_PYGION:-$DEFAULT_FEATURES}
 export USE_REGENT=${USE_REGENT:-$DEFAULT_FEATURES}
@@ -113,24 +112,9 @@ export HWLOC_DIR="\$HWLOC_DL_DIR"/install
 export PKG_CONFIG_PATH="\$PKG_CONFIG_PATH:\$HWLOC_DIR"/lib/pkgconfig
 
 EOF
-    wget -nv https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.13.tar.gz
-    mkdir -p "$HWLOC_DL_DIR"
-    tar -zxf hwloc-1.11.13.tar.gz -C "$HWLOC_DL_DIR"
-    rm hwloc-1.11.13.tar.gz
-fi
-
-if [[ $TASKBENCH_USE_HWLOC2 -eq 1 && -z $CI ]]; then
-    export HWLOC2_DL_DIR="$TASKBENCH_DEPS_DIR"/hwloc2
-    cat >>deps/env.sh <<EOF
-export HWLOC2_DL_DIR="\$TASKBENCH_DEPS_DIR"/hwloc2
-export HWLOC2_SRC_DIR="\$HWLOC2_DL_DIR"/hwloc-2.12.2
-export HWLOC2_DIR="\$HWLOC2_DL_DIR"/install
-export PKG_CONFIG_PATH="\$PKG_CONFIG_PATH:\$HWLOC2_DIR"/lib/pkgconfig
-
-EOF
     wget -nv https://download.open-mpi.org/release/hwloc/v2.12/hwloc-2.12.2.tar.gz
-    mkdir -p "$HWLOC2_DL_DIR"
-    tar -zxf hwloc-2.12.2.tar.gz -C "$HWLOC2_DL_DIR"
+    mkdir -p "$HWLOC_DL_DIR"
+    tar -zxf hwloc-2.12.2.tar.gz -C "$HWLOC_DL_DIR"
     rm -rf hwloc-2.12.2.tar.gz
 fi
 

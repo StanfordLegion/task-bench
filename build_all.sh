@@ -73,18 +73,6 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 && -z $CI ]]; then
     popd
 fi
 
-if [[ $TASKBENCH_USE_HWLOC2 -eq 1 && -z $CI ]]; then
-    pushd "$HWLOC2_SRC_DIR"
-    if [[ ! -d build ]]; then
-        mkdir build
-        cd build
-        ../configure --prefix=$HWLOC2_DIR
-        make -j$THREADS
-        make install
-    fi
-    popd
-fi
-
 if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 ]]; then
     pushd "$LEGION_DIR"
     if [[ ! -d build ]]; then
