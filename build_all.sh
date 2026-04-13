@@ -402,9 +402,11 @@ fi
 
     pushd "$SPARK_SWIG_DIR"
     if [[ ! -d build ]]; then
+        Tools/pcre-build.sh
         mkdir build
         cd build
-        ../configure --prefix="$SPARK_PREFIX"
+        PATH="$PWD/../pcre/pcre-swig-install/bin:$PATH" \
+            ../configure --prefix="$SPARK_PREFIX"
         make -j$THREADS
         make install
     fi

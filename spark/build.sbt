@@ -17,11 +17,9 @@ name := "Taskbench"
 
 version := "1.0"
 
-scalaVersion := "2.11.8"
-
-resolvers += Resolver.bintrayIvyRepo("com.eed3si9n", "sbt-plugins")
+scalaVersion := "2.13.16"
 
 libraryDependencies ++= Seq(
-    "org.apache.spark" %% "spark-sql" % "2.3.0" % "provided"
+    "org.apache.spark" %% "spark-sql" % "4.1.1" % "provided"
 )
 
