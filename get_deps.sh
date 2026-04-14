@@ -115,7 +115,7 @@ EOF
     wget -nv https://download.open-mpi.org/release/hwloc/v2.12/hwloc-2.12.2.tar.gz
     mkdir -p "$HWLOC_DL_DIR"
     tar -zxf hwloc-2.12.2.tar.gz -C "$HWLOC_DL_DIR"
-    rm -rf hwloc-2.12.2.tar.gz
+    rm hwloc-2.12.2.tar.gz
 fi
 
 if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
@@ -345,7 +345,7 @@ EOF
     mkdir -p "$OMPSS_DL_DIR"
     wget -nv https://pm.bsc.es/ftp/ompss-2/releases/ompss-2-2025.11.tar.gz
     tar -zxf ompss-2-2025.11.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
-    rm -rf ompss-2-2025.11.tar.gz
+    rm ompss-2-2025.11.tar.gz
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then
