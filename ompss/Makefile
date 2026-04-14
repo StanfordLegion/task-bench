@@ -1,6 +1,6 @@
 DEBUG ?= 0
 
-MCXX = $(OMPSS2_TARGET)/bin/clang++
+MCXX = $(OMPSS_TARGET)/bin/clang++
 
 GCC_INSTALL_DIR := $(patsubst %/,%,$(dir $(shell g++ -print-libgcc-file-name)))
 

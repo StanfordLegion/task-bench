@@ -401,8 +401,8 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     fi
     popd
 
-    make -C ompss2 clean
-    make -C ompss2 -j$THREADS
+    make -C ompss clean
+    make -C ompss -j$THREADS
 fi
 
 (if [[ $USE_SPARK -eq 1 ]]; then
