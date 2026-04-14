@@ -38,11 +38,11 @@ else()
   set(INSTALL_TARGETS "")
 endif()
 
-# New fork_join_executor implementation for intra-node parallelism
-add_executable(hpx_task_bench hpx_task_bench.cpp)
-target_include_directories(hpx_task_bench PRIVATE ${CMAKE_SOURCE_DIR}/../core)
-target_link_libraries(hpx_task_bench PUBLIC HPX::hpx HPX::wrap_main core_s)
-list(APPEND INSTALL_TARGETS hpx_task_bench)
+# Fork-join executor implementation for intra-node parallelism
+add_executable(hpx_fork_join hpx_fork_join.cc)
+target_include_directories(hpx_fork_join PRIVATE ${CMAKE_SOURCE_DIR}/../core)
+target_link_libraries(hpx_fork_join PUBLIC HPX::hpx HPX::wrap_main core_s)
+list(APPEND INSTALL_TARGETS hpx_fork_join)
 
 if(INSTALL_TARGETS)
   install(

@@ -187,11 +187,11 @@ fi
 (if [[ $USE_HPX -eq 1 ]]; then
     source "$HPX_DIR"/env.sh
 
-    # Test hpx_task_bench (fork-join executor, no MPI required)
+    # Test hpx_fork_join (fork-join executor, no MPI required)
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
-            ./hpx/bin/hpx_task_bench -steps $steps -type $t $k
-            ./hpx/bin/hpx_task_bench -steps $steps -type $t $k -and -steps $steps -type $t $k
+            ./hpx/bin/hpx_fork_join -steps $steps -type $t $k
+            ./hpx/bin/hpx_fork_join -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
     done
 
