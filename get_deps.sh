@@ -272,25 +272,25 @@ EOF
     cat >>"$X10_DIR"/env.sh <<EOF
 export PATH="\$X10_DIR"/x10/x10.dist/bin:"\$PATH"
 
-export JAVA_HOME="\$X10_DIR"/jdk1.8.0_131
+export JAVA_HOME="\$X10_DIR"/jdk11
 export PATH="\$JAVA_HOME"/bin:"\$PATH"
 
 export ANT_HOME="\$X10_DIR"/apache-ant-1.10.7
 export PATH="\$ANT_HOME"/bin:"\$PATH"
 EOF
 
-    wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
-    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$X10_DIR"
-    rm jdk-8u131-linux-x64.tar.gz
+    # Java 11 (Temurin). X10 upstream commit 33da33d8bd added Java 11 support.
+    wget -nv https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_x64_linux_hotspot_11.0.25_9.tar.gz
+    mkdir "$X10_DIR"/jdk11
+    tar -zxf OpenJDK11U-jdk_x64_linux_hotspot_11.0.25_9.tar.gz -C "$X10_DIR"/jdk11 --strip-components=1
+    rm OpenJDK11U-jdk_x64_linux_hotspot_11.0.25_9.tar.gz
 
     wget -nv "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
     tar xfz apache-ant-1.10.7-bin.tar.gz -C "$X10_DIR"
     rm apache-ant-1.10.7-bin.tar.gz
 
-    # FIXME: hitting https://github.com/x10-lang/x10/issues/32
-    # git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
-    # git -C "$X10_DIR"/x10 reset --hard 9212dc271c8bcba805c82114617d47506747ee3a
-    git clone -b task-bench --depth 1 https://github.com/elliottslaughter/x10.git "$X10_DIR"/x10
+    git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
+    git -C "$X10_DIR"/x10 reset --hard 5412ae0a0db1cd748d1f1fc86a2e5090d7108160
 fi
 
 (if [[ $USE_HPX -eq 1 ]]; then
