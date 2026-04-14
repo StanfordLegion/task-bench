@@ -194,7 +194,7 @@ if [[ $USE_STARPU -eq 1 ]]; then
             starpu_configure_flags+=(--without-hwloc)
         fi
         pushd build
-        PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig "$STARPU_SRC_DIR"/configure --prefix=$STARPU_DIR "${starpu_configure_flags[@]}"
+        "$STARPU_SRC_DIR"/configure --prefix=$STARPU_DIR "${starpu_configure_flags[@]}"
         make -j$THREADS
         make install
         popd
@@ -340,58 +340,69 @@ if [[ $USE_OPENMP -eq 1 ]]; then
 fi
 
 if [[ $USE_OMPSS -eq 1 ]]; then
-    pushd "$NANOS_SRC_DIR"
+    pushd "$OMPSS_NOSV_SRC_DIR"
     if [[ ! -d build ]]; then
         mkdir build
-        cd build
-        ../configure --prefix=$NANOS_PREFIX --disable-instrumentation --disable-debug
+        pushd build
+        ../configure --prefix=$OMPSS_TARGET
         make -j$THREADS
         make install
+        popd
+        # Hack: remove the build directory and remake it to track whether we've built or not
+        rm -rf build
+        mkdir build
     fi
     popd
 
-    pushd "$MERCURIUM_SRC_DIR"
+    pushd "$OMPSS_NANOS6_SRC_DIR"
     if [[ ! -d build ]]; then
         mkdir build
-        cd build
-        ../configure --prefix=$MERCURIUM_PREFIX --enable-ompss --with-nanox=$NANOS_PREFIX
-        make -j$THREADS
-        make install
+        pushd build
+        ../configure --prefix=$OMPSS_TARGET --with-boost=/usr --with-hwloc=pkgconfig
+        make all -j$THREADS
+        make install -j$THREADS
+        popd
+        # Hack: remove the build directory and remake it to track whether we've built or not
+        rm -rf build
+        mkdir build
     fi
     popd
 
-    export PATH=$NANOS_PREFIX/bin:$MERCURIUM_PREFIX/bin:$PATH
-    export LD_LIBRARY_PATH=$NANOS_PREFIX/lib:$MERCURIUM_PREFIX/lib:$LD_LIBRARY_PATH
+    pushd "$OMPSS_NODES_SRC_DIR"
+    if [[ ! -d build ]]; then
+        mkdir build
+        pushd build
+        ../configure --prefix=$OMPSS_TARGET --with-nosv=$OMPSS_TARGET --with-boost=/usr
+        make -j$THREADS
+        make install
+        popd
+        # Hack: remove the build directory and remake it to track whether we've built or not
+        rm -rf build
+        mkdir build
+    fi
+    popd
+
+    pushd "$OMPSS_LLVM_SRC_DIR"
+    if [[ ! -d build ]]; then
+        cmake -S llvm -B build \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=$OMPSS_TARGET \
+              -DLLVM_ENABLE_PROJECTS=clang \
+              -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON \
+              -DCLANG_DEFAULT_OMPSS2_RUNTIME=libnanos6 \
+              -DCLANG_DEFAULT_NANOS6_HOME=$OMPSS_TARGET \
+              -DCLANG_DEFAULT_NODES_HOME=$OMPSS_TARGET \
+              -DCLANG_DEFAULT_NOSV_HOME=$OMPSS_TARGET
+        make -C build -j$THREADS
+        make -C build install
+        # Hack: remove the build directory and remake it to track whether we've built or not
+        rm -rf build
+        mkdir build
+    fi
+    popd
+
     make -C ompss clean
     make -C ompss -j$THREADS
-fi
-
-if [[ $USE_OMPSS2 -eq 1 ]]; then
-    # pushd "$BOOST_SRC_DIR"
-    # ./bootstrap.sh --prefix=$OMPSS2_TARGET
-    # ./b2 install
-    # popd
-
-    pushd "$OMPSS2_NANOS6_SRC_DIR"
-    autoreconf -fiv
-    mkdir -p build
-    cd build
-    PKG_CONFIG_PATH=$HWLOC_DIR/lib/pkgconfig ../configure --prefix=$OMPSS2_TARGET --with-boost=/usr
-    make all -j$THREADS
-    make install -j$THREADS
-    popd
-    
-    pushd "$OMPSS2_MCXX_SRC_DIR"
-    autoreconf -fiv
-    mkdir -p build
-    cd build
-    ../configure --prefix=$OMPSS2_TARGET --enable-ompss-2 --with-nanos6=$OMPSS2_TARGET
-    make -j$THREADS
-    make install
-    popd
-
-    make -C ompss2 clean
-    make -C ompss2 -j$THREADS
 fi
 
 (if [[ $USE_SPARK -eq 1 ]]; then

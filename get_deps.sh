@@ -73,7 +73,6 @@ export USE_CHAPEL=${USE_CHAPEL:-$DEFAULT_FEATURES}
 export USE_X10=${USE_X10:-$DEFAULT_FEATURES}
 export USE_OPENMP=${USE_OPENMP:-$DEFAULT_FEATURES}
 export USE_OMPSS=${USE_OMPSS:-$DEFAULT_FEATURES}
-export USE_OMPSS2=${USE_OMPSS2:-$DEFAULT_FEATURES}
 export USE_SPARK=${USE_SPARK:-$DEFAULT_FEATURES}
 export USE_SWIFT=${USE_SWIFT:-$DEFAULT_FEATURES}
 export USE_TENSORFLOW=${USE_TENSORFLOW:-$DEFAULT_FEATURES}
@@ -108,14 +107,15 @@ if [[ $TASKBENCH_USE_HWLOC -eq 1 && -z $CI ]]; then
     export HWLOC_DL_DIR="$TASKBENCH_DEPS_DIR"/hwloc
     cat >>deps/env.sh <<EOF
 export HWLOC_DL_DIR="\$TASKBENCH_DEPS_DIR"/hwloc
-export HWLOC_SRC_DIR=$HWLOC_DL_DIR/hwloc-1.11.13
-export HWLOC_DIR=$HWLOC_DL_DIR/install
+export HWLOC_SRC_DIR="\$HWLOC_DL_DIR"/hwloc-1.11.13
+export HWLOC_DIR="\$HWLOC_DL_DIR"/install
+export PKG_CONFIG_PATH="\$PKG_CONFIG_PATH:\$HWLOC_DIR"/lib/pkgconfig
 
 EOF
-    wget -nv https://download.open-mpi.org/release/hwloc/v1.11/hwloc-1.11.13.tar.gz
+    wget -nv https://download.open-mpi.org/release/hwloc/v2.12/hwloc-2.12.2.tar.gz
     mkdir -p "$HWLOC_DL_DIR"
-    tar -zxf hwloc-1.11.13.tar.gz -C "$HWLOC_DL_DIR"
-    rm hwloc-1.11.13.tar.gz
+    tar -zxf hwloc-2.12.2.tar.gz -C "$HWLOC_DL_DIR"
+    rm hwloc-2.12.2.tar.gz
 fi
 
 if [[ $USE_LEGION -eq 1 || $USE_PYGION -eq 1 || $USE_REGENT -eq 1 ]]; then
@@ -333,39 +333,19 @@ if [[ $USE_OMPSS -eq 1 ]]; then
     export OMPSS_DL_DIR="$TASKBENCH_DEPS_DIR"/ompss
     cat >>deps/env.sh <<EOF
 export OMPSS_DL_DIR="\$TASKBENCH_DEPS_DIR"/ompss
-export NANOS_SRC_DIR="\$OMPSS_DL_DIR"/nanox-0.15
-export NANOS_PREFIX="\$OMPSS_DL_DIR"/nanox-0.15/install
-export MERCURIUM_SRC_DIR="\$OMPSS_DL_DIR"/mcxx-2.3.0
-export MERCURIUM_PREFIX="\$OMPSS_DL_DIR"/mcxx-2.3.0/install
+export OMPSS_TARGET="\$OMPSS_DL_DIR"
+export OMPSS_NANOS6_SRC_DIR="\$OMPSS_DL_DIR"/nanos6-4.3
+export OMPSS_NOSV_SRC_DIR="\$OMPSS_DL_DIR"/nos-v-4.0.0
+export OMPSS_NODES_SRC_DIR="\$OMPSS_DL_DIR"/nodes-1.4.0
+export OMPSS_LLVM_SRC_DIR="\$OMPSS_DL_DIR"/llvm-22.0.0git
+export PATH="\$OMPSS_TARGET/bin:\$PATH"
+export LD_LIBRARY_PATH="\$OMPSS_TARGET/lib:\$LD_LIBRARY_PATH"
 
 EOF
     mkdir -p "$OMPSS_DL_DIR"
-    wget -nv https://pm.bsc.es/ftp/ompss/releases/ompss-19.06.tar.gz
-    tar -zxf ompss-19.06.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
-    rm -rf ompss-19.06.tar.gz
-fi
-
-if [[ $USE_OMPSS2 -eq 1 ]]; then
-    export OMPSS2_DL_DIR="$TASKBENCH_DEPS_DIR"/ompss2
-    cat >>deps/env.sh <<EOF
-export OMPSS2_DL_DIR="\$TASKBENCH_DEPS_DIR"/ompss2
-export OMPSS2_TARGET="\$OMPSS2_DL_DIR"
-export OMPSS2_NANOS6_SRC_DIR="\$OMPSS2_DL_DIR"/ompss2-release/nanos6
-export OMPSS2_MCXX_SRC_DIR="\$OMPSS2_DL_DIR"/ompss2-release/mcxx
-export BOOST_SRC_DIR="\$OMPSS2_DL_DIR"/boost_1_68_0
-
-EOF
-    mkdir -p "$OMPSS2_DL_DIR"
-    git clone -b 2021.11.1 --depth 1 https://github.com/bsc-pm/ompss-2-releases.git "$OMPSS2_DL_DIR/ompss2-release"
-    # Note: don't initialize llvm submodule, it's large and not needed
-    for m in nanos6 mcxx; do
-        git -C "$OMPSS2_DL_DIR/ompss2-release" submodule update --init --recursive --depth 1 $m
-    done
-    
-    # wget -nv https://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.gz
-    # tar -zxf boost_1_68_0.tar.gz -C "$OMPSS2_DL_DIR"
-    # rm -rf boost_1_68_0.tar.gz
-    cat /usr/include/boost/version.hpp | grep "BOOST_LIB_VERSION"
+    wget -nv https://pm.bsc.es/ftp/ompss-2/releases/ompss-2-2025.11.tar.gz
+    tar -zxf ompss-2-2025.11.tar.gz -C "$OMPSS_DL_DIR" --strip-components 1
+    rm ompss-2-2025.11.tar.gz
 fi
 
 if [[ $USE_SPARK -eq 1 ]]; then

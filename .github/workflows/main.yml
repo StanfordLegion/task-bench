@@ -38,9 +38,8 @@ jobs:
           # - system: X10
           - system: OPENMP
           - system: SPARK
-          # - system: OMPSS
-          # - system: OMPSS2
-          #   hwloc: 1
+          - system: OMPSS
+            hwloc: 1
           - system: SWIFT
           - system: TENSORFLOW
           - system: DASK
@@ -65,4 +64,4 @@ jobs:
           # CC_FLAGS: "-Wno-unused-command-line-argument"
           # Disable features by default, specify explicit what to use in each build
           DEFAULT_FEATURES: 0
-        timeout-minutes: 90
+        timeout-minutes: 150
