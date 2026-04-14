@@ -272,18 +272,18 @@ EOF
     cat >>"$X10_DIR"/env.sh <<EOF
 export PATH="\$X10_DIR"/x10/x10.dist/bin:"\$PATH"
 
-export JAVA_HOME="\$X10_DIR"/jdk8
+export JAVA_HOME="\$X10_DIR"/jdk11
 export PATH="\$JAVA_HOME"/bin:"\$PATH"
 
 export ANT_HOME="\$X10_DIR"/apache-ant-1.10.7
 export PATH="\$ANT_HOME"/bin:"\$PATH"
 EOF
 
-    # Java 8 (Temurin). X10's Java sources target Java 8 and do not build cleanly on later JDKs.
-    wget -nv https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u432-b06/OpenJDK8U-jdk_x64_linux_hotspot_8u432b06.tar.gz
-    mkdir "$X10_DIR"/jdk8
-    tar -zxf OpenJDK8U-jdk_x64_linux_hotspot_8u432b06.tar.gz -C "$X10_DIR"/jdk8 --strip-components=1
-    rm OpenJDK8U-jdk_x64_linux_hotspot_8u432b06.tar.gz
+    # Java 11 (Temurin). X10 upstream commit 33da33d8bd added Java 11 support.
+    wget -nv https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.25%2B9/OpenJDK11U-jdk_x64_linux_hotspot_11.0.25_9.tar.gz
+    mkdir "$X10_DIR"/jdk11
+    tar -zxf OpenJDK11U-jdk_x64_linux_hotspot_11.0.25_9.tar.gz -C "$X10_DIR"/jdk11 --strip-components=1
+    rm OpenJDK11U-jdk_x64_linux_hotspot_11.0.25_9.tar.gz
 
     wget -nv "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
     tar xfz apache-ant-1.10.7-bin.tar.gz -C "$X10_DIR"
