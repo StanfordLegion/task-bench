@@ -15,10 +15,8 @@ CXXFLAGS += -std=c++11 -I../core
 LDFLAGS ?=
 LDFLAGS += -L../core -lcore_s
 
-# Pass an absolute path to TaskBench.x10 so x10c++ can locate core.h
-# (referenced via @NativeCPPInclude) in the same directory.
 main: TaskBench.x10
-	x10c++ $(X10FLAGS) $(CURDIR)/$< -post "# -o $@ # $(CXXFLAGS) # $(LDFLAGS)"
+	x10c++ $(X10FLAGS) $< -post "# -o $@ # $(CXXFLAGS) # $(LDFLAGS)"
 
 .PHONY: clean
 clean:
