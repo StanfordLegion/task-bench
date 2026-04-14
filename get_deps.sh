@@ -272,16 +272,18 @@ EOF
     cat >>"$X10_DIR"/env.sh <<EOF
 export PATH="\$X10_DIR"/x10/x10.dist/bin:"\$PATH"
 
-export JAVA_HOME="\$X10_DIR"/jdk1.8.0_131
+export JAVA_HOME="\$X10_DIR"/jdk8
 export PATH="\$JAVA_HOME"/bin:"\$PATH"
 
 export ANT_HOME="\$X10_DIR"/apache-ant-1.10.7
 export PATH="\$ANT_HOME"/bin:"\$PATH"
 EOF
 
-    wget -c --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
-    tar -zxf jdk-8u131-linux-x64.tar.gz -C "$X10_DIR"
-    rm jdk-8u131-linux-x64.tar.gz
+    # Java 8 (Temurin). X10's Java sources target Java 8 and do not build cleanly on later JDKs.
+    wget -nv https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u432-b06/OpenJDK8U-jdk_x64_linux_hotspot_8u432b06.tar.gz
+    mkdir "$X10_DIR"/jdk8
+    tar -zxf OpenJDK8U-jdk_x64_linux_hotspot_8u432b06.tar.gz -C "$X10_DIR"/jdk8 --strip-components=1
+    rm OpenJDK8U-jdk_x64_linux_hotspot_8u432b06.tar.gz
 
     wget -nv "$APACHE_MIRROR"/ant/binaries/apache-ant-1.10.7-bin.tar.gz
     tar xfz apache-ant-1.10.7-bin.tar.gz -C "$X10_DIR"

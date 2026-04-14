@@ -35,7 +35,7 @@ jobs:
           - system: HPX
           - system: CHARM
           - system: CHAPEL
-          # - system: X10
+          - system: X10
           - system: OPENMP
           - system: SPARK
           - system: OMPSS
