@@ -25,9 +25,6 @@ if [[ "$(uname)" = "Linux" ]]; then
   if [[ $USE_HPX -eq 1 ]]; then
     sudo apt-get install -qq libboost1.74-dev
   fi
-  if [[ $USE_PARSEC -eq 1 ]]; then
-    sudo apt-get install -qq ninja-build
-  fi
 fi
 
 if [[ ! -d deps ]]; then

@@ -213,8 +213,7 @@ if [[ $USE_PARSEC -eq 1 ]]; then
     else
       ../configure --prefix=$PWD --with-mpi --disable-debug --with-cuda=no --disable-testing -DPARSEC_MAX_LOCAL_COUNT=30 -DPARSEC_MAX_DEP_OUT_COUNT=15
     fi
-    make -j$THREADS
-    make install
+    ninja install
     popd
     make -C parsec clean
     make -C parsec -j$THREADS
