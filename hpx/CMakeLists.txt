@@ -20,18 +20,35 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 find_package(HPX REQUIRED)
-find_package(MPI REQUIRED)
+find_package(MPI)
 
 include(GNUInstallDirs)
 
 link_directories(${CMAKE_SOURCE_DIR}/../core)
 
-add_executable(hpx_distributed hpx_distributed.cc)
-target_link_libraries(hpx_distributed PUBLIC HPX::hpx HPX::wrap_main MPI::MPI_C core_s)
+# Build hpx_distributed only if MPI is available
+if(MPI_FOUND)
+  add_executable(hpx_distributed hpx_distributed.cc)
+  target_include_directories(hpx_distributed PRIVATE ${CMAKE_SOURCE_DIR}/../core)
+  target_link_libraries(hpx_distributed PUBLIC HPX::hpx HPX::wrap_main MPI::MPI_C core_s)
+  set(INSTALL_TARGETS hpx_distributed)
+  message(STATUS "MPI found - building hpx_distributed")
+else()
+  message(STATUS "MPI not found - skipping hpx_distributed")
+  set(INSTALL_TARGETS "")
+endif()
 
-install(
-  TARGETS hpx_distributed
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+# Fork-join executor implementation for intra-node parallelism
+add_executable(hpx_fork_join hpx_fork_join.cc)
+target_include_directories(hpx_fork_join PRIVATE ${CMAKE_SOURCE_DIR}/../core)
+target_link_libraries(hpx_fork_join PUBLIC HPX::hpx HPX::wrap_main core_s)
+list(APPEND INSTALL_TARGETS hpx_fork_join)
+
+if(INSTALL_TARGETS)
+  install(
+    TARGETS ${INSTALL_TARGETS}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )
+endif()

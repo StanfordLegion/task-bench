@@ -186,12 +186,21 @@ fi
 (if [[ $USE_HPX -eq 1 ]]; then
     source "$HPX_DIR"/env.sh
 
+    # Test hpx_fork_join (fork-join executor, no MPI required)
+    for t in "${extended_types[@]}"; do
+        for k in "${kernels[@]}"; do
+            ./hpx/bin/hpx_fork_join -steps $steps -type $t $k
+            ./hpx/bin/hpx_fork_join -steps $steps -type $t $k -and -steps $steps -type $t $k
+        done
+    done
+
+    # Test hpx_distributed (default parallel executor + MPI)
     for t in "${extended_types[@]}"; do
         for k in "${kernels[@]}"; do
             mpirun -np 1 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
             mpirun -np 2 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
             mpirun -np 4 ./hpx/bin/hpx_distributed -steps $steps -type $t $k
-            mpirun -np 4 ./hpx/bin/hpx_distributed -steps $steps -type $t $k  -and -steps $steps -type $t $k
+            mpirun -np 4 ./hpx/bin/hpx_distributed -steps $steps -type $t $k -and -steps $steps -type $t $k
         done
     done
 fi)
