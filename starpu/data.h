@@ -15,8 +15,8 @@
 
 #ifndef DATA_H
 #define DATA_H
-#include <stdio.h>
 #include <starpu.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {

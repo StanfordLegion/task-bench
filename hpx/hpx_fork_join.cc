@@ -30,8 +30,8 @@
 #define MPI_STATUSES_IGNORE 0
 #define MPI_THREAD_MULTIPLE 0
 typedef int MPI_Request;
-inline void MPI_Comm_size(int, int* s) { *s = 1; }
-inline void MPI_Comm_rank(int, int* r) { *r = 0; }
+inline void MPI_Comm_size(int, int *s) { *s = 1; }
+inline void MPI_Comm_rank(int, int *r) { *r = 0; }
 inline void MPI_Barrier(int) {}
 inline double MPI_Wtime()
 {
@@ -39,24 +39,24 @@ inline double MPI_Wtime()
   auto now = std::chrono::steady_clock::now();
   return std::chrono::duration<double>(now - start).count();
 }
-inline void MPI_Init_thread(int*, char***, int, int* p)
+inline void MPI_Init_thread(int *, char ***, int, int *p)
 {
   *p = MPI_THREAD_MULTIPLE;
 }
 inline void MPI_Finalize() {}
 
-inline void MPI_Irecv(void*, int, int, int, int, int, MPI_Request*)
+inline void MPI_Irecv(void *, int, int, int, int, int, MPI_Request *)
 {
   std::abort();
 }
-inline void MPI_Isend(void*, int, int, int, int, int, MPI_Request*)
+inline void MPI_Isend(void *, int, int, int, int, int, MPI_Request *)
 {
   std::abort();
 }
-inline void MPI_Waitall(int, MPI_Request*, int) {}
+inline void MPI_Waitall(int, MPI_Request *, int) {}
 #endif
 
-int hpx_main(int argc, char* argv[])
+int hpx_main(int argc, char *argv[])
 {
   int n_ranks, rank;
   MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
@@ -106,7 +106,7 @@ int hpx_main(int argc, char* argv[])
       long n_points = last_point - first_point + 1;
 
       size_t scratch_bytes = graph.scratch_bytes_per_task;
-      char* scratch_ptr = scratch[graph.graph_index].data();
+      char *scratch_ptr = scratch[graph.graph_index].data();
 
       std::vector<int> rank_by_point(graph.max_width);
       std::vector<int> tag_bits_by_point(graph.max_width);
@@ -133,7 +133,7 @@ int hpx_main(int argc, char* argv[])
       }
 
       std::vector<std::vector<std::vector<char>>> inputs(n_points);
-      std::vector<std::vector<char const*>> input_ptr(n_points);
+      std::vector<std::vector<char const *>> input_ptr(n_points);
       std::vector<std::vector<size_t>> input_bytes(n_points);
       std::vector<long> n_inputs(n_points);
       std::vector<std::vector<char>> outputs(n_points);
@@ -142,9 +142,9 @@ int hpx_main(int argc, char* argv[])
       for (long point = first_point; point <= last_point; ++point) {
         long point_index = point - first_point;
 
-        auto& point_inputs = inputs[point_index];
-        auto& point_input_ptr = input_ptr[point_index];
-        auto& point_input_bytes = input_bytes[point_index];
+        auto &point_inputs = inputs[point_index];
+        auto &point_input_ptr = input_ptr[point_index];
+        auto &point_input_bytes = input_bytes[point_index];
 
         point_inputs.resize(max_deps);
         point_input_ptr.resize(max_deps);
@@ -156,10 +156,10 @@ int hpx_main(int argc, char* argv[])
           point_input_bytes[dep] = point_inputs[dep].size();
         }
 
-        auto& point_outputs = outputs[point_index];
+        auto &point_outputs = outputs[point_index];
         point_outputs.resize(graph.output_bytes_per_task);
 
-        auto& point_outputs_new = outputs_new[point_index];
+        auto &point_outputs_new = outputs_new[point_index];
         point_outputs_new.resize(graph.output_bytes_per_task);
       }
 
@@ -193,23 +193,23 @@ int hpx_main(int argc, char* argv[])
           long last_offset = graph.offset_at_timestep(timestep - 1);
           long last_width = graph.width_at_timestep(timestep - 1);
           long dset = graph.dependence_set_at_timestep(timestep);
-          auto& deps = dependencies[dset];
-          auto& rev_deps = reverse_dependencies[dset];
+          auto &deps = dependencies[dset];
+          auto &rev_deps = reverse_dependencies[dset];
 
           hpx::experimental::for_loop(
               policy, first_point, last_point + 1, [&](int point) {
                 std::vector<MPI_Request> requests;
                 long point_index = point - first_point;
-                auto& point_n_inputs = n_inputs[point_index];
-                auto& point_output = outputs[point_index];
-                auto& point_output_new = outputs_new[point_index];
-                auto& point_input_ptr = input_ptr[point_index];
-                auto& point_input_bytes = input_bytes[point_index];
+                auto &point_n_inputs = n_inputs[point_index];
+                auto &point_output = outputs[point_index];
+                auto &point_output_new = outputs_new[point_index];
+                auto &point_input_ptr = input_ptr[point_index];
+                auto &point_input_bytes = input_bytes[point_index];
 
                 point_n_inputs = 0;
                 if (point >= offset && point < offset + width) {
-                  auto& point_inputs = inputs[point_index];
-                  auto& point_deps = deps[point_index];
+                  auto &point_inputs = inputs[point_index];
+                  auto &point_deps = deps[point_index];
                   for (auto interval : point_deps) {
                     for (long dep = interval.first; dep <= interval.second;
                          ++dep) {
@@ -219,11 +219,11 @@ int hpx_main(int argc, char* argv[])
                       }
                       if (first_point <= dep && dep <= last_point) {
                         if (timestep % 2 == 0) {
-                          auto& output = outputs[dep - first_point];
+                          auto &output = outputs[dep - first_point];
                           point_inputs[point_n_inputs].assign(output.begin(),
                                                               output.end());
                         } else {
-                          auto& output_new = outputs_new[dep - first_point];
+                          auto &output_new = outputs_new[dep - first_point];
                           point_inputs[point_n_inputs].assign(
                               output_new.begin(), output_new.end());
                         }
@@ -244,12 +244,13 @@ int hpx_main(int argc, char* argv[])
                 }
 
                 if (point >= last_offset && point < last_offset + last_width) {
-                  auto& point_rev_deps = rev_deps[point_index];
+                  auto &point_rev_deps = rev_deps[point_index];
                   for (auto interval : point_rev_deps) {
                     for (long dep = interval.first; dep <= interval.second;
                          dep++) {
                       if (dep < offset || dep >= offset + width ||
-                          (first_point <= dep && dep <= last_point)) {
+                          (first_point <= dep && dep <= last_point))
+                      {
                         continue;
                       }
                       int from = tag_bits_by_point[point];
@@ -296,26 +297,26 @@ int hpx_main(int argc, char* argv[])
           long last_offset = graph.offset_at_timestep(timestep - 1);
           long last_width = graph.width_at_timestep(timestep - 1);
           long dset = graph.dependence_set_at_timestep(timestep);
-          auto& deps = dependencies[dset];
-          auto& rev_deps = reverse_dependencies[dset];
+          auto &deps = dependencies[dset];
+          auto &rev_deps = reverse_dependencies[dset];
 
           std::vector<MPI_Request> requests;
           for (long point = first_point; point <= last_point; ++point) {
             long point_index = point - first_point;
-            auto& point_n_inputs = n_inputs[point_index];
-            auto& point_output = outputs[point_index];
+            auto &point_n_inputs = n_inputs[point_index];
+            auto &point_output = outputs[point_index];
 
             point_n_inputs = 0;
             if (point >= offset && point < offset + width) {
-              auto& point_inputs = inputs[point_index];
-              auto& point_deps = deps[point_index];
+              auto &point_inputs = inputs[point_index];
+              auto &point_deps = deps[point_index];
               for (auto interval : point_deps) {
                 for (long dep = interval.first; dep <= interval.second; ++dep) {
                   if (dep < last_offset || dep >= last_offset + last_width) {
                     continue;
                   }
                   if (first_point <= dep && dep <= last_point) {
-                    auto& output = outputs[dep - first_point];
+                    auto &output = outputs[dep - first_point];
                     point_inputs[point_n_inputs].assign(output.begin(),
                                                         output.end());
                   } else {
@@ -334,11 +335,12 @@ int hpx_main(int argc, char* argv[])
             }
 
             if (point >= last_offset && point < last_offset + last_width) {
-              auto& point_rev_deps = rev_deps[point_index];
+              auto &point_rev_deps = rev_deps[point_index];
               for (auto interval : point_rev_deps) {
                 for (long dep = interval.first; dep <= interval.second; dep++) {
                   if (dep < offset || dep >= offset + width ||
-                      (first_point <= dep && dep <= last_point)) {
+                      (first_point <= dep && dep <= last_point))
+                  {
                     continue;
                   }
                   int from = tag_bits_by_point[point];
@@ -360,10 +362,10 @@ int hpx_main(int argc, char* argv[])
           if (start < end) {
             hpx::experimental::for_loop(policy, start, end, [&](int point) {
               long point_index = point - first_point;
-              auto& point_input_ptr = input_ptr[point_index];
-              auto& point_input_bytes = input_bytes[point_index];
-              auto& point_n_inputs = n_inputs[point_index];
-              auto& point_output = outputs[point_index];
+              auto &point_input_ptr = input_ptr[point_index];
+              auto &point_input_bytes = input_bytes[point_index];
+              auto &point_n_inputs = n_inputs[point_index];
+              auto &point_output = outputs[point_index];
 
               graph.execute_point(timestep, point, point_output.data(),
                                   point_output.size(), point_input_ptr.data(),
@@ -387,7 +389,7 @@ int hpx_main(int argc, char* argv[])
   return hpx::finalize();
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
   std::vector<std::string> const cfg = {
       "hpx.run_hpx_main!=1",
