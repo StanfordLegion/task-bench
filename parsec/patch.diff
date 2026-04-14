@@ -1,38 +1,4 @@
-diff --git a/parsec/include/parsec/parsec_config_bottom.h b/parsec/include/parsec/parsec_config_bottom.h
-index f87a74e6d..de350e4d3 100644
---- a/parsec/include/parsec/parsec_config_bottom.h
-+++ b/parsec/include/parsec/parsec_config_bottom.h
-@@ -156,11 +156,11 @@ typedef int32_t parsec_dependency_t;
-  * A set of constants defining the capabilities of the underlying
-  * runtime.
-  */
--#define MAX_LOCAL_COUNT  20
-+#define MAX_LOCAL_COUNT  30
- #define MAX_PARAM_COUNT  20
- 
- #define MAX_DEP_IN_COUNT  10
--#define MAX_DEP_OUT_COUNT 10
-+#define MAX_DEP_OUT_COUNT 15
- 
- #define MAX_TASK_STRLEN 128
- 
-diff --git a/parsec/parsec_internal.h b/parsec/parsec_internal.h
-index 3beb1310f..f5910cc69 100644
---- a/parsec/parsec_internal.h
-+++ b/parsec/parsec_internal.h
-@@ -33,6 +33,10 @@
- 
- #include <string.h>
- 
-+#ifdef __cplusplus
-+#define restrict __restrict
-+#endif
-+
- BEGIN_C_DECLS
-
- /**
 diff --git a/parsec/mempool.h b/parsec/mempool.h
-index 579a83867..0000000000 100644
 --- a/parsec/mempool.h
 +++ b/parsec/mempool.h
 @@ -17,6 +17,7 @@
@@ -43,3 +9,17 @@ index 579a83867..0000000000 100644
 
  /**
   * each element that is allocated from a mempool must
+diff --git a/parsec/parsec_internal.h b/parsec/parsec_internal.h
+--- a/parsec/parsec_internal.h
++++ b/parsec/parsec_internal.h
+@@ -33,6 +33,10 @@
+
+ #include <string.h>
+
++#ifdef __cplusplus
++#define restrict __restrict
++#endif
++
+ BEGIN_C_DECLS
+
+ /**

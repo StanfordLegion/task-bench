@@ -209,9 +209,9 @@ if [[ $USE_PARSEC -eq 1 ]]; then
     mkdir -p "$PARSEC_DIR"
     pushd "$PARSEC_DIR"
     if [[ $TASKBENCH_USE_HWLOC -eq 1 ]]; then
-      ../configure --prefix=$PWD --with-mpi --with-hwloc=$HWLOC_DIR --disable-debug --with-cuda=no --disable-testing
+      ../configure --prefix=$PWD --with-mpi --with-hwloc=$HWLOC_DIR --disable-debug --with-cuda=no --disable-testing -DPARSEC_MAX_LOCAL_COUNT=30 -DPARSEC_MAX_DEP_OUT_COUNT=15
     else
-      ../configure --prefix=$PWD --with-mpi --disable-debug --with-cuda=no --disable-testing
+      ../configure --prefix=$PWD --with-mpi --disable-debug --with-cuda=no --disable-testing -DPARSEC_MAX_LOCAL_COUNT=30 -DPARSEC_MAX_DEP_OUT_COUNT=15
     fi
     make -j$THREADS
     make install
