@@ -289,10 +289,8 @@ EOF
     tar xfz apache-ant-1.10.7-bin.tar.gz -C "$X10_DIR"
     rm apache-ant-1.10.7-bin.tar.gz
 
-    # FIXME: hitting https://github.com/x10-lang/x10/issues/32
-    # git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
-    # git -C "$X10_DIR"/x10 reset --hard 9212dc271c8bcba805c82114617d47506747ee3a
-    git clone -b task-bench --depth 1 https://github.com/elliottslaughter/x10.git "$X10_DIR"/x10
+    git clone https://github.com/x10-lang/x10.git "$X10_DIR"/x10
+    git -C "$X10_DIR"/x10 reset --hard 5412ae0a0db1cd748d1f1fc86a2e5090d7108160
 fi
 
 (if [[ $USE_HPX -eq 1 ]]; then
