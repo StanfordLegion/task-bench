@@ -24,7 +24,7 @@
 #include "core.h"
 // #include <dplasmatypes.h>
 #include <data_dist/matrix/two_dim_rectangle_cyclic.h>
-#include <interfaces/superscalar/insert_function.h>
+#include <interfaces/dtd/insert_function.h>
 #include <parsec/arena.h>
 
 /* timings */
@@ -39,7 +39,7 @@
 #define ENABLE_PRUNE_MPI_TASK_INSERT
 
 #if defined(ENABLE_PRUNE_MPI_TASK_INSERT)
-#include <interfaces/superscalar/insert_function_internal.h>
+#include <interfaces/dtd/insert_function_internal.h>
 #endif
 
 // #define TRACK_NB_TASKS
@@ -48,6 +48,8 @@ int nb_tasks_per_node[32];
 #endif
 
 char **extra_local_memory;
+
+parsec_arena_datatype_t **parsec_dtd_arenas_datatypes;
 
 enum regions {
   TILE_FULL,
@@ -66,11 +68,12 @@ static inline int dplasma_add2arena_tile(parsec_arena_datatype_t *arena,
                                          unsigned int tile_mb)
 {
   (void)elem_size;
-  return parsec_matrix_add2arena(arena, oldtype, matrix_UpperLower, 1, tile_mb,
-                                 tile_mb, tile_mb, alignment, -1);
+  return parsec_add2arena(arena, oldtype, PARSEC_MATRIX_FULL, 1, tile_mb,
+                          tile_mb, tile_mb, alignment, -1);
 }
 
-static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static parsec_hook_return_t test_task1(parsec_execution_stream_t *es,
+                                       parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
@@ -108,7 +111,8 @@ static int test_task1(parsec_execution_stream_t *es, parsec_task_t *this_task)
   return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static parsec_hook_return_t test_task2(parsec_execution_stream_t *es,
+                                       parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
@@ -146,7 +150,8 @@ static int test_task2(parsec_execution_stream_t *es, parsec_task_t *this_task)
   return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static parsec_hook_return_t test_task3(parsec_execution_stream_t *es,
+                                       parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
@@ -187,7 +192,8 @@ static int test_task3(parsec_execution_stream_t *es, parsec_task_t *this_task)
   return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static parsec_hook_return_t test_task4(parsec_execution_stream_t *es,
+                                       parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
@@ -229,7 +235,8 @@ static int test_task4(parsec_execution_stream_t *es, parsec_task_t *this_task)
   return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int test_task5(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static parsec_hook_return_t test_task5(parsec_execution_stream_t *es,
+                                       parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
@@ -273,7 +280,8 @@ static int test_task5(parsec_execution_stream_t *es, parsec_task_t *this_task)
   return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int test_task6(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static parsec_hook_return_t test_task6(parsec_execution_stream_t *es,
+                                       parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
@@ -320,7 +328,8 @@ static int test_task6(parsec_execution_stream_t *es, parsec_task_t *this_task)
   return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int test_task7(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static parsec_hook_return_t test_task7(parsec_execution_stream_t *es,
+                                       parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
@@ -369,7 +378,8 @@ static int test_task7(parsec_execution_stream_t *es, parsec_task_t *this_task)
   return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int test_task8(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static parsec_hook_return_t test_task8(parsec_execution_stream_t *es,
+                                       parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
@@ -420,7 +430,8 @@ static int test_task8(parsec_execution_stream_t *es, parsec_task_t *this_task)
   return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int test_task9(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static parsec_hook_return_t test_task9(parsec_execution_stream_t *es,
+                                       parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
@@ -474,7 +485,8 @@ static int test_task9(parsec_execution_stream_t *es, parsec_task_t *this_task)
   return PARSEC_HOOK_RETURN_DONE;
 }
 
-static int test_task10(parsec_execution_stream_t *es, parsec_task_t *this_task)
+static parsec_hook_return_t test_task10(parsec_execution_stream_t *es,
+                                        parsec_task_t *this_task)
 {
   (void)es;
   payload_t payload;
@@ -532,8 +544,8 @@ static int test_task10(parsec_execution_stream_t *es, parsec_task_t *this_task)
 }
 
 typedef struct matrix_s {
-  two_dim_block_cyclic_t *__dcC;
-  two_dim_block_cyclic_t dcC;
+  parsec_matrix_block_cyclic_t *__dcC;
+  parsec_matrix_block_cyclic_t dcC;
   int M;
   int N;
   int K;
@@ -585,91 +597,109 @@ void ParsecApp::insert_task(int num_args, payload_t payload,
   nb_tasks++;
   switch (num_args) {
   case 1:
-    parsec_dtd_taskpool_insert_task(
-        dtd_tp, test_task1, 0, "test_task1", sizeof(payload_t), &payload, VALUE,
-        PASSED_BY_REF, args[0], INOUT | TILE_FULL | AFFINITY,
-        PARSEC_DTD_ARG_END);
+    parsec_dtd_insert_task(
+        dtd_tp, test_task1, 0, PARSEC_DEV_CPU, "test_task1", sizeof(payload_t),
+        &payload, PARSEC_VALUE, PASSED_BY_REF, args[0],
+        PARSEC_INOUT | TILE_FULL | PARSEC_AFFINITY, PARSEC_DTD_ARG_END);
     break;
   case 2:
-    parsec_dtd_taskpool_insert_task(
-        dtd_tp, test_task2, 0, "test_task2", sizeof(payload_t), &payload, VALUE,
-        PASSED_BY_REF, args[1], INPUT | TILE_FULL, PASSED_BY_REF, args[0],
-        INOUT | TILE_FULL | AFFINITY, PARSEC_DTD_ARG_END);
+    parsec_dtd_insert_task(
+        dtd_tp, test_task2, 0, PARSEC_DEV_CPU, "test_task2", sizeof(payload_t),
+        &payload, PARSEC_VALUE, PASSED_BY_REF, args[1],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[0],
+        PARSEC_INOUT | TILE_FULL | PARSEC_AFFINITY, PARSEC_DTD_ARG_END);
     break;
   case 3:
-    parsec_dtd_taskpool_insert_task(
-        dtd_tp, test_task3, 0, "test_task3", sizeof(payload_t), &payload, VALUE,
-        PASSED_BY_REF, args[1], INPUT | TILE_FULL, PASSED_BY_REF, args[2],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[0], INOUT | TILE_FULL | AFFINITY,
-        PARSEC_DTD_ARG_END);
+    parsec_dtd_insert_task(
+        dtd_tp, test_task3, 0, PARSEC_DEV_CPU, "test_task3", sizeof(payload_t),
+        &payload, PARSEC_VALUE, PASSED_BY_REF, args[1],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[2],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[0],
+        PARSEC_INOUT | TILE_FULL | PARSEC_AFFINITY, PARSEC_DTD_ARG_END);
     break;
   case 4:
-    parsec_dtd_taskpool_insert_task(
-        dtd_tp, test_task4, 0, "test_task4", sizeof(payload_t), &payload, VALUE,
-        PASSED_BY_REF, args[1], INPUT | TILE_FULL, PASSED_BY_REF, args[2],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[3], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[0], INOUT | TILE_FULL | AFFINITY,
-        PARSEC_DTD_ARG_END);
+    parsec_dtd_insert_task(
+        dtd_tp, test_task4, 0, PARSEC_DEV_CPU, "test_task4", sizeof(payload_t),
+        &payload, PARSEC_VALUE, PASSED_BY_REF, args[1],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[2],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[3],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[0],
+        PARSEC_INOUT | TILE_FULL | PARSEC_AFFINITY, PARSEC_DTD_ARG_END);
     break;
   case 5:
-    parsec_dtd_taskpool_insert_task(
-        dtd_tp, test_task5, 0, "test_task5", sizeof(payload_t), &payload, VALUE,
-        PASSED_BY_REF, args[1], INPUT | TILE_FULL, PASSED_BY_REF, args[2],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[3], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[4], INPUT | TILE_FULL, PASSED_BY_REF, args[0],
-        INOUT | TILE_FULL | AFFINITY, PARSEC_DTD_ARG_END);
+    parsec_dtd_insert_task(
+        dtd_tp, test_task5, 0, PARSEC_DEV_CPU, "test_task5", sizeof(payload_t),
+        &payload, PARSEC_VALUE, PASSED_BY_REF, args[1],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[2],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[3],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[4],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[0],
+        PARSEC_INOUT | TILE_FULL | PARSEC_AFFINITY, PARSEC_DTD_ARG_END);
     break;
   case 6:
-    parsec_dtd_taskpool_insert_task(
-        dtd_tp, test_task6, 0, "test_task6", sizeof(payload_t), &payload, VALUE,
-        PASSED_BY_REF, args[1], INPUT | TILE_FULL, PASSED_BY_REF, args[2],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[3], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[4], INPUT | TILE_FULL, PASSED_BY_REF, args[5],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[0], INOUT | TILE_FULL | AFFINITY,
-        PARSEC_DTD_ARG_END);
+    parsec_dtd_insert_task(
+        dtd_tp, test_task6, 0, PARSEC_DEV_CPU, "test_task6", sizeof(payload_t),
+        &payload, PARSEC_VALUE, PASSED_BY_REF, args[1],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[2],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[3],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[4],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[5],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[0],
+        PARSEC_INOUT | TILE_FULL | PARSEC_AFFINITY, PARSEC_DTD_ARG_END);
     break;
   case 7:
-    parsec_dtd_taskpool_insert_task(
-        dtd_tp, test_task7, 0, "test_task7", sizeof(payload_t), &payload, VALUE,
-        PASSED_BY_REF, args[1], INPUT | TILE_FULL, PASSED_BY_REF, args[2],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[3], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[4], INPUT | TILE_FULL, PASSED_BY_REF, args[5],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[6], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[0], INOUT | TILE_FULL | AFFINITY,
-        PARSEC_DTD_ARG_END);
+    parsec_dtd_insert_task(
+        dtd_tp, test_task7, 0, PARSEC_DEV_CPU, "test_task7", sizeof(payload_t),
+        &payload, PARSEC_VALUE, PASSED_BY_REF, args[1],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[2],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[3],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[4],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[5],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[6],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[0],
+        PARSEC_INOUT | TILE_FULL | PARSEC_AFFINITY, PARSEC_DTD_ARG_END);
     break;
   case 8:
-    parsec_dtd_taskpool_insert_task(
-        dtd_tp, test_task8, 0, "test_task8", sizeof(payload_t), &payload, VALUE,
-        PASSED_BY_REF, args[1], INPUT | TILE_FULL, PASSED_BY_REF, args[2],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[3], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[4], INPUT | TILE_FULL, PASSED_BY_REF, args[5],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[6], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[7], INPUT | TILE_FULL, PASSED_BY_REF, args[0],
-        INOUT | TILE_FULL | AFFINITY, PARSEC_DTD_ARG_END);
+    parsec_dtd_insert_task(
+        dtd_tp, test_task8, 0, PARSEC_DEV_CPU, "test_task8", sizeof(payload_t),
+        &payload, PARSEC_VALUE, PASSED_BY_REF, args[1],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[2],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[3],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[4],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[5],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[6],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[7],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[0],
+        PARSEC_INOUT | TILE_FULL | PARSEC_AFFINITY, PARSEC_DTD_ARG_END);
     break;
   case 9:
-    parsec_dtd_taskpool_insert_task(
-        dtd_tp, test_task9, 0, "test_task9", sizeof(payload_t), &payload, VALUE,
-        PASSED_BY_REF, args[1], INPUT | TILE_FULL, PASSED_BY_REF, args[2],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[3], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[4], INPUT | TILE_FULL, PASSED_BY_REF, args[5],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[6], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[7], INPUT | TILE_FULL, PASSED_BY_REF, args[8],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[0], INOUT | TILE_FULL | AFFINITY,
-        PARSEC_DTD_ARG_END);
+    parsec_dtd_insert_task(
+        dtd_tp, test_task9, 0, PARSEC_DEV_CPU, "test_task9", sizeof(payload_t),
+        &payload, PARSEC_VALUE, PASSED_BY_REF, args[1],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[2],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[3],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[4],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[5],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[6],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[7],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[8],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[0],
+        PARSEC_INOUT | TILE_FULL | PARSEC_AFFINITY, PARSEC_DTD_ARG_END);
     break;
   case 10:
-    parsec_dtd_taskpool_insert_task(
-        dtd_tp, test_task10, 0, "test_task10", sizeof(payload_t), &payload,
-        VALUE, PASSED_BY_REF, args[1], INPUT | TILE_FULL, PASSED_BY_REF,
-        args[2], INPUT | TILE_FULL, PASSED_BY_REF, args[3], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[4], INPUT | TILE_FULL, PASSED_BY_REF, args[5],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[6], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[7], INPUT | TILE_FULL, PASSED_BY_REF, args[8],
-        INPUT | TILE_FULL, PASSED_BY_REF, args[9], INPUT | TILE_FULL,
-        PASSED_BY_REF, args[0], INOUT | TILE_FULL | AFFINITY,
-        PARSEC_DTD_ARG_END);
+    parsec_dtd_insert_task(
+        dtd_tp, test_task10, 0, PARSEC_DEV_CPU, "test_task10",
+        sizeof(payload_t), &payload, PARSEC_VALUE, PASSED_BY_REF, args[1],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[2],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[3],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[4],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[5],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[6],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[7],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[8],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[9],
+        PARSEC_INPUT | TILE_FULL, PASSED_BY_REF, args[0],
+        PARSEC_INOUT | TILE_FULL | PARSEC_AFFINITY, PARSEC_DTD_ARG_END);
     break;
   default:
     assert(false && "unexpected num_args");
@@ -724,6 +754,10 @@ ParsecApp::ParsecApp(int argc, char **argv) : App(argc, argv)
 
   int MB_cal = 0;
 
+  parsec_dtd_arenas_datatypes =
+      (parsec_arena_datatype_t **)malloc(sizeof(parsec_arena_datatype_t *));
+  assert(parsec_dtd_arenas_datatypes != NULL);
+
   for (i = 0; i < graphs.size(); i++) {
     TaskGraph &graph = graphs[i];
     matrix_t &mat = mat_array[i];
@@ -755,9 +789,9 @@ ParsecApp::ParsecApp(int argc, char **argv) : App(argc, argv)
 
     assert(graph.output_bytes_per_task <= sizeof(float) * mat.MB * mat.NB);
 
-    two_dim_block_cyclic_init(&mat.dcC, matrix_RealFloat, matrix_Tile, nodes,
-                              rank, mat.MB, mat.NB, mat.M, mat.N, 0, 0, mat.M,
-                              mat.N, mat.SMB, mat.SNB, P);
+    parsec_matrix_block_cyclic_init(
+        &mat.dcC, PARSEC_MATRIX_FLOAT, PARSEC_MATRIX_TILE, rank, mat.MB, mat.NB,
+        mat.M, mat.N, 0, 0, mat.M, mat.N, P, Q, mat.SMB, mat.SNB, 0, 0);
 
     mat.dcC.mat = parsec_data_allocate(
         (size_t)mat.dcC.super.nb_local_tiles * (size_t)mat.dcC.super.bsiz *
@@ -770,7 +804,9 @@ ParsecApp::ParsecApp(int argc, char **argv) : App(argc, argv)
     parsec_dtd_data_collection_init((parsec_data_collection_t *)&(mat.dcC));
 
     /* Default type */
-    dplasma_add2arena_tile(&(parsec_dtd_arenas_datatypes[i]),
+    parsec_dtd_arenas_datatypes[i] =
+        parsec_dtd_create_arena_datatype(parsec, &i);
+    dplasma_add2arena_tile(parsec_dtd_arenas_datatypes[i],
                            mat.dcC.super.mb * mat.dcC.super.nb * sizeof(float),
                            PARSEC_ARENA_ALIGNMENT_SSE, parsec_datatype_float_t,
                            mat.dcC.super.mb);
@@ -828,14 +864,18 @@ ParsecApp::~ParsecApp()
     matrix_t &mat = mat_array[i];
 
     /* Cleaning data arrays we allocated for communication */
-    parsec_matrix_del2arena(&(parsec_dtd_arenas_datatypes[i]));
+    parsec_del2arena(parsec_dtd_arenas_datatypes[i]);
+    parsec_dtd_destroy_arena_datatype(parsec, i);
 
     /* Cleaning data arrays we allocated for communication */
     parsec_dtd_data_collection_fini((parsec_data_collection_t *)&(mat.dcC));
 
     parsec_data_free(mat.dcC.mat);
-    parsec_tiled_matrix_dc_destroy((parsec_tiled_matrix_dc_t *)&(mat.dcC));
+    parsec_tiled_matrix_destroy((parsec_tiled_matrix_t *)&(mat.dcC));
   }
+
+  free(parsec_dtd_arenas_datatypes);
+  parsec_dtd_arenas_datatypes = NULL;
 
   cleanup_parsec(parsec, iparam);
 }
