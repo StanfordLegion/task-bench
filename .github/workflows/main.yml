@@ -30,8 +30,8 @@ jobs:
           - system: REALM
           - system: STARPU
             hwloc: 1
-          # - system: PARSEC
-          #   hwloc: 1
+          - system: PARSEC
+            hwloc: 1
           - system: HPX
           - system: CHARM
           - system: CHAPEL
